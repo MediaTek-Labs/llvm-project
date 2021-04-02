@@ -76,6 +76,9 @@ class TargetRegisterClass;
       // No relation with Mips Lo register
       Lo,
 
+      // Get all bits from 32-bit address.
+      FullAddr,
+
       // Get the High 16 bits from a 32 bit immediate for accessing the GOT.
       GotHi,
 
@@ -443,6 +446,13 @@ class TargetRegisterClass;
       return DAG.getNode(ISD::ADD, DL, Ty,
                          DAG.getNode(MipsISD::Hi, DL, Ty, Hi),
                          DAG.getNode(MipsISD::Lo, DL, Ty, Lo));
+   }
+
+   template <class NodeTy>
+   SDValue getNMAddrNonPIC(NodeTy *N, const SDLoc &DL, EVT Ty,
+                           SelectionDAG &DAG) const {
+      SDValue Addr = getTargetNode(N, Ty, DAG, MipsII::MO_NO_FLAG);
+      return DAG.getNode(MipsISD::FullAddr, DL, Ty, Addr);
    }
 
    // This method creates the following nodes, which are necessary for

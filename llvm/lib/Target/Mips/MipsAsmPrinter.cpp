@@ -418,7 +418,7 @@ void MipsAsmPrinter::emitFunctionEntryLabel() {
 
   if (Subtarget->inMips16Mode())
     TS.emitDirectiveSetMips16();
-  else
+  else if (!Subtarget->hasNanoMips())
     TS.emitDirectiveSetNoMips16();
 
   TS.emitDirectiveEnt(*CurrentFnSym);

@@ -50,6 +50,14 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
     DefMips64CPU = "mips3";
   }
 
+  if (Triple.isNanoMips()) {
+    DefMips32CPU = "nanomips";
+    CPUName = "nanomips";
+    if (ABIName.empty()) {
+      ABIName = "p32";
+    }
+  }
+
   if (Arg *A = Args.getLastArg(clang::driver::options::OPT_march_EQ,
                                options::OPT_mcpu_EQ))
     CPUName = A->getValue();
@@ -117,6 +125,7 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
     CPUName = llvm::StringSwitch<const char *>(ABIName)
                   .Case("o32", DefMips32CPU)
                   .Cases("n32", "n64", DefMips64CPU)
+                  .Case("p32", "nanomips")
                   .Default("");
   }
 

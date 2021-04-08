@@ -28,6 +28,8 @@ class LLVM_LIBRARY_VISIBILITY MipsTargetInfo : public TargetInfo {
 
     if (ABI == "o32")
       Layout = "m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64";
+    else if (ABI == "p32")
+      Layout = "m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S64";
     else if (ABI == "n32")
       Layout = "m:e-p:32:32-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128";
     else if (ABI == "n64")
@@ -44,6 +46,7 @@ class LLVM_LIBRARY_VISIBILITY MipsTargetInfo : public TargetInfo {
   std::string CPU;
   bool IsMips16;
   bool IsMicromips;
+  bool IsNanoMips;
   bool IsNan2008;
   bool IsAbs2008;
   bool IsSingleFloat;
@@ -63,20 +66,23 @@ protected:
 public:
   MipsTargetInfo(const llvm::Triple &Triple, const TargetOptions &)
       : TargetInfo(Triple), IsMips16(false), IsMicromips(false),
-        IsNan2008(false), IsAbs2008(false), IsSingleFloat(false),
-        IsNoABICalls(false), CanUseBSDABICalls(false), FloatABI(HardFloat),
-        DspRev(NoDSP), HasMSA(false), DisableMadd4(false),
+        IsNanoMips(false), IsNan2008(false), IsAbs2008(false),
+        IsSingleFloat(false), IsNoABICalls(false), CanUseBSDABICalls(false),
+        FloatABI(HardFloat), DspRev(NoDSP), HasMSA(false), DisableMadd4(false),
         UseIndirectJumpHazard(false), FPMode(FPXX) {
+
     TheCXXABI.set(TargetCXXABI::GenericMIPS);
 
     if (Triple.isMIPS32())
       setABI("o32");
     else if (Triple.isABIN32())
       setABI("n32");
+    else if (Triple.isNanoMips())
+      setABI("p32");
     else
       setABI("n64");
 
-    CPU = ABI == "o32" ? "mips32r2" : "mips64r2";
+    CPU = ABI == "p32" ? "nanomips" : ABI == "o32" ? "mips32r2" : "mips64r2";
 
     CanUseBSDABICalls = Triple.isOSFreeBSD() ||
                         Triple.isOSOpenBSD();
@@ -108,7 +114,7 @@ public:
       return true;
     }
 
-    if (Name == "n32") {
+    if (Name == "n32" || Name == "p32") {
       setN32ABITypes();
       ABI = Name;
       return true;

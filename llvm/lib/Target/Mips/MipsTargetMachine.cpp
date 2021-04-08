@@ -104,7 +104,7 @@ static std::string computeDataLayout(const Triple &TT, StringRef CPU,
   // 32 bit registers are always available and the stack is at least 64 bit
   // aligned. On N64 64 bit registers are also available and the stack is
   // 128 bit aligned.
-  if (ABI.IsN64() || ABI.IsN32())
+  if (ABI.IsN64() || ABI.IsN32() || ABI.IsP32())
     Ret += "-i128:128-n32:64-S128";
   else
     Ret += "-n32-S64";

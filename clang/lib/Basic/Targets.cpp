@@ -363,9 +363,9 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
   case llvm::Triple::nanomips:
     switch (os) {
     case llvm::Triple::Linux:
-      return new LinuxTargetInfo<MipsTargetInfo>(Triple, Opts);
+      return std::make_unique<LinuxTargetInfo<MipsTargetInfo>>(Triple, Opts);
     default:
-      return new MipsTargetInfo(Triple, Opts);
+      return std::make_unique<MipsTargetInfo>(Triple, Opts);
     }
 
   case llvm::Triple::ppc:

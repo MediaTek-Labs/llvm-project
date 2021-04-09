@@ -348,7 +348,7 @@ void MipsSEInstrInfo::loadRegFromStack(
   else if (Mips::DSPRRegClass.hasSubClassEq(RC))
     Opc = Mips::LWDSP;
   else if (Mips::GPR32NMRegClass.hasSubClassEq(RC))
-    Opc = Mips::LW; // FIXME: Implement nanoMIPS load from stack.
+    Opc = Mips::LW_NM;
 
   assert(Opc && "Register class not handled!");
 

@@ -268,7 +268,7 @@ void MipsSEInstrInfo::storeRegToStack(MachineBasicBlock &MBB,
   else if (Mips::DSPRRegClass.hasSubClassEq(RC))
     Opc = Mips::SWDSP;
   else if (Mips::GPR32NMRegClass.hasSubClassEq(RC))
-    Opc = Mips::SW; // FIXME: Implement nanoMIPS store to stack.
+    Opc = Mips::SW_NM;
 
   // Hi, Lo are normally caller save but they are callee save
   // for interrupt handling.

@@ -276,6 +276,8 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
     if (tools::mips::hasMipsAbiArg(Args, "n32") || T.isABIN32())
       return "elf32ltsmipn32";
     return "elf64ltsmip";
+  case llvm::Triple::nanomips:
+    return "elf32ltsmipn32";
   case llvm::Triple::systemz:
     return "elf64_s390";
   case llvm::Triple::x86_64:
@@ -853,7 +855,8 @@ void tools::gnutools::Assembler::ConstructJob(Compilation &C,
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
-  case llvm::Triple::mips64el: {
+  case llvm::Triple::mips64el:
+  case llvm::Triple::nanomips: {
     StringRef CPUName;
     StringRef ABIName;
     mips::getMipsCPUAndABI(Args, getToolChain().getTriple(), CPUName, ABIName);

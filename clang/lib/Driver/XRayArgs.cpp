@@ -53,6 +53,7 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
     case llvm::Triple::systemz:
     case llvm::Triple::riscv32:
     case llvm::Triple::riscv64:
+    case llvm::Triple::nanomips:
       break;
     default:
       D.Diag(diag::err_drv_unsupported_opt_for_target)

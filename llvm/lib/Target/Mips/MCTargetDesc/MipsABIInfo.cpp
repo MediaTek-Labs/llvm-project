@@ -59,6 +59,8 @@ MipsABIInfo MipsABIInfo::computeTargetABI(const Triple &TT, StringRef CPU,
     return MipsABIInfo::O32();
   if (Options.getABIName().starts_with("n32"))
     return MipsABIInfo::N32();
+  if (Options.getABIName().starts_with("p32"))
+    return MipsABIInfo::P32();
   if (Options.getABIName().starts_with("n64"))
     return MipsABIInfo::N64();
   if (TT.isABIN32())

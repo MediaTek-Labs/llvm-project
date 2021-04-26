@@ -51,8 +51,8 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
   }
 
   if (Triple.isNanoMips()) {
-    DefMips32CPU = "nanomips";
-    CPUName = "nanomips";
+    DefMips32CPU = "nms1";
+    CPUName = "nms1";
     if (ABIName.empty()) {
       ABIName = "p32";
     }
@@ -189,9 +189,8 @@ mips::FloatABI mips::getMipsFloatABI(const Driver &D, const ArgList &Args,
   }
 
   assert(ABI != mips::FloatABI::Invalid && "must select an ABI");
-  if(Triple.isNanoMips())
-    assert(ABI != mips::FloatABI::Hard && "nanoMIPS does not support hard-float ABI");
-  
+  assert((!Triple.isNanoMips() || ABI != mips::FloatABI::Hard) &&
+         "nanoMIPS does not support hard-float ABI");
   return ABI;
 }
 

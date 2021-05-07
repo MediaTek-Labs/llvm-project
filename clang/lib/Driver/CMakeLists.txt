@@ -70,6 +70,7 @@ add_clang_library(clangDriver
   ToolChains/MSP430.cpp
   ToolChains/MSVC.cpp
   ToolChains/NaCl.cpp
+  ToolChains/NanoMips.cpp
   ToolChains/NetBSD.cpp
   ToolChains/OHOS.cpp
   ToolChains/OpenBSD.cpp

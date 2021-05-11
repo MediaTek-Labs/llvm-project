@@ -3428,4 +3428,5 @@ include "MicroMipsDSPInstrFormats.td"
 include "MicroMipsDSPInstrInfo.td"
 
 // Nanomips
+include "NanoMipsInstrFormats.td"
 include "NanoMipsInstrInfo.td"

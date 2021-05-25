@@ -259,7 +259,11 @@ class TargetRegisterClass;
       LDR,
       SDL,
       SDR,
-      LAST_MEMORY_OPCODE = SDR,
+      // Unaligned nanoMIPS loads/stores.
+      UALW,
+      UALH,
+      UASW,
+      LAST_MEMORY_OPCODE = UASH,
     };
 
   } // ene namespace MipsISD

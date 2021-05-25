@@ -95,6 +95,10 @@ static inline unsigned getLoadStoreOffsetSizeInBits(const unsigned Opcode,
   case Mips::SC_R6:
   case Mips::LL_MMR6:
   case Mips::SC_MMR6:
+  case Mips::UALW_NM:
+  case Mips::UASW_NM:
+  case Mips::UALH_NM:
+  case Mips::UASH_NM:
     return 9;
   case Mips::INLINEASM: {
     const InlineAsm::Flag F(MO.getImm());
@@ -216,7 +220,9 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
       MachineBasicBlock &MBB = *MI.getParent();
       DebugLoc DL = II->getDebugLoc();
       const TargetRegisterClass *PtrRC =
-          ABI.ArePtrs64bit() ? &Mips::GPR64RegClass : &Mips::GPR32RegClass;
+          ABI.ArePtrs64bit()
+              ? &Mips::GPR64RegClass
+              : ABI.IsP32() ? &Mips::GPR32NMRegClass : &Mips::GPR32RegClass;
       MachineRegisterInfo &RegInfo = MBB.getParent()->getRegInfo();
       Register Reg = RegInfo.createVirtualRegister(PtrRC);
       const MipsSEInstrInfo &TII =

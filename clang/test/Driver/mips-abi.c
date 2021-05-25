@@ -48,7 +48,7 @@
 // RUN: %clang -target nanomips-linux-gnu -### -c %s \
 // RUN:        -mabi=p32 2>&1 \
 // RUN:   | FileCheck -check-prefix=MIPS-ABI-P32 %s
-// MIPS-ABI-P32: "-target-cpu" "nms1"
+// MIPS-ABI-P32: "-target-cpu" "i7200"
 // MIPS-ABI-P32: "-target-abi" "p32"
 //
 // RUN: %clang -target mips64-linux-gnu -### -c %s \
@@ -194,5 +194,5 @@
 // RUN: %clang -target nanomips -mabi=p32 -### %s 2>&1 \
 // RUN:   | FileCheck -check-prefix=TARGET-P32 %s
 // TARGET-P32: "-triple" "nanomips"
-// TARGET-P32: "-target-cpu" "nms1"
+// TARGET-P32: "-target-cpu" "i7200"
 // TARGET-P32: "-target-abi" "p32"

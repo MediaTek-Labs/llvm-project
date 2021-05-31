@@ -365,7 +365,15 @@ public:
     //    int* __va_reg;
     //    int __va_ndx;
     //} va_list;
-    XtensaABIBuiltinVaList
+    XtensaABIBuiltinVaList,
+    // typedef struct __va_list {
+    //   void *__overflow_argptr;
+    //   void *__gpr_top;
+    //   void *__fpr_top;
+    //   signed char __gpr_offset;
+    //   signed char __fpr_offset;
+    // } va_list;
+    NanoMipsBuiltinVaList
   };
 
 protected:

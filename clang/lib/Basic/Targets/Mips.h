@@ -227,7 +227,10 @@ public:
   bool hasFeature(StringRef Feature) const override;
 
   BuiltinVaListKind getBuiltinVaListKind() const override {
-    return TargetInfo::VoidPtrBuiltinVaList;
+    if (ABI == "p32")
+      return TargetInfo::NanoMipsBuiltinVaList;
+    else
+      return TargetInfo::VoidPtrBuiltinVaList;
   }
 
   ArrayRef<const char *> getGCCRegNames() const override {

@@ -718,7 +718,9 @@ void MipsSEFrameLowering::emitEpilogue(MachineFunction &MF,
 
   if (MipsFI->callsEhReturn()) {
     const TargetRegisterClass *RC =
-        ABI.ArePtrs64bit() ? &Mips::GPR64RegClass : &Mips::GPR32RegClass;
+        ABI.ArePtrs64bit()
+            ? &Mips::GPR64RegClass
+            : ABI.IsP32() ? &Mips::GPR32NMRegClass : &Mips::GPR32RegClass;
 
     // Find first instruction that restores a callee-saved register.
     MachineBasicBlock::iterator I = MBBI;
@@ -751,6 +753,8 @@ void MipsSEFrameLowering::emitInterruptEpilogueStub(
   MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
   MipsFunctionInfo *MipsFI = MF.getInfo<MipsFunctionInfo>();
   DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
+
+  assert(!STI.isABI_P32() && "NYI for nanoMIPS");
 
   // Perform ISR handling like GCC
   const TargetRegisterClass *PtrRC = &Mips::GPR32RegClass;

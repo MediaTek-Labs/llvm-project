@@ -4402,9 +4402,12 @@ MipsTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
           return std::make_pair(0U, &Mips::GPR32NMRegClass);
         return std::make_pair(0U, &Mips::GPR32RegClass);
       }
+
       if ((VT == MVT::i64 || (VT == MVT::f64 && Subtarget.useSoftFloat())) &&
           !Subtarget.isGP64bit())
-        return std::make_pair(0U, &Mips::GPR32RegClass);
+        return std::make_pair(0U, Subtarget.hasNanoMips()
+                                      ? &Mips::GPR32NMRegClass
+                                      : &Mips::GPR32RegClass);
       if ((VT == MVT::i64 || (VT == MVT::f64 && Subtarget.useSoftFloat())) &&
           Subtarget.isGP64bit())
         return std::make_pair(0U, &Mips::GPR64RegClass);

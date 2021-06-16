@@ -108,8 +108,13 @@ static std::string computeDataLayout(const Triple &TT, StringRef CPU,
 }
 
 static Reloc::Model getEffectiveRelocModel(bool JIT,
-                                           std::optional<Reloc::Model> RM) {
-  if (!RM || JIT)
+                                           std::optional<Reloc::Model> RM,
+                                           const Triple &TT) {
+  if (TT.isNanoMips()) {
+    // PIC not supported yet on NanoMips. Always use static.
+    return Reloc::Static;
+  }
+  if (!RM.has_value() || JIT)
     return Reloc::Static;
   return *RM;
 }
@@ -127,7 +132,7 @@ MipsTargetMachine::MipsTargetMachine(const Target &T, const Triple &TT,
                                      CodeGenOpt::Level OL, bool JIT,
                                      bool isLittle)
     : LLVMTargetMachine(T, computeDataLayout(TT, CPU, Options, isLittle), TT,
-                        CPU, FS, Options, getEffectiveRelocModel(JIT, RM),
+                        CPU, FS, Options, getEffectiveRelocModel(JIT, RM, TT),
                         getEffectiveCodeModel(CM, CodeModel::Small), OL),
       isLittle(isLittle), TLOF(std::make_unique<MipsTargetObjectFile>()),
       ABI(MipsABIInfo::computeTargetABI(TT, CPU, Options.MCOptions)),

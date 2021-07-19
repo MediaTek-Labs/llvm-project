@@ -1,3 +1,5 @@
+// No object emitter on nanomips
+// UNSUPPORTED: nanomips
 // Check -ftime-report/-ftime-report= output
 // RUN: %clang_cc1 -emit-obj -O1 \
 // RUN:     -ftime-report %s -o /dev/null 2>&1 | \

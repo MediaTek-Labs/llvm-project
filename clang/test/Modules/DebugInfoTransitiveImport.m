@@ -1,4 +1,5 @@
-// UNSUPPORTED: target={{.*}}-zos{{.*}}, target={{.*}}-aix{{.*}}
+// No object emitter on nanomips
+// UNSUPPORTED: target={{.*}}-zos{{.*}}, target={{.*}}-aix{{.*}}, nanomips
 // RUN: rm -rf %t
 // RUN: %clang_cc1 -fmodules -fmodule-format=obj -debug-info-kind=limited -dwarf-ext-refs \
 // RUN:     -fimplicit-module-maps -fmodules-cache-path=%t -I %S/Inputs \

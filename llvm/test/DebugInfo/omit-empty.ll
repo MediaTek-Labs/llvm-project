@@ -1,3 +1,5 @@
+; No object emitter on nanomips
+; UNSUPPORTED: nanomips
 ; RUN: %llc_dwarf %s -filetype=obj -generate-arange-section -o - | llvm-objdump -h - | FileCheck %s
 ; REQUIRES: object-emission
 

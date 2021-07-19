@@ -1,4 +1,5 @@
-; UNSUPPORTED: target={{.*}}-aix{{.*}}
+// No object emitter on nanomips
+; UNSUPPORTED: target={{.*}}-aix{{.*}}, nanomips
 ; RUN: %llc_dwarf < %s -filetype=obj | llvm-dwarfdump -v - | FileCheck %s
 
 ; Expect no line table entry since there are no functions and file references in this compile unit

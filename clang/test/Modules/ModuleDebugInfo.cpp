@@ -1,4 +1,5 @@
-// UNSUPPORTED: target={{.*}}-zos{{.*}}, target={{.*}}-aix{{.*}}
+// No object emitter on nanomips
+// UNSUPPORTED: target={{.*}}-zos{{.*}}, target={{.*}}-aix{{.*}}, nanomips
 // Test that (the same) debug info is emitted for an Objective-C++
 // module and a C++ precompiled header.
 

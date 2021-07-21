@@ -1,6 +1,9 @@
 // UNSUPPORTED: target={{.*}}-zos{{.*}}, target={{.*}}-aix{{.*}}
 // Test that an @import inside a module is not represented in the debug info.
 
+// No object emitter on nanomips
+// UNSUPPORTED: nanomips
+
 // REQUIRES: asserts
 
 // RUN: rm -rf %t

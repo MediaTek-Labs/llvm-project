@@ -229,6 +229,16 @@ void MipsInstPrinter::printMemOperandEA(const MCInst *MI, int opNum,
   printOperand(MI, opNum + 1, STI, O);
 }
 
+void MipsInstPrinter::
+printMemOperandGPRel(const MCInst *MI, int opNum, const MCSubtargetInfo &STI, raw_ostream &O) {
+  O << "%gprel(";
+  printOperand(MI, opNum+1, STI, O);
+  O << ")";
+  O << "(";
+  printOperand(MI, opNum, STI, O);
+  O << ")";
+}
+
 void MipsInstPrinter::printFCCOperand(const MCInst *MI, int opNum,
                                       const MCSubtargetInfo & /* STI */,
                                       raw_ostream &O) {

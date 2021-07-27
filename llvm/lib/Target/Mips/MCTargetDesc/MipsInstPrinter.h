@@ -111,6 +111,7 @@ private:
                          const MCSubtargetInfo &STI, raw_ostream &O);
   void printFCCOperand(const MCInst *MI, int opNum, const MCSubtargetInfo &STI,
                        raw_ostream &O);
+  void printMemOperandGPRel(const MCInst *MI, int opNum,const MCSubtargetInfo &STI, raw_ostream &O);
   void printSHFMask(const MCInst *MI, int opNum, raw_ostream &O);
 
   bool printAlias(const char *Str, const MCInst &MI, uint64_t Address,

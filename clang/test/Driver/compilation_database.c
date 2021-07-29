@@ -1,3 +1,5 @@
+// UNSUPPORTED: nanomips
+
 // RUN: mkdir -p %t.workdir && cd %t.workdir
 // RUN: %clang -no-canonical-prefixes -fintegrated-as -MD -MP --sysroot=somewhere -c -x c %s -xc++ %s -Wall -MJ - 2>&1 | FileCheck %s
 // RUN: not %clang -no-canonical-prefixes -c -x c %s -MJ %s/non-existant 2>&1 | FileCheck --check-prefix=ERROR %s

@@ -1,3 +1,4 @@
+; UNSUPPORTED: nanomips
 ; RUN: llc -mtriple=mipsel < %s | FileCheck %s
 ; RUN: llc  -mtriple=mips -mcpu=mips32r6 -mattr=micromips -relocation-model=pic < %s -asm-show-inst | FileCheck %s -check-prefix=MMR6
 

@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 ; RUN: llc  -mtriple=mipsel -mattr=mips16 -relocation-model=pic -O3 < %s | FileCheck %s -check-prefix=16
 ; RUN: llc  -mtriple=mips -mcpu=mips32r6 -mattr=micromips -relocation-model=pic -O3 < %s | FileCheck %s -check-prefix=MMR6
+=======
+; UNSUPPORTED: nanomips
+; RUN: llc  -march=mipsel -mattr=mips16 -relocation-model=pic -O3 < %s | FileCheck %s -check-prefix=16
+; RUN: llc  -march=mips -mcpu=mips32r6 -mattr=micromips -relocation-model=pic -O3 < %s | FileCheck %s -check-prefix=MMR6
+>>>>>>> 9bb72cd64c7c (Disable MIPS regressions temporarily)
 
 @j = global i32 -5, align 4
 @k = global i32 10, align 4

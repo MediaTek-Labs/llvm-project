@@ -2108,11 +2108,11 @@ SDValue MipsTargetLowering::lowerGlobalAddress(SDValue Op,
     const GlobalObject *GO = GV->getAliaseeObject();
     if (GO && TLOF->IsGlobalInSmallSection(GO, getTargetMachine()))
       // %gp_rel relocation
-      return getAddrGPRel(N, SDLoc(N), Ty, DAG, ABI.IsN64());
+      return getAddrGPRel(N, SDLoc(N), Ty, DAG);
 
-    if (ABI.IsP32()) {
+    if (ABI.IsP32())
       return getNMAddrNonPIC(N, SDLoc(N), Ty, DAG);
-    }
+
                                 // %hi/%lo relocation
     return Subtarget.hasSym32() ? getAddrNonPIC(N, SDLoc(N), Ty, DAG)
                                 // %highest/%higher/%hi/%lo relocation
@@ -2272,6 +2272,8 @@ lowerJumpTable(SDValue Op, SelectionDAG &DAG) const
 SDValue MipsTargetLowering::
 lowerConstantPool(SDValue Op, SelectionDAG &DAG) const
 {
+  assert(!Subtarget.hasNanoMips() && "No nanoMIPS support yet");
+
   ConstantPoolSDNode *N = cast<ConstantPoolSDNode>(Op);
   EVT Ty = Op.getValueType();
 
@@ -2283,7 +2285,7 @@ lowerConstantPool(SDValue Op, SelectionDAG &DAG) const
     if (TLOF->IsConstantInSmallSection(DAG.getDataLayout(), N->getConstVal(),
                                        getTargetMachine()))
       // %gp_rel relocation
-      return getAddrGPRel(N, SDLoc(N), Ty, DAG, ABI.IsN64());
+      return getAddrGPRel(N, SDLoc(N), Ty, DAG);
 
     return Subtarget.hasSym32() ? getAddrNonPIC(N, SDLoc(N), Ty, DAG)
                                 : getAddrNonPICSym64(N, SDLoc(N), Ty, DAG);

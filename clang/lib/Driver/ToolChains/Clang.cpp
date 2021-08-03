@@ -1917,7 +1917,8 @@ void Clang::AddMIPSTargetArgs(const ArgList &Args,
       ParsePICArgs(getToolChain(), Args);
 
   NoABICalls = NoABICalls ||
-               (RelocationModel == llvm::Reloc::Static && ABIName == "n64");
+               (RelocationModel == llvm::Reloc::Static && ABIName == "n64") ||
+               (ABIName == "p32");
 
   bool WantGPOpt = GPOpt && GPOpt->getOption().matches(options::OPT_mgpopt);
   // We quietly ignore -mno-gpopt as the backend defaults to -mno-gpopt.

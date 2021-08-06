@@ -4346,9 +4346,6 @@ parseRegForInlineAsmConstraint(StringRef C, MVT VT) const {
   StringRef Prefix;
   unsigned long long Reg;
 
-  if (Subtarget.hasNanoMips())
-    return parseRegForInlineAsmConstraintNM(C, VT);
-
   std::pair<bool, bool> R = parsePhysicalReg(C, Prefix, Reg);
 
   if (!R.first)

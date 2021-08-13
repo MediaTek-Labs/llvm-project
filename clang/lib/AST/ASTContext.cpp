@@ -9970,13 +9970,10 @@ static TypedefDecl *CreateVaListDecl(const ASTContext *Context,
     return CreateSystemZBuiltinVaListDecl(Context);
   case TargetInfo::HexagonBuiltinVaList:
     return CreateHexagonBuiltinVaListDecl(Context);
-<<<<<<< HEAD
   case TargetInfo::XtensaABIBuiltinVaList:
     return CreateXtensaABIBuiltinVaListDecl(Context);
-=======
   case TargetInfo::NanoMipsBuiltinVaList:
-    return CreateNanoMipsBuiltinVaListdecl(Context);
->>>>>>> 4a72c8c8a2b1 (Add type for va_list)
+    return CreateNanoMipsBuiltinVaListdecl(Context);  
   }
 
   llvm_unreachable("Unhandled __builtin_va_list type kind");

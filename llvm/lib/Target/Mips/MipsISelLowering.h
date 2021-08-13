@@ -263,6 +263,7 @@ class TargetRegisterClass;
       UALW,
       UALH,
       UASW,
+      UASH,
       LAST_MEMORY_OPCODE = UASH,
     };
 

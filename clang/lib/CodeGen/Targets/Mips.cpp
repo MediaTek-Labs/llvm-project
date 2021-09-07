@@ -37,7 +37,7 @@ public:
   RValue EmitVAArg(CodeGenFunction &CGF, Address VAListAddr, QualType Ty,
                    AggValueSlot Slot) const override;
   RValue EmitVAArgNanoMips(CodeGenFunction &CGF, Address VAListAddr,
-                            QualType Ty) const;
+                            QualType Ty, AggValueSlot Slot) const;
   ABIArgInfo extendType(QualType Ty) const;
 };
 
@@ -226,6 +226,12 @@ MipsABIInfo::classifyArgumentType(QualType Ty, uint64_t &Offset) const {
     if (TySize == 0)
       return ABIArgInfo::getIgnore();
 
+    bool IsNanoMips = getTarget().getTriple().isNanoMips();
+    if (TySize > 64 && IsNanoMips) {
+      Offset = OrigOffset + MinABIStackAlignInBytes;
+      return getNaturalAlignIndirect(Ty, false);
+    }
+
     if (CGCXXABI::RecordArgABI RAA = getRecordArgABI(Ty, getCXXABI())) {
       Offset = OrigOffset + MinABIStackAlignInBytes;
       return getNaturalAlignIndirect(Ty, RAA == CGCXXABI::RAA_DirectInMemory);
@@ -377,24 +383,23 @@ void MipsABIInfo::computeInfo(CGFunctionInfo &FI) const {
 
 RValue MipsABIInfo::EmitVAArgNanoMips(CodeGenFunction &CGF,
                                        Address VAListAddr,
-                                       QualType OrigTy) const {
-  QualType Ty = OrigTy;
+                                       QualType OrigTy,
+                                       AggValueSlot Slot) const {
+  QualType Ty = OrigTy.getCanonicalType();
+  llvm::Type *AddressTy = CGF.ConvertTypeForMem(OrigTy)->getPointerTo();
   CharUnits Align = CGF.getContext().getTypeAlignInChars(Ty);
   CharUnits Size = CGF.getContext().getTypeSizeInChars(Ty);
+  // Types larger than 8 bytes are passed by reference.
+  bool IsIndirect = (Size.getQuantity() > 8) ? true : false;
+  if (IsIndirect) {
+    Align = Size = CharUnits::fromQuantity(4);
+    AddressTy = AddressTy->getPointerTo();
+  }
   uint64_t OSize, RSize;
   CGBuilderTy &Builder = CGF.Builder;
   CharUnits RegWidth = CharUnits::fromQuantity(4);
   uint64_t RegBits = 32;
-  // TODO: DJ Fix this
-  //  it was:
-  // llvm::Type *AddressTy = CGF.ConvertTypeForMem(OrigTy)->getPointerTo();
-  // now opaque ptrs may work different
-  llvm::Type *AddressTy = llvm::PointerType::get(CGF.ConvertTypeForMem(OrigTy), 32);
-  llvm::Type *PtrArithTy;
-  if (RegWidth.getQuantity() == 4)
-    PtrArithTy = llvm::Type::getInt32Ty(getVMContext());
-  else
-    PtrArithTy = llvm::Type::getInt64Ty(getVMContext());
+  llvm::Type *PtrArithTy = llvm::Type::getInt32Ty(getVMContext());
 
   // Control flow structure we want:
   // if (offset > 0) {
@@ -488,18 +493,29 @@ RValue MipsABIInfo::EmitVAArgNanoMips(CodeGenFunction &CGF,
 
   CGF.EmitBlock(ContinueBB);
 
-  // Create a phi for address to return
-  Address ArgAddress = emitMergePHI(CGF,
-                                    Address(Addr, Addr->getType()->getArrayElementType(), Align), OffsetGEZeroBB,
-                                    Address(AddrOverflow, Addr->getType()->getArrayElementType(), Align),OverflowBB,
-                                    "addr");
-  return RValue::getAggregate(ArgAddress);
+  if (!IsIndirect) {
+    // Create a phi for address to return
+    Address ArgAddress = emitMergePHI(
+        CGF, Address(Addr, CGF.ConvertTypeForMem(OrigTy), Align),
+        OffsetGEZeroBB,
+        Address(AddrOverflow, CGF.ConvertTypeForMem(OrigTy), Align), OverflowBB,
+        "addr");
+
+    return CGF.EmitLoadOfAnyValue(CGF.MakeAddrLValue(ArgAddress, Ty), Slot);
+  }
+  Address ArgAddress =
+      emitMergePHI(CGF, Address(Addr, AddressTy, Align), OffsetGEZeroBB,
+                   Address(AddrOverflow, AddressTy, Align), OverflowBB, "addr");
+  ArgAddress =
+      Address(CGF.Builder.CreateLoad(ArgAddress), Addr->getType(), Align);
+
+  return CGF.EmitLoadOfAnyValue(CGF.MakeAddrLValue(ArgAddress, Ty), Slot);
 }
 
 RValue MipsABIInfo::EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
                               QualType OrigTy, AggValueSlot Slot) const {
   if (getTarget().getTriple().isNanoMips())
-    return EmitVAArgNanoMips(CGF, VAListAddr, OrigTy);
+    return EmitVAArgNanoMips(CGF, VAListAddr, OrigTy, Slot);
 
   QualType Ty = OrigTy;
 

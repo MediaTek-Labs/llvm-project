@@ -9651,7 +9651,7 @@ static TypedefDecl *CreatePowerABIBuiltinVaListDecl(const ASTContext *Context) {
   // typedef __va_list_tag __builtin_va_list[1];
   llvm::APInt Size(Context->getTypeSize(Context->getSizeType()), 1);
   QualType VaListTagArrayType = Context->getConstantArrayType(
-      VaListTagTypedefType, Size, nullptr, ArraySizeModifier::Normal, 0);
+        VaListTagTypedefType, Size, nullptr, ArraySizeModifier::Normal, 0);
   return Context->buildImplicitTypedef(VaListTagArrayType, "__builtin_va_list");
 }
 
@@ -9943,10 +9943,7 @@ CreateNanoMipsBuiltinVaListdecl(const ASTContext *Context) {
   Context->VaListTagDecl = VaListTagDecl;
   QualType VaListTagType = Context->getRecordType(VaListTagDecl);
 
-  llvm::APInt Size(Context->getTypeSize(Context->getSizeType()), 1);
-  QualType VaListTagArrayType = Context->getConstantArrayType(
-      VaListTagType, Size, nullptr, ArraySizeModifier::Normal, 0);
-  return Context->buildImplicitTypedef(VaListTagArrayType, "__builtin_va_list");
+  return Context->buildImplicitTypedef(VaListTagType, "__builtin_va_list");
 }
 
 static TypedefDecl *CreateVaListDecl(const ASTContext *Context,

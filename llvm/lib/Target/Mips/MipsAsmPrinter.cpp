@@ -765,6 +765,7 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
                             std::nullopt);
 
     bool IsABICalls = STI.isABICalls();
+    bool IsNanoMips = STI.hasNanoMips();
     const MipsABIInfo &ABI = MTM.getABI();
     if (IsABICalls) {
       TS.emitDirectiveAbiCalls();
@@ -776,19 +777,21 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
         TS.emitDirectiveOptionPic0();
     }
 
-    // Tell the assembler which ABI we are using
-    std::string SectionName = std::string(".mdebug.") + getCurrentABIString();
-    OutStreamer->switchSection(
-        OutContext.getELFSection(SectionName, ELF::SHT_PROGBITS, 0));
+    if (!IsNanoMips) {
+      // Tell the assembler which ABI we are using
+      std::string SectionName = std::string(".mdebug.") + getCurrentABIString();
+      OutStreamer->switchSection(
+          OutContext.getELFSection(SectionName, ELF::SHT_PROGBITS, 0));
+    }
 
-  if (STI.isABI_P32())
-    TS.emitDirectiveLinkRelax();
-  if (!STI.isABI_P32()) {
-    // NaN: At the moment we only support:
-    // 1. .nan legacy (default)
-    // 2. .nan 2008
-    STI.isNaN2008() ? TS.emitDirectiveNaN2008() : TS.emitDirectiveNaNLegacy();
-   }
+    if (IsNanoMips)
+      TS.emitDirectiveLinkRelax();
+    if (!STI.isABI_P32()) {
+      // NaN: At the moment we only support:
+      // 1. .nan legacy (default)
+      // 2. .nan 2008
+      STI.isNaN2008() ? TS.emitDirectiveNaN2008() : TS.emitDirectiveNaNLegacy();
+    }
 
     // TODO: handle O64 ABI
 

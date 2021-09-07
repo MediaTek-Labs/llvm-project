@@ -8182,6 +8182,12 @@ MipsABIInfo::classifyArgumentType(QualType Ty, uint64_t &Offset) const {
     if (TySize == 0)
       return ABIArgInfo::getIgnore();
 
+    bool IsNanoMips = getTarget().getTriple().isNanoMips();
+    if (TySize > 64 && IsNanoMips) {
+      Offset = OrigOffset + MinABIStackAlignInBytes;
+      return getNaturalAlignIndirect(Ty, false);
+    }
+
     if (CGCXXABI::RecordArgABI RAA = getRecordArgABI(Ty, getCXXABI())) {
       Offset = OrigOffset + MinABIStackAlignInBytes;
       return getNaturalAlignIndirect(Ty, RAA == CGCXXABI::RAA_DirectInMemory);
@@ -8334,19 +8340,21 @@ void MipsABIInfo::computeInfo(CGFunctionInfo &FI) const {
 Address MipsABIInfo::EmitVAArgNanoMips(CodeGenFunction &CGF,
                                        Address VAListAddr,
                                        QualType OrigTy) const {
-  QualType Ty = OrigTy;
+  QualType Ty = OrigTy.getCanonicalType();
+  llvm::Type *AddressTy = CGF.ConvertTypeForMem(OrigTy)->getPointerTo();
   CharUnits Align = CGF.getContext().getTypeAlignInChars(Ty);
   CharUnits Size = CGF.getContext().getTypeSizeInChars(Ty);
+  // Types larger than 8 bytes are passed by reference.
+  bool IsIndirect = (Size.getQuantity() > 8) ? true : false;
+  if (IsIndirect) {
+    Align = Size = CharUnits::fromQuantity(4);
+    AddressTy = AddressTy->getPointerTo();
+  }
   uint64_t OSize, RSize;
   CGBuilderTy &Builder = CGF.Builder;
   CharUnits RegWidth = CharUnits::fromQuantity(4);
   uint64_t RegBits = 32;
-  llvm::Type *AddressTy = CGF.ConvertTypeForMem(OrigTy)->getPointerTo();
-  llvm::Type *PtrArithTy;
-  if (RegWidth.getQuantity() == 4)
-    PtrArithTy = llvm::Type::getInt32Ty(getVMContext());
-  else
-    PtrArithTy = llvm::Type::getInt64Ty(getVMContext());
+  llvm::Type *PtrArithTy = llvm::Type::getInt32Ty(getVMContext());
 
   // Control flow structure we want:
   // if (offset > 0) {
@@ -8411,7 +8419,8 @@ Address MipsABIInfo::EmitVAArgNanoMips(CodeGenFunction &CGF,
   // Subtract offset from the top of the GPR area
   llvm::Value *NegativeOff = Builder.CreateSub(Builder.getIntN(RegBits, 0),
                                                CurOff);
-  llvm::Value *Addr = Builder.CreateGEP(GPRTop->getType()->getScalarType()->getPointerElementType(), GPRTop, NegativeOff);
+  llvm::Value *Addr = Builder.CreateGEP(GPRTop->getType()->getScalarType(),
+                                        GPRTop, NegativeOff);
   Addr = Builder.CreatePointerCast(Addr, AddressTy);
   Builder.CreateBr(ContinueBB);
 
@@ -8439,12 +8448,21 @@ Address MipsABIInfo::EmitVAArgNanoMips(CodeGenFunction &CGF,
                       OverflowPtrAddress);
 
   CGF.EmitBlock(ContinueBB);
+  if (!IsIndirect) {
+    // Create a phi for address to return
+    Address ArgAddress = emitMergePHI(
+        CGF, Address(Addr, CGF.ConvertTypeForMem(OrigTy), Align),
+        OffsetGEZeroBB,
+        Address(AddrOverflow, CGF.ConvertTypeForMem(OrigTy), Align), OverflowBB,
+        "addr");
+    return ArgAddress;
+  }
+  Address ArgAddress =
+      emitMergePHI(CGF, Address(Addr, AddressTy, Align), OffsetGEZeroBB,
+                   Address(AddrOverflow, AddressTy, Align), OverflowBB, "addr");
+  ArgAddress =
+      Address(CGF.Builder.CreateLoad(ArgAddress), Addr->getType(), Align);
 
-  // Create a phi for address to return
-  Address ArgAddress = emitMergePHI(CGF,
-                                    Address(Addr, Addr->getType()->getPointerElementType(), Align), OffsetGEZeroBB,
-                                    Address(AddrOverflow, Addr->getType()->getPointerElementType(), Align),OverflowBB,
-                                    "addr");
   return ArgAddress;
 }
 

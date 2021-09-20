@@ -370,3 +370,12 @@ void MipsInstPrinter::printRegisterList(const MCInst *MI, int opNum,
     printRegName(O, MI->getOperand(i).getReg());
   }
 }
+
+void MipsInstPrinter::printNanoMipsRegisterList(const MCInst *MI, int OpNum,
+                                                const MCSubtargetInfo &STI,
+                                                raw_ostream &O) {
+  for (size_t I = OpNum; I < MI->getNumOperands(); I++) {
+    O << ", ";
+    printRegName(O, MI->getOperand(I).getReg());
+  }
+}

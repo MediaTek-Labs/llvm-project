@@ -203,6 +203,9 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   // Disable unaligned load store for r6.
   bool StrictAlign;
 
+  // Use unaliged loads and stores (nanoMIPS only).
+  bool UseUnalignedLoadStore = false;
+
   /// The minimum alignment known to hold of the stack frame on
   /// entry to the function and which must be maintained by every function.
   Align stackAlignment;
@@ -345,6 +348,8 @@ public:
   bool useLongCalls() const { return UseLongCalls; }
 
   bool useXGOT() const { return UseXGOT; }
+
+  bool useUnalignedLoadStore() const { return UseUnalignedLoadStore; };
 
   bool enableLongBranchPass() const {
     return hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32();

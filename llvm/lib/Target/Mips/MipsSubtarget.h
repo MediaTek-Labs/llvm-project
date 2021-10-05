@@ -245,7 +245,8 @@ public:
   /// This constructor initializes the data members to match that
   /// of the specified triple.
   MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS, bool little,
-                const MipsTargetMachine &TM, MaybeAlign StackAlignOverride);
+                const MipsTargetMachine &TM, MaybeAlign StackAlignOverride,
+                bool UnalignedLS);
 
   ~MipsSubtarget() override;
 

@@ -149,6 +149,8 @@ void MipsTargetStreamer::emitDirectiveCpsetup(unsigned RegNo, int RegOrOffset,
 void MipsTargetStreamer::emitDirectiveCpreturn(unsigned SaveLocation,
                                                bool SaveLocationIsRegister) {}
 
+void MipsTargetStreamer::emitDirectiveModulePcRel() {}
+
 void MipsTargetStreamer::emitDirectiveModuleFP() {}
 
 void MipsTargetStreamer::emitDirectiveModuleOddSPReg() {
@@ -728,6 +730,10 @@ void MipsTargetAsmStreamer::emitDirectiveCpreturn(unsigned SaveLocation,
                                                   bool SaveLocationIsRegister) {
   OS << "\t.cpreturn";
   forbidModuleDirective();
+}
+
+void MipsTargetAsmStreamer::emitDirectiveModulePcRel() {
+  OS << "\t.module\tpcrel\n";
 }
 
 void MipsTargetAsmStreamer::emitDirectiveModuleFP() {

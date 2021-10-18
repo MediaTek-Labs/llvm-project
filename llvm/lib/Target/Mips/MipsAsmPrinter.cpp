@@ -804,6 +804,9 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
         STI.useSoftFloat())
       TS.emitDirectiveModuleFP();
 
+   if (ABI.IsP32())
+     TS.emitDirectiveModulePcRel();
+
     // We should always emit a '.module [no]oddspreg' but binutils 2.24 does not
     // accept it. We therefore emit it when it contradicts the default or an
     // option has changed the default (i.e. FPXX) and omit it otherwise.

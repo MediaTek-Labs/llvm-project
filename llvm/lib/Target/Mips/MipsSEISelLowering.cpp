@@ -102,6 +102,9 @@ MipsSETargetLowering::getPreferredVectorAction(MVT VT) const {
 MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
                                            const MipsSubtarget &STI)
     : MipsTargetLowering(TM, STI) {
+  if (Subtarget.hasNanoMips() && UseMipsTailCalls.getNumOccurrences() == 0)
+    UseMipsTailCalls = true;
+
   // Set up the register classes
   if (STI.isABI_P32())
     addRegisterClass(MVT::i32, &Mips::GPR32NMRegClass);

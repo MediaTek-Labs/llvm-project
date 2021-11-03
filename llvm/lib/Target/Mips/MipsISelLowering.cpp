@@ -527,6 +527,7 @@ MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
 
   if (Subtarget.hasNanoMips()) {
     setOperationAction(ISD::CTLZ, MVT::i32, Legal);
+    setOperationAction(ISD::BITREVERSE, MVT::i32, Legal);
   }
 
   setOperationAction(ISD::TRAP, MVT::Other, Legal);

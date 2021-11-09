@@ -1925,7 +1925,7 @@ void Clang::AddMIPSTargetArgs(const ArgList &Args,
 
   bool WantGPOpt = GPOpt && GPOpt->getOption().matches(options::OPT_mgpopt);
   // We quietly ignore -mno-gpopt as the backend defaults to -mno-gpopt.
-  if (NoABICalls && (!GPOpt || WantGPOpt)) {
+  if (NoABICalls && ((!GPOpt && !Triple.isNanoMips()) || WantGPOpt)) {
     CmdArgs.push_back("-mllvm");
     CmdArgs.push_back("-mgpopt");
 

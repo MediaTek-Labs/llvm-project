@@ -66,6 +66,7 @@ add_llvm_target(MipsCodeGen
   MipsMulMulBugPass.cpp
   NanoMipsLoadStoreOptimizer.cpp
   NanoMipsMoveOptimizer.cpp
+  NanoMipsRegisterReAllocation.cpp
 
   LINK_COMPONENTS
   Analysis

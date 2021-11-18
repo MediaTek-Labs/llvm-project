@@ -90,3 +90,11 @@ InstructionCost NanoMipsTTIImpl::getIntImmCostInst(unsigned Opcode,
 
   return getIntImmCost(Imm, Ty, CostKind);
 }
+
+void NanoMipsTTIImpl::getUnrollingPreferences(Loop *L, ScalarEvolution &SE,
+                                              TTI::UnrollingPreferences &UP,
+                                             OptimizationRemarkEmitter *ORE ) {
+  BaseT::getUnrollingPreferences(L, SE, UP, ORE);
+  UP.Threshold = 60;
+  UP.OptSizeThreshold = 0;
+}

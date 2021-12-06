@@ -98,6 +98,10 @@ namespace MipsII {
     /// reference is actually to the "__imp_FOO" symbol.  This is used for
     /// dllimport linkage on windows.
     MO_DLLIMPORT = 0x20,
+
+    /// MO_PCREL_HI - Represents the high 20 bits of offset from the current pc
+    /// value to be used for the relocatable object file being produced.
+    MO_PCREL_HI
   };
 
   enum {

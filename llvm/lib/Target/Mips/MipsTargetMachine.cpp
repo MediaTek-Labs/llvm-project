@@ -69,6 +69,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTarget() {
   initializeMipsPostLegalizerCombinerPass(*PR);
   initializeMipsMulMulBugFixPass(*PR);
   initializeMipsDAGToDAGISelPass(*PR);
+  initializeRedundantCopyEliminationPass(*PR);
 }
 
 static std::string computeDataLayout(const Triple &TT, StringRef CPU,
@@ -262,6 +263,7 @@ public:
   bool addInstSelector() override;
   void addPreEmitPass() override;
   void addPreRegAlloc() override;
+  void addPostRegAlloc() override;
   bool addIRTranslator() override;
   void addPreLegalizeMachineIR() override;
   bool addLegalizeMachineIR() override;
@@ -308,6 +310,11 @@ bool MipsPassConfig::addInstSelector() {
 
 void MipsPassConfig::addPreRegAlloc() {
   addPass(createMipsOptimizePICCallPass());
+}
+
+void MipsPassConfig::addPostRegAlloc() {
+  if (getMipsSubtarget().hasNanoMips())
+    addPass(createRedundantCopyEliminationPass());
 }
 
 TargetTransformInfo

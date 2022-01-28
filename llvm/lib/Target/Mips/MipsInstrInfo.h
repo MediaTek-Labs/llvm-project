@@ -128,6 +128,53 @@ public:
   /// always be able to get register info as well (through this method).
   virtual const MipsRegisterInfo &getRegisterInfo() const = 0;
 
+  /// If \p OffsetIsScalable is set to 'true', the offset is scaled by `vscale`.
+  /// This is true for some SVE instructions like ldr/str that have a
+  /// 'reg + imm' addressing mode where the immediate is an index to the
+  /// scalable vector located at 'reg + imm * vscale x #bytes'.
+  bool getMemOperandWithOffsetWidth(const MachineInstr &MI,
+                                    const MachineOperand *&BaseOp,
+                                    int64_t &Offset, bool &OffsetIsScalable,
+                                    unsigned &Width,
+                                    const TargetRegisterInfo *TRI) const;
+
+
+  outliner::InstrType getOutliningType(const MachineModuleInfo &MMI,
+                                       MachineBasicBlock::iterator &MIT,
+                                       unsigned Flags) const override;
+
+  /// Return the immediate offset of the base register in a load/store \p LdSt.
+  MachineOperand &getMemOpBaseRegImmOfsOffsetOperand(MachineInstr &LdSt) const;
+
+  /// Returns an unused general-purpose register which can be used for
+  /// constructing an outlined call if one exists. Returns 0 otherwise.
+  unsigned findRegisterToSaveRA(outliner::Candidate &C) const;
+
+  std::optional<std::unique_ptr<outliner::OutlinedFunction>>
+  getOutliningCandidateInfo(
+      const MachineModuleInfo &MMI,
+      std::vector<outliner::Candidate> &RepeatedSequenceLocs,
+      unsigned MinRepeats) const override;
+
+  bool
+  isFunctionSafeToOutlineFrom(MachineFunction &MF,
+                              bool OutlineFromLinksOnceODRs) const override;
+
+  void buildOutlinedFrame(MachineBasicBlock &MBB, MachineFunction &MF,
+                          const outliner::OutlinedFunction &OF) const override;
+
+ MachineBasicBlock::iterator
+  insertOutlinedCall(Module &M, MachineBasicBlock &MBB,
+                     MachineBasicBlock::iterator &It, MachineFunction &MF,
+                     outliner::Candidate &C) const override;
+
+
+  /// Sets the offsets on outlined instructions in \p MBB which use SP
+  /// so that they will be valid post-outlining.
+  ///
+  /// \param MBB A \p MachineBasicBlock in an outlined function.
+  void fixupPostOutline(MachineBasicBlock &MBB) const;
+
   virtual unsigned getOppositeBranchOpc(unsigned Opc) const = 0;
 
   virtual bool isBranchWithImm(unsigned Opc) const {

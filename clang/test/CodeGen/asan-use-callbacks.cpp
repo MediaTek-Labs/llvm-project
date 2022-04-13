@@ -1,3 +1,4 @@
+// REQUIRES: asan
 // RUN: %clang -target x86_64-linux-gnu -S -emit-llvm -fsanitize=address \
 // RUN:     -o - %s \
 // RUN:     | FileCheck %s --check-prefixes=CHECK-NO-OUTLINE

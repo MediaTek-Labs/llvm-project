@@ -1,3 +1,4 @@
+; REQUIRES: integrated-as
 ; RUN: llc -mtriple=mipsel-linux-gnu -mattr=mips16 \
 ; RUN:     -relocation-model=pic -no-integrated-as < %s | \
 ; RUN:     FileCheck %s -check-prefixes=ALL,GAS

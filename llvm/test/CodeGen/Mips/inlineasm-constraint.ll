@@ -1,3 +1,4 @@
+; REQUIRES: integrated-as
 ; RUN: llc -no-integrated-as -mtriple=mipsel < %s | \
 ; RUN:     FileCheck %s -check-prefixes=ALL,GAS
 ; RUN: llc -mtriple=mipsel < %s | FileCheck %s -check-prefixes=ALL,IAS

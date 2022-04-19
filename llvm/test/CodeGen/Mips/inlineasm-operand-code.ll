@@ -1,3 +1,4 @@
+; REQUIRES: integrated-as
 ; Positive test for inline register constraints
 ;
 ; RUN: llc -no-integrated-as -mtriple=mipsel -relocation-model=pic < %s | \

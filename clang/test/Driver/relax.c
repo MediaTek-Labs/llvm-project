@@ -1,4 +1,5 @@
 // RUN: %clang -### --target=x86_64 -c -Wa,--mrelax-relocations=no %s 2>&1 | FileCheck  %s
+// REQUIRES: integrated-as
 
 // CHECK: "-cc1"
 // CHECK: "-mrelax-relocations=no"

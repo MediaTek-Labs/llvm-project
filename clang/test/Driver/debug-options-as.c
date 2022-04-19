@@ -1,4 +1,5 @@
 // XFAIL: target={{.*}}-aix{{.*}}
+// REQUIRES: integrated-as
 
 // Check to make sure clang is somewhat picky about -g options.
 // (Delived from debug-options.c)

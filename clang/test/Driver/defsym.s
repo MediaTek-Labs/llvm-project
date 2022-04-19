@@ -1,4 +1,5 @@
 // XFAIL: target={{.*}}-aix{{.*}}
+// REQUIRES: integrated-as
 
 // RUN: %clang -### -c -integrated-as %s \
 // RUN: -Wa,-defsym,abc=5 -Wa,--defsym,xyz=0xa \

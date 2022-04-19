@@ -1,4 +1,5 @@
 // XFAIL: target={{.*}}-aix{{.*}}
+// REQUIRES: integrated-as
 
 // RUN: %clang -### -g -fintegrated-as -fdebug-prefix-map=old=new %s 2>&1 | FileCheck %s
 // RUN: %clang -### -g -fintegrated-as -ffile-prefix-map=old=new %s 2>&1 | FileCheck %s

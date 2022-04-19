@@ -1,4 +1,5 @@
 // XFAIL: target={{.*}}-aix{{.*}}
+// REQUIRES: integrated-as
 
 // RUN: %clang -### -c -save-temps -integrated-as --target=x86_64 %s 2>&1 | FileCheck %s
 

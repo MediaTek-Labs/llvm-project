@@ -117,6 +117,10 @@ public:
                         std::optional<Reloc::Model> RM,
                         std::optional<CodeModel::Model> CM, CodeGenOptLevel OL,
                         bool JIT);
+
+  bool useIPRA() const {
+    return true;
+  }
 };
 
 } // end namespace llvm

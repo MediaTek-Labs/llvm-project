@@ -572,6 +572,12 @@ public:
   virtual bool isCalleeSavedPhysReg(MCRegister PhysReg,
                                     const MachineFunction &MF) const;
 
+  // Return true if the register is needed for returning from the
+  // function and so must be preserved in the callee even if preserved
+  // by the caller
+  virtual bool isNeededForReturn(MCRegister PhysReg, const MachineFunction &MF) const {
+        return false;
+  }
   /// Returns true if PhysReg can be used as an argument to a function.
   virtual bool isArgumentRegister(const MachineFunction &MF,
                                   MCRegister PhysReg) const {

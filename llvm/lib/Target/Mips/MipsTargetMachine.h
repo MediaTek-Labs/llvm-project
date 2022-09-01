@@ -118,7 +118,7 @@ public:
                         std::optional<CodeModel::Model> CM, CodeGenOptLevel OL,
                         bool JIT);
 
-  bool useIPRA() const {
+  bool useIPRA() const override {
     return true;
   }
 };

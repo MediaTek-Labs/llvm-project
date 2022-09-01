@@ -139,10 +139,16 @@ void TargetFrameLowering::determineCalleeSaves(MachineFunction &MF,
   // Functions which call __builtin_unwind_init get all their registers saved.
   bool CallsUnwindInit = MF.callsUnwindInit();
   const MachineRegisterInfo &MRI = MF.getRegInfo();
+  const TargetRegisterInfo *RI = MF.getSubtarget().getRegisterInfo();
   for (unsigned i = 0; CSRegs[i]; ++i) {
     unsigned Reg = CSRegs[i];
-    if (CallsUnwindInit || MRI.isPhysRegModified(Reg))
-      SavedRegs.set(Reg);
+    if (CallsUnwindInit || MRI.isPhysRegModified(Reg)) {
+      bool NoCSR = (MF.getTarget().Options.EnableIPRA &&
+                    isSafeForNoCSROpt(MF.getFunction()) &&
+                    isProfitableForNoCSROpt(MF.getFunction()));
+      if (!NoCSR || !MRI.isAllocatable(Reg) || RI->isNeededForReturn(Reg, MF))
+        SavedRegs.set(Reg);
+    }
   }
 }
 

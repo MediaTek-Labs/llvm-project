@@ -595,6 +595,7 @@ void MipsSEInstrInfo::adjustStackPtr(unsigned SP, int64_t Amount,
                                      MachineBasicBlock::iterator I) const {
   MipsABIInfo ABI = Subtarget.getABI();
   DebugLoc DL;
+  if (I != MBB.end()) DL = I->getDebugLoc();
   unsigned ADDiu = ABI.GetPtrAddiuOp();
 
   if (Amount == 0)

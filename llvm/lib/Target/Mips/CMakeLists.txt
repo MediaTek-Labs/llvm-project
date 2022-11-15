@@ -71,6 +71,7 @@ add_llvm_target(MipsCodeGen
   NanoMipsRegisterReAllocation.cpp
   NanoMipsRedundantCopyElimination.cpp
   NanoMipsTargetTransformInfo.cpp
+  NanoMipsCodeGenPrepare.cpp
 
   LINK_COMPONENTS
   Analysis
@@ -87,6 +88,7 @@ add_llvm_target(MipsCodeGen
   Target
   TargetParser
   TransformUtils
+  Scalar
 
   ADD_TO_COMPONENT
   Mips

@@ -72,6 +72,9 @@ InstructionCost NanoMipsTTIImpl::getIntImmCostInst(unsigned Opcode,
   case Instruction::PHI:
     /* Phi doesn't have any other instruction that an immediate can be absorbed into. */
     return getIntImmCost(Imm, Ty, CostKind);
+  case Instruction::GetElementPtr:
+    /* Leave it be for codegen prepare. */
+    return TTI::TCC_Free;
   default:
     /* Most instructions will be able to use zero register */
     if (Imm == 0)

@@ -4870,15 +4870,20 @@ bool MipsTargetLowering::isLegalAddressingMode(const DataLayout &DL,
   if (AM.BaseGV)
     return false;
 
+  if (Subtarget.hasNanoMips() && !isInt<9>(AM.BaseOffs) && !isUInt<12>(AM.BaseOffs))
+    return false;
+
   switch (AM.Scale) {
   case 0: // "r+i" or just "i", depending on HasBaseReg.
     break;
   case 1:
     if (!AM.HasBaseReg) // allow "r+i".
       break;
-    return false; // disallow "r+r" or "r+r+i".
+    return Subtarget.hasNanoMips() && AM.BaseOffs == 0; // disallow "r+r" or "r+r+i".
   default:
-    return false;
+    if (!Subtarget.hasNanoMips() || AM.BaseOffs != 0)
+      return false;
+    return Ty->isSized() && (AM.Scale * 8u) == Ty->getScalarSizeInBits();
   }
 
   return true;
@@ -4921,6 +4926,19 @@ unsigned MipsTargetLowering::getJumpTableEncoding() const {
 
 bool MipsTargetLowering::useSoftFloat() const {
   return Subtarget.useSoftFloat();
+}
+
+TargetLowering::ShiftLegalizationStrategy
+  MipsTargetLowering::preferredShiftLegalizationStrategy(SelectionDAG &DAG, SDNode *N,
+                                     unsigned ExpansionFactor) const {
+  if (Subtarget.hasNanoMips() &&
+      DAG.getMachineFunction().getFunction().hasOptSize())
+    return ShiftLegalizationStrategy::LowerToLibcall;
+  return TargetLowering::preferredShiftLegalizationStrategy(DAG, N, ExpansionFactor);
+}
+
+bool MipsTargetLowering::shouldConsiderGEPOffsetSplit() const {
+  return Subtarget.hasNanoMips();
 }
 
 void MipsTargetLowering::copyByValRegs(

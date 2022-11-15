@@ -556,7 +556,11 @@ bool MipsSEDAGToDAGISel::selectIntAddrIndexed(SDValue Addr, SDValue &Base,
         Op1.getOpcode() != ISD::TargetExternalSymbol &&
         Op1.getOpcode() != ISD::TargetGlobalAddress &&
         Op0.getOpcode() != MipsISD::GPRel &&
-        Op1.getOpcode() != MipsISD::GPRel) {
+        Op1.getOpcode() != MipsISD::GPRel &&
+        Op0.getOpcode() != ISD::Constant &&
+        Op0.getOpcode() != ISD::TargetConstant &&
+        Op1.getOpcode() != ISD::Constant &&
+        Op1.getOpcode() != ISD::TargetConstant) {
       Base = Op0;
       Offset = Op1;
       return true;

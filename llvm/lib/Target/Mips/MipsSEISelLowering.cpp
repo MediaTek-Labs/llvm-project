@@ -2457,6 +2457,8 @@ SDValue MipsSETargetLowering::lowerINTRINSIC_WO_CHAIN(SDValue Op,
     EVT PtrVT = getPointerTy(DAG.getDataLayout());
     return DAG.getNode(MipsISD::ThreadPointer, DL, PtrVT);
   }
+  case Intrinsic::mips_hide:
+    return Op->getOperand(1);
   }
 }
 

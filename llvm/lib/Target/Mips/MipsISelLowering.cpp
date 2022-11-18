@@ -87,6 +87,11 @@ NoZeroDivCheck("mno-check-zero-division", cl::Hidden,
                cl::desc("MIPS: Don't trap on integer division by zero."),
                cl::init(false));
 
+static cl::opt<bool>
+CombineAddiu48("mips-combine-addiu48", cl::Hidden,
+               cl::desc("MIPS: Combine address callculation into addiu48"),
+               cl::init(true));
+
 extern cl::opt<bool> EmitJalrReloc;
 
 static const MCPhysReg Mips64DPRegs[8] = {
@@ -173,6 +178,7 @@ const char *MipsTargetLowering::getTargetNodeName(unsigned Opcode) const {
   case MipsISD::JmpLink:           return "MipsISD::JmpLink";
   case MipsISD::TailCall:          return "MipsISD::TailCall";
   case MipsISD::FullAddr:          return "MipsISD::FullAddr";
+  case MipsISD::FullAddrAdd:       return "MipsISD::FullAddrAdd";
   case MipsISD::Highest:           return "MipsISD::Highest";
   case MipsISD::Higher:            return "MipsISD::Higher";
   case MipsISD::Hi:                return "MipsISD::Hi";
@@ -1369,6 +1375,58 @@ static SDValue performSUBCombine(SDNode *N, SelectionDAG &DAG,
   return SDValue();
 }
 
+static SDValue performADDIU48Combine(SDNode *ROOTNode, SelectionDAG &CurDAG,
+                                     const MipsSubtarget &) {
+  if (!CombineAddiu48)
+    return SDValue();
+
+  int64_t Offset = 0;
+  GlobalAddressSDNode* Global = nullptr;
+  SDValue Index;
+  ConstantSDNode *CN;
+  if (ConstantSDNode *C = dyn_cast<ConstantSDNode>(ROOTNode->getOperand(1))) {
+    if (!ROOTNode->getOperand(0).hasOneUse() ||
+        ROOTNode->getOperand(0)->getOpcode() != ISD::ADD)
+      return SDValue();
+
+    Offset = C->getSExtValue();
+    ROOTNode = ROOTNode->getOperand(0).getNode();
+  }
+
+  if (ROOTNode->getOperand(0).getOpcode() == MipsISD::FullAddr &&
+      ROOTNode->getOperand(0).hasOneUse() &&
+      !isa<ConstantSDNode>(ROOTNode->getOperand(1))) {
+    Global = dyn_cast<GlobalAddressSDNode>(ROOTNode->getOperand(0).getOperand(0));
+    Index = ROOTNode->getOperand(1);
+  } else if (ROOTNode->getOperand(1).getOpcode() == MipsISD::FullAddr &&
+             ROOTNode->getOperand(1).hasOneUse()) {
+    Global = dyn_cast<GlobalAddressSDNode>(ROOTNode->getOperand(1).getOperand(0));
+    Index = ROOTNode->getOperand(0);
+  }
+
+  if (!Global)
+    return SDValue();
+
+  if (Index.getOpcode() == ISD::SHL &&
+        (CN = dyn_cast<ConstantSDNode>(Index.getOperand(1))) &&
+        CN->getSExtValue() < 4)
+    return SDValue();
+
+  EVT VT = ROOTNode->getValueType(0);
+  SDLoc DL(ROOTNode);
+
+  assert(Global->getOffset() == 0);
+
+  SDValue ops[] = {Index, SDValue(Global, 0)};
+  EVT NodeTys[] = {VT};
+
+  if (Offset)
+    ops[1] = CurDAG.getTargetGlobalAddress(
+                    Global->getGlobal(), DL, VT, Offset, Global->getTargetFlags());
+
+  return CurDAG.getNode(MipsISD::FullAddrAdd, DL, NodeTys, ops);
+}
+
 static SDValue performADDCombine(SDNode *N, SelectionDAG &DAG,
                                  TargetLowering::DAGCombinerInfo &DCI,
                                  const MipsSubtarget &Subtarget) {
@@ -1381,11 +1439,20 @@ static SDValue performADDCombine(SDNode *N, SelectionDAG &DAG,
     return SDValue();
   }
 
+
+  if (Subtarget.hasNanoMips())
+    return performADDIU48Combine(N, DAG, Subtarget);
+
+
   // (add v0, (add v1, abs_lo(tjt))) => (add (add v0, v1), abs_lo(tjt))
   SDValue Add = N->getOperand(1);
 
+
+
   if (Add.getOpcode() != ISD::ADD)
     return SDValue();
+
+
 
   SDValue Lo = Add.getOperand(1);
 

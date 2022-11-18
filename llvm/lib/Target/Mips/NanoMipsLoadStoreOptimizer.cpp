@@ -606,6 +606,7 @@ static bool isValidUse(MachineInstr *MI, Register Reg) {
   case Mips::LW_NM:
   case Mips::LWs9_NM:
   case Mips::ADDiu_NM:
+  case Mips::ADDIU48_NM:
     return MI->getOperand(1).getReg() == Reg;
   default:
     return false;
@@ -720,7 +721,7 @@ bool NMLoadStoreOpt::generatePCRelative(MachineBasicBlock &MBB) {
 
     assert(Address.isGlobal());
 
-    if (Use->getOpcode() == Mips::ADDiu_NM) {
+    if (Use->getOpcode() == Mips::ADDiu_NM || Use->getOpcode() == Mips::ADDIU48_NM) {
       // Move LA to its use to avoid extending the lifetime of Dst
       MBB.insert(MBBIter(Use),
                  MBB.remove(LA));

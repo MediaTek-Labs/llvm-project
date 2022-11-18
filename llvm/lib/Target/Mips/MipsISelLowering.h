@@ -81,6 +81,8 @@ class TargetRegisterClass;
       // Get all bits from 32-bit address.
       FullAddr,
 
+      FullAddrAdd,
+
       // Get the High 16 bits from a 32 bit immediate for accessing the GOT.
       GotHi,
 

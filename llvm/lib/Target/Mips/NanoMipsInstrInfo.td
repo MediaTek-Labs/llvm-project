@@ -16,6 +16,7 @@
 //===----------------------------------------------------------------------===//
 
 def MipsFullAddr : SDNode<"MipsISD::FullAddr", SDTIntUnaryOp>;
+def MipsFullAddrAdd : SDNode<"MipsISD::FullAddrAdd", SDTIntBinOp>;
 def NMUnalignedLW : SDNode<"MipsISD::UALW", SDTMipsLoadLR, [SDNPHasChain, SDNPMayLoad, SDNPMemOperand]>;
 def NMUnalignedLH : SDNode<"MipsISD::UALH", SDTMipsLoadLR, [SDNPHasChain, SDNPMayLoad, SDNPMemOperand]>;
 def NMUnalignedSW : SDNode<"MipsISD::UASW", SDTStore, [SDNPHasChain, SDNPMayStore, SDNPMemOperand]>;
@@ -41,7 +42,6 @@ def imm32ZExt12ANDI :
   IntImmLeaf<i32, [{ return isUInt<12>(Imm.getZExtValue()) ||
                             Imm.getZExtValue() == 65535; }]>;
 def imm32ZExt5  : IntImmLeaf<i32, [{ return isUInt<5>(Imm.getZExtValue()); }]>;
-def imm32SExt12  : IntImmLeaf<i32, [{ return isInt<12>(Imm.getSExtValue()); }]>;
 // True if (N + 1) fits in 12-bit field.
 def immZExt12Plus1 : PatLeaf<(imm), [{
   return isUInt<13>(N->getZExtValue()) && isUInt<12>(N->getZExtValue() + 1);
@@ -50,7 +50,7 @@ def immZExt7Plus1 : PatLeaf<(imm), [{
   return isUInt<8>(N->getZExtValue()) && isUInt<7>(N->getZExtValue() + 1);
 }]>;
 // Immediate range covering both signed 12-bit and unsigned 16-bit immediates.
-def imm32SExt12OrZExt16 : IntImmLeaf<i32, [{ return isInt<12>(Imm.getSExtValue())
+def imm32SExt12OrZExt16 : IntImmLeaf<i32, [{ return isUInt<12>(-Imm.getSExtValue())
                                            || isUInt<16>(Imm.getZExtValue()); }]>;
 
 def UImm12AsmOperandClass : UImmAsmOperandClass<12, []>;
@@ -474,6 +474,7 @@ def : NMPat<(MipsFullAddr tglobaladdr:$in), (LA_NM tglobaladdr:$in)>;
 def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (LA_NM tglobaltlsaddr:$in)>;
 def : NMPat<(MipsFullAddr tblockaddress:$in), (LA_NM tblockaddress:$in)>;
 def : NMPat<(MipsFullAddr tjumptable:$in), (LA_NM tjumptable:$in)>;
+def : NMPat<(MipsFullAddrAdd GPR32NM:$rs, tglobaladdr:$in), (ADDIU48_NM GPR32NM:$rs, tglobaladdr:$in)>;
 
 def : NMPat<(not (or GPR32NM:$rs, GPR32NM:$rt)),
             (NOR_NM GPR32NM:$rs, GPR32NM:$rt)>;

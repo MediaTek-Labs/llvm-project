@@ -7,14 +7,14 @@ define void @test() {
 ; CHECK: restore.jrc 32, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
 }
 
-; Make sure that SAVE/RESTORE instructions are not used when the offset is larger than 4092.
+; Make sure that SAVE/RESTORE instructions are used even when the offset is larger than 4092.
 define void @test2() {
-; CHECK-NOT: save
+; CHECK: save
   %foo = alloca [4096 x i8], align 1
   %1 = getelementptr inbounds [4096 x i8], [4096 x i8]* %foo, i32 0, i32 0
   call void asm sideeffect "", "r,~{$16},~{$17},~{$18},~{$19},~{$20},~{$21},~{$23},~{$22},~{$1}"(i8* %1)
   ret void
-; CHECK-NOT: restore.jrc
+; CHECK: restore.jrc
 ; CHECK-NOT: restore
 }
 

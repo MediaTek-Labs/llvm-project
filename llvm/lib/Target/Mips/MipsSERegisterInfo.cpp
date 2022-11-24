@@ -94,7 +94,7 @@ static inline unsigned getLoadStoreOffsetSizeInBits(const unsigned Opcode,
   case Mips::SB_NM:
   case Mips::SH_NM:
   case Mips::SW_NM:
-    return 12;
+    return 12 + 1 /* unsigned */;
   case Mips::LL64_R6:
   case Mips::LL_R6:
   case Mips::LLD_R6:
@@ -227,6 +227,11 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
   bool IsKill = false;
   int64_t Offset;
 
+  if (ABI.IsP32() &&
+      ((FrameIndex >= MinCSFI && FrameIndex <= MaxCSFI) || EhDataRegFI) &&
+      StackSize > 4080)
+    StackSize = 4080;
+
   Offset = SPOffset + (int64_t)StackSize;
   Offset += MI.getOperand(OpNo + 1).getImm();
 
@@ -251,8 +256,6 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
     unsigned OffsetBitSize =
         getLoadStoreOffsetSizeInBits(MI.getOpcode(), MI.getOperand(OpNo - 1));
     const Align OffsetAlign(getLoadStoreOffsetAlign(MI.getOpcode()));
-    // TODO: This doesn't work well for nanoMIPS, because it has unsigned
-    // offsets and this check assumes signed.
     if (OffsetBitSize < 16 && isInt<16>(Offset) &&
         (!isIntN(OffsetBitSize, Offset) || !isAligned(OffsetAlign, Offset))) {
       // If we have an offset that needs to fit into a signed n-bit immediate

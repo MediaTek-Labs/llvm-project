@@ -423,12 +423,17 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
 
   // First, compute final stack size.
   uint64_t StackSize = MFI.getStackSize();
+  uint64_t StackTail = 0;
 
   // No need to allocate space on the stack.
   if (StackSize == 0 && !MFI.adjustsStack()) return;
 
   const MCRegisterInfo *MRI = MF.getContext().getRegisterInfo();
 
+   if (ABI.IsP32() && StackSize > 4080) {
+      StackTail = StackSize - 4080;
+      StackSize = 4080;
+    }
   // Adjust stack.
   TII.adjustStackPtr(SP, -StackSize, MBB, MBBI);
 
@@ -522,8 +527,22 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
     }
   }
 
+
+  if (StackTail) {
+    TII.adjustStackPtr(SP, -StackTail, MBB, MBBI);
+
+    if (!hasFP(MF)) {
+      // Emit ".cfi_def_cfa_offset StackSize"
+      unsigned CFIIndex =
+          MF.addFrameInst(MCCFIInstruction::cfiDefCfaOffset(nullptr, MFI.getStackSize()));
+      BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
+          .addCFIIndex(CFIIndex);
+    }
+  }
+
   // if framepointer enabled, set it to point to the stack pointer.
   if (hasFP(MF)) {
+    // TODO This is all wrong for nanoMIPS
     // Insert instruction "move $fp, $sp" at this location.
     BuildMI(MBB, MBBI, dl, TII.get(MOVE), FP).addReg(SP).addReg(ZERO)
       .setMIFlag(MachineInstr::FrameSetup);
@@ -705,6 +724,7 @@ void MipsSEFrameLowering::emitEpilogue(MachineFunction &MF,
   unsigned FP = ABI.GetFramePtr();
   unsigned ZERO = ABI.GetNullPtr();
   unsigned MOVE = ABI.GetGPRMoveOp();
+  uint64_t StackSize = MFI.getStackSize();
 
   // if framepointer enabled, restore the stack pointer.
   if (hasFP(MF)) {
@@ -716,6 +736,15 @@ void MipsSEFrameLowering::emitEpilogue(MachineFunction &MF,
 
     // Insert instruction "move $sp, $fp" at this location.
     BuildMI(MBB, I, DL, TII.get(MOVE), SP).addReg(FP).addReg(ZERO);
+  } else if (ABI.IsP32() && StackSize > 4080) {
+    // Find the first instruction that restores a callee-saved register.
+    MachineBasicBlock::iterator I = MBBI;
+
+    for (unsigned i = 0; i < MFI.getCalleeSavedInfo().size(); ++i)
+      --I;
+
+    TII.adjustStackPtr(SP, StackSize - 4080, MBB, I);
+    StackSize = 4080;
   }
 
   if (MipsFI->callsEhReturn()) {
@@ -741,7 +770,7 @@ void MipsSEFrameLowering::emitEpilogue(MachineFunction &MF,
     emitInterruptEpilogueStub(MF, MBB);
 
   // Get the number of bytes from FrameInfo
-  uint64_t StackSize = MFI.getStackSize();
+
 
   if (!StackSize)
     return;

@@ -1961,12 +1961,22 @@ void Clang::AddMIPSTargetArgs(const ArgList &Args,
     }
   }
 
-  if (Arg *A = Args.getLastArg(options::OPT_mcheck_zero_division,
-                               options::OPT_mno_check_zero_division)) {
-    if (A->getOption().matches(options::OPT_mno_check_zero_division)) {
-      CmdArgs.push_back("-mllvm");
-      CmdArgs.push_back("-mno-check-zero-division");
+  bool CheckZeroDivDefault = true;
+  if (Triple.isNanoMips()) {
+    Arg *A = Args.getLastArg(options::OPT_O_Group);
+    if (A && A->getOption().matches(options::OPT_O)) {
+      StringRef S(A->getValue());
+      CheckZeroDivDefault = !(S == "s" || S == "z");
     }
+  }
+  Arg *CheckZeroDiv = Args.getLastArg(options::OPT_mcheck_zero_division,
+                                      options::OPT_mno_check_zero_division);
+
+  if ((!CheckZeroDiv && !CheckZeroDivDefault) ||
+      (CheckZeroDiv &&
+       CheckZeroDiv->getOption().matches(options::OPT_mno_check_zero_division))) {
+    CmdArgs.push_back("-mllvm");
+    CmdArgs.push_back("-mno-check-zero-division");
   }
 
   if (Args.getLastArg(options::OPT_mfix4300)) {

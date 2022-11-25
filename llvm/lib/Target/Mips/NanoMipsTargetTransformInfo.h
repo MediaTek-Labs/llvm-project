@@ -32,6 +32,7 @@ class NanoMipsTTIImpl : public BasicTTIImplBase<NanoMipsTTIImpl> {
 
   const MipsSubtarget *ST;
   const MipsTargetLowering *TLI;
+  const bool IsSizeOpt;
 
   const MipsSubtarget *getST() const { return ST; }
   const MipsTargetLowering *getTLI() const { return TLI; }
@@ -41,7 +42,7 @@ class NanoMipsTTIImpl : public BasicTTIImplBase<NanoMipsTTIImpl> {
 public:
   explicit NanoMipsTTIImpl(const MipsTargetMachine *TM, const Function &F)
       : BaseT(TM, F.getParent()->getDataLayout()), ST(TM->getSubtargetImpl(F)),
-        TLI(ST->getTargetLowering()), F(&F) {}
+        TLI(ST->getTargetLowering()), IsSizeOpt(F.hasOptSize()), F(&F) {}
 
   InstructionCost getIntImmCost(const APInt &Imm, Type *Ty,
                                 TTI::TargetCostKind CostKind);

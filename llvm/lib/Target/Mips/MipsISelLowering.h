@@ -743,6 +743,8 @@ class TargetRegisterClass;
                                      unsigned ExpansionFactor) const override;
     bool shouldConsiderGEPOffsetSplit() const override;
 
+    bool isIntDivCheap(EVT VT, AttributeList Attr) const override;
+
     /// Emit a sign-extension using sll/sra, seb, or seh appropriately.
     MachineBasicBlock *emitSignExtendToI32InReg(MachineInstr &MI,
                                                 MachineBasicBlock *BB,

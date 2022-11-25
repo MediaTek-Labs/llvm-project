@@ -1649,6 +1649,11 @@ bool MipsTargetLowering::shouldFoldConstantShiftPairToMask(
   return true;
 }
 
+bool MipsTargetLowering::isIntDivCheap(EVT VT, AttributeList Attr) const {
+  bool OptSize = Attr.hasFnAttr(Attribute::OptimizeForSize);
+  return OptSize && Subtarget.hasNanoMips();
+}
+
 void
 MipsTargetLowering::ReplaceNodeResults(SDNode *N,
                                        SmallVectorImpl<SDValue> &Results,

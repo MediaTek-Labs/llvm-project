@@ -373,10 +373,11 @@ public:
 
   bool useLinkerRelax() const { return UseLinkerRelax; }
 
+
   bool usePCRel() const { return UsePCRel; }
 
   bool enableLongBranchPass() const {
-    return hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32();
+    return !hasNanoMips() && (hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32());
   }
 
   /// Features related to the presence of specific instructions.

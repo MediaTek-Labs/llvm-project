@@ -747,11 +747,14 @@ static SDValue performSELECTCombine(SDNode *N, SelectionDAG &DAG,
   if (!FalseC)
     return SDValue();
 
+  SDValue True = N->getOperand(1);
+  ConstantSDNode *TrueC = dyn_cast<ConstantSDNode>(True);
+
   const SDLoc DL(N);
 
-  if (!FalseC->getZExtValue()) {
+  if (FalseC->getZExtValue() == 0
+      && (!TrueC || TrueC->getZExtValue() != 0)) {
     ISD::CondCode CC = cast<CondCodeSDNode>(SetCC.getOperand(2))->get();
-    SDValue True = N->getOperand(1);
 
     SetCC = DAG.getSetCC(DL, SetCC.getValueType(), SetCC.getOperand(0),
                          SetCC.getOperand(1),
@@ -762,9 +765,6 @@ static SDValue performSELECTCombine(SDNode *N, SelectionDAG &DAG,
 
   // If both operands are integer constants there's a possibility that we
   // can do some interesting optimizations.
-  SDValue True = N->getOperand(1);
-  ConstantSDNode *TrueC = dyn_cast<ConstantSDNode>(True);
-
   if (!TrueC || !True.getValueType().isInteger())
     return SDValue();
 

@@ -662,6 +662,7 @@ static bool isLoadStoreShortChar(MachineInstr *MI) {
 //
 bool NMLoadStoreOpt::generatePCRelative(MachineBasicBlock &MBB) {
   SmallVector<std::pair<MachineInstr *, MachineInstr *>> Candidates;
+  SmallVector<MachineInstr *> Unused;
   for (auto &MI : MBB) {
     if (MI.getOpcode() == Mips::LAPC48_NM ||
 	MI.getOpcode() == Mips::PseudoLA_NM) {
@@ -715,14 +716,23 @@ bool NMLoadStoreOpt::generatePCRelative(MachineBasicBlock &MBB) {
       if (IsUsedInOtherBBs)
         continue;
 
-      assert(!IsUsedByMultipleMIs && FirstUse != nullptr);
+      if (FirstUse == nullptr) {
+        // The LA is unused and dead.
+        Unused.push_back(&MI);
+      } else {
 
-      if (!isValidUse(FirstUse, Dst))
-        continue;
+        assert(!IsUsedByMultipleMIs && FirstUse != nullptr);
 
-      Candidates.push_back({&MI, FirstUse});
+        if (!isValidUse(FirstUse, Dst))
+          continue;
+
+        Candidates.push_back({&MI, FirstUse});
+      }
     }
   }
+
+  for (MachineInstr *MI : Unused)
+    MBB.erase(MI);
 
   for (auto Pair : Candidates) {
     auto *LA = Pair.first;

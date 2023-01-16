@@ -95,7 +95,8 @@ bool NMMoveOpt::areMovePCompatibleMoves(MachineInstr *Move1,
   Register Src2 = Move2->getOperand(1).getReg();
   Register Dst1 = Move1->getOperand(0).getReg();
   Register Dst2 = Move2->getOperand(0).getReg();
-  if (Dst1 == Src1 || Dst1 == Src2 || Dst2 == Src1 || Dst2 == Src2)
+  if (Dst1 == Src1 || Dst1 == Src2 || Dst2 == Src1 || Dst2 == Src2
+      || Dst1 == Dst2)
     return false;
 
   if (!isInSet(GPR4ZERO, Src1) || !isInSet(GPR4ZERO, Src2))
@@ -135,7 +136,8 @@ bool NMMoveOpt::areMovePRevCompatibleMoves(MachineInstr *Move1,
   Register Src2 = Move2->getOperand(1).getReg();
   Register Dst1 = Move1->getOperand(0).getReg();
   Register Dst2 = Move2->getOperand(0).getReg();
-  if (Dst1 == Src1 || Dst1 == Src2 || Dst2 == Src1 || Dst2 == Src2)
+  if (Dst1 == Src1 || Dst1 == Src2 || Dst2 == Src1 || Dst2 == Src2
+      || Dst1 == Dst2)
     return false;
 
   if (!isInSet(GPR4, Dst1) || !isInSet(GPR4, Dst2))

@@ -46,6 +46,8 @@ FunctionPass *createNanoMipsMoveOptimizerPass();
 FunctionPass *createNanoMipsRegisterReAllocationPass();
 FunctionPass *createRedundantCopyEliminationPass();
 FunctionPass *createNanoMipsCodeGenPreparePass();
+FunctionPass *createNanoMipsRegisterReAllocationPass();
+FunctionPass *createNanoMipsLoadStoreMultiplePass();
 
 InstructionSelector *createMipsInstructionSelector(const MipsTargetMachine &,
                                                    MipsSubtarget &,
@@ -64,6 +66,7 @@ void initializeRedundantCopyEliminationPass(PassRegistry&);
 void initializeNanoMipsCodeGenPreparePass(PassRegistry &);
 void initializeNMLoadStoreOptPass(PassRegistry&);
 void initializeNMMoveOptPass(PassRegistry&);
+void initializeNMLoadStoreMultipleOptPass(PassRegistry &);
 } // namespace llvm
 
 #endif

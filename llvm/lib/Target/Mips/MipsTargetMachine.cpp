@@ -93,6 +93,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTarget() {
   initializeMipsPostLegalizerCombinerPass(*PR);
   initializeMipsMulMulBugFixPass(*PR);
   initializeMipsDAGToDAGISelPass(*PR);
+  initializeNMLoadStoreMultipleOptPass(*PR);
   initializeRedundantCopyEliminationPass(*PR);
   initializeNMDspPeepholePass(*PR);
   initializeNMLoadStoreOptPass(*PR);
@@ -321,8 +322,10 @@ std::unique_ptr<CSEConfigBase> MipsPassConfig::getCSEConfig() const {
 }
 
 void MipsPassConfig::addPreSched2() {
-  if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOpt::None)
+  if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOpt::None) {
     addPass(createNanoMipsLoadStoreOptimizerPass());
+    addPass(createNanoMipsLoadStoreMultiplePass());
+  }
   if (getMipsSubtarget().hasNanoMips())
     addPass(createNanoMipsOptimizeRedundantJumpTablesPass());
 }

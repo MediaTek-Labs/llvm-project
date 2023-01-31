@@ -39,7 +39,7 @@ struct NMLoadStoreMultipleOpt : public MachineFunctionPass {
       Offset = MI->getOperand(2).getImm();
     }
   };
-  using InstrList = SmallVector<MachineInstr *, 11>;
+  using InstrList = SmallVector<MachineInstr *, 4>;
   using MBBIter = MachineBasicBlock::iterator;
   static char ID;
   const MipsSubtarget *STI;
@@ -57,9 +57,10 @@ struct NMLoadStoreMultipleOpt : public MachineFunctionPass {
   StringRef getPassName() const override { return NM_LOAD_STORE_OPT_NAME; }
   bool runOnMachineFunction(MachineFunction &Fn) override;
   unsigned getRegNo(unsigned Reg);
-  bool isValidLoadStore(MachineInstr &MI, bool IsLoad);
-  bool isValidNextLoadStore(LSIns Prev, LSIns Next, bool &IsAscending);
+  bool isValidLoadStore(MachineInstr &MI, bool IsLoad, InstrList);
+  bool isValidNextLoadStore(LSIns Prev, LSIns Next);
   bool generateLoadStoreMultiple(MachineBasicBlock &MBB, bool IsLoad);
+  void sortLoadStoreList(InstrList &LoadStoreList, bool IsLoad);
 };
 } // namespace
 
@@ -89,7 +90,36 @@ unsigned NMLoadStoreMultipleOpt::getRegNo(unsigned Reg) {
   return I->second;
 }
 
-bool NMLoadStoreMultipleOpt::isValidLoadStore(MachineInstr &MI, bool IsLoad) {
+// Here, we're sorting InstrList to be able to easily recognize sequences that
+// are not sorted by the reg-offset pair. We're sorting ascending by register
+// number. Later we check if the offsets are in the desired order. The
+// exceptions are zero register stores. In that case, the sorting is done by the
+// offset.
+// Currently, the following case is not supported:
+// lw a30, 4 (a9)
+// lw a31, 8 (a9)
+// lw a16, 12(a9)
+void NMLoadStoreMultipleOpt::sortLoadStoreList(InstrList &LoadStoreList,
+                                               bool IsLoad) {
+  auto CompareInstructions = [this, IsLoad](MachineInstr *First,
+                                            MachineInstr *Second) {
+    Register FirstReg = First->getOperand(0).getReg();
+    Register SecondReg = Second->getOperand(0).getReg();
+    unsigned FirstRegNo = getRegNo(FirstReg);
+    unsigned SecondRegNo = getRegNo(SecondReg);
+
+    // For the zero register stores, sort instructions by the Offset.
+    if (!IsLoad && FirstRegNo == 0 && SecondRegNo == 0)
+      return First->getOperand(2).getImm() < Second->getOperand(2).getImm();
+    return FirstRegNo < SecondRegNo;
+  };
+  std::sort(LoadStoreList.begin(), LoadStoreList.end(), CompareInstructions);
+}
+
+// All instruction in the seqence should have the same Rs register, and
+// different Rt register.
+bool NMLoadStoreMultipleOpt::isValidLoadStore(MachineInstr &MI, bool IsLoad,
+                                              InstrList Sequence) {
   unsigned Opcode = MI.getOpcode();
   // Make sure the instruction doesn't have any atomic, volatile or
   // otherwise strictly ordered accesses.
@@ -100,55 +130,46 @@ bool NMLoadStoreMultipleOpt::isValidLoadStore(MachineInstr &MI, bool IsLoad) {
   Register Rt, Rs;
   if (IsLoad) {
     // TODO: Handle unaligned loads and stores.
-    if (Opcode == Mips::LW_NM || Opcode == Mips::LWs9_NM) {
-      // TODO: Rt and Rs can be equal, but only if that is the last load of
-      // the sequence.
-      Register Rt = MI.getOperand(0).getReg();
-      Register Rs = MI.getOperand(1).getReg();
-      if (Rt != Rs)
-        return true;
-    }
+    if (Opcode != Mips::LW_NM && Opcode != Mips::LWs9_NM)
+      return false;
+
+    Rt = MI.getOperand(0).getReg();
+    Rs = MI.getOperand(1).getReg();
+
+    // TODO: Rt and Rs can be equal, but only if that is the last load of
+    // the sequence.
+    if (Rt == Rs)
+      return false;
+
   } else {
-    if (Opcode == Mips::SW_NM || Opcode == Mips::SWs9_NM)
-      return true;
+    if (Opcode != Mips::SW_NM && Opcode != Mips::SWs9_NM)
+      return false;
+    Rt = MI.getOperand(0).getReg();
+    Rs = MI.getOperand(1).getReg();
   }
+
+  if (Sequence.size() > 0) {
+    auto SeqRs = Sequence.back()->getOperand(1).getReg();
+    if (Rs != SeqRs)
+      return false;
+  }
+  auto RtExists = [&Rt](const MachineInstr *I) {
+    return I->getOperand(0).getReg() == Rt;
+  };
+  auto It = std::find_if(Sequence.begin(), Sequence.end(), RtExists);
+  // Zero register stores are a special case that does not require consequent
+  // $rt registers, but instead requires all $rt registers to be $zero.
+  if (It == Sequence.end() || getRegNo(Rt) == 0)
+    return true;
   return false;
 }
 
-bool NMLoadStoreMultipleOpt::isValidNextLoadStore(LSIns Prev, LSIns Next,
-                                                  bool &IsAscending) {
-  if (Prev.Rs != Next.Rs)
-    return false;
-
+bool NMLoadStoreMultipleOpt::isValidNextLoadStore(LSIns Prev, LSIns Next) {
   unsigned PrevRtNo = getRegNo(Prev.Rt);
   if (Next.Offset == Prev.Offset + 4) {
-    // Zero register stores are a special case that does not require
-    // consequent $rt registers, but instead requires all $rt
-    // registers to be $zero.
-    // After processing $31, sequence continues from $16.
-    unsigned DesiredRtNo =
-        PrevRtNo != 0 ? (PrevRtNo == 31 ? 16 : PrevRtNo + 1) : 0;
+    unsigned DesiredRtNo = PrevRtNo != 0 ? (PrevRtNo + 1) : 0;
     if (Next.Rt != RC.getRegister(DesiredRtNo))
       return false;
-
-    IsAscending = true;
-    return true;
-  } else if (Next.Offset == Prev.Offset - 4) {
-    // In case the previous register was $16 and the sequence happens to
-    // to go backwards, the next register can be either $15 or $31.
-    if (PrevRtNo == 16) {
-      if (Next.Rt != RC.getRegister(PrevRtNo - 1) &&
-          Next.Rt != RC.getRegister(31))
-        return false;
-    } else {
-      // Zero register stores are a special case that does not require
-      // consequent $rt registers, but instead requires all $rt
-      // registers to be $zero.
-      unsigned DesiredRtNo = PrevRtNo != 0 ? PrevRtNo - 1 : 0;
-      if (Next.Rt != RC.getRegister(DesiredRtNo))
-        return false;
-    }
-    IsAscending = false;
     return true;
   }
   return false;
@@ -156,61 +177,53 @@ bool NMLoadStoreMultipleOpt::isValidNextLoadStore(LSIns Prev, LSIns Next,
 
 bool NMLoadStoreMultipleOpt::generateLoadStoreMultiple(MachineBasicBlock &MBB,
                                                        bool IsLoad) {
-  struct Candidate {
-    SmallVector<MachineInstr *> Sequence;
-    bool IsAscending;
-  };
   bool Modified = false;
-  SmallVector<Candidate> Candidates;
-  SmallVector<MachineInstr *> Sequence;
-  bool IsAscending;
+
+  InstrList SequenceToSort;
+  SmallVector<InstrList, 3> SequenceList;
   for (auto &MI : MBB) {
     // CFI and debug instructions don't break the sequence.
     if (MI.isCFIInstruction() || MI.isDebugInstr())
       continue;
+    if (isValidLoadStore(MI, IsLoad, SequenceToSort)) {
+      SequenceToSort.push_back(&MI);
+      continue;
+    }
+    if (SequenceToSort.size() > 1) {
+      SequenceList.push_back(SequenceToSort);
+      SequenceToSort.clear();
+    }
+  }
 
-    if (isValidLoadStore(MI, IsLoad)) {
+  SmallVector<InstrList, 3> Candidates;
+  InstrList Sequence;
+
+  for (size_t i = 0; i < SequenceList.size(); i++) {
+    sortLoadStoreList(SequenceList[i], IsLoad);
+    for (auto &MI : SequenceList[i]) {
       // Sequences cannot be longer than 8 instructions.
       if (Sequence.size() == 8) {
-        Candidates.push_back({Sequence, IsAscending});
+        Candidates.push_back(Sequence);
         Sequence.clear();
       }
       // When starting a new sequence, there's no need to do any checks.
       if (Sequence.empty()) {
-        Sequence.push_back(&MI);
+        Sequence.push_back(MI);
         continue;
       }
-      bool ShouldStartNewSequence = false;
-      bool IsNextAscending;
-      if (isValidNextLoadStore(Sequence.back(), &MI, IsNextAscending)) {
-        if (Sequence.size() > 1) {
-          // In case the next instruction is going in the opposite direction
-          // from the sequence, start a new sequence.
-          if (IsAscending != IsNextAscending) {
-            ShouldStartNewSequence = true;
-          }
-        } else {
-          IsAscending = IsNextAscending;
-        }
-      } else {
-        // In case the next instruction is not a valid successor, save the
-        // current sequence (if we have one) and create a new sequence.
-        ShouldStartNewSequence = true;
-      }
-
-      if (ShouldStartNewSequence) {
+      if (!isValidNextLoadStore(Sequence.back(), MI)) {
         if (Sequence.size() > 1)
-          Candidates.push_back({Sequence, IsAscending});
+          Candidates.push_back(Sequence);
         Sequence.clear();
       }
 
-      Sequence.push_back(&MI);
+      Sequence.push_back(MI);
       continue;
     }
 
     // At least 2 instructions are neccessary for a valid sequence.
     if (Sequence.size() > 1)
-      Candidates.push_back({Sequence, IsAscending});
+      Candidates.push_back(Sequence);
 
     // Sequence has either ended or has never been started.
     if (!Sequence.empty())
@@ -218,16 +231,14 @@ bool NMLoadStoreMultipleOpt::generateLoadStoreMultiple(MachineBasicBlock &MBB,
   }
 
   // Make sure that the last sequence has been added to the Candidates list.
+  // TODO: Check if needed.
   if (Sequence.size() > 1)
-    Candidates.push_back({Sequence, IsAscending});
+    Candidates.push_back(Sequence);
 
-  // Separate sequence to avoid removing instructions from MBB while iterating.
-  for (auto &C : Candidates) {
-    auto &Seq = C.Sequence;
-
+  for (auto &Seq : Candidates) {
     assert(Seq.size() > 1 && Seq.size() < 9);
 
-    auto *Base = C.IsAscending ? Seq.front() : Seq.back();
+    auto *Base = Seq.front();
     int64_t Offset = Base->getOperand(2).getImm();
     // Sequence cannot be merged, if the offset is out of range.
     if (!isInt<9>(Offset))

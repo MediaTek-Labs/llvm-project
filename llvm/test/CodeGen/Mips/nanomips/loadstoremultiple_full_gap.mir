@@ -1,0 +1,168 @@
+
+# RUN: llc -mtriple=nanomips -verify-machineinstrs -run-pass nanomips-lwm-swm \
+# RUN:      %s -o - | FileCheck %s
+
+# CHECK: SWM_NM $a1_nm, $sp_nm, 4, 7
+--- |
+  ; ModuleID = '../llvm-project/llvm/test/CodeGen/Mips/nanomips/loadstoremultiple.ll'
+  source_filename = "../llvm-project/llvm/test/CodeGen/Mips/nanomips/loadstoremultiple.ll"
+  target datalayout = "e-m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S128"
+  target triple = "nanomips"
+  
+  %struct.bar = type { i32, i32, i32 }
+  
+  define void @test4(i32 %n, ...) {
+    call void asm sideeffect "", ""()
+    ret void
+  }
+  
+  define void @square(%struct.bar* %ints) {
+    %a1 = bitcast %struct.bar* %ints to i32*
+    %1 = load i32, i32* %a1, align 4
+    %b = getelementptr inbounds %struct.bar, %struct.bar* %ints, i32 0, i32 1
+    %2 = load i32, i32* %b, align 4
+    %add = add nsw i32 %2, %1
+    %c = getelementptr inbounds %struct.bar, %struct.bar* %ints, i32 0, i32 2
+    store i32 %add, i32* %c, align 4
+    ret void
+  }
+
+...
+---
+name:            test4
+alignment:       2
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+registers:       []
+liveins:
+  - { reg: '$a1_nm', virtual-reg: '' }
+  - { reg: '$a2_nm', virtual-reg: '' }
+  - { reg: '$a3_nm', virtual-reg: '' }
+  - { reg: '$a4_nm', virtual-reg: '' }
+  - { reg: '$a5_nm', virtual-reg: '' }
+  - { reg: '$a6_nm', virtual-reg: '' }
+  - { reg: '$a7_nm', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       32
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:
+  - { id: 0, type: default, offset: -4, size: 4, alignment: 4, stack-id: default, 
+      isImmutable: true, isAliased: false, callee-saved-register: '', callee-saved-restored: true, 
+      debug-info-variable: '', debug-info-expression: '', debug-info-location: '' }
+  - { id: 1, type: default, offset: -8, size: 4, alignment: 8, stack-id: default, 
+      isImmutable: true, isAliased: false, callee-saved-register: '', callee-saved-restored: true, 
+      debug-info-variable: '', debug-info-expression: '', debug-info-location: '' }
+  - { id: 2, type: default, offset: -12, size: 4, alignment: 4, stack-id: default, 
+      isImmutable: true, isAliased: false, callee-saved-register: '', callee-saved-restored: true, 
+      debug-info-variable: '', debug-info-expression: '', debug-info-location: '' }
+  - { id: 3, type: default, offset: -16, size: 4, alignment: 16, stack-id: default, 
+      isImmutable: true, isAliased: false, callee-saved-register: '', callee-saved-restored: true, 
+      debug-info-variable: '', debug-info-expression: '', debug-info-location: '' }
+  - { id: 4, type: default, offset: -20, size: 4, alignment: 4, stack-id: default, 
+      isImmutable: true, isAliased: false, callee-saved-register: '', callee-saved-restored: true, 
+      debug-info-variable: '', debug-info-expression: '', debug-info-location: '' }
+  - { id: 5, type: default, offset: -24, size: 4, alignment: 8, stack-id: default, 
+      isImmutable: true, isAliased: false, callee-saved-register: '', callee-saved-restored: true, 
+      debug-info-variable: '', debug-info-expression: '', debug-info-location: '' }
+  - { id: 6, type: default, offset: -28, size: 4, alignment: 4, stack-id: default, 
+      isImmutable: true, isAliased: false, callee-saved-register: '', callee-saved-restored: true, 
+      debug-info-variable: '', debug-info-expression: '', debug-info-location: '' }
+  - { id: 7, type: default, offset: 0, size: 4, alignment: 16, stack-id: default, 
+      isImmutable: true, isAliased: false, callee-saved-register: '', callee-saved-restored: true, 
+      debug-info-variable: '', debug-info-expression: '', debug-info-location: '' }
+  - { id: 8, type: default, offset: -28, size: 4, alignment: 4, stack-id: default, 
+      isImmutable: true, isAliased: false, callee-saved-register: '', callee-saved-restored: true, 
+      debug-info-variable: '', debug-info-expression: '', debug-info-location: '' }
+stack:           []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo: {}
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $a1_nm, $a2_nm, $a3_nm, $a4_nm, $a6_nm, $a7_nm
+  
+    SAVE_NM 32, implicit-def $sp_nm, implicit $sp_nm
+    CFI_INSTRUCTION def_cfa_offset 32
+    SWs9_NM killed renamable $a7_nm, $sp_nm, 28 :: (store (s32))
+    SWs9_NM killed renamable $a3_nm, $sp_nm, 12 :: (store (s32))
+    SWs9_NM killed renamable $a2_nm, $sp_nm, 8 :: (store (s32) into %fixed-stack.5, align 8)
+    SWs9_NM killed renamable $a6_nm, $sp_nm, 24 :: (store (s32) into %fixed-stack.1, align 8)
+    SWs9_NM killed renamable $a4_nm, $sp_nm, 16 :: (store (s32) into %fixed-stack.3, align 16)
+    SWs9_NM killed renamable $a1_nm, $sp_nm, 4 :: (store (s32))
+    INLINEASM &"", 1 /* sideeffect attdialect */
+    RESTOREJRC_NM 32, implicit-def $sp_nm, implicit $sp_nm
+
+...
+---
+name:            square
+alignment:       2
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+registers:       []
+liveins:
+  - { reg: '$a0_nm', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo: {}
+body:             |
+  bb.0 (%ir-block.0):
+    liveins: $a0_nm
+  
+    renamable $a1_nm = LW_NM renamable $a0_nm, 0 :: (load (s32) from %ir.a1)
+    renamable $a2_nm = LWs9_NM renamable $a0_nm, 4 :: (load (s32) from %ir.b)
+    renamable $a1_nm = nsw ADDu_NM killed renamable $a2_nm, killed renamable $a1_nm
+    SW_NM killed renamable $a1_nm, killed renamable $a0_nm, 8 :: (store (s32) into %ir.c)
+    PseudoReturnNM undef $ra_nm
+
+...

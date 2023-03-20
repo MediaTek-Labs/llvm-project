@@ -396,11 +396,11 @@ def BYTEREVW_NM : ReverseNM<"byterevw", GPRNM32Opnd, bswap>;
 def TEQ_NM : Trap<"teq">;
 def TNE_NM : Trap<"tne">;
 
-def NOT_NM   : ArithLogicR16<"not", GPR3Opnd, not>;
+def NOT_NM   : ArithLogicR16<"not", GPRNM16R3Opnd, not>;
 let isCodeGenOnly = 1 in {
-  def XOR16_NM : ArithLogicR16<"xor16", GPR3Opnd>;
-  def AND16_NM : ArithLogicR16<"and16", GPR3Opnd>;
-  def OR16_NM  : ArithLogicR16<"or16", GPR3Opnd>;
+  def XOR16_NM : ArithLogicR16<"xor16", GPRNM16R3Opnd>;
+  def AND16_NM : ArithLogicR16<"and16", GPRNM16R3Opnd>;
+  def OR16_NM  : ArithLogicR16<"or16", GPRNM16R3Opnd>;
 }
 
 def JRC_NM : IndirectBranchNM<"jrc", GPRNM32Opnd>;

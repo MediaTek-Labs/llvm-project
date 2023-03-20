@@ -111,7 +111,7 @@ unsigned MipsABIInfo::GetPtrAdduOp() const {
 }
 
 unsigned MipsABIInfo::GetPtrAddiuOp() const {
-  return ArePtrs64bit() ? Mips::DADDiu : IsP32() ? Mips::ADDiu_NM : Mips::ADDiu;
+  return ArePtrs64bit() ? Mips::DADDiu : IsP32() ? Mips::ADDIU_NM : Mips::ADDiu;
 }
 
 unsigned MipsABIInfo::GetPtrSubuOp() const {

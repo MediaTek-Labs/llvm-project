@@ -525,8 +525,11 @@ public:
     Match_RequiresPosSizeRange0_32,
     Match_RequiresPosSizeRange33_64,
     Match_RequiresPosSizeUImm6,
+    Match_RequiresFirstOpLT,
+    Match_RequiresFirstOpGE,
     Match_RequiresBaseGP,
     Match_RequiresBaseSP,
+    Match_RequiresRegRA,
 #define GET_OPERAND_DIAGNOSTIC_TYPES
 #include "MipsGenAsmMatcher.inc"
 #undef GET_OPERAND_DIAGNOSTIC_TYPES
@@ -6266,6 +6269,24 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
     if (Inst.getOperand(0).getReg() != Inst.getOperand(1).getReg())
       return Match_RequiresSameSrcAndDst;
     return Match_Success;
+  case Mips::BEQC16_NM: {
+    unsigned rs = Inst.getOperand(0).getReg();
+    unsigned rt = Inst.getOperand(1).getReg();
+    unsigned rs3 = (rs >= Mips::S0_NM) ? rs - Mips::S0_NM : rs + 4 - Mips::A0_NM;
+    unsigned rt3 = (rt >= Mips::S0_NM) ? rt - Mips::S0_NM : rt + 4 - Mips::A0_NM;
+    if (rs3 >= rt3)
+      return Match_RequiresFirstOpLT;
+    return Match_Success;
+  }
+  case Mips::BNEC16_NM: {
+    unsigned rs = Inst.getOperand(0).getReg();
+    unsigned rt = Inst.getOperand(1).getReg();
+    unsigned rs3 = (rs >= Mips::S0_NM) ? rs - Mips::S0_NM : rs + 4 - Mips::A0_NM;
+    unsigned rt3 = (rt >= Mips::S0_NM) ? rt - Mips::S0_NM : rt + 4 - Mips::A0_NM;
+    if (rs3 < rt3)
+      return Match_RequiresFirstOpGE;
+    return Match_Success;
+  }
   case Mips::SWSP16_NM:
   case Mips::LWSP16_NM:
   case Mips::ADDIUR1SP_NM:
@@ -6277,6 +6298,10 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
   case Mips::ADDIUGP48_NM:
     if (Inst.getOperand(1).getReg() != Mips::GP_NM)
       return Match_RequiresBaseGP;
+    return Match_Success;
+  case Mips::JALRC16_NM:
+    if (Inst.getOperand(0).getReg() != Mips::RA_NM)
+      return Match_RequiresRegRA;
     return Match_Success;
   }
 
@@ -6350,6 +6375,12 @@ bool MipsAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
     return Error(IDLoc, "invalid operand ($zero) for instruction");
   case Match_RequiresSameSrcAndDst:
     return Error(IDLoc, "source and destination must match");
+  case Match_RequiresFirstOpLT:
+    return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
+                 "first register operand(rs) must be less than second(rt)");
+  case Match_RequiresFirstOpGE:
+    return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
+                 "first register operand(rs) must not be less than second(rt)");
   case Match_NoFCCRegisterForCurrentISA:
     return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
                  "non-zero fcc register doesn't exist in current ISA level");
@@ -6506,9 +6537,8 @@ bool MipsAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
   case Match_Sym:
     return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
                  "expected symbol");
-  case Match_SymGPRel:
-    return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
-                 "expected %gp_rel expression");
+  case Match_RequiresRegRA:
+    return Error(IDLoc, "expected $ra as first operand");
   }
 
   llvm_unreachable("Implement any new match types added!");

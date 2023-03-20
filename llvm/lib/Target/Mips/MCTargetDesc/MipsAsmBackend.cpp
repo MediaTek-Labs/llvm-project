@@ -265,8 +265,12 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value,
     }
     break;
   case Mips::fixup_NANOMIPS_PC4_S1:
-    Value = Value / 2;
-    // We now check if Value can be encoded as a 4-bit unsigned immediate.
+    // Needs to be encoded as non-zero, per the ISA.
+    // Force a value of 0xf (all-ones), if necessary.
+    if (Value == 0)
+      Value = 0xf;
+    else
+      Value = Value / 2;
     if (!isUInt<4>(Value)) {
       Ctx.reportError(Fixup.getLoc(), "out of range PC4 fixup");
       return 0;
@@ -297,11 +301,14 @@ MipsAsmBackend::createObjectTargetWriter() const {
 
 // Little-endian fixup data byte ordering:
 //   mips32r2:   a | b | x | x
-//   microMIPS:  x | x | a | b
+//   microMIPS/nanoMIPS:  x | x | a | b
 
 static bool needsMMLEByteOrder(unsigned Kind) {
   return Kind != Mips::fixup_MICROMIPS_PC10_S1 &&
          Kind >= Mips::fixup_MICROMIPS_26_S1 &&
+         Kind != Mips::fixup_NANOMIPS_PC4_S1 &&
+         Kind != Mips::fixup_NANOMIPS_PC7_S1 &&
+         Kind != Mips::fixup_NANOMIPS_PC10_S1 &&
          Kind < Mips::LastTargetFixupKind;
 }
 
@@ -338,6 +345,9 @@ void MipsAsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
   case FK_Data_2:
   case Mips::fixup_Mips_16:
   case Mips::fixup_MICROMIPS_PC10_S1:
+  case Mips::fixup_NANOMIPS_PC4_S1:
+  case Mips::fixup_NANOMIPS_PC7_S1:
+  case Mips::fixup_NANOMIPS_PC10_S1:
     FullSize = 2;
     break;
   case FK_Data_8:

@@ -22,6 +22,7 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstrDesc.h"
@@ -5923,8 +5924,10 @@ bool MipsAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
                                             uint64_t &ErrorInfo,
                                             bool MatchingInlineAsm) {
   MCInst Inst;
-  unsigned MatchResult =
-      MatchInstructionImpl(Operands, Inst, ErrorInfo, MatchingInlineAsm);
+  unsigned MatchResult;
+  int VariantId = getContext().getAsmInfo()->getAssemblerDialect();
+
+  MatchResult = MatchInstructionImpl(Operands, Inst, ErrorInfo, MatchingInlineAsm, VariantId);
 
   switch (MatchResult) {
   case Match_Success:
@@ -6938,17 +6941,24 @@ bool MipsAsmParser::areEqualRegs(const MCParsedAsmOperand &Op1,
     return true;
   return Op1.getReg() == Op2.getReg();
 }
+static void applyMnemonicAliases(StringRef &Mnemonic,
+                                 const FeatureBitset &Features,
+                                 unsigned VariantID);
 
 bool MipsAsmParser::ParseInstruction(ParseInstructionInfo &Info, StringRef Name,
                                      SMLoc NameLoc, OperandVector &Operands) {
   MCAsmParser &Parser = getParser();
+  unsigned AssemblerDialect = Parser.getAssemblerDialect();
   LLVM_DEBUG(dbgs() << "ParseInstruction\n");
 
   // We have reached first instruction, module directive are now forbidden.
   getTargetStreamer().forbidModuleDirective();
 
+  // Translation for mnemonics that don't appear in the MatchTable
+  applyMnemonicAliases(Name, AvailableFeatures, AssemblerDialect);
+
   // Check if we have valid mnemonic
-  if (!mnemonicIsValid(Name, 0)) {
+  if (!mnemonicIsValid(Name, AssemblerDialect)) {
     FeatureBitset FBS = ComputeAvailableFeatures(getSTI().getFeatureBits());
     std::string Suggestion = MipsMnemonicSpellCheck(Name, FBS);
     return Error(NameLoc, "unknown instruction" + Suggestion);
@@ -8926,6 +8936,7 @@ bool MipsAsmParser::mnemonicIsValid(StringRef Mnemonic, unsigned VariantID) {
   switch (VariantID) {
   default: llvm_unreachable("invalid variant!");
   case 0: Start = std::begin(MatchTable0); End = std::end(MatchTable0); break;
+  case 1: Start = std::begin(MatchTable1); End = std::end(MatchTable1); break;
   }
   // Search the table.
   auto MnemonicRange = std::equal_range(Start, End, Mnemonic, LessOpcode());

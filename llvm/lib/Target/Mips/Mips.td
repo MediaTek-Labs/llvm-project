@@ -285,7 +285,7 @@ def MipsAsmParser : AsmParser {
 
 def MipsAsmParserVariant : AsmParserVariant {
   int Variant = 0;
-
+  string Name = "mips";
   // Recognize hard coded registers.
   string RegisterPrefix = "$";
 }
@@ -294,13 +294,21 @@ def MipsAsmWriter : AsmWriter {
   int PassSubtarget = 1;
 }
 
+def NanoMipsAsmParserVariant : AsmParserVariant {
+  int Variant = 1;
+  string Name = "nanomips";
+  string TokenizingCharacters = "*!";
+  string RegisterPrefix = "$";
+}
+
 def Mips : Target {
   let InstructionSet = MipsInstrInfo;
   let AssemblyWriters = [MipsAsmWriter];
   let AssemblyParsers = [MipsAsmParser];
-  let AssemblyParserVariants = [MipsAsmParserVariant];
+  let AssemblyParserVariants = [MipsAsmParserVariant, NanoMipsAsmParserVariant];
   let AllowRegisterRenaming = 1;
 }
+
 
 //===----------------------------------------------------------------------===//
 // Pfm Counters

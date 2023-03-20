@@ -9,7 +9,7 @@ class InstNM<dag outs, dag ins, string asmstr, list<dag> pattern,
 
   let OutOperandList = outs;
   let InOperandList  = ins;
-
+  let AsmVariantName = "nanomips";
   let AsmString = asmstr;
   let Pattern   = pattern;
 

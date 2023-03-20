@@ -210,6 +210,9 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   // Use linker relaxation
   bool UseLinkerRelax = true;
 
+  // PC-relative addressing mode (nanoMIPS only).
+  bool UsePCRel = false;
+
   /// The minimum alignment known to hold of the stack frame on
   /// entry to the function and which must be maintained by every function.
   Align stackAlignment;
@@ -361,6 +364,8 @@ public:
   bool useUnalignedLoadStore() const { return UseUnalignedLoadStore; };
 
   bool useLinkerRelax() const { return UseLinkerRelax; }
+
+  bool usePCRel() const { return UsePCRel; }
 
   bool enableLongBranchPass() const {
     return hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32();

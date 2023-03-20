@@ -375,7 +375,7 @@ def EXT_NM : ExtBaseNM;
 def INS_NM : InsBaseNM;
 
 let isCodeGenOnly = 1 in
-def ADDiu_NM : ArithLogicI32<"addiu", uimm16_simm12, GPRNM32Opnd,
+def ADDIU_NM : ArithLogicI32<"addiu", uimm16_simm12, GPRNM32Opnd,
                              imm32SExt12OrZExt16, add>;
 let Constraints = "$rt = $rs" in
 def ADDIU48_NM : ArithLogicINM<"addiu[48]", simm32_relaxed, GPRNM32Opnd,
@@ -474,7 +474,7 @@ def : NMPat<(MipsFullAddr tglobaladdr:$in), (LA_NM tglobaladdr:$in)>;
 def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (LA_NM tglobaltlsaddr:$in)>;
 def : NMPat<(MipsFullAddr tblockaddress:$in), (LA_NM tblockaddress:$in)>;
 def : NMPat<(MipsFullAddr tjumptable:$in), (LA_NM tjumptable:$in)>;
-def : NMPat<(MipsFullAddrAdd GPR32NM:$rs, tglobaladdr:$in), (ADDIU48_NM GPR32NM:$rs, tglobaladdr:$in)>;
+def : NMPat<(MipsFullAddrAdd GPRNM32:$rs, tglobaladdr:$in), (ADDIU48_NM GPRNM32:$rs, tglobaladdr:$in)>;
 
 def : NMPat<(not (or GPRNM32:$rs, GPRNM32:$rt)),
             (NOR_NM GPRNM32:$rs, GPRNM32:$rt)>;
@@ -740,25 +740,25 @@ def MOVEP_NM : InstNM<(outs GPRNM32Opnd:$dst1, GPRNM32Opnd:$dst2),
 //
 let AddedComplexity = 3 in {
 def : NMPat<(i32 (extloadi8 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
-            (LBU_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (LBU_NM (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 def : NMPat<(i32 (zextloadi8 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
-            (LBU_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (LBU_NM (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 def : NMPat<(i32 (sextloadi8 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
-            (LB_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (LB_NM (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 def : NMPat<(i32 (extloadi16 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
-            (LHU_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (LHU_NM (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 def : NMPat<(i32 (zextloadi16 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
-            (LHU_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (LHU_NM (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 def : NMPat<(i32 (sextloadi16 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
-            (LH_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (LH_NM (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 def : NMPat<(i32 (load (add GPRNM32:$rs, immFitsAddiu32:$imm))),
-            (LW_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (LW_NM (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 def : NMPat<(truncstorei8 GPRNM32:$rt, (add GPRNM32:$rs, immFitsAddiu32:$imm)),
-            (SB_NM GPRNM32:$rt, (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (SB_NM GPRNM32:$rt, (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 def : NMPat<(truncstorei16 GPRNM32:$rt, (add GPRNM32:$rs, immFitsAddiu32:$imm)),
-            (SH_NM GPRNM32:$rt, (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (SH_NM GPRNM32:$rt, (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 def : NMPat<(store GPRNM32:$rt, (add GPRNM32:$rs, immFitsAddiu32:$imm)),
-            (SW_NM GPRNM32:$rt, (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+            (SW_NM GPRNM32:$rt, (ADDIU_NM GPRNM32:$rs, imm:$imm), 0)>;
 } // AddedComplexity = 3
 
 // Catching out-of-range immediate loads/stores.
@@ -800,7 +800,7 @@ def : NMPat<(NMUnalignedSH GPRNM32:$rt, GPRNM32:$rs),
 def : NMPat<(i32 (load (add GP_NM, (MipsGPRel tglobaladdr:$in)))),
             (LWGP_NM GP_NM, tglobaladdr:$in)>;
 def : NMPat<(add GP_NM, (MipsGPRel tglobaladdr:$in)),
-            (ADDiu_NM GP_NM, tglobaladdr:$in)>;
+            (ADDIU_NM GP_NM, tglobaladdr:$in)>;
 
 // Atomic load patterns.
 def : NMPat<(atomic_load_8 addr:$a), (LB_NM addr:$a)>;

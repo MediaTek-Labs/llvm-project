@@ -116,7 +116,7 @@ def : InstRW<[GenericWriteALU], (instrs ADDIUPC_MMR6, ADDIU_MMR6, ADDU16_MMR6,
 // nanoMIPS
 // =============
 
-def : InstRW<[GenericWriteALU], (instrs ADD_NM, ADDu_NM, ADDiu_NM, ADDIU48_NM,
+def : InstRW<[GenericWriteALU], (instrs ADD_NM, ADDu_NM, ADDIU_NM, ADDIU48_NM,
                                  ALUIPC_NM, AND_NM, AND16_NM, ANDI_NM,
                                  BITREVW_NM, BYTEREVW_NM, CLO_NM, CLZ_NM,
                                  DIV_NM, DIVU_NM, EXT_NM, INS_NM, LA_NM, Li_NM,

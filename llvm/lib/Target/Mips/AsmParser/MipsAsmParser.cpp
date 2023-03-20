@@ -742,6 +742,23 @@ public:
   const MCExpr *createTargetUnaryExpr(const MCExpr *E,
                                       AsmToken::TokenKind OperatorToken,
                                       MCContext &Ctx) override {
+    if (hasNanoMips()) {
+      switch(OperatorToken) {
+      default:
+        llvm_unreachable("Unknown token");
+        return nullptr;
+      case AsmToken::PercentGp_Rel:
+        return MipsMCExpr::create(MipsMCExpr::MEK_GPREL, E, Ctx);
+      case AsmToken::PercentHi:
+        return MipsMCExpr::create(MipsMCExpr::MEK_HI, E, Ctx, hasNanoMips());
+      case AsmToken::PercentLo:
+        return MipsMCExpr::create(MipsMCExpr::MEK_LO, E, Ctx, hasNanoMips());
+      case AsmToken::PercentPcrel_Hi:
+        return MipsMCExpr::create(MipsMCExpr::MEK_PCREL_HI, E, Ctx, hasNanoMips());
+      case AsmToken::PercentPcrel_Lo:
+        return MipsMCExpr::create(MipsMCExpr::MEK_LO, E, Ctx, hasNanoMips());
+      }
+    }
     switch(OperatorToken) {
     default:
       llvm_unreachable("Unknown token");
@@ -783,7 +800,7 @@ public:
     case AsmToken::PercentNeg:
       return MipsMCExpr::create(MipsMCExpr::MEK_NEG, E, Ctx);
     case AsmToken::PercentPcrel_Hi:
-      return MipsMCExpr::create(MipsMCExpr::MEK_PCREL_HI16, E, Ctx);
+      return MipsMCExpr::create(MipsMCExpr::MEK_PCREL_HI, E, Ctx);
     case AsmToken::PercentPcrel_Lo:
       return MipsMCExpr::create(MipsMCExpr::MEK_PCREL_LO16, E, Ctx);
     case AsmToken::PercentTlsgd:

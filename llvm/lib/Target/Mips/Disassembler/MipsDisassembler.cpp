@@ -582,6 +582,16 @@ static DecodeStatus DecodeUImm3Shift(MCInst &Inst, unsigned Value,
 				     uint64_t Address,
 				     const MCDisassembler *Decoder);
 
+static DecodeStatus DecodeNMRegListOperand(MCInst &Inst,
+					   unsigned Insn,
+					   uint64_t Address,
+					   const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeNMRegList16Operand(MCInst &Inst,
+					   unsigned Insn,
+					   uint64_t Address,
+					   const MCDisassembler *Decoder);
+
 static DecodeStatus DecodeNegImm12(MCInst &Inst,
 				   unsigned Insn,
 				   uint64_t Address,
@@ -2948,6 +2958,46 @@ static DecodeStatus DecodeUImm3Shift(MCInst &Inst, unsigned Value,
   else
     Inst.addOperand(MCOperand::createImm(Value));
   return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeNMRegListOperand(MCInst &Inst,
+					   unsigned Insn,
+					   uint64_t Address,
+					   const MCDisassembler *Decoder) {
+  unsigned RegStart = fieldFromInstruction(Insn, 5, 5);
+  unsigned RegCount = fieldFromInstruction(Insn, 1, 4);
+  unsigned GP_bit = fieldFromInstruction(Insn, 0, 1);
+  unsigned i;
+  unsigned RegNo;
+
+  Inst.addOperand(MCOperand::createReg(getReg(Decoder,
+					      Mips::GPRNM32RegClassID,
+					      RegStart)));
+  for (i = RegStart + 1; i < RegStart + RegCount; i++) {
+    if (i == RegStart + RegCount - 1 && GP_bit)
+      RegNo = 28;
+    else if (i > 31)
+      RegNo = 16 + (i % 32); // $ra+1 wraps to $s0
+    else
+      RegNo = i;
+    Inst.addOperand(MCOperand::createReg(getReg(Decoder,
+						Mips::GPRNM32RegClassID,
+						RegNo)));
+  }
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeNMRegList16Operand(MCInst &Inst,
+					     unsigned Insn,
+					     uint64_t Address,
+					     const MCDisassembler *Decoder) {
+  unsigned RegStart = 30 + fieldFromInstruction(Insn, 4, 1);
+  unsigned RegCount = fieldFromInstruction(Insn, 0, 4);
+  // Re-encode the parameters for 32-bit instruction operand
+  // and call it's decoder
+  return DecodeNMRegListOperand(Inst,
+				(RegStart << 5) | (RegCount << 1),
+				Address, Decoder);
 }
 
 static DecodeStatus DecodeNegImm12(MCInst &Inst,

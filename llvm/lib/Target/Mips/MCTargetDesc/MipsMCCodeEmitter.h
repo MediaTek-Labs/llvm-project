@@ -325,6 +325,13 @@ public:
 				 SmallVectorImpl<MCFixup> &Fixups,
 				 const MCSubtargetInfo &STI) const;
 
+  unsigned getNMRegListEncoding(const MCInst &MI, unsigned OpNo,
+				SmallVectorImpl<MCFixup> &Fixups,
+				const MCSubtargetInfo &STI) const;
+
+  unsigned getNMRegList16Encoding(const MCInst &MI, unsigned OpNo,
+				  SmallVectorImpl<MCFixup> &Fixups,
+				  const MCSubtargetInfo &STI) const;
   unsigned getNegImm12Encoding(const MCInst &MI, unsigned OpNo,
 			       SmallVectorImpl<MCFixup> &Fixups,
 			       const MCSubtargetInfo &STI) const;

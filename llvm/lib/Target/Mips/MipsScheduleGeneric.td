@@ -462,14 +462,20 @@ def : InstRW<[GenericWriteJump], (instrs JR_HB64_R6, TAILCALL64R6REG,
 // nanoMIPS
 // ========
 
-def : InstRW<[GenericWriteJump], (instrs JRC_NM, BC_NM)>;
+def : InstRW<[GenericWriteJump], (instrs JRC_NM, BC_NM, BEQC_NM, BGEC_NM, BGEUC_NM,
+					 BNEC_NM, BLTC_NM, BLTUC_NM, BEQZC_NM,
+					 BNEZC_NM, BEQIC_NM, BGEIC_NM, BLTIC_NM,
+					 BNEIC_NM, BGEIUC_NM, BLTIUC_NM, BBNEZC_NM,
+					 BBEQZC_NM, BC16_NM, BALC16_NM,
+					 BRSC_NM, BEQC16_NM, BNEC16_NM)>;
 
 def : InstRW<[GenericWriteJump], (instrs PseudoReturnNM,
                                          PseudoIndirectBranchNM, TAILCALL_NM,
                                          TAILCALLREG_NM)>;
 
 def : InstRW<[GenericWriteJumpAndLink], (instrs BALC_NM, MOVEBALC_NM, JALRC_NM,
-                                                JALRCPseudo)>;
+                                                JALRCHB_NM, JALRC16_NM,
+						JALRCPseudo, BALRSC_NM)>;
 
 // COP0 Pipeline
 // =============

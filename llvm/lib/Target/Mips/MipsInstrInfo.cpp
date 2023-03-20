@@ -1105,9 +1105,11 @@ MipsInstrInfo::getOutliningCandidateInfo(
     FrameID = MachineOutlinerTailCall;
     NumBytesToCreateFrame = 0;
     SetCandidateCallInfo(MachineOutlinerTailCall, 4);
-  } 
-  else if (LastInstrOpcode == Mips::BALC_NM || 
-           LastInstrOpcode == Mips::JALRC_NM) {
+  }
+
+  else if (LastInstrOpcode == Mips::BALC_NM ||
+           LastInstrOpcode == Mips::JALRC_NM ||
+           LastInstrOpcode == Mips::JALRC16_NM) {
     FrameID = MachineOutlinerThunk;
     NumBytesToCreateFrame = 0;
     SetCandidateCallInfo(MachineOutlinerThunk, 4);
@@ -1458,8 +1460,8 @@ MipsInstrInfo::getOutliningType(const MachineModuleInfo &MMI,
     // as a tail-call. Explicitly list the call instructions we know about so we
     // don't get unexpected results with call pseudo-instructions.
 
-    if (MI.getOpcode() == Mips::JALRC_NM || MI.getOpcode() == Mips::BALC_NM ||
-        MI.getOpcode() == Mips::BC_NM)
+    if (MI.getOpcode() == Mips::JALRC_NM || MI.getOpcode() == Mips::JALRC16_NM ||
+	MI.getOpcode() == Mips::BALC_NM || MI.getOpcode() == Mips::BC_NM)
 
       return outliner::InstrType::Legal;
   }

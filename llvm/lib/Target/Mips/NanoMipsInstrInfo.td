@@ -424,7 +424,7 @@ def LA_NM : RegImmNM<"la", simm32_relaxed, GPRNM32Opnd>, InstSize48;
 
 def ALUIPC_NM : RegImmNM<"aluipc", simm32_relaxed, GPRNM32Opnd>, InstSize32;
 
-def LEA_ADDiu_NM : EffectiveAddressNM<"addiu", GPRNM32Opnd>, InstSize32;
+def LEA_ADDIU_NM : EffectiveAddressNM<"addiu", GPRNM32Opnd>, InstSize32;
 
 def RDHWR_NM : ReadHardwareNM<GPRNM32Opnd, HWRegsOpnd>;
 

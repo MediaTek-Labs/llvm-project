@@ -226,7 +226,7 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
   LLVM_DEBUG(errs() << "Offset     : " << Offset << "\n"
                     << "<--------->\n");
 
-  if (MI.getOpcode() == Mips::LEA_ADDiu_NM && Offset == 0) {
+  if (MI.getOpcode() == Mips::LEA_ADDIU_NM && Offset == 0) {
     auto &MBB = *MI.getParent();
     const MipsSEInstrInfo &TII = *static_cast<const MipsSEInstrInfo *>(
         MBB.getParent()->getSubtarget().getInstrInfo());

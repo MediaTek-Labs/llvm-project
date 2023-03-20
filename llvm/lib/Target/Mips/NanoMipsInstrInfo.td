@@ -253,10 +253,25 @@ def SymAsmOperandGPRel19s2 : SymAsmOperandClass<"GPRel", "19s2"> {
 }
 def SymAsmOperandGPRel : SymAsmOperandClass<"GPRel">;
 
+def UImm19AsmOperand : NMUImmAsmOperandClass<19>;
 def UImm18AsmOperand : NMUImmAsmOperandClass<18>;
+def UImm3AsmOperand : NMUImmAsmOperandClass<3, [UImm19AsmOperand]>;
+def UImm2AsmOperand : NMUImmAsmOperandClass<2, [UImm18AsmOperand]>;
+
+def uimm19_nm : Operand<i32> {
+  let ParserMatchClass = UImm19AsmOperand;
+}
 
 def uimm18_nm : Operand<i32> {
   let ParserMatchClass = UImm18AsmOperand;
+}
+
+def uimm3_nm : Operand<i32> {
+  let ParserMatchClass = UImm3AsmOperand;
+}
+
+def uimm2_nm : Operand<i32> {
+  let ParserMatchClass = UImm2AsmOperand;
 }
 
 def uimm12_nm : Operand<i32> {
@@ -829,6 +844,11 @@ class _Pool_PP_LSX<bit scaled, bits<4> isel> : _Pool_POOL32A7<0b000> {
   let Inst{10...7} = isel;
 }
 
+class _Pool_POOL32A0_1<bits<6> psel> : _Pool_POOL32A0<0b1> {
+  let Inst{9...6} = psel{5...2};
+  let Inst{4...3} = psel{1...0};
+}
+
 // 16-bit arithmetic and logical instructions with 4x4 register operands, P16_4X4
 class Arith4x4_Desc<string opstr, RegisterOperand RO,
 			SDPatternOperator OpNode = null_frag>:
@@ -1022,12 +1042,21 @@ class ExtInsBase_Enc<bits<4> isel> : _Pool_P_EXT_INS<isel> {
   let Inst{10...6} = size;
 }
 
-class Trap<string opstr> :
-  InstNM<(outs), (ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, uimm5:$imm),
-         !strconcat(opstr, "\t$rt, $rs, $imm"), []>, InstSize32 {
-   let hasSideEffects = 1;
-   let isCTI = 1;
- }
+class Trap_Desc<string opstr, RegisterOperand RO, Operand ImmOp> :
+  InstNM<(outs), (ins RO:$rs, RO:$rt, ImmOp:$imm),
+	 !strconcat(opstr, "\t$rs, $rt, $imm"), []> {
+  let hasSideEffects = 1;
+  let isCTI = 1;
+}
+
+class Trap_Enc<bits<1> isel> : _Pool_P_TRAP<isel> {
+  bits<5> rt;
+  bits<5> rs;
+  bits<5> imm;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs;
+  let Inst{15...11} = imm;
+}
 
 // Instructions with 1 register (dest) and 1 immediate operand.
 class RegImmNM<string opstr, Operand Od, RegisterOperand RO,
@@ -1397,9 +1426,7 @@ class UnalignedStore<string opstr, SDNode OpNode,
 
 class ReadHardwareNM<RegisterOperand CPURegOperand, RegisterOperand RO> :
   InstNM<(outs CPURegOperand:$rt), (ins RO:$hs, uimm5:$sel),
-  "rdhwr\t$rt, $hs, $sel", []>, InstSize32 {
-  let isCodeGenOnly = 1;
-}
+  "rdhwr\t$rt, $hs, $sel", []>;
 
 class SignExtInRegNM<string opstr, ValueType vt, RegisterOperand RO> :
   InstNM<(outs RO:$rt), (ins RO:$rs), !strconcat(opstr, "\t$rt, $rs"),
@@ -1724,8 +1751,11 @@ def CLZ_NM : CountLeading0NM<"clz", GPRNM32Opnd>, CLZO_Enc<0b0101101>;
 def CLO_NM : CountLeading1NM<"clo", GPRNM32Opnd>, CLZO_Enc<0b0100101>;
 
 // P.TRAP pool of instructions.
-def TEQ_NM : Trap<"teq">;
-def TNE_NM : Trap<"tne">;
+def TEQ_NM : Trap_Desc<"teq", GPRNM32Opnd, uimm5>, Trap_Enc<0b0>;
+def TNE_NM : Trap_Desc<"tne", GPRNM32Opnd, uimm5>, Trap_Enc<0b1>;
+
+def : MipsInstAlias<"teq $rt, $rs",
+		    (TEQ_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 0), 0>, ISA_NANOMIPS;
 
 def MOVEBALC_NM : InstNM<(outs GPRNM1R1Opnd:$rd),
 			    (ins GPRNM4ZOpnd:$rt, calltarget21_nm:$addr),
@@ -1798,7 +1828,18 @@ def LEA_ADDIU_NM : EffectiveAddressNM<"addiu", GPRNM32Opnd>, _Pool_P32<0b00000> 
   let Inst{15...0} = addr;
 }
 
-def RDHWR_NM : ReadHardwareNM<GPRNM32Opnd, HWRegsOpnd>;
+def RDHWR_NM : ReadHardwareNM<GPRNM32Opnd, COP0Opnd>,
+	       _Pool_POOL32A0_0<0b011100> {
+  bits<5> rt;
+  bits<5> hs;
+  bits<5> sel;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = hs;
+  let Inst{15...11} = sel;
+}
+
+def : MipsInstAlias<"rdhwr $rt, $hs",
+			(RDHWR_NM GPRNM32Opnd:$rt, COP0Opnd:$hs, 0), 0>, ISA_NANOMIPS;
 
 def ADJCALLSTACKDOWN_NM : AdjustStack<callseq_start>;
 def ADJCALLSTACKUP_NM   : AdjustStack<callseq_end>;
@@ -2322,8 +2363,6 @@ def LW4x4_NM : LoadMemoryNM<"lw", GPRNM4Opnd, mem_nm4s2, load, addruimm4s2, II_L
 def SW4x4_NM : StoreMemoryNM<"sw", GPRNM4ZOpnd, mem_nm4s2, store, addruimm4s2, II_SW>,
 	       LSMem4x4_Enc<0b11101>;
 
-//def CACHE_NM : LSMem_S9_Enc<0b001, 0b0111>;
-
 class MOVE_Enc : _Pool_P16_MV
 {
   bits<5> rt;
@@ -2596,6 +2635,103 @@ defm : MovzPats1<GPRNM32, GPRNM32, MOVZ_NM, XOR_NM>, ISA_NANOMIPS;
 defm : MovzPats2NM<GPRNM32, GPRNM32, MOVZ_NM, XORI_NM>;
 defm : MovnPats<GPRNM32, GPRNM32, MOVN_NM, XOR_NM>, ISA_NANOMIPS;
 
+class ToggleInterrupts_Enc<bits<5> isel> : _Pool_POOL32Axf_5_group1<isel> {
+  bits<5> rt;
+  let Inst{25...21} = rt;
+}
+
+def DI_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins),
+                   "di\t$rt", []>, ToggleInterrupts_Enc<0b00011>;
+
+def EI_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins),
+                   "ei\t$rt", []>, ToggleInterrupts_Enc<0b01011>;
+
+def : MipsInstAlias<"ei", (EI_NM ZERO_NM)>, ISA_NANOMIPS;
+def : MipsInstAlias<"di", (DI_NM ZERO_NM)>, ISA_NANOMIPS;
+
+// Instruction with no operands
+class MnemonicOnly<string opstr>:
+    InstNM<(outs), (ins), opstr, []>;
+
+def ERET_NM : MnemonicOnly<"eret">, _Pool_POOL32Axf_5_group3<0b11001> {
+  let Inst{16} = 0b0;
+}
+
+def ERETNC_NM : MnemonicOnly<"eretnc">, _Pool_POOL32Axf_5_group3<0b11001> {
+  let Inst{16} = 0b1;
+}
+
+def DERET_NM : MnemonicOnly<"deret">, _Pool_POOL32Axf_5_group3<0b10001>;
+
+class SLL_VAR_Enc<bits<5> sh> : _Pool_P_SHIFT<0b0000> {
+  let Inst{25...21} = 0b00000;
+  let Inst{20...16} = 0b00000;
+  let Inst{4...0} = sh;
+}
+
+def NOP32_NM : MnemonicOnly<"nop32">, SLL_VAR_Enc<0>;
+
+def EHB_NM : MnemonicOnly<"ehb">, SLL_VAR_Enc<3>;
+
+def PAUSE_NM : MnemonicOnly<"pause">, SLL_VAR_Enc<5>;
+
+def NOP_NM : MnemonicOnly<"nop">, _Pool_P16_A2<0b1> {
+  let Inst{9...5} = 0b00000;
+  let Inst{4} = 0b0;
+  let Inst{2...0} = 0b000;
+}
+
+class IntExcpFlow_Enc<bits<2> isel> : _Pool_P_RI<isel>
+{
+  bits<19> imm;
+  let Inst{18...0} = imm;
+}
+
+class IntExcpFlow16_Enc<bits<2> isel> : _Pool_P16_RI<isel>
+{
+  bits<3> imm;
+  let Inst{2...0} = imm;
+}
+
+def SIGRIE_NM : InstNM<(outs), (ins uimm19_nm:$imm),
+                       "sigrie\t$imm", []>, IntExcpFlow_Enc<0b00>;
+
+def BREAK_NM : InstNM<(outs), (ins uimm19_nm:$imm),
+                      "break\t$imm", []>, IntExcpFlow_Enc<0b10>;
+
+def SDBBP_NM : InstNM<(outs), (ins uimm19_nm:$imm),
+                      "sdbbp\t$imm", []>, IntExcpFlow_Enc<0b11>;
+
+
+def SYSCALL_NM : InstNM<(outs), (ins uimm18_nm:$imm),
+                       "syscall\t$imm", []>, IntExcpFlow_Enc<0b01> {
+  let Inst{18} = 0b0;
+}
+
+def BREAK16_NM : InstNM<(outs), (ins uimm3_nm:$imm),
+                      "break\t$imm", []>, IntExcpFlow16_Enc<0b10>;
+
+def SDBBP16_NM : InstNM<(outs), (ins uimm3_nm:$imm),
+                      "sdbbp\t$imm", []>, IntExcpFlow16_Enc<0b11>;
+
+def SYSCALL16_NM : InstNM<(outs), (ins uimm2_nm:$imm),
+                       "syscall\t$imm", []>, IntExcpFlow16_Enc<0b01> {
+  let Inst{2} = 0b0;
+}
+
+class ShadowRW_Enc<bits<5> isel>: _Pool_POOL32Axf_5_group3<isel> {
+  bits<5> rs;
+  bits<5> rt;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs;
+}
+
+def WRPGPR_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins GPRNM32Opnd:$rs),
+                       "wrpgpr\t$rt, $rs", []>, ShadowRW_Enc<0b11000>;
+
+def RDPGPR_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins GPRNM32Opnd:$rs),
+                       "rdpgpr\t$rt, $rs", []>, ShadowRW_Enc<0b10000>;
+
 def EXTW_NM : InstNM<(outs GPRNM32Opnd:$rd),
 		     (ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, uimm5:$shift),
 		     "extw\t$rd, $rs, $rt, $shift", []>,
@@ -2655,3 +2791,120 @@ def BITREVH_NM : MipsInstAlias<"bitrevh $rt, $rs",
 def BYTEREVH_NM : MipsInstAlias<"byterevh $rt, $rs",
 				(ROTX_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 8, 24, 0)>,
 				ISA_NANOMIPS;
+
+class CacheOpNM<string opstr, Operand Od, DAGOperand MO,
+		    ComplexPattern Addr = addr,
+		    InstrItinClass itin = NoItinerary> :
+    InstNM<(outs), (ins Od:$op, MO:$addr), !strconcat(opstr, "\t$op, $addr"),
+	   [], itin>;
+def CACHE_NM : CacheOpNM<"cache", uimm5, mem_nms9, addrsimm9, II_CACHE>,
+	       _Pool_P_LS_S1<0b0111> {
+  bits<5> op;
+  bits<14> addr;
+  bits<5> base = addr{13...9};
+  bits<9> offset = addr{8...0};
+  let Inst{25...21} = op;
+  let Inst{20...16} = base;
+  let Inst{15} = offset{8};
+  let Inst{7...0} = offset{7...0};
+}
+
+def PREFs9_NM : CacheOpNM<"pref", uimm5, mem_nms9, addrsimm9, II_PREF>,
+	       _Pool_P_LS_S0<0b0011> {
+  bits<5> op;
+  bits<14> addr;
+  bits<5> base = addr{13...9};
+  bits<9> offset = addr{8...0};
+  let Inst{25...21} = op;
+  let Inst{20...16} = base;
+  let Inst{15} = offset{8};
+  let Inst{7...0} = offset{7...0};
+}
+
+def PREF_NM : CacheOpNM<"pref", uimm5, mem_nmu12, addruimm12, II_PREF>,
+	       _Pool_P_LS_U12<0b0011> {
+  bits<5> op;
+  bits<17> addr;
+  bits<5> base = addr{16...12};
+ bits<12> offset = addr{11...0};
+  let Inst{25...21} = op;
+  let Inst{20...16} = base;
+  let Inst{11...0} = offset{11...0};
+}
+
+class SyncOpNM<string opstr, DAGOperand MO,
+		ComplexPattern Addr = addr,
+		InstrItinClass itin = NoItinerary> :
+    InstNM<(outs), (ins MO:$addr), !strconcat(opstr, "\t$addr"),
+	   [], itin>;
+
+def SYNCIs9_NM : SyncOpNM<"synci", mem_nms9, addrsimm9, II_SYNCI>,
+	       _Pool_P_LS_S0<0b0011> {
+  bits<14> addr;
+  bits<5> base = addr{13...9};
+  bits<9> offset = addr{8...0};
+  let Inst{25...21} = 0b11111;
+  let Inst{20...16} = base;
+  let Inst{15} = offset{8};
+  let Inst{7...0} = offset{7...0};
+}
+
+def SYNCI_NM : SyncOpNM<"synci", mem_nmu12, addruimm12, II_SYNCI>,
+	       _Pool_P_LS_U12<0b0011> {
+  bits<17> addr;
+  bits<5> base = addr{16...12};
+  bits<12> offset = addr{11...0};
+  let Inst{25...21} = 0b11111;
+  let Inst{20...16} = base;
+  let Inst{11...0} = offset;
+}
+
+def WAIT_NM : InstNM<(outs), (ins uimm10:$cd),
+		       "wait\t$cd", [], II_WAIT>,
+		       _Pool_POOL32Axf_5_group3<0b00001> {
+  bits<10> cd;
+  let Inst{25...16} = cd;
+}
+def : MipsInstAlias<"wait", (WAIT_NM 0)>, ISA_NANOMIPS;
+
+def SYNC_NM : InstNM<(outs), (ins uimm5:$stype), "sync\t$stype",
+	   [], II_SYNC>, _Pool_P_SHIFT<0b0000> {
+  bits<5> stype;
+  let Inst{25...21} = 0b00000;
+  let Inst{20...16} = stype;
+  let Inst{4...0} = 0b00110;
+}
+
+def : MipsInstAlias<"sync", (SYNC_NM 0)>, ISA_NANOMIPS;
+def : MipsInstAlias<"sync_wmb", (SYNC_NM 0x4)>, ISA_NANOMIPS;
+def : MipsInstAlias<"sync_mb", (SYNC_NM 0x10)>, ISA_NANOMIPS;
+def : MipsInstAlias<"sync_acquire", (SYNC_NM 0x11)>, ISA_NANOMIPS;
+def : MipsInstAlias<"sync_release", (SYNC_NM 0x12)>, ISA_NANOMIPS;
+def : MipsInstAlias<"sync_rmb", (SYNC_NM 0x13)>, ISA_NANOMIPS;
+
+class WriteToCP0NM<string opstr, RegisterOperand RO, RegisterOperand CO> :
+  InstNM<(outs), (ins RO:$rt, CO:$c0s, uimm5:$sel),
+  !strconcat(opstr, "\t$rt, $c0s, $sel"), []>;
+
+class ReadFromCP0NM<string opstr, RegisterOperand RO, RegisterOperand CO> :
+  InstNM<(outs RO:$rt), (ins CO:$c0s, uimm5:$sel),
+  !strconcat(opstr, "\t$rt, $c0s, $sel"), []>;
+
+class ReadWriteCP0NM_Enc<bits<6> isel> : _Pool_POOL32A0_1<isel> {
+  bits<5> rt;
+  bits<5> c0s;
+  bits<5> sel;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = c0s;
+  let Inst{15...11} = sel;
+}
+
+def MFC0_NM : ReadFromCP0NM<"mfc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0NM_Enc<0b000010>;
+def MFHC0_NM : ReadFromCP0NM<"mfhc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0NM_Enc<0b000011>;
+def MTC0_NM : WriteToCP0NM<"mtc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0NM_Enc<0b000110>;
+def MTHC0_NM : WriteToCP0NM<"mthc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0NM_Enc<0b000111>;
+
+def : MipsInstAlias<"mfc0 $rt, $c0s", (MFC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
+def : MipsInstAlias<"mfhc0 $rt, $c0s", (MFHC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
+def : MipsInstAlias<"mtc0 $rt, $c0s", (MTC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
+def : MipsInstAlias<"mthc0 $rt, $c0s", (MTHC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;

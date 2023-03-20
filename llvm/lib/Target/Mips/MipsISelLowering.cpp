@@ -1654,7 +1654,15 @@ static MachineBasicBlock *insertDivByZeroTrap(MachineInstr &MI,
   auto TeqIns =
       IsMicroMips ? Mips::TEQ_MM : (IsNanoMips ? Mips::TEQ_NM : Mips::TEQ);
   auto ZeroReg = IsNanoMips ? Mips::ZERO_NM : Mips::ZERO;
-  MIB = BuildMI(MBB, std::next(I), MI.getDebugLoc(), TII.get(TeqIns))
+  // For nanoMIPS, match the order of operands used by GNU compiler
+  // for easy comparison.
+  if (IsNanoMips)
+    MIB = BuildMI(MBB, std::next(I), MI.getDebugLoc(), TII.get(TeqIns))
+            .addReg(ZeroReg)
+            .addReg(Divisor.getReg(), getKillRegState(Divisor.isKill()))
+            .addImm(7);
+  else
+    MIB = BuildMI(MBB, std::next(I), MI.getDebugLoc(), TII.get(TeqIns))
             .addReg(Divisor.getReg(), getKillRegState(Divisor.isKill()))
             .addReg(ZeroReg)
             .addImm(7);

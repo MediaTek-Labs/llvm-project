@@ -126,10 +126,10 @@ def : InstRW<[GenericWriteALU], (instrs ADD_NM, ADDu16_NM, ADDu4x4_NM, ADDu_NM,
 				 LI48_NM, LI16_NM, LUI_NM,
                                  LSA_NM, MOVEP_NM, MOVE_NM, MOD_NM, MODU_NM,
                                  MOVEPREV_NM,
-                                 MUH_NM, MUHU_NM, MUL_NM, MULU_NM, MUL4x4_NM,
-                                 NOT16_NM, NOR_NM, OR_NM, OR16_NM, ORI_NM, ROTRV_NM,
-                                 ROTR_NM, ROTX_NM, SEB_NM, SEH_NM, SEQI_NM, SLL_NM,
-                                 SLLV_NM, SLT_NM, SLTI_NM, SLTIU_NM, SLTU_NM,
+                                 MUH_NM, MUHU_NM, MUL_NM, MULU_NM, MUL4x4_NM, NOP_NM,
+                                 NOP32_NM, NOT16_NM, NOR_NM, OR_NM, OR16_NM, ORI_NM,
+                                 ROTRV_NM, ROTR_NM, ROTX_NM, SEB_NM, SEH_NM, SEQI_NM,
+                                 SLL_NM, SLLV_NM, SLT_NM, SLTI_NM, SLTIU_NM, SLTU_NM,
                                  SOV_NM, SRAV_NM, SRA_NM, SRLV_NM, SRL_NM, SUB_NM,
                                  SUBu_NM, SUBu16_NM, XOR_NM, XOR16_NM, XORI_NM,
 				 SLL16_NM, SRL16_NM)>;
@@ -293,7 +293,7 @@ def : InstRW<[GenericWriteDIVU], (instrs DDIVU, DMODU)>;
 // ========
 
 def : InstRW<[GenericWriteALU], (instrs MOVN_NM, MOVZ_NM)>;
-def : InstRW<[GenericWriteMove], (instrs RDHWR_NM)>;
+def : InstRW<[GenericWriteMove], (instrs RDHWR_NM, WRPGPR_NM, RDPGPR_NM)>;
 
 // CTISTD Pipeline
 // ---------------
@@ -433,6 +433,10 @@ def : InstRW<[GenericWriteTrap], (instrs BREAK16_MMR6, BREAK_MMR6, SDBBP_MMR6,
 
 def : InstRW<[GenericWriteTrap], (instrs TEQ_NM, TNE_NM)>;
 
+def : InstRW<[GenericWriteJump], (instrs ERET_NM, ERETNC_NM, DERET_NM,
+				 SIGRIE_NM, BREAK_NM, SDBBP_NM, SYSCALL_NM,
+				 BREAK16_NM, SDBBP16_NM, SYSCALL16_NM)>;
+
 // MIPS64
 // ======
 
@@ -557,6 +561,13 @@ def : InstRW<[GenericWriteCOPOther], (instrs DMFC2, DMTC2)>;
 // dependant.
 def : InstRW<[GenericWriteMove], (instrs CFC2_MM, CTC2_MM)>;
 
+
+// nanoMIPS
+// =============
+
+def : InstRW<[GenericWriteCOP0], (instrs DI_NM, EI_NM, WAIT_NM)>;
+def : InstRW<[GenericReadCOP0], (instrs MFC0_NM, MFHC0_NM)>;
+def : InstRW<[GenericWriteCOP0], (instrs MTC0_NM, MTHC0_NM)>;
 
 // MIPS MT ASE - hasMT
 // ====================
@@ -735,6 +746,15 @@ def: InstRW<[GenericWriteStore], (instrs SW_NM, SWs9_NM, SW16_NM, SH16_NM,
                                   SWX_NM, SWXS_NM, SHX_NM, SHXS_NM, SBX_NM,
                                   UASH_NM, SWM_NM, UASWM_NM, UASW_NM, SWPC_NM,
 				  SC_NM, SCWP_NM)>;
+
+def : InstRW<[GenericWriteCOP0], (instrs EHB_NM, PAUSE_NM)>;
+
+// pref
+def : InstRW<[GenericWritePref], (instrs PREF_NM, PREFs9_NM)>;
+// cache
+def : InstRW<[GenericWriteCache], (instrs CACHE_NM)>;
+// sync
+def : InstRW<[GenericWriteSync], (instrs SYNC_NM, SYNCI_NM, SYNCIs9_NM)>;
 
 // microMIPS32r6
 // =============

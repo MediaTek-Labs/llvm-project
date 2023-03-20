@@ -56,7 +56,8 @@ raw_ostream &operator<<(raw_ostream &OS, const MipsRelocationEntry &RHS) {
 
 class MipsELFObjectWriter : public MCELFObjectTargetWriter {
 public:
-  MipsELFObjectWriter(uint8_t OSABI, bool HasRelocationAddend, bool Is64);
+  MipsELFObjectWriter(uint8_t OSABI, bool HasRelocationAddend,
+		      uint16_t EMachine, bool Is64);
 
   ~MipsELFObjectWriter() override = default;
 
@@ -211,8 +212,9 @@ static void dumpRelocs(const char *Prefix, const Container &Relocs) {
 #endif
 
 MipsELFObjectWriter::MipsELFObjectWriter(uint8_t OSABI,
-                                         bool HasRelocationAddend, bool Is64)
-    : MCELFObjectTargetWriter(Is64, OSABI, ELF::EM_MIPS, HasRelocationAddend) {}
+                                         bool HasRelocationAddend,
+					 uint16_t EMachine, bool Is64)
+    : MCELFObjectTargetWriter(Is64, OSABI, EMachine, HasRelocationAddend) {}
 
 unsigned MipsELFObjectWriter::getRelocType(MCContext &Ctx,
                                            const MCValue &Target,
@@ -666,7 +668,9 @@ std::unique_ptr<MCObjectTargetWriter>
 llvm::createMipsELFObjectWriter(const Triple &TT, bool IsN32) {
   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
   bool IsN64 = TT.isArch64Bit() && !IsN32;
-  bool HasRelocationAddend = TT.isArch64Bit();
+  bool HasRelocationAddend = (TT.isArch64Bit() || TT.getArch() == llvm::Triple::nanomips);
+  uint16_t EMachine = ((TT.getArch() == llvm::Triple::nanomips)?
+		       ELF::EM_NANOMIPS : ELF::EM_MIPS);
   return std::make_unique<MipsELFObjectWriter>(OSABI, HasRelocationAddend,
-                                                IsN64);
+					       EMachine, IsN64);
 }

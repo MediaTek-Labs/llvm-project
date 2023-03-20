@@ -138,7 +138,11 @@ void MipsMCCodeEmitter::emitInstruction(uint64_t Val, unsigned Size,
   // Little-endian byte ordering:
   //   mips32r2:   4 | 3 | 2 | 1
   //   microMIPS:  2 | 1 | 4 | 3
-  if (IsLittleEndian && Size == 4 && isMicroMips(STI)) {
+  if (IsLittleEndian && Size == 4 && (isMicroMips(STI) || isNanoMips(STI))) {
+    emitInstruction(Val >> 16, 2, STI, OS);
+    emitInstruction(Val, 2, STI, OS);
+  } else if (IsLittleEndian && Size == 6 && isNanoMips(STI)) {
+    emitInstruction(Val >> 32, 2, STI, OS);
     emitInstruction(Val >> 16, 2, STI, OS);
     emitInstruction(Val, 2, STI, OS);
   } else {
@@ -182,7 +186,7 @@ encodeInstruction(const MCInst &MI, raw_ostream &OS,
   }
 
   size_t N = Fixups.size();
-  uint32_t Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
+  uint64_t Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
 
   // Check for unimplemented opcodes.
   // Unfortunately in MIPS both NOP and SLL will come in with Binary == 0

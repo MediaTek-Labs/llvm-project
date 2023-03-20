@@ -85,11 +85,276 @@ def Log2XForm : SDNodeXForm<imm, [{ return CurDAG->getTargetConstant(Log2_32(N->
                                                                    SDLoc(N), MVT::i32);
                                   }]>;
 
+class RegConstraint<string C> {
+  string Constraints = C;
+}
+class NoEncode<string E> {
+  string DisableEncoding = E;
+}
+
 //===----------------------------------------------------------------------===//
 //
 // Instruction Descriptions
 //
 //===----------------------------------------------------------------------===//
+
+
+class _Pool_P32<bits<5> psel> : InstSize32 {
+  let Inst{31-26} = {psel{4...2}, 0b0, psel{1...0}};
+}
+
+class _Pool_P_ADDIU<bits<5> psel> : _Pool_P32<0b00000> {
+  let Inst{25...21} = psel;
+}
+
+class _Pool_P32A<bits<3> psel> : _Pool_P32<0b00100> {
+  let Inst{2...0} = psel;
+}
+
+class _Pool_P_GP_W<bits<2> psel> : _Pool_P32<0b01000> {
+  let Inst{1...0} = psel;
+}
+
+class _Pool_P_U12<bits<4> psel> : _Pool_P32<0b10000> {
+  let Inst{15-12} = psel;
+}
+
+class _Pool_P_LUI<bits<1> psel> : _Pool_P32<0b11100> {
+  let Inst{1} = psel;
+}
+
+class _Pool_P48I<bits<5> psel> : InstSize48 {
+  let Inst{47...42} = 0b011000;
+  let Inst{36...32} = psel;
+}
+
+class _Pool_P_GP_BH<bits<3> psel> : _Pool_P32<0b01001> {
+  let Inst{20...18} = psel;
+}
+
+class _Pool_P_LS_U12<bits<4> psel> : _Pool_P32<0b10001> {
+  let Inst{15...12} = psel;
+}
+
+class _Pool_P_LS_S9<bits<3> psel> : _Pool_P32<0b10101> {
+  let Inst{10...8} = psel;
+}
+
+// TODO MOVE.BALC
+
+class _Pool_P_BAL<bits<1> psel> : _Pool_P32<0b00110> {
+  let Inst{25} = psel;
+}
+
+class _Pool_P_J<bits<4> psel> : _Pool_P32<0b01010> {
+  let Inst{15...12} = psel;
+}
+
+class _Pool_P_BR1<bits<2> psel> : _Pool_P32<0b10010> {
+  let Inst{15...14} = psel;
+}
+
+class _Pool_P_BR2<bits<2> psel> : _Pool_P32<0b10110> {
+  let Inst{15...14} = psel;
+}
+
+class _Pool_P_BR12<bits<3> psel> : _Pool_P32<0b10010> {
+  let Inst{29} = psel{2};
+  let Inst{15...14} = psel{1...0};
+}
+
+class _Pool_P_BRI<bits<3> psel> : _Pool_P32<0b11010> {
+  let Inst{20...18} = psel;
+}
+
+class _Pool_P_BALRSC<bits<5> psel> : _Pool_P_J<0b1000> {
+  let Inst{25...21} = psel;
+}
+
+class _Pool_P_SHIFT<bits<4> psel> : _Pool_P_U12<0b1100> {
+  let Inst{8...5} = psel;
+  bits<5> shift;
+  bits<5> rs;
+  bits<5> rt;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs;
+  let Inst{4...0} = shift;
+}
+
+class _Pool_P_SLL<bits<5> rt, bits<5> shift> : _Pool_P_SHIFT<0b0000> {
+  let Inst{25...21} = rt;
+  let Inst{4...0} = shift;
+}
+
+class _Pool_P_ROTX<bits<2> psel> : _Pool_P_U12<0b1101> {
+  let Inst{11} = psel{1};
+  let Inst{5} = psel{0};
+}
+
+class _Pool_P_EXT_INS<bits<4> psel> : _Pool_P_U12<psel> {
+  let Inst{11} = 0;
+  let Inst{5} = 0;
+}
+
+class _Pool_P_PREF_U12<bits<5> psel> : _Pool_P_LS_U12<0b0011> {
+  let Inst{25...21} = psel;
+}
+
+class _Pool_P_LS_S0<bits<4> psel>: _Pool_P_LS_S9<0b000> {
+  let Inst{14...11} = psel;
+}
+
+class _Pool_P_PREF_S9<bits<5> psel>: _Pool_P_LS_S0<0b0011> {
+  let Inst{25...21} = psel;
+}
+
+class _Pool_P_LS_S1<bits<4> psel>: _Pool_P_LS_S9<0b001> {
+  let Inst{14...11} = psel;
+}
+
+class _Pool_P_LL<bits<2> psel>: _Pool_P_LS_S1<0b1010> {
+  let Inst{1...0} = psel;
+}
+
+class _Pool_P_SC<bits<2> psel>: _Pool_P_LS_S1<0b1011> {
+  let Inst{1...0} = psel;
+}
+
+class _Pool_P_LS_E0<bits<4> psel>: _Pool_P_LS_S9<0b010> {
+  let Inst{14...11} = psel;
+}
+
+class _Pool_P_LLE<bits<2> psel>: _Pool_P_LS_E0<0b1010> {
+  let Inst{1...0} = psel;
+}
+
+class _Pool_P_PREFE<bits<5> psel>: _Pool_P_LS_E0<0b0011> {
+  let Inst{25...21} = psel;
+}
+
+class _Pool_P_SCE<bits<2> psel>: _Pool_P_LS_E0<0b1011> {
+  let Inst{1...0} = psel;
+}
+
+class _Pool_P_LS_WM<bits<1> psel>: _Pool_P_LS_S9<0b100> {
+  let Inst{11} = psel;
+}
+
+class _Pool_P_LS_UAWM<bits<1> psel>: _Pool_P_LS_S9<0b101> {
+  let Inst{11} = psel;
+}
+
+class _Pool_P16<bits<5> psel> : InstSize16 {
+  let Inst{15-10} = {psel{4...2}, 0b1, psel{1...0}};
+}
+
+class _Pool_P16_MV : _Pool_P16<0b00000>;
+
+class _Pool_P16_SR<bits<1> psel> : _Pool_P16<0b00011> {
+  let Inst{8} = psel;
+}
+
+class _Pool_P16_SHIFT<bits<1> isel> : _Pool_P16<0b00100> {
+  let Inst{3} = isel;
+}
+
+class _Pool_P16_4X4<bits<2> psel> : _Pool_P16<0b00111> {
+  let Inst{8} = psel{1};
+  let Inst{3} = psel{0};
+}
+
+class _Pool_P16C<bits<1> psel> : _Pool_P16<0b01000> {
+  let Inst{0} = psel;
+}
+
+class _Pool_POOL16C_00<bits<2> psel> : _Pool_P16<0b01000> {
+  let Inst{3...2} = psel;
+  let Inst{1...0} = 0b00;
+}
+
+class _Pool_P16_LB<bits<2> psel> : _Pool_P16<0b01011> {
+  let Inst{3...2} = psel;
+}
+
+class _Pool_P16_A1<bits<1> psel> : _Pool_P16<0b01100> {
+  let Inst{6} = psel;
+}
+
+class _Pool_P16_LH<bits<2> psel> : _Pool_P16<0b01111> {
+  let Inst{3} = psel{1};
+  let Inst{0} = psel{0};
+}
+
+class _Pool_P16_A2<bits<1> psel> : _Pool_P16<0b10000> {
+  let Inst{3} = psel;
+}
+
+class _Pool_P16_ADDU<bits<1> psel> : _Pool_P16<0b10100> {
+  let Inst{0} = psel;
+}
+
+class _Pool_P16_BR<bits<4> psel> : _Pool_P16<0b11010> {
+  let Inst{3...0} = psel;
+}
+
+class _Pool_P16_RI<bits<2> psel> : _Pool_P16_MV {
+  let Inst{4...3} = psel;
+  let Inst{9...5} = 0b00000;
+}
+
+class _Pool_P16_SYSCALL<bits<1> psel> : _Pool_P16_RI<0b01> {
+  let Inst{2} = psel;
+}
+
+class _Pool_P_RI<bits<2> psel> : _Pool_P_ADDIU<0b00000> {
+  let Inst{20...19} = psel;
+}
+
+class _Pool_POOL32A0<bits<1> psel> : _Pool_P32A<0b000> {
+  let Inst{5} = psel;
+}
+
+class _Pool_POOL32A0_0<bits<6> psel> : _Pool_POOL32A0<0b0> {
+  let Inst{9...6} = psel{5...2};
+  let Inst{4...3} = psel{1...0};
+}
+
+class _Pool_P_TRAP<bits<1> isel> : _Pool_POOL32A0_0<0b000000>
+{
+  let Inst{10} = isel;
+}
+
+class _Pool_P_CMOVE<bits<1> isel> : _Pool_POOL32A0_0<0b100010>
+{
+  let Inst{10} = isel;
+}
+
+class _Pool_POOL32A7<bits<3> psel> : _Pool_P32A<0b111> {
+  let Inst{5...3} = psel;
+}
+
+class _Pool_POOL32Axf_4<bits<7> isel> : _Pool_POOL32A7<0b111> {
+  let Inst{15...9} = isel;
+  let Inst{8...6} = 0b100;
+}
+
+class _Pool_POOL32Axf_5<bits<2> psel> : _Pool_POOL32A7<0b111> {
+  let Inst{8...6} = 0b101;
+  let Inst{15...14} = psel;
+}
+
+class _Pool_POOL32Axf_5_group1<bits<5> isel> : _Pool_POOL32Axf_5<0b01> {
+  let Inst{13...9} = isel;
+}
+
+class _Pool_POOL32Axf_5_group3<bits<5> isel> : _Pool_POOL32Axf_5<0b11> {
+  let Inst{13...9} = isel;
+}
+
+class _Pool_PP_LSX<bit scaled, bits<4> isel> : _Pool_POOL32A7<0b000> {
+  let Inst{6} = scaled;
+  let Inst{10...7} = isel;
+}
 
 // 32-bit arithmetic and logical instructions with 3 register operands.
 class ArithLoginR32<string opstr, RegisterOperand RO,

@@ -77,6 +77,7 @@ void MipsTargetStreamer::emitDirectiveEnt(const MCSymbol &Symbol) {}
 void MipsTargetStreamer::emitDirectiveAbiCalls() {}
 void MipsTargetStreamer::emitDirectiveNaN2008() {}
 void MipsTargetStreamer::emitDirectiveLinkRelax() {}
+void MipsTargetStreamer::emitDirectiveNoLinkRelax() {}
 void MipsTargetStreamer::emitDirectiveNaNLegacy() {}
 void MipsTargetStreamer::emitDirectiveOptionPic0() {}
 void MipsTargetStreamer::emitDirectiveOptionPic2() {}
@@ -504,6 +505,7 @@ void MipsTargetAsmStreamer::emitDirectiveAbiCalls() { OS << "\t.abicalls\n"; }
 
 void MipsTargetAsmStreamer::emitDirectiveNaN2008() { OS << "\t.nan\t2008\n"; }
 void MipsTargetAsmStreamer::emitDirectiveLinkRelax() { OS << "\t.linkrelax\n"; }
+void MipsTargetAsmStreamer::emitDirectiveNoLinkRelax() { OS << "\t.set nolinkrelax\n"; }
 
 void MipsTargetAsmStreamer::emitDirectiveNaNLegacy() {
   OS << "\t.nan\tlegacy\n";
@@ -882,6 +884,12 @@ MipsTargetELFStreamer::MipsTargetELFStreamer(MCStreamer &S,
   if (Features[Mips::FeatureNaN2008])
     EFlags |= ELF::EF_MIPS_NAN2008;
 
+  // Pid is only relevant for nanoMIPS, but not yet fully supported.
+  Pid = false;
+  if (STI.getTargetTriple().getArch() == Triple::ArchType::nanomips) {
+    Pic = false;
+  }
+
   MCA.setELFHeaderEFlags(EFlags);
 }
 
@@ -942,6 +950,8 @@ void MipsTargetELFStreamer::finish() {
     EFlags |= ELF::EF_MIPS_ABI_O32;
   else if (getABI().IsN32())
     EFlags |= ELF::EF_MIPS_ABI2;
+  else if (getABI().IsP32())
+    EFlags |= ELF::E_NANOMIPS_ABI_P32;
 
   if (Features[Mips::FeatureGP64Bit]) {
     if (getABI().IsO32())
@@ -949,13 +959,25 @@ void MipsTargetELFStreamer::finish() {
   } else if (Features[Mips::FeatureMips64r2] || Features[Mips::FeatureMips64])
     EFlags |= ELF::EF_MIPS_32BITMODE;
 
-  // -mplt is not implemented but we should act as if it was
-  // given.
-  if (!Features[Mips::FeatureNoABICalls])
-    EFlags |= ELF::EF_MIPS_CPIC;
+  if (STI.getTargetTriple().getArch() != Triple::ArchType::nanomips) {
+    // -mplt is not implemented but we should act as if it was
+    // given.
+    if (!Features[Mips::FeatureNoABICalls])
+      EFlags |= ELF::EF_MIPS_CPIC;
 
-  if (Pic)
-    EFlags |= ELF::EF_MIPS_PIC | ELF::EF_MIPS_CPIC;
+    if (Pic)
+      EFlags |= ELF::EF_MIPS_PIC | ELF::EF_MIPS_CPIC;
+  }
+  else {
+    if (Pic)
+      EFlags |= ELF::EF_NANOMIPS_PIC;
+    if (Pid)
+      EFlags |= ELF::EF_NANOMIPS_PID;
+    if (Features[Mips::FeaturePCRel])
+      EFlags |= ELF::EF_NANOMIPS_PCREL;
+    if (Features[Mips::FeatureRelax])
+      EFlags |= ELF::EF_NANOMIPS_LINKRELAX;
+  }
 
   MCA.setELFHeaderEFlags(EFlags);
 
@@ -1114,6 +1136,27 @@ void MipsTargetELFStreamer::emitDirectiveOptionPic2() {
   // what is stated in the SYSV ABI which consider the bits EF_MIPS_PIC and
   // EF_MIPS_CPIC to be mutually exclusive.
   Flags |= ELF::EF_MIPS_PIC | ELF::EF_MIPS_CPIC;
+  MCA.setELFHeaderEFlags(Flags);
+}
+
+void MipsTargetELFStreamer::emitDirectiveLinkRelax() {
+  MCAssembler &MCA = getStreamer().getAssembler();
+  unsigned Flags = MCA.getELFHeaderEFlags();
+  Flags |= ELF::EF_NANOMIPS_LINKRELAX;
+  MCA.setELFHeaderEFlags(Flags);
+}
+
+void MipsTargetELFStreamer::emitDirectiveNoLinkRelax() {
+  MCAssembler &MCA = getStreamer().getAssembler();
+  unsigned Flags = MCA.getELFHeaderEFlags();
+  Flags &= ~ELF::EF_NANOMIPS_LINKRELAX;
+  MCA.setELFHeaderEFlags(Flags);
+}
+
+void MipsTargetELFStreamer::emitDirectiveModulePcRel() {
+  MCAssembler &MCA = getStreamer().getAssembler();
+  unsigned Flags = MCA.getELFHeaderEFlags();
+  Flags |= ELF::EF_NANOMIPS_PCREL;
   MCA.setELFHeaderEFlags(Flags);
 }
 

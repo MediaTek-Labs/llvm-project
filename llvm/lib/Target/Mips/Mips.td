@@ -155,8 +155,8 @@ def FeatureRelax       : SubtargetFeature<"relax", "UseLinkerRelax",
 
 def FeatureNanoMips    : SubtargetFeature<"nanomips", "MipsArchVersion",
                                 "NanoMips",
-                                          "NanoMips ISA Support [experimental]",
-                                          [FeatureRelax]>;
+                                "NanoMips ISA Support [experimental]">;
+
 def FeatureNMS1        : SubtargetFeature<"nms1", "MipsArchVersion",
                                 "NanoMips",
                                 "NanoMips ISA Support [experimental]">;
@@ -225,6 +225,9 @@ def FeatureUseIndirectJumpsHazard : SubtargetFeature<"use-indirect-jump-hazard",
                                                     "UseIndirectJumpsHazard",
                                                     "true", "Use indirect jump"
                         " guards to prevent certain speculation based attacks">;
+
+def FeaturePCRel : SubtargetFeature<"pcrel", "UsePCRel", "true",
+                                    "Use PC-relative addressing mode for address calculations">;
 
 //===----------------------------------------------------------------------===//
 // Register File, Calling Conv, Instruction Descriptions

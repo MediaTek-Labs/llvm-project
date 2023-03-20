@@ -401,6 +401,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool parseSetNoCRCDirective();
   bool parseSetNoVirtDirective();
   bool parseSetNoGINVDirective();
+  bool parseSetNoLinkRelax();
 
   bool parseSetAssignment();
 
@@ -412,6 +413,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool parseDirectiveTpRelDWord();
   bool parseDirectiveModule();
   bool parseDirectiveModuleFP();
+  bool parseDirectiveLinkRelax();
   bool parseFpABIValue(MipsABIFlagsSection::FpABIKind &FpABI,
                        StringRef Directive);
 
@@ -7135,7 +7137,14 @@ bool MipsAsmParser::parseSetNoReorderDirective() {
     return false;
   }
   AssemblerOptions.back()->setNoReorder();
-  getTargetStreamer().emitDirectiveSetNoReorder();
+  // NanoMips has no delayed branches and no instruction re-ordering.
+  // This directive is still relevant for sanity checks to be performed
+  // when converting a delayed branch mnemonic to its compact form.
+  // FIXME: we currently perform the conversion without the necessary sanity
+  // checks for NanoMips , so accept & ignore the set noreorder directive
+  // for now.
+  if (!hasNanoMips())
+    getTargetStreamer().emitDirectiveSetNoReorder();
   Parser.Lex(); // Consume the EndOfStatement.
   return false;
 }
@@ -7399,6 +7408,23 @@ bool MipsAsmParser::parseSetNoGINVDirective() {
   return false;
 }
 
+bool MipsAsmParser::parseSetNoLinkRelax() {
+  MCAsmParser &Parser = getParser();
+  Parser.Lex(); // Eat "nolinkrelax".
+
+  // If this is not the end of the statement, report an error.
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
+    reportParseError("unexpected token, expected end of statement");
+    return false;
+  }
+
+  clearFeatureBits(Mips::FeatureRelax, "relax");
+
+  getTargetStreamer().emitDirectiveNoLinkRelax();
+  Parser.Lex(); // Consume the EndOfStatement.
+  return false;
+}
+
 bool MipsAsmParser::parseSetPopDirective() {
   MCAsmParser &Parser = getParser();
   SMLoc Loc = getLexer().getLoc();
@@ -7647,6 +7673,10 @@ bool MipsAsmParser::parseSetFeature(uint64_t Feature) {
   case Mips::FeatureGINV:
     setFeatureBits(Mips::FeatureGINV, "ginv");
     getTargetStreamer().emitDirectiveSetGINV();
+    break;
+  case Mips::FeatureRelax:
+    setFeatureBits(Mips::FeatureRelax, "relax");
+    getTargetStreamer().emitDirectiveLinkRelax();
     break;
   }
   return false;
@@ -7905,6 +7935,13 @@ bool MipsAsmParser::parseDirectiveNaN() {
   return false;
 }
 
+bool MipsAsmParser::parseDirectiveLinkRelax() {
+  getParser().Lex();
+  setModuleFeatureBits(Mips::FeatureRelax, "relax");
+  getTargetStreamer().emitDirectiveLinkRelax();
+  return false;
+}
+
 bool MipsAsmParser::parseDirectiveSet() {
   const AsmToken &Tok = getParser().getTok();
   StringRef IdVal = Tok.getString();
@@ -7944,8 +7981,6 @@ bool MipsAsmParser::parseDirectiveSet() {
     return parseSetMacroDirective();
   if (IdVal == "nomacro")
     return parseSetNoMacroDirective();
-  if (IdVal == "mips16")
-    return parseSetMips16Directive();
   if (IdVal == "nomips16")
     return parseSetNoMips16Directive();
   if (IdVal == "nomicromips") {
@@ -7954,49 +7989,53 @@ bool MipsAsmParser::parseDirectiveSet() {
     getParser().eatToEndOfStatement();
     return false;
   }
-  if (IdVal == "micromips") {
-    if (hasMips64r6()) {
-      Error(Loc, ".set micromips directive is not supported with MIPS64R6");
-      return false;
+  if (!hasNanoMips()) {
+    if (IdVal == "mips16")
+      return parseSetMips16Directive();
+    if (IdVal == "micromips") {
+      if (hasMips64r6()) {
+	Error(Loc, ".set micromips directive is not supported with MIPS64R6");
+	return false;
+      }
+      return parseSetFeature(Mips::FeatureMicroMips);
     }
-    return parseSetFeature(Mips::FeatureMicroMips);
-  }
-  if (IdVal == "mips0")
-    return parseSetMips0Directive();
-  if (IdVal == "mips1")
-    return parseSetFeature(Mips::FeatureMips1);
-  if (IdVal == "mips2")
-    return parseSetFeature(Mips::FeatureMips2);
-  if (IdVal == "mips3")
-    return parseSetFeature(Mips::FeatureMips3);
-  if (IdVal == "mips4")
-    return parseSetFeature(Mips::FeatureMips4);
-  if (IdVal == "mips5")
-    return parseSetFeature(Mips::FeatureMips5);
-  if (IdVal == "mips32")
-    return parseSetFeature(Mips::FeatureMips32);
-  if (IdVal == "mips32r2")
-    return parseSetFeature(Mips::FeatureMips32r2);
-  if (IdVal == "mips32r3")
-    return parseSetFeature(Mips::FeatureMips32r3);
-  if (IdVal == "mips32r5")
-    return parseSetFeature(Mips::FeatureMips32r5);
-  if (IdVal == "mips32r6")
-    return parseSetFeature(Mips::FeatureMips32r6);
-  if (IdVal == "mips64")
-    return parseSetFeature(Mips::FeatureMips64);
-  if (IdVal == "mips64r2")
-    return parseSetFeature(Mips::FeatureMips64r2);
-  if (IdVal == "mips64r3")
-    return parseSetFeature(Mips::FeatureMips64r3);
-  if (IdVal == "mips64r5")
-    return parseSetFeature(Mips::FeatureMips64r5);
-  if (IdVal == "mips64r6") {
-    if (inMicroMipsMode()) {
-      Error(Loc, "MIPS64R6 is not supported with microMIPS");
-      return false;
+    if (IdVal == "mips0")
+      return parseSetMips0Directive();
+    if (IdVal == "mips1")
+      return parseSetFeature(Mips::FeatureMips1);
+    if (IdVal == "mips2")
+      return parseSetFeature(Mips::FeatureMips2);
+    if (IdVal == "mips3")
+      return parseSetFeature(Mips::FeatureMips3);
+    if (IdVal == "mips4")
+      return parseSetFeature(Mips::FeatureMips4);
+    if (IdVal == "mips5")
+      return parseSetFeature(Mips::FeatureMips5);
+    if (IdVal == "mips32")
+      return parseSetFeature(Mips::FeatureMips32);
+    if (IdVal == "mips32r2")
+      return parseSetFeature(Mips::FeatureMips32r2);
+    if (IdVal == "mips32r3")
+      return parseSetFeature(Mips::FeatureMips32r3);
+    if (IdVal == "mips32r5")
+      return parseSetFeature(Mips::FeatureMips32r5);
+    if (IdVal == "mips32r6")
+      return parseSetFeature(Mips::FeatureMips32r6);
+    if (IdVal == "mips64")
+      return parseSetFeature(Mips::FeatureMips64);
+    if (IdVal == "mips64r2")
+      return parseSetFeature(Mips::FeatureMips64r2);
+    if (IdVal == "mips64r3")
+      return parseSetFeature(Mips::FeatureMips64r3);
+    if (IdVal == "mips64r5")
+      return parseSetFeature(Mips::FeatureMips64r5);
+    if (IdVal == "mips64r6") {
+      if (inMicroMipsMode()) {
+	Error(Loc, "MIPS64R6 is not supported with microMIPS");
+	return false;
+      }
+      return parseSetFeature(Mips::FeatureMips64r6);
     }
-    return parseSetFeature(Mips::FeatureMips64r6);
   }
   if (IdVal == "dsp")
     return parseSetFeature(Mips::FeatureDSP);
@@ -8032,6 +8071,12 @@ bool MipsAsmParser::parseDirectiveSet() {
     return parseSetFeature(Mips::FeatureGINV);
   if (IdVal == "noginv")
     return parseSetNoGINVDirective();
+  if (hasNanoMips()) {
+    if (IdVal == "linkrelax")
+      return parseSetFeature(Mips::FeatureRelax);
+    if (IdVal == "nolinkrelax")
+      return parseSetNoLinkRelax();
+  }
 
   // It is just an identifier, look for an assignment.
   return parseSetAssignment();
@@ -8255,6 +8300,7 @@ bool MipsAsmParser::parseSSectionDirective(StringRef Section, unsigned Type) {
 ///  ::= .module novirt
 ///  ::= .module ginv
 ///  ::= .module noginv
+///  ::= .module pcrel
 bool MipsAsmParser::parseDirectiveModule() {
   MCAsmParser &Parser = getParser();
   MCAsmLexer &Lexer = getLexer();
@@ -8487,6 +8533,18 @@ bool MipsAsmParser::parseDirectiveModule() {
     }
 
     return false; // parseDirectiveModule has finished successfully.
+  } else if (hasNanoMips() && Option == "pcrel") {
+    setModuleFeatureBits(Mips::FeaturePCRel, "pcrel");
+
+    getTargetStreamer().emitDirectiveModulePcRel();
+
+    // If this is not the end of the statement, report an error.
+    if (getLexer().isNot(AsmToken::EndOfStatement)) {
+      reportParseError("unexpected token, expected end of statement");
+      return false;
+    }
+
+    return false; // parseDirectiveModule has finished successfully.
   } else {
     return Error(L, "'" + Twine(Option) + "' is not a valid .module option.");
   }
@@ -8606,7 +8664,7 @@ bool MipsAsmParser::ParseDirective(AsmToken DirectiveID) {
   // chance at recognizing it.
 
   MCAsmParser &Parser = getParser();
-  StringRef IDVal = DirectiveID.getString();
+  StringRef IDVal = DirectiveID.getString().lower();
 
   if (IDVal == ".cpadd") {
     parseDirectiveCpAdd(DirectiveID.getLoc());
@@ -8777,6 +8835,11 @@ bool MipsAsmParser::ParseDirective(AsmToken DirectiveID) {
 
   if (IDVal == ".set") {
     parseDirectiveSet();
+    return false;
+  }
+
+  if (hasNanoMips() && IDVal == ".linkrelax") {
+    parseDirectiveLinkRelax();
     return false;
   }
 

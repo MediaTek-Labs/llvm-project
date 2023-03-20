@@ -1,5 +1,5 @@
 class InstNM<dag outs, dag ins, string asmstr, list<dag> pattern,
-             InstrItinClass itin = IIPseudo>:
+             InstrItinClass itin = NoItinerary>:
   Instruction, PredicateControl, ISA_NANOMIPS
 {
   let Namespace = "Mips";
@@ -21,21 +21,25 @@ class InstNM<dag outs, dag ins, string asmstr, list<dag> pattern,
 class InstSize16 {
   field bits<16> Inst;
   int Size = 2;
+  field bits<16> SoftFail = 0;
 }
 
 class InstSize32 {
   field bits<32> Inst;
   int Size = 4;
+  field bits<32> SoftFail = 0;
 }
 
 class InstSize48 {
   field bits<48> Inst;
   int Size = 6;
+  field bits<48> SoftFail = 0;
 }
 
 // nanoMIPS Pseudo Instructions Format
-class PseudoInstNM<dag outs, dag ins, list<dag> pattern> :
-    InstNM<outs, ins, "", pattern> {
+class PseudoInstNM<dag outs, dag ins, list<dag> pattern,
+		   InstrItinClass itin = IIPseudo> :
+    InstNM<outs, ins, "", pattern, itin> {
   let isCodeGenOnly = 1;
   let isPseudo = 1;
 }

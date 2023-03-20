@@ -496,6 +496,10 @@ protected:
   /// location is allowed.
   bool SupportsExtendedDwarfLocDirective = true;
 
+  /// True if the target uses compressed half-word instruction byte order.
+  /// This is true for NanoMips and Thumb2.
+  bool UsesCompInstByteOrder = false;
+
   //===--- Prologue State ----------------------------------------------===//
 
   std::vector<MCCFIInstruction> InitialFrameState;
@@ -881,6 +885,9 @@ public:
   bool hasMipsExpressions() const { return HasMipsExpressions; }
   bool needsFunctionDescriptors() const { return NeedsFunctionDescriptors; }
   bool shouldUseMotorolaIntegers() const { return UseMotorolaIntegers; }
+
+  /// True if the target uses compressed half-word instruction byte ordering.
+  bool usesCompInstByteOrder() const { return UsesCompInstByteOrder; }
 };
 
 } // end namespace llvm

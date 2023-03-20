@@ -8977,6 +8977,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsAsmParser() {
   RegisterMCAsmParser<MipsAsmParser> Y(getTheMipselTarget());
   RegisterMCAsmParser<MipsAsmParser> A(getTheMips64Target());
   RegisterMCAsmParser<MipsAsmParser> B(getTheMips64elTarget());
+  RegisterMCAsmParser<MipsAsmParser> C(getTheNanoMipsTarget());
 }
 
 #define GET_REGISTER_MATCHER

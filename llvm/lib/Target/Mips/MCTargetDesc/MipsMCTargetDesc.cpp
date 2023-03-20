@@ -211,6 +211,6 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTargetMC() {
   for (Target *T : {&getTheMipsTarget(), &getTheMips64Target()})
     TargetRegistry::RegisterMCCodeEmitter(*T, createMipsMCCodeEmitterEB);
 
-  for (Target *T : {&getTheMipselTarget(), &getTheMips64elTarget()})
+  for (Target *T : {&getTheMipselTarget(), &getTheMips64elTarget(), &getTheNanoMipsTarget()})
     TargetRegistry::RegisterMCCodeEmitter(*T, createMipsMCCodeEmitterEL);
 }

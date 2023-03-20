@@ -2256,11 +2256,56 @@ def SW4x4_NM : StoreMemoryNM<"sw", GPRNM4ZOpnd, mem_nm4s2, store, addruimm4s2, I
 
 //def CACHE_NM : LSMem_S9_Enc<0b001, 0b0111>;
 
-def MOVE_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins GPRNM32Opnd:$rs),
-                      "move\t$rt, $rs", []>, InstSize16;
-def MOVEP_NM : InstNM<(outs GPRNM32Opnd:$dst1, GPRNM32Opnd:$dst2),
-                      (ins GPRNM32Opnd:$src1, GPRNM32Opnd:$src2),
-                      "movep\t$dst1, $dst2, $src1, $src2", []>, InstSize16;
+class MOVE_Enc : _Pool_P16_MV
+{
+  bits<5> rt;
+  bits<5> rs;
+  let Inst{9...5} = rt;
+  let Inst{4...0} = rs;
+}
+
+class MOVEP_Enc<bits<5> isel> : _Pool_P16<isel>
+{
+  bits<2> dst1;
+  bits<5> src1;
+  bits<5> src2;
+
+  let Inst{9} = src2{4};
+  let Inst{7...5} = src2{2...0};
+  let Inst{4} = src1{4};
+  let Inst{2...0} = src1{2...0};
+  let Inst{8} = dst1{0};
+  let Inst{3} = dst1{1};
+}
+
+class MOVEPREV_Enc<bits<5> isel> : _Pool_P16<isel>
+{
+  bits<2> src1;
+  bits<5> dst1;
+  bits<5> dst2;
+
+  let Inst{9} = dst2{4};
+  let Inst{7...5} = dst2{2...0};
+  let Inst{4} = dst1{4};
+  let Inst{2...0} = dst1{2...0};
+  let Inst{8} = src1{0};
+  let Inst{3} = src1{1};
+}
+
+let isMoveReg = 1 in {
+def MOVE_NM : InstNM<(outs GPRNM32NZOpnd:$rt), (ins GPRNM32Opnd:$rs),
+                      "move\t$rt, $rs", []>, MOVE_Enc;
+
+def MOVEP_NM : InstNM<(outs GPRNM2R1Opnd:$dst1, GPRNM2R2Opnd:$dst2),
+		      (ins GPRNM4ZOpnd:$src1, GPRNM4ZOpnd:$src2),
+		      "movep\t$dst1, $dst2, $src1, $src2", []>,
+		      MOVEP_Enc<0b10111>, NoEncode<"$dst2">;
+
+def MOVEPREV_NM : InstNM<(outs GPRNM4Opnd:$dst1, GPRNM4Opnd:$dst2),
+			 (ins GPRNM2R1Opnd:$src1, GPRNM2R2Opnd:$src2),
+			 "movep\t$dst1, $dst2, $src1, $src2", []>,
+			 MOVEPREV_Enc<0b11111>, NoEncode<"$src2">;
+}
 
 class LoadExtend <SDPatternOperator OpNode, InstNM InstLoad,
 		       SDPatternOperator ImmType, InstNM InstAdd> :
@@ -2422,19 +2467,25 @@ def SCWP_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, GPRNM32Opnd:
 }
 
 // Conditional Moves
+class CondMove_Enc<bits<1> isel> : _Pool_P_CMOVE<isel>
+{
+  bits<5> rd;
+  bits<5> rs;
+  bits<5> rt;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs;
+  let Inst{15...11} = rd;
+}
+
 def MOVZ_NM : InstNM<(outs GPRNM32Opnd:$rd),
                      (ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, GPRNM32Opnd:$F),
                      "movz\t$rd, $rs, $rt",
-                     []>, InstSize32 {
-  let Constraints = "$F = $rd";
-}
+                     []>, CondMove_Enc<0b0>, RegConstraint<"$F = $rd">;
 
 def MOVN_NM : InstNM<(outs GPRNM32Opnd:$rd),
                      (ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, GPRNM32Opnd:$F),
                      "movn\t$rd, $rs, $rt",
-                     []>, InstSize32 {
-    let Constraints = "$F = $rd";
-}
+                     []>, CondMove_Enc<0b1>, RegConstraint<"$F = $rd">;
 
 multiclass MovzPats2NM<RegisterClass CRC, RegisterClass DRC,
                      Instruction MOVZInst, Instruction XORiOp> {

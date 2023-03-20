@@ -527,6 +527,8 @@ public:
     Match_RequiresPosSizeUImm6,
     Match_RequiresFirstOpLT,
     Match_RequiresFirstOpGE,
+    Match_RequiresDstRegPair,
+    Match_RequiresSrcRegPair,
     Match_RequiresBaseGP,
     Match_RequiresBaseSP,
     Match_RequiresRegRA,
@@ -6287,6 +6289,14 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
       return Match_RequiresFirstOpGE;
     return Match_Success;
   }
+  case Mips::MOVEP_NM:
+    if (Inst.getOperand(1).getReg() != Inst.getOperand(0).getReg() + 1)
+      return Match_RequiresDstRegPair;
+    return Match_Success;
+  case Mips::MOVEPREV_NM:
+    if (Inst.getOperand(3).getReg() != Inst.getOperand(2).getReg() + 1)
+      return Match_RequiresSrcRegPair;
+    return Match_Success;
   case Mips::SWSP16_NM:
   case Mips::LWSP16_NM:
   case Mips::ADDIUR1SP_NM:
@@ -6381,6 +6391,10 @@ bool MipsAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
   case Match_RequiresFirstOpGE:
     return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
                  "first register operand(rs) must not be less than second(rt)");
+  case Match_RequiresDstRegPair:
+    return Error(IDLoc, "destination registers must be in sequence");
+  case Match_RequiresSrcRegPair:
+    return Error(IDLoc, "source registers must be in sequence");
   case Match_NoFCCRegisterForCurrentISA:
     return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
                  "non-zero fcc register doesn't exist in current ISA level");

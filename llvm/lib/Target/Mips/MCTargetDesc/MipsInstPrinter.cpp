@@ -107,6 +107,21 @@ void MipsInstPrinter::printInst(const MCInst *MI, uint64_t Address,
     printSaveRestore(MI, STI, O);
     O << "\n";
     return;
+  case Mips::RESTORE_NM:
+    O << "\trestore\t";
+    printSaveRestore(MI, STI,O);
+    return;
+  case Mips::SAVE16_NM:
+  case Mips::SAVE_NM:
+    O << "\tsave\t";
+    printSaveRestore(MI ,STI,O);
+    return;
+  case Mips::RESTOREJRC16_NM:
+  case Mips::RESTOREJRC_NM:
+    O << "\trestore.jrc\t";
+    printSaveRestore(MI, STI, O);
+    O << "\n";
+    return;
   }
 
   // Try to print any aliases first.

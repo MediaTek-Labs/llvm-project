@@ -196,6 +196,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool ParseDirective(AsmToken DirectiveID) override;
 
   ParseStatus parseMemOperand(OperandVector &Operands);
+  ParseStatus parseMemNMRX(OperandVector &Operands);
   ParseStatus matchAnyRegisterNameWithoutDollar(OperandVector &Operands,
                                                 StringRef Identifier, SMLoc S);
   ParseStatus matchAnyRegisterWithoutDollar(OperandVector &Operands,
@@ -206,6 +207,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   ParseStatus parseJumpTarget(OperandVector &Operands);
   ParseStatus parseInvNum(OperandVector &Operands);
   ParseStatus parseRegisterList(OperandVector &Operands);
+  ParseStatus parseNMRegisterList(OperandVector &Operands);
 
   bool searchSymbolAlias(OperandVector &Operands);
 
@@ -979,6 +981,15 @@ public:
     return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
   }
 
+  // Find the next (or previous) i'th register in sequence for NanoMips
+  unsigned getGPRNM32RegNext(int i = 1) const {
+    assert(isRegIdx() && (RegIdx.Kind & RegKind_GPR) &&
+	   ((signed)RegIdx.Index + i >= 0) && (RegIdx.Index + i <= 31) &&
+	   "Invalid access!");
+    unsigned ClassID = Mips::GPRNM32RegClassID;
+    return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index + i);
+  }
+
   /// Coerce the register to GPR64 and return the real register for the current
   /// target.
   unsigned getGPR64Reg() const {
@@ -1722,6 +1733,31 @@ public:
 
   bool isRegList() const { return Kind == k_RegList; }
 
+  bool isNMRegList16() const {
+    if (!isRegList())
+      return false;
+
+    // List must not be empty
+    unsigned Size = RegList.List->size();
+    if (Size == 0)
+      return true;
+
+    // List must start with $fp or $ra
+    unsigned R0 = RegList.List->front();
+    unsigned R1 = RegList.List->back();
+    if (!(R0 == Mips::FP_NM || R0 == Mips::RA_NM))
+      return false;
+
+    // If $gp is specified, it must be part of a
+    // contiguous sequence of registers
+    if (R0 == Mips::FP_NM && R1 == Mips::GP_NM)
+      return (Size == 15);
+    if (R0 == Mips::RA_NM && R1 == Mips::GP_NM)
+      return (Size == 14);
+
+    return true;
+  }
+
   StringRef getToken() const {
     assert(Kind == k_Token && "Invalid access!");
     return StringRef(Tok.Data, Tok.Length);
@@ -1855,6 +1891,16 @@ public:
                 MipsAsmParser &Parser) {
     assert(Regs.size() > 0 && "Empty list not allowed");
 
+    auto Op = std::make_unique<MipsOperand>(k_RegList, Parser);
+    Op->RegList.List = new SmallVector<unsigned, 10>(Regs.begin(), Regs.end());
+    Op->StartLoc = StartLoc;
+    Op->EndLoc = EndLoc;
+    return Op;
+  }
+
+  static std::unique_ptr<MipsOperand>
+  CreateRegListNM(SmallVectorImpl<unsigned> &Regs, SMLoc StartLoc, SMLoc EndLoc,
+		  MipsAsmParser &Parser) {
     auto Op = std::make_unique<MipsOperand>(k_RegList, Parser);
     Op->RegList.List = new SmallVector<unsigned, 10>(Regs.begin(), Regs.end());
     Op->StartLoc = StartLoc;
@@ -7478,6 +7524,112 @@ ParseStatus MipsAsmParser::parseRegisterList(OperandVector &Operands) {
   SMLoc E = Parser.getTok().getLoc();
   Operands.push_back(MipsOperand::CreateRegList(Regs, S, E, *this));
   parseMemOperand(Operands);
+  return ParseStatus::Success;
+}
+
+ParseStatus
+MipsAsmParser::parseNMRegisterList(OperandVector &Operands) {
+  MCAsmParser &Parser = getParser();
+  SmallVector<unsigned, 16> Regs;
+  unsigned RegNo;
+  unsigned PrevReg = Mips::NoRegister;
+  bool RegRange = false;
+  SmallVector<std::unique_ptr<MCParsedAsmOperand>, 16> TmpOperands;
+  MipsOperand *RegFirst;
+
+  SMLoc S = Parser.getTok().getLoc();
+
+  while (parseAnyRegister(TmpOperands).isSuccess()) {
+    SMLoc E = getLexer().getLoc();
+    MipsOperand &Reg = static_cast<MipsOperand &>(*TmpOperands.back());
+    RegNo = Reg.getGPRNM32Reg();
+
+    if (RegRange) {
+      unsigned i = 1;
+      PrevReg = RegFirst->getGPRNM32RegNext(i++);
+      while (PrevReg != RegNo) {
+	if (PrevReg == Mips::RA_NM) {
+	  Error(E, "invalid register range");
+	  return ParseStatus::Failure;
+	}
+	Regs.push_back(PrevReg);
+	PrevReg = RegFirst->getGPRNM32RegNext(i++);
+      }
+      RegRange = false;
+    }
+    else if (PrevReg == Mips::RA_NM && RegNo != Mips::S0_NM) {
+        Error(E, "register sequence must continue at $s0 after $ra");
+        return ParseStatus::Failure;
+    }
+    else if (Regs.size() == Regs.capacity()) {
+        Error(E, "too many registers in list");
+        return ParseStatus::Failure;
+    } else if ((PrevReg != Mips::RA_NM) &&
+	       (PrevReg != Mips::NoRegister) &&
+	       (Reg.getGPRNM32RegNext(-1) != PrevReg) &&
+	       (RegNo != Mips::GP_NM)) {
+        Error(E, "consecutive register numbers expected");
+        return ParseStatus::Failure;
+    }
+
+    Regs.push_back(RegNo);
+
+    if (Parser.getTok().is(AsmToken::Minus)) {
+      RegRange = true;
+      RegFirst = &Reg;
+    }
+
+    if (Parser.getTok().is(AsmToken::EndOfStatement))
+      break;
+
+    if (Parser.getTok().isNot(AsmToken::Minus) &&
+	Parser.getTok().isNot(AsmToken::Comma)) {
+      Error(E, "',' or '-' expected");
+      return ParseStatus::Failure;
+    }
+
+    Lex(); // Consume comma or minus
+    if (Parser.getTok().isNot(AsmToken::Dollar))
+      break;
+
+    PrevReg = RegNo;
+  }
+
+  /* Parse an alternate format with count and start-reg instead
+     of register list  */
+  if (Regs.size() == 0) {
+    if (getLexer().getTok().is(AsmToken::Integer)) {
+      unsigned Count = Parser.getTok().getIntVal();
+      Lex();
+      SMLoc E = Parser.getTok().getLoc();
+      if (Count > 16) {
+	Error(E, "too many registers in list");
+	return ParseStatus::Failure;
+      }
+      if (Count >  0) {
+	if (Parser.getTok().isNot(AsmToken::Minus) &&
+	    Parser.getTok().isNot(AsmToken::Comma)) {
+	  Error(E, "',' or '-' expected");
+	  return ParseStatus::Failure;
+	}
+	Lex(); // Consume comma or minus
+	E = Parser.getTok().getLoc();
+	if (parseAnyRegister(TmpOperands).isSuccess()) {
+	  MipsOperand &Reg = static_cast<MipsOperand &>(*TmpOperands.back());
+	  unsigned i = 1;
+	  while (i < Count)
+	    Regs.push_back(Reg.getGPRNM32RegNext(i++));
+	}
+	else
+	  return ParseStatus::Failure;
+      }
+    }
+    else
+      return ParseStatus::Failure;
+  }
+
+  SMLoc E = Parser.getTok().getLoc();
+  Operands.push_back(MipsOperand::CreateRegListNM(Regs, S, E, *this));
   return ParseStatus::Success;
 }
 

@@ -250,6 +250,7 @@ public:
       // b, beq ...
       Target = Addr + Inst.getOperand(NumOps - 1).getImm();
       return true;
+    case NanoMips::OPERAND_NM_SAVE_REGLIST:
     default:
       return false;
     }

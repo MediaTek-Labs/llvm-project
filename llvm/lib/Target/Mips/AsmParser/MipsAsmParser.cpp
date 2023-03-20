@@ -603,6 +603,7 @@ public:
   bool isABI_N32() const { return ABI.IsN32(); }
   bool isABI_N64() const { return ABI.IsN64(); }
   bool isABI_O32() const { return ABI.IsO32(); }
+  bool isABI_P32() const { return ABI.IsP32(); }
   bool isABI_FPXX() const {
     return getSTI().getFeatureBits()[Mips::FeatureFPXX];
   }
@@ -947,6 +948,23 @@ public:
     return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
   }
 
+  /// Coerce the register to GPRNM32 and return the real register for the current
+  /// target.
+  unsigned getGPRNM32Reg() const {
+    assert(isRegIdx() && (RegIdx.Kind & RegKind_GPR) && "Invalid access!");
+    unsigned ClassID = Mips::GPRNM32RegClassID;
+    return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
+  }
+
+  unsigned getGPRNM4ZeroReg() const {
+    assert(isRegIdx() && (RegIdx.Kind & RegKind_GPR) && "Invalid access!");
+    unsigned ClassID = Mips::GPRNM32RegClassID;
+    unsigned RegNo = RegIdx.Index;
+    if (RegNo == 0)
+      RegNo = 11;
+    return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
+  }
+
   /// Coerce the register to GPR64 and return the real register for the current
   /// target.
   unsigned getGPR64Reg() const {
@@ -1129,6 +1147,16 @@ public:
                                                unsigned N) const {
     assert(N == 1 && "Invalid number of operands!");
     Inst.addOperand(MCOperand::createReg(getGPRMM16Reg()));
+  }
+
+  void addGPRNM32AsmRegOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(getGPRNM32Reg()));
+  }
+
+  void addGPRNM4ZAsmRegOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(getGPRNM4ZeroReg()));
   }
 
   /// Render the operand to an MCInst as a GPR64
@@ -1717,6 +1745,101 @@ public:
 
   bool isMSACtrlAsmReg() const {
     return isRegIdx() && RegIdx.Kind & RegKind_MSACtrl && RegIdx.Index <= 7;
+  }
+
+  bool isNM16AsmReg() const {
+    if (!(isRegIdx() && RegIdx.Kind))
+      return false;
+    return ((RegIdx.Index >= 4 && RegIdx.Index <= 7)
+            || (RegIdx.Index >= 16 && RegIdx.Index <= 19));
+
+  }
+
+  bool isNM16ZeroAsmReg() const {
+    if (!(isRegIdx() && RegIdx.Kind))
+      return false;
+    volatile unsigned RegNo = RegIdx.Index;
+    return ((RegNo == 0) ||
+	    (RegNo >= 4 && RegNo <= 7) ||
+	    (RegNo >= 17 && RegNo <= 19));
+  }
+
+  bool isNM4AsmReg() const {
+    if (!(isRegIdx() && RegIdx.Kind))
+      return false;
+    return ((RegIdx.Index >= 4 && RegIdx.Index <= 11)
+            || (RegIdx.Index >= 16 && RegIdx.Index <= 23));
+
+  }
+
+  bool isNM4ZeroAsmReg() const {
+    if (!(isRegIdx() && RegIdx.Kind))
+      return false;
+    return ((RegIdx.Index == 0) ||
+	    (RegIdx.Index >= 4 && RegIdx.Index <= 10) ||
+	    (RegIdx.Index >= 16 && RegIdx.Index <= 23));
+  }
+
+  bool isNM2R1AsmReg() const {
+    if (!(isRegIdx() && RegIdx.Kind))
+      return false;
+    return (RegIdx.Index >= 4 && RegIdx.Index <= 7);
+  }
+
+  bool isNM2R2AsmReg() const {
+    if (!(isRegIdx() && RegIdx.Kind))
+      return false;
+    return (RegIdx.Index >= 5 && RegIdx.Index <= 8);
+  }
+
+  bool isNM1R1AsmReg() const {
+    if (!(isRegIdx() && RegIdx.Kind))
+      return false;
+    return (RegIdx.Index == 4 || RegIdx.Index == 5);
+  }
+
+  enum NM_REG_TYPE {
+	NMR,
+	NMR_NZ,
+	NMR_3,
+	NMR_3Z,
+	NMR_4,
+	NMR_4Z,
+	NMR_2R1,
+	NMR_2R2,
+	NMR_1R1
+  };
+
+  template <unsigned rt = Mips::GPRNM32RegClassID>
+  bool isGPRNMAsmReg() const {
+    if (!(isRegIdx() && RegIdx.Kind))
+      return false;
+    switch (rt) {
+      case Mips::GPRNMGPRegClassID:
+	return (RegIdx.Index == 28);
+      case Mips::GPRNMSPRegClassID:
+	return (RegIdx.Index == 29);
+      case Mips::GPRNMRARegClassID:
+	return (RegIdx.Index == 31);
+      case Mips::GPRNM32NZRegClassID:
+	return (RegIdx.Index > 0 && RegIdx.Index < 32);
+      case Mips::GPRNM3RegClassID:
+	return isNM16AsmReg();
+      case Mips::GPRNM3ZRegClassID:
+	return isNM16ZeroAsmReg();
+      case Mips::GPRNM4RegClassID:
+	return isNM4AsmReg();
+      case Mips::GPRNM4ZRegClassID:
+	return isNM4ZeroAsmReg();
+      case Mips::GPRNM2R1RegClassID:
+	return isNM2R1AsmReg();
+      case Mips::GPRNM2R2RegClassID:
+	return isNM2R2AsmReg();
+      case Mips::GPRNM1R1RegClassID:
+	return isNM1R1AsmReg();
+      default:
+	return (RegIdx.Index < 32);
+    }
   }
 
   /// getStartLoc - Get the location of the first token of this operand.
@@ -6174,7 +6297,45 @@ MipsAsmParser::printWarningWithFixIt(const Twine &Msg, const Twine &FixMsg,
 int MipsAsmParser::matchCPURegisterName(StringRef Name) {
   int CC;
 
-  CC = StringSwitch<unsigned>(Name)
+  if (isABI_P32()) {
+    CC = StringSwitch<unsigned>(Name)
+            .Cases("zero", "r0", 0)
+            .Cases("at", "r1", "AT", 1)
+            .Cases("t4", "r2", 2)
+            .Cases("t5", "r3", 3)
+            .Cases("a0", "r4", 4)
+            .Cases("a1", "r5", 5)
+            .Cases("a2", "r6", 6)
+            .Cases("a3", "r7", 7)
+            .Cases("a4", "r8", 8)
+            .Cases("a5", "r9", 9)
+            .Cases("a6", "r10", 10)
+            .Cases("a7", "r11", 11)
+            .Cases("t0", "r12", 12)
+            .Cases("t1", "r13", 13)
+            .Cases("t2", "r14", 14)
+            .Cases("t3", "r15", 15)
+            .Cases("s0", "r16", 16)
+            .Cases("s1", "r17", 17)
+            .Cases("s2", "r18", 18)
+            .Cases("s3", "r19", 19)
+            .Cases("s4", "r20", 20)
+            .Cases("s5", "r21", 21)
+            .Cases("s6", "r22", 22)
+            .Cases("s7", "r23", 23)
+            .Cases("t8", "r24", 24)
+            .Cases("t9", "r25", 25)
+            .Cases("k0", "r26", 26)
+            .Cases("k1", "r27", 27)
+            .Cases("gp", "r28", 28)
+            .Cases("sp", "r29", 29)
+            .Cases("fp", "s8", "r30", 30)
+            .Cases("ra", "r31", 31)
+            .Default(-1);
+    return CC;
+  }
+  else {
+    CC = StringSwitch<unsigned>(Name)
            .Case("zero", 0)
            .Cases("at", "AT", 1)
            .Case("a0", 4)
@@ -6209,6 +6370,7 @@ int MipsAsmParser::matchCPURegisterName(StringRef Name) {
            .Case("t8", 24)
            .Case("t9", 25)
            .Default(-1);
+  }
 
   if (!(isABI_N32() || isABI_N64()))
     return CC;

@@ -171,7 +171,7 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       Opc = Mips::MOVE_V;
   }
   else if (Mips::GPRNM32RegClass.contains(SrcReg)) {
-    if (Mips::GPRNM32RegClass.contains(DestReg))
+    if (Mips::GPRNM32NZRegClass.contains(DestReg))
       Opc = Mips::MOVE_NM;
   }
 

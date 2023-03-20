@@ -267,6 +267,14 @@ public:
                                     SmallVectorImpl<MCFixup> &Fixups,
                                     const MCSubtargetInfo &STI) const;
 
+  unsigned getGPRNM4x4ZeroReg(const MCInst &MI, unsigned OpNo,
+			      SmallVectorImpl<MCFixup> &Fixups,
+			      const MCSubtargetInfo &STI) const;
+
+  unsigned getGPRNM4x4Reg(const MCInst &MI, unsigned OpNo,
+			  SmallVectorImpl<MCFixup> &Fixups,
+			  const MCSubtargetInfo &STI) const;
+
 private:
   void LowerCompactBranch(MCInst& Inst) const;
 };

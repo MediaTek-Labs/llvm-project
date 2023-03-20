@@ -103,7 +103,53 @@ static DecodeStatus DecodeGPR32RegisterClass(MCInst &Inst, unsigned RegNo,
                                              uint64_t Address,
                                              const MCDisassembler *Decoder);
 
-static DecodeStatus DecodePtrRegisterClass(MCInst &Inst, unsigned Insn,
+static DecodeStatus DecodeGPRNM3RegisterClass(MCInst &Inst,
+					    unsigned RegNo,
+					    uint64_t Address,
+					    const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeGPRNM4RegisterClass(MCInst &Inst,
+					    unsigned RegNo,
+					    uint64_t Address,
+					    const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeGPRNMRARegisterClass(MCInst &Inst,
+					    unsigned RegNo,
+					    uint64_t Address,
+					    const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeGPRNM3ZRegisterClass(MCInst &Inst,
+					    unsigned RegNo,
+					    uint64_t Address,
+					    const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeGPRNM4ZRegisterClass(MCInst &Inst,
+					    unsigned RegNo,
+					    uint64_t Address,
+					    const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeGPRNM32NZRegisterClass(MCInst &Inst,
+					         unsigned RegNo,
+					         uint64_t Address,
+					         const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeGPRNM32RegisterClass(MCInst &Inst,
+					       unsigned RegNo,
+					       uint64_t Address,
+					       const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeGPRNM2R1RegisterClass(MCInst &Inst,
+					    unsigned RegNo,
+					    uint64_t Address,
+					    const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeGPRNM1R1RegisterClass(MCInst &Inst,
+						unsigned RegNo,
+						uint64_t Address,
+						const MCDisassembler *Decoder);
+
+static DecodeStatus DecodePtrRegisterClass(MCInst &Inst,
+                                           unsigned Insn,
                                            uint64_t Address,
                                            const MCDisassembler *Decoder);
 
@@ -1393,7 +1439,117 @@ static DecodeStatus DecodeGPR32RegisterClass(MCInst &Inst, unsigned RegNo,
   return MCDisassembler::Success;
 }
 
-static DecodeStatus DecodePtrRegisterClass(MCInst &Inst, unsigned RegNo,
+static DecodeStatus DecodeGPRNM3RegisterClass(MCInst &Inst,
+                                            unsigned RegNo,
+                                            uint64_t Address,
+                                            const MCDisassembler *Decoder) {
+  if (RegNo > 7)
+    return MCDisassembler::Fail;
+  RegNo |= ((RegNo & 0x4) ^ 0x4) << 2;
+  unsigned Reg = getReg(Decoder, Mips::GPRNM32RegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeGPRNMRARegisterClass(MCInst &Inst,
+                                               unsigned RegNo,
+                                               uint64_t Address,
+                                               const MCDisassembler *Decoder) {
+  Inst.addOperand(MCOperand::createReg(Mips::RA_NM));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeGPRNM3ZRegisterClass(MCInst &Inst,
+                                            unsigned RegNo,
+                                            uint64_t Address,
+                                            const MCDisassembler *Decoder) {
+  if (RegNo > 7)
+    return MCDisassembler::Fail;
+  if (RegNo != 0)
+    RegNo |= ((RegNo & 0x4) ^ 0x4) << 2;
+  unsigned Reg = getReg(Decoder, Mips::GPRNM32RegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeGPRNM4RegisterClass(MCInst &Inst,
+                                            unsigned RegNo,
+                                            uint64_t Address,
+                                            const MCDisassembler *Decoder) {
+  if (RegNo > 31)
+    return MCDisassembler::Fail;
+  RegNo &= ~0x8;
+  RegNo += (RegNo < 4 ? 8 : 0);
+  unsigned Reg = getReg(Decoder, Mips::GPRNM32RegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeGPRNM4ZRegisterClass(MCInst &Inst,
+                                            unsigned RegNo,
+                                            uint64_t Address,
+                                            const MCDisassembler *Decoder) {
+  if (RegNo > 31)
+    return MCDisassembler::Fail;
+  RegNo &= ~0x8;
+  if (RegNo == 3)
+    RegNo = 0;
+  else
+    RegNo += (RegNo < 3 ? 8 : 0);
+  unsigned Reg = getReg(Decoder, Mips::GPRNM32RegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeGPRNM32NZRegisterClass(MCInst &Inst,
+                                                 unsigned RegNo,
+                                                 uint64_t Address,
+                                                 const MCDisassembler *Decoder) {
+  if (RegNo == 0)
+    return MCDisassembler::Fail;
+  unsigned Reg = getReg(Decoder, Mips::GPRNM32RegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeGPRNM32RegisterClass(MCInst &Inst,
+                                               unsigned RegNo,
+                                               uint64_t Address,
+                                               const MCDisassembler *Decoder) {
+  if (RegNo > 31)
+    return MCDisassembler::Fail;
+  unsigned Reg = getReg(Decoder, Mips::GPRNM32RegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeGPRNM2R1RegisterClass(MCInst &Inst,
+                                            unsigned RegNo,
+                                            uint64_t Address,
+                                            const MCDisassembler *Decoder) {
+  if (RegNo > 31)
+    return MCDisassembler::Fail;
+  RegNo += 4;
+  unsigned Reg = getReg(Decoder, Mips::GPRNM32RegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  Inst.addOperand(MCOperand::createReg(Reg+1));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeGPRNM1R1RegisterClass(MCInst &Inst,
+						unsigned RegNo,
+						uint64_t Address,
+						const MCDisassembler *Decoder) {
+  if (RegNo != 0 && RegNo != 1)
+    return MCDisassembler::Fail;
+  RegNo += 4;
+  unsigned Reg = getReg(Decoder, Mips::GPRNM32RegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodePtrRegisterClass(MCInst &Inst,
+                                           unsigned RegNo,
                                            uint64_t Address,
                                            const MCDisassembler *Decoder) {
   if (static_cast<const MipsDisassembler *>(Decoder)->isGP64())

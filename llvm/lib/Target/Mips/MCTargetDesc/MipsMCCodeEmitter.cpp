@@ -1167,4 +1167,40 @@ MipsMCCodeEmitter::getSimm23Lsl2Encoding(const MCInst &MI, unsigned OpNo,
   return Res >> 2;
 }
 
+unsigned
+MipsMCCodeEmitter::getGPRNM4x4ZeroReg(const MCInst &MI, unsigned OpNo,
+				      SmallVectorImpl<MCFixup> &Fixups,
+				      const MCSubtargetInfo &STI) const {
+  MCOperand Op = MI.getOperand(OpNo);
+  assert(Op.isReg() && "Operand of movep is not a register!");
+  unsigned RegNo = Ctx.getRegisterInfo()->getEncodingValue(Op.getReg());
+  switch (Op.getReg()) {
+  default:
+    return RegNo;
+  case Mips::ZERO_NM:  return 11;
+  case Mips::A4_NM:
+  case Mips::A5_NM:
+  case Mips::A6_NM:
+    return RegNo - 8;
+  }
+}
+
+unsigned
+MipsMCCodeEmitter::getGPRNM4x4Reg(const MCInst &MI, unsigned OpNo,
+				      SmallVectorImpl<MCFixup> &Fixups,
+				      const MCSubtargetInfo &STI) const {
+  MCOperand Op = MI.getOperand(OpNo);
+  assert(Op.isReg() && "Operand of movep is not a register!");
+  unsigned RegNo = Ctx.getRegisterInfo()->getEncodingValue(Op.getReg());
+  switch (Op.getReg()) {
+  default:
+    return RegNo;
+  case Mips::A4_NM:
+  case Mips::A5_NM:
+  case Mips::A6_NM:
+  case Mips::A7_NM:
+    return RegNo - 8;
+  }
+}
+
 #include "MipsGenMCCodeEmitter.inc"

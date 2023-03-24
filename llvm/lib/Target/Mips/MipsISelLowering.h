@@ -299,6 +299,8 @@ class TargetRegisterClass;
 
     EVT getTypeForExtReturn(LLVMContext &Context, EVT VT,
                             ISD::NodeType) const override;
+    bool mayBeEmittedAsTailCall(const CallInst *CI) const override;
+
 
     bool isCheapToSpeculateCttz(Type *Ty) const override;
     bool isCheapToSpeculateCtlz(Type *Ty) const override;

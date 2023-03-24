@@ -6,14 +6,10 @@
 define dso_local void @foo(i32* nocapture readonly %a) local_unnamed_addr {
 ; CHECK-LABEL: foo:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    save 16, $ra
-; CHECK-NEXT:    .cfi_def_cfa_offset 16
-; CHECK-NEXT:    .cfi_offset 31, -4
 ; CHECK-NEXT:    addiu $a0, $a0, 40000
 ; CHECK-NEXT:    lw $a1, 4($a0)
 ; CHECK-NEXT:    lw $a0, 0($a0)
-; CHECK-NEXT:    balc sink
-; CHECK-NEXT:    restore.jrc 16, $ra
+; CHECK-NEXT:    bc sink
 entry:
   %arrayidx = getelementptr inbounds i32, i32* %a, i32 10000
   %0 = load i32, i32* %arrayidx, align 4
@@ -28,14 +24,10 @@ declare dso_local void @sink(i32 signext, i32 signext) local_unnamed_addr
 define dso_local void @bar() local_unnamed_addr {
 ; CHECK-LABEL: bar:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    save 16, $ra
-; CHECK-NEXT:    .cfi_def_cfa_offset 16
-; CHECK-NEXT:    .cfi_offset 31, -4
 ; CHECK-NEXT:    lapc.b $a0, b+40000
 ; CHECK-NEXT:    lw $a1, 4($a0)
 ; CHECK-NEXT:    lw $a0, 0($a0)
-; CHECK-NEXT:    balc sink
-; CHECK-NEXT:    restore.jrc 16, $ra
+; CHECK-NEXT:    bc sink
 entry:
   %0 = load i32, i32* getelementptr inbounds ([0 x i32], [0 x i32]* @b, i32 0, i32 10000), align 4
   %1 = load i32, i32* getelementptr inbounds ([0 x i32], [0 x i32]* @b, i32 0, i32 10001), align 4

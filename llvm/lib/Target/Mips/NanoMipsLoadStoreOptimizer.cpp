@@ -63,10 +63,12 @@ struct NMLoadStoreOpt : public MachineFunctionPass {
   StringRef getPassName() const override { return NM_LOAD_STORE_OPT_NAME; }
   bool runOnMachineFunction(MachineFunction &Fn) override;
   bool isReturn(MachineInstr &MI);
+  bool isTailCall(MachineInstr &MI);
   bool isStackPointerAdjustment(MachineInstr &MI, bool IsRestore);
   bool isCalleeSavedLoadStore(MachineInstr &MI, bool IsRestore);
   void sortCalleeSavedLoadStoreList(InstrList &LoadStoreList);
   bool isSequenceValid(InstrList &StoreSequence);
+  bool isRASaved(const InstrList &StoreSequence);
   bool isValidSaveRestore16Offset(int64_t Offset);
   bool generateSaveOrRestore(MachineBasicBlock &MBB, bool IsRestore);
   unsigned getRegNo(unsigned Reg);
@@ -156,6 +158,15 @@ bool NMLoadStoreOpt::isReturn(MachineInstr &MI) {
   return true;
 }
 
+bool NMLoadStoreOpt::isTailCall(MachineInstr &MI) {
+  unsigned Opcode = MI.getOpcode();
+  if (Opcode != Mips::TAILCALL_NM &&
+      Opcode != Mips::TAILCALLREG_NM)
+    return false;
+
+  return true;
+}
+
 void NMLoadStoreOpt::sortCalleeSavedLoadStoreList(InstrList &LoadStoreList) {
   // nanoMIPS save and restore instructions require callee-saved registers to be
   // saved in particular order on the stack. This sorts the list so that
@@ -188,6 +199,12 @@ bool NMLoadStoreOpt::isSequenceValid(InstrList &LoadStoreList) {
   return true;
 }
 
+bool NMLoadStoreOpt::isRASaved(const InstrList &LoadStoreList) {
+  return any_of(LoadStoreList, [](const MachineInstr* I) {
+    return I->getOperand(0).getReg() == Mips::RA_NM;
+  });
+}
+
 bool NMLoadStoreOpt::isValidSaveRestore16Offset(int64_t Offset) {
   return (Offset <= 240) && !(Offset & 0xf);
 }
@@ -215,6 +232,7 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
   InstrList LoadStoreList;
   MachineInstr *AdjustStack = nullptr;
   MachineInstr *Return = nullptr;
+  MachineInstr *TailCall = nullptr;
 
   if (IsRestore) {
     // Iterate bacbwards over BB in case were looking to generate restore,
@@ -224,6 +242,13 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
       // return exists in this BB, it needs to be before addiu.
       if (!Return && !AdjustStack && isReturn(MI)) {
         Return = &MI;
+        TailCall = nullptr;
+        continue;
+      }
+
+      if (!TailCall && !AdjustStack && isTailCall(MI)) {
+        TailCall = &MI;
+        Return = nullptr;
         continue;
       }
 
@@ -353,6 +378,24 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
       LoadStoreList.clear();
     }
 
+    if (TailCall &&
+        MBB.getParent()->getFunction().hasOptSize() &&
+        IsRestore &&
+        !NewStackOffset &&
+        isRASaved(LoadStoreList) &&
+        isValidSaveRestore16Offset(StackOffset)) {
+      assert(!Return);
+      // TODO: Prevent this optimization on musttail calls
+      auto MII = BuildMI(MBB, std::next(MBBIter(TailCall)),
+                          TailCall->getDebugLoc(), TII->get(Mips::RetRA));
+      bool IsIndirect = TailCall->getOperand(0).isReg();
+      TailCall->setDesc(TII->get(IsIndirect ? Mips::JALRCPseudo : Mips::BALC_NM));
+      TailCall->addRegisterDefined(Mips::RA_NM);
+      TailCall->addRegisterDefined(Mips::SP_NM);
+      Return = MII.getInstr();
+    }
+
+    TailCall = nullptr;
     // If NewStackOffset is set, restore.jrc cannot be generated with Offset,
     // because it needs to be the last instruction in the basic block. If
     // possible, it will be generated with NewStackOffset.

@@ -1224,8 +1224,14 @@ void TargetPassConfig::addMachinePasses() {
         (EnableMachineOutliner == RunOutliner::AlwaysOutline);
     bool AddOutliner =
         RunOnAllFunctions || TM->Options.SupportsDefaultOutlining;
-    if (AddOutliner)
+    if (AddOutliner) {
       addPass(createMachineOutlinerPass(RunOnAllFunctions));
+      // The MachineOutliner is a Module pass. Insert a new dummy
+      // GCSCC pass to ensure Function passes are executed in SCC
+      // order.
+      if (requiresCodeGenSCCOrder())
+        addPass(new DummyCGSCCPass);
+    }
   }
 
   if (GCEmptyBlocks)

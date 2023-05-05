@@ -272,8 +272,47 @@ MipsInstrInfo::BranchType MipsInstrInfo::analyzeBranch(
 
   // If we reached here, there are two branches.
   // If there are three terminators, we don't know what sort of block this is.
-  if (++I != REnd && isUnpredicatedTerminator(*I))
-    return BT_None;
+  if (++I != REnd && isUnpredicatedTerminator(*I)) {
+    if (!Subtarget.hasNanoMips() ||
+        !MBB.getParent()->getFunction().hasOptSize())
+      return BT_None;
+    // For nanoMIPS: When comparing two 64-bit data, there are three comparisons
+    // to determine whether the condition is met. Two conditional branches
+    // branch to the If.Else block, while the third branches to the If.then
+    // block. If this pattern is followed by the unconditional branch - that
+    // branch is redundant.
+    auto ThirdLastInst = &(*I);
+    if (!LastInst->isUnconditionalBranch() ||
+        !SecondLastInst->isConditionalBranch() ||
+        !ThirdLastInst->isConditionalBranch() || (++I) == REnd)
+      return BT_None;
+
+    auto FourthLastInst = &(*I);
+    if (!FourthLastInst->isConditionalBranch())
+      return BT_None;
+    auto IfElseSLI = SecondLastInst->getOperand(2).getMBB();
+    auto IfElseFLI = FourthLastInst->getOperand(2).getMBB();
+    auto IfThenLI = LastInst->getOperand(0).getMBB();
+    auto IfThenTLI = ThirdLastInst->getOperand(2).getMBB();
+    if (IfElseFLI != IfElseSLI || IfThenLI != IfThenTLI)
+      return BT_None;
+    auto HigherRegFLIFirst = FourthLastInst->getOperand(0).getReg();
+    auto HigherRegTLIFirst = ThirdLastInst->getOperand(0).getReg();
+    auto HigherRegFLISecond = FourthLastInst->getOperand(1).getReg();
+    auto HigherRegTLISecond = ThirdLastInst->getOperand(1).getReg();
+    if (HigherRegFLIFirst != HigherRegTLIFirst ||
+        HigherRegFLISecond != HigherRegTLISecond)
+      return BT_None;
+    auto LowerRegSLIFirst = SecondLastInst->getOperand(0).getReg();
+    auto LowerRegSLISecond = SecondLastInst->getOperand(1).getReg();
+
+    if (HigherRegFLIFirst.id() != (LowerRegSLIFirst.id() + 1) ||
+        HigherRegFLISecond.id() != (LowerRegSLISecond.id() + 1))
+      return BT_None;
+    // If the pattern matches, set the LabelMustBeEmitted flag for If.then block
+    // and continue with the analysis.
+    IfThenTLI->setLabelMustBeEmitted();
+  }
 
   BranchInstrs.insert(BranchInstrs.begin(), SecondLastInst);
 

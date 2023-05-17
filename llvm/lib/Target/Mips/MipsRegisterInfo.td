@@ -342,14 +342,14 @@ class GPR32ClassNM<list<ValueType> regTypes> :
   let AltOrderSelect = [{ return 1; }];
 }
 
-def GPR32NM : GPR32ClassNM<[i32]>;
+def GPRNM32 : GPR32ClassNM<[i32]>;
 
 // nanoMIPS "gpr3" register encoding type.
 def GPR3 :
   RegisterClass<"Mips", [i32], 32,
                 (add A0_NM, A1_NM, A2_NM, A3_NM, S0_NM, S1_NM, S2_NM, S3_NM)>;
 
-def GPR32NM_TAIL :
+def GPRNM32_TAIL :
   RegisterClass<"Mips", [i32], 32,
                 (add
   // Not preserved across procedure calls
@@ -607,8 +607,8 @@ def GPR32AsmOperand : MipsAsmRegOperand {
   let PredicateMethod = "isGPRAsmReg";
 }
 
-def GPR32NMAsmOperand : MipsAsmRegOperand {
-  let Name = "GPR32NMAsmReg";
+def GPRNM32AsmOperand : MipsAsmRegOperand {
+  let Name = "GPRNM32AsmReg";
   let PredicateMethod = "isGPRAsmReg";
 }
 
@@ -710,7 +710,7 @@ def GPR32Opnd : RegisterOperand<GPR32> {
   let ParserMatchClass = GPR32AsmOperand;
 }
 
-def GPR32NMOpnd : RegisterOperand<GPR32NM> {
+def GPRNM32Opnd : RegisterOperand<GPRNM32> {
   let ParserMatchClass = GPR32AsmOperand;
 }
 

@@ -1425,7 +1425,7 @@ MipsInstrInfo::findRegisterToSaveRA(outliner::Candidate &C) const {
   const MipsRegisterInfo *MRI = static_cast<const MipsRegisterInfo *>(
      &TRI );
 
-  for (unsigned Reg : Mips::GPR32NMRegClass) {
+  for (unsigned Reg : Mips::GPRNM32RegClass) {
 
     if (!MRI->isReservedReg(*MF, Reg) && Reg != Mips::RA_NM &&
         C.isAvailableAcrossAndOutOfSeq(Reg, TRI) &&

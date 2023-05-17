@@ -120,12 +120,12 @@ class ArithLogicI32<string opstr, Operand Od, RegisterOperand RO,
   ArithLogicINM<opstr, Od, RO, imm_type, OpNode>, InstSize32;
 
 class DivMod<string opstr, SDPatternOperator OpNode = null_frag> :
-    ArithLoginR32<opstr, GPR32NMOpnd, OpNode> {
+    ArithLoginR32<opstr, GPRNM32Opnd, OpNode> {
   // Need to insert TEQ, because DIV(U)/MOD(U) don't trap on division by zero.
   bit usesCustomInserter = 1;
 }
 
-class ExtBaseNM<RegisterOperand RO = GPR32NMOpnd> :
+class ExtBaseNM<RegisterOperand RO = GPRNM32Opnd> :
   InstNM<(outs RO:$rt), (ins RO:$rs, uimm5:$pos, uimm5_plus1:$size),
          "ext\t$rt, $rs, $pos, $size",
          [(set RO:$rt, (MipsExt RO:$rs, immZExt5:$pos, immZExt5Plus1:$size))],
@@ -133,7 +133,7 @@ class ExtBaseNM<RegisterOperand RO = GPR32NMOpnd> :
   let isCodeGenOnly = 1;
 }
 
-class InsBaseNM<RegisterOperand RO = GPR32NMOpnd> :
+class InsBaseNM<RegisterOperand RO = GPRNM32Opnd> :
   InstNM<(outs RO:$rt),
          (ins RO:$rs, uimm5:$pos, uimm5_inssize_plus1:$size, RO:$src),
          "ins \t$rt, $rs, $pos, $size",
@@ -145,7 +145,7 @@ class InsBaseNM<RegisterOperand RO = GPR32NMOpnd> :
 }
 
 class Trap<string opstr> :
-  InstNM<(outs), (ins GPR32NMOpnd:$rs, GPR32NMOpnd:$rt, uimm5_nm:$imm),
+  InstNM<(outs), (ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, uimm5_nm:$imm),
          !strconcat(opstr, "\t$rt, $rs, $imm"), []>, InstSize32 {
   let hasSideEffects = 1;
   let isCTI = 1;
@@ -206,8 +206,8 @@ class CallNM<string opstr,
   let Defs = [RA_NM];
 }
 
-class MoveBalcBase : InstNM<(outs GPR32NMOpnd:$rd),
-                            (ins GPR32NMOpnd:$rt, calltarget:$addr),
+class MoveBalcBase : InstNM<(outs GPRNM32Opnd:$rd),
+                            (ins GPRNM32Opnd:$rt, calltarget:$addr),
                             "move.balc\t$rd, $rt, $addr", []>, InstSize32 {
   let isCall = 1;
   let isCTI = 1;
@@ -253,13 +253,13 @@ def RESTORE_NM : SaveRestore<"restore">, InstSize32;
 def RESTOREJRC_NM : SaveRestore<"restore.jrc">, InstSize32;
 
 class LoadMultipleNM<string opstr> :
-    InstNM<(outs GPR32NMOpnd:$rt), (ins mem:$addr, uimm3plus1_nm:$count),
+    InstNM<(outs GPRNM32Opnd:$rt), (ins mem:$addr, uimm3plus1_nm:$count),
            !strconcat(opstr, "\t$rt, $addr, $count"), []>, InstSize32 {
   let DecoderMethod = "DecodeMem";
   let mayLoad = 1;
 }
 class StoreMultipleNM<string opstr> :
-    InstNM<(outs), (ins GPR32NMOpnd:$rt, mem:$addr, uimm3plus1_nm:$count),
+    InstNM<(outs), (ins GPRNM32Opnd:$rt, mem:$addr, uimm3plus1_nm:$count),
            !strconcat(opstr, "\t$rt, $addr, $count"), []>, InstSize32 {
   let DecoderMethod = "DecodeMem";
   let mayStore = 1;
@@ -275,7 +275,7 @@ class EffectiveAddressNM<string opstr, RegisterOperand RO> :
 }
 
 class UnalignedLoad<string opstr, SDNode OpNode,
-                    RegisterOperand RO = GPR32NMOpnd> :
+                    RegisterOperand RO = GPRNM32Opnd> :
     InstNM<(outs RO:$rt), (ins mem_simm9:$addr, RO:$src),
            !strconcat(opstr, "\t$rt, $addr"),
            [(set RO:$rt, (OpNode addrsimm9:$addr, RO:$src))]>, InstSize32 {
@@ -286,7 +286,7 @@ class UnalignedLoad<string opstr, SDNode OpNode,
 }
 
 class UnalignedStore<string opstr, SDNode OpNode,
-                     RegisterOperand RO = GPR32NMOpnd> :
+                     RegisterOperand RO = GPRNM32Opnd> :
     InstNM<(outs), (ins RO:$rt, mem_simm9:$addr),
            !strconcat(opstr, "\t$rt, $addr"),
            [(OpNode RO:$rt, addrsimm9:$addr)]>, InstSize32 {
@@ -329,68 +329,68 @@ class ReverseNM<string opstr, RegisterOperand RO, SDNode OpNode>:
 //===----------------------------------------------------------------------===//
 
 // _POOL32A0_0 pool of instructions.
-def SLLV_NM  : ArithLoginR32<"sllv", GPR32NMOpnd, shl>;
-def SRLV_NM  : ArithLoginR32<"srlv", GPR32NMOpnd, srl>;
-def SRAV_NM  : ArithLoginR32<"srav", GPR32NMOpnd, sra>;
-def ROTRV_NM : ArithLoginR32<"rotrv", GPR32NMOpnd, rotr>;
-def ADD_NM   : ArithLoginR32<"add", GPR32NMOpnd>;
-def ADDu_NM  : ArithLoginR32<"addu", GPR32NMOpnd, add>;
-def SUB_NM   : ArithLoginR32<"sub", GPR32NMOpnd>;
-def SUBu_NM  : ArithLoginR32<"subu", GPR32NMOpnd, sub>;
-def AND_NM   : ArithLoginR32<"and", GPR32NMOpnd, and>;
-def OR_NM    : ArithLoginR32<"or", GPR32NMOpnd, or>;
-def NOR_NM   : ArithLoginR32<"nor", GPR32NMOpnd>;
-def XOR_NM   : ArithLoginR32<"xor", GPR32NMOpnd, xor>;
-def SLT_NM   : ArithLoginR32<"slt", GPR32NMOpnd, setlt>;
-def SLTU_NM  : ArithLoginR32<"sltu", GPR32NMOpnd, setult>;
-def MUL_NM   : ArithLoginR32<"mul", GPR32NMOpnd, mul>;
-def MUH_NM   : ArithLoginR32<"muh", GPR32NMOpnd, mulhs>;
-def MULU_NM  : ArithLoginR32<"mulu", GPR32NMOpnd>;
-def MUHU_NM  : ArithLoginR32<"muhu", GPR32NMOpnd, mulhu>;
+def SLLV_NM  : ArithLoginR32<"sllv", GPRNM32Opnd, shl>;
+def SRLV_NM  : ArithLoginR32<"srlv", GPRNM32Opnd, srl>;
+def SRAV_NM  : ArithLoginR32<"srav", GPRNM32Opnd, sra>;
+def ROTRV_NM : ArithLoginR32<"rotrv", GPRNM32Opnd, rotr>;
+def ADD_NM   : ArithLoginR32<"add", GPRNM32Opnd>;
+def ADDu_NM  : ArithLoginR32<"addu", GPRNM32Opnd, add>;
+def SUB_NM   : ArithLoginR32<"sub", GPRNM32Opnd>;
+def SUBu_NM  : ArithLoginR32<"subu", GPRNM32Opnd, sub>;
+def AND_NM   : ArithLoginR32<"and", GPRNM32Opnd, and>;
+def OR_NM    : ArithLoginR32<"or", GPRNM32Opnd, or>;
+def NOR_NM   : ArithLoginR32<"nor", GPRNM32Opnd>;
+def XOR_NM   : ArithLoginR32<"xor", GPRNM32Opnd, xor>;
+def SLT_NM   : ArithLoginR32<"slt", GPRNM32Opnd, setlt>;
+def SLTU_NM  : ArithLoginR32<"sltu", GPRNM32Opnd, setult>;
+def MUL_NM   : ArithLoginR32<"mul", GPRNM32Opnd, mul>;
+def MUH_NM   : ArithLoginR32<"muh", GPRNM32Opnd, mulhs>;
+def MULU_NM  : ArithLoginR32<"mulu", GPRNM32Opnd>;
+def MUHU_NM  : ArithLoginR32<"muhu", GPRNM32Opnd, mulhu>;
 def DIV_NM   : DivMod<"div", sdiv>;
 def MOD_NM   : DivMod<"mod", srem>;
 def DIVU_NM  : DivMod<"divu", udiv>;
 def MODU_NM  : DivMod<"modu", urem>;
 
 // P.U12 pool of instructions
-def ORI_NM   : ArithLogicI32<"ori", uimm12_nm, GPR32NMOpnd, imm32ZExt12, or>;
-def XORI_NM  : ArithLogicI32<"xori", uimm12_nm, GPR32NMOpnd, imm32ZExt12, xor>;
-def ANDI_NM  : ArithLogicI32<"andi", uimm16, GPR32NMOpnd, imm32ZExt12ANDI, and>;
-def SLTI_NM  : ArithLogicI32<"slti", uimm12_nm, GPR32NMOpnd, imm32ZExt12, setlt>;
-def SLTIU_NM : ArithLogicI32<"sltiu", uimm12_nm, GPR32NMOpnd, imm32ZExt12, setult>;
+def ORI_NM   : ArithLogicI32<"ori", uimm12_nm, GPRNM32Opnd, imm32ZExt12, or>;
+def XORI_NM  : ArithLogicI32<"xori", uimm12_nm, GPRNM32Opnd, imm32ZExt12, xor>;
+def ANDI_NM  : ArithLogicI32<"andi", uimm16, GPRNM32Opnd, imm32ZExt12ANDI, and>;
+def SLTI_NM  : ArithLogicI32<"slti", uimm12_nm, GPRNM32Opnd, imm32ZExt12, setlt>;
+def SLTIU_NM : ArithLogicI32<"sltiu", uimm12_nm, GPRNM32Opnd, imm32ZExt12, setult>;
 
 // TODO: isCodeGenOnly=1 was added to avoid conflicts with same instructions
 //       for other Mips targets. Handle this when adding integrated asm
 //       for NanoMips.
 let isCodeGenOnly = 1 in
-def SEQI_NM  : ArithLogicI32<"seqi", uimm12_nm, GPR32NMOpnd, imm32ZExt12, seteq>;
+def SEQI_NM  : ArithLogicI32<"seqi", uimm12_nm, GPRNM32Opnd, imm32ZExt12, seteq>;
 
 // P.SHIFT pool of instructions
-def SLL_NM  : ArithLogicI32<"sll", uimm5_nm, GPR32NMOpnd, imm32ZExt5, shl>;
-def SRL_NM  : ArithLogicI32<"srl", uimm5_nm, GPR32NMOpnd, imm32ZExt5, srl>;
-def SRA_NM  : ArithLogicI32<"sra", uimm5_nm, GPR32NMOpnd, imm32ZExt5, sra>;
-def ROTR_NM : ArithLogicI32<"rotr", uimm5_nm, GPR32NMOpnd, imm32ZExt5, rotr>;
+def SLL_NM  : ArithLogicI32<"sll", uimm5_nm, GPRNM32Opnd, imm32ZExt5, shl>;
+def SRL_NM  : ArithLogicI32<"srl", uimm5_nm, GPRNM32Opnd, imm32ZExt5, srl>;
+def SRA_NM  : ArithLogicI32<"sra", uimm5_nm, GPRNM32Opnd, imm32ZExt5, sra>;
+def ROTR_NM : ArithLogicI32<"rotr", uimm5_nm, GPRNM32Opnd, imm32ZExt5, rotr>;
 
 def EXT_NM : ExtBaseNM;
 def INS_NM : InsBaseNM;
 
 let isCodeGenOnly = 1 in
-def ADDiu_NM : ArithLogicI32<"addiu", uimm16_simm12, GPR32NMOpnd,
+def ADDiu_NM : ArithLogicI32<"addiu", uimm16_simm12, GPRNM32Opnd,
                              imm32SExt12OrZExt16, add>;
 let Constraints = "$rt = $rs" in
-def ADDIU48_NM : ArithLogicINM<"addiu[48]", simm32_relaxed, GPR32NMOpnd,
+def ADDIU48_NM : ArithLogicINM<"addiu[48]", simm32_relaxed, GPRNM32Opnd,
                                imm32_NM, add>, InstSize48;
 let isCodeGenOnly = 1 in
-def LSA_NM : LoadScaledAddressNM<"lsa", GPR32NMOpnd>;
+def LSA_NM : LoadScaledAddressNM<"lsa", GPRNM32Opnd>;
 
-def SEB_NM : SignExtInRegNM<"seb", i8, GPR32NMOpnd>;
-def SEH_NM : SignExtInRegNM<"seh", i16, GPR32NMOpnd>;
+def SEB_NM : SignExtInRegNM<"seb", i8, GPRNM32Opnd>;
+def SEH_NM : SignExtInRegNM<"seh", i16, GPRNM32Opnd>;
 
-def CLZ_NM : CountLeading0NM<"clz", GPR32NMOpnd>;
-def CLO_NM : CountLeading1NM<"clo", GPR32NMOpnd>;
+def CLZ_NM : CountLeading0NM<"clz", GPRNM32Opnd>;
+def CLO_NM : CountLeading1NM<"clo", GPRNM32Opnd>;
 
-def BITREVW_NM : ReverseNM<"bitrevw", GPR32NMOpnd, bitreverse>;
-def BYTEREVW_NM : ReverseNM<"byterevw", GPR32NMOpnd, bswap>;
+def BITREVW_NM : ReverseNM<"bitrevw", GPRNM32Opnd, bitreverse>;
+def BYTEREVW_NM : ReverseNM<"byterevw", GPRNM32Opnd, bswap>;
 
 // P.TRAP pool of instructions.
 def TEQ_NM : Trap<"teq">;
@@ -403,7 +403,7 @@ let isCodeGenOnly = 1 in {
   def OR16_NM  : ArithLogicR16<"or16", GPR3Opnd>;
 }
 
-def JRC_NM : IndirectBranchNM<"jrc", GPR32NMOpnd>;
+def JRC_NM : IndirectBranchNM<"jrc", GPRNM32Opnd>;
 
 let isCodeGenOnly = 1, hasNoSchedulingInfo = 1,
     hasDelaySlot = 0, isBranch = 1,
@@ -411,29 +411,29 @@ let isCodeGenOnly = 1, hasNoSchedulingInfo = 1,
    isTerminator = 1,
    hasDelaySlot = 0,
    isCTI = 1 in
-def BRSC_NM : InstNM<(outs), (ins GPR32NMOpnd:$rs, i32imm:$jti), "brsc\t$rs", [(NMbr_jt GPR32NMOpnd:$rs, tjumptable:$jti)]>, InstSize32;
+def BRSC_NM : InstNM<(outs), (ins GPRNM32Opnd:$rs, i32imm:$jti), "brsc\t$rs", [(NMbr_jt GPRNM32Opnd:$rs, tjumptable:$jti)]>, InstSize32;
 
 def BALC_NM : CallNM<"balc", MipsJmpLink, tglobaladdr>, InstSize32;
 def MOVEBALC_NM : MoveBalcBase;
 
 let isReMaterializable = 1 in {
 let isCodeGenOnly = 1 in
-def Li_NM : RegImmNM<"li", simm32_relaxed, GPR32NMOpnd>, InstSize48;
-def LA_NM : RegImmNM<"la", simm32_relaxed, GPR32NMOpnd>, InstSize48;
+def Li_NM : RegImmNM<"li", simm32_relaxed, GPRNM32Opnd>, InstSize48;
+def LA_NM : RegImmNM<"la", simm32_relaxed, GPRNM32Opnd>, InstSize48;
 } // isReMaterializable = 1
 
-def ALUIPC_NM : RegImmNM<"aluipc", simm32_relaxed, GPR32NMOpnd>, InstSize32;
+def ALUIPC_NM : RegImmNM<"aluipc", simm32_relaxed, GPRNM32Opnd>, InstSize32;
 
-def LEA_ADDiu_NM : EffectiveAddressNM<"addiu", GPR32NMOpnd>, InstSize32;
+def LEA_ADDiu_NM : EffectiveAddressNM<"addiu", GPRNM32Opnd>, InstSize32;
 
-def RDHWR_NM : ReadHardwareNM<GPR32NMOpnd, HWRegsOpnd>;
+def RDHWR_NM : ReadHardwareNM<GPRNM32Opnd, HWRegsOpnd>;
 
 def ADJCALLSTACKDOWN_NM : AdjustStack<callseq_start>;
 def ADJCALLSTACKUP_NM   : AdjustStack<callseq_end>;
 
 // Return instruction is matched as RetRA, then expanded into PseudoReturnNM
 // after register allocation. Finally, MipsAsmPrinter expands this into JRC_NM.
-def PseudoReturnNM : PseudoInstNM<(outs), (ins GPR32NMOpnd:$rs), []> {
+def PseudoReturnNM : PseudoInstNM<(outs), (ins GPRNM32Opnd:$rs), []> {
   let isTerminator = 1;
   let isBarrier = 1;
   let isReturn = 1;
@@ -444,12 +444,12 @@ def PseudoReturnNM : PseudoInstNM<(outs), (ins GPR32NMOpnd:$rs), []> {
 }
 
 let isCodeGenOnly = 1, hasNoSchedulingInfo = 1, hasDelaySlot = 0 in
-def LoadJumpTableOffset : PseudoInstNM<(outs GPR32NMOpnd:$rd), (ins GPR32NMOpnd:$table, GPR32NMOpnd:$entry, i32imm:$jti), []>;
+def LoadJumpTableOffset : PseudoInstNM<(outs GPRNM32Opnd:$rd), (ins GPRNM32Opnd:$table, GPRNM32Opnd:$entry, i32imm:$jti), []>;
 
 // Indirect branch is matched as PseudoIndirectBranchNM and expanded to JRC_NM.
 def PseudoIndirectBranchNM :
-    PseudoInstNM<(outs), (ins GPR32NMOpnd:$rs), [(brind GPR32NMOpnd:$rs)]>,
-    PseudoInstExpansion<(JRC_NM GPR32NMOpnd:$rs)> {
+    PseudoInstNM<(outs), (ins GPRNM32Opnd:$rs), [(brind GPRNM32Opnd:$rs)]>,
+    PseudoInstExpansion<(JRC_NM GPRNM32Opnd:$rs)> {
   let isTerminator = 1;
   let isBarrier = 1;
   let isBranch = 1;
@@ -458,12 +458,12 @@ def PseudoIndirectBranchNM :
 }
 
 let hasPostISelHook = 1, isCall = 1, isCTI = 1, Defs = [RA_NM] in {
-  def JALRC_NM : InstNM<(outs GPR32NMOpnd:$rd), (ins GPR32NMOpnd:$rs),
+  def JALRC_NM : InstNM<(outs GPRNM32Opnd:$rd), (ins GPRNM32Opnd:$rs),
                         "jalrc\t$rd, $rs", []>, InstSize32;
 
-  def JALRCPseudo : PseudoInstNM<(outs), (ins GPR32NMOpnd:$rs),
-                                 [(MipsJmpLink GPR32NMOpnd:$rs)]>,
-    PseudoInstExpansion<(JALRC_NM RA_NM, GPR32NMOpnd:$rs)>;
+  def JALRCPseudo : PseudoInstNM<(outs), (ins GPRNM32Opnd:$rs),
+                                 [(MipsJmpLink GPRNM32Opnd:$rs)]>,
+    PseudoInstExpansion<(JALRC_NM RA_NM, GPRNM32Opnd:$rs)>;
 }
 
 def : NMPat<(i32 imm32_NM:$imm), (Li_NM imm:$imm)>;
@@ -476,29 +476,29 @@ def : NMPat<(MipsFullAddr tblockaddress:$in), (LA_NM tblockaddress:$in)>;
 def : NMPat<(MipsFullAddr tjumptable:$in), (LA_NM tjumptable:$in)>;
 def : NMPat<(MipsFullAddrAdd GPR32NM:$rs, tglobaladdr:$in), (ADDIU48_NM GPR32NM:$rs, tglobaladdr:$in)>;
 
-def : NMPat<(not (or GPR32NM:$rs, GPR32NM:$rt)),
-            (NOR_NM GPR32NM:$rs, GPR32NM:$rt)>;
+def : NMPat<(not (or GPRNM32:$rs, GPRNM32:$rt)),
+            (NOR_NM GPRNM32:$rs, GPRNM32:$rt)>;
 
 def : NMPat<(trap), (TEQ_NM ZERO_NM, ZERO_NM, 0)>;
 
 // SetCC patterns.
-def : NMPat<(setne GPR32NM:$lhs, 0), (SLTU_NM ZERO_NM, GPR32NM:$lhs)>;
-def : NMPat<(seteq GPR32NM:$lhs, GPR32NM:$rhs),
-            (SLTIU_NM (XOR_NM GPR32NM:$lhs, GPR32NM:$rhs), 1)>;
-def : NMPat<(setne GPR32NM:$lhs, GPR32NM:$rhs),
-            (SLTU_NM ZERO_NM, (XOR_NM GPR32NM:$lhs, GPR32NM:$rhs))>;
-def : NMPat<(setle GPR32NM:$lhs, GPR32NM:$rhs),
-            (XORI_NM (SLT_NM GPR32NM:$rhs, GPR32NM:$lhs), 1)>;
-def : NMPat<(setule GPR32NM:$lhs, GPR32NM:$rhs),
-            (XORI_NM (SLTU_NM GPR32NM:$rhs, GPR32NM:$lhs), 1)>;
-def : NMPat<(setgt GPR32NM:$lhs, GPR32NM:$rhs),
-            (SLT_NM GPR32NM:$rhs, GPR32NM:$lhs)>;
-def : NMPat<(setugt GPR32NM:$lhs, GPR32NM:$rhs),
-            (SLTU_NM GPR32NM:$rhs, GPR32NM:$lhs)>;
-def : NMPat<(setge GPR32NM:$lhs, GPR32NM:$rhs),
-            (XORI_NM (SLT_NM GPR32NM:$lhs, GPR32NM:$rhs), 1)>;
-def : NMPat<(setuge GPR32NM:$lhs, GPR32NM:$rhs),
-            (XORI_NM (SLTU_NM GPR32NM:$lhs, GPR32NM:$rhs), 1)>;
+def : NMPat<(setne GPRNM32:$lhs, 0), (SLTU_NM ZERO_NM, GPRNM32:$lhs)>;
+def : NMPat<(seteq GPRNM32:$lhs, GPRNM32:$rhs),
+            (SLTIU_NM (XOR_NM GPRNM32:$lhs, GPRNM32:$rhs), 1)>;
+def : NMPat<(setne GPRNM32:$lhs, GPRNM32:$rhs),
+            (SLTU_NM ZERO_NM, (XOR_NM GPRNM32:$lhs, GPRNM32:$rhs))>;
+def : NMPat<(setle GPRNM32:$lhs, GPRNM32:$rhs),
+            (XORI_NM (SLT_NM GPRNM32:$rhs, GPRNM32:$lhs), 1)>;
+def : NMPat<(setule GPRNM32:$lhs, GPRNM32:$rhs),
+            (XORI_NM (SLTU_NM GPRNM32:$rhs, GPRNM32:$lhs), 1)>;
+def : NMPat<(setgt GPRNM32:$lhs, GPRNM32:$rhs),
+            (SLT_NM GPRNM32:$rhs, GPRNM32:$lhs)>;
+def : NMPat<(setugt GPRNM32:$lhs, GPRNM32:$rhs),
+            (SLTU_NM GPRNM32:$rhs, GPRNM32:$lhs)>;
+def : NMPat<(setge GPRNM32:$lhs, GPRNM32:$rhs),
+            (XORI_NM (SLT_NM GPRNM32:$lhs, GPRNM32:$rhs), 1)>;
+def : NMPat<(setuge GPRNM32:$lhs, GPRNM32:$rhs),
+            (XORI_NM (SLTU_NM GPRNM32:$lhs, GPRNM32:$rhs), 1)>;
 
 //===----------------------------------------------------------------------===//
 //
@@ -567,27 +567,27 @@ let isCodeGenOnly = 1, hasNoSchedulingInfo = 1,
     hasDelaySlot = 0 in {
 
 // TODO: BBEQZ/BBNEZ bit-test conditional branch instructions
-def BEQC_NM  : CBranchNM<"beqc", brtarget, seteq, GPR32NMOpnd>, InstSize32;
-def BEQIC_NM : CBranchImmNM<"beqic", brtarget, seteq, GPR32NMOpnd, uimm7, immZExt7>;
-def BEQZC_NM : CBranchZeroNM<"beqzc", brtarget, seteq, GPR32NMOpnd>;
+def BEQC_NM  : CBranchNM<"beqc", brtarget, seteq, GPRNM32Opnd>, InstSize32;
+def BEQIC_NM : CBranchImmNM<"beqic", brtarget, seteq, GPRNM32Opnd, uimm7, immZExt7>;
+def BEQZC_NM : CBranchZeroNM<"beqzc", brtarget, seteq, GPRNM32Opnd>;
 
-def BGEC_NM   : CBranchNM<"bgec", brtarget, setge, GPR32NMOpnd>, InstSize32;
-def BGEIC_NM  : CBranchImmNM<"bgeic", brtarget, setge, GPR32NMOpnd, uimm7, immZExt7>;
-def BGEIUC_NM : CBranchImmNM<"bgeiuc", brtarget, setuge, GPR32NMOpnd, uimm7, immZExt7>;
-def BGEUC_NM  : CBranchNM<"bgeuc", brtarget, setuge, GPR32NMOpnd>, InstSize32;
+def BGEC_NM   : CBranchNM<"bgec", brtarget, setge, GPRNM32Opnd>, InstSize32;
+def BGEIC_NM  : CBranchImmNM<"bgeic", brtarget, setge, GPRNM32Opnd, uimm7, immZExt7>;
+def BGEIUC_NM : CBranchImmNM<"bgeiuc", brtarget, setuge, GPRNM32Opnd, uimm7, immZExt7>;
+def BGEUC_NM  : CBranchNM<"bgeuc", brtarget, setuge, GPRNM32Opnd>, InstSize32;
 
-def BLTC_NM   : CBranchNM<"bltc", brtarget, setlt, GPR32NMOpnd>, InstSize32;
-def BLTIC_NM  : CBranchImmNM<"bltic", brtarget, setlt, GPR32NMOpnd, uimm7, immZExt7>;
-def BLTIUC_NM : CBranchImmNM<"bltiuc", brtarget, setult, GPR32NMOpnd, uimm7, immZExt7>;
-def BLTUC_NM  : CBranchNM<"bltuc", brtarget, setult, GPR32NMOpnd>, InstSize32;
+def BLTC_NM   : CBranchNM<"bltc", brtarget, setlt, GPRNM32Opnd>, InstSize32;
+def BLTIC_NM  : CBranchImmNM<"bltic", brtarget, setlt, GPRNM32Opnd, uimm7, immZExt7>;
+def BLTIUC_NM : CBranchImmNM<"bltiuc", brtarget, setult, GPRNM32Opnd, uimm7, immZExt7>;
+def BLTUC_NM  : CBranchNM<"bltuc", brtarget, setult, GPRNM32Opnd>, InstSize32;
 
-def BNEC_NM  : CBranchNM<"bnec", brtarget, setne, GPR32NMOpnd>, InstSize32;
-def BNEIC_NM : CBranchImmNM<"bneic", brtarget, setne, GPR32NMOpnd, uimm7, immZExt7>;
-def BNEZC_NM : CBranchZeroNM<"bnezc", brtarget, setne, GPR32NMOpnd>;
+def BNEC_NM  : CBranchNM<"bnec", brtarget, setne, GPRNM32Opnd>, InstSize32;
+def BNEIC_NM : CBranchImmNM<"bneic", brtarget, setne, GPRNM32Opnd, uimm7, immZExt7>;
+def BNEZC_NM : CBranchZeroNM<"bnezc", brtarget, setne, GPRNM32Opnd>;
 
 // Bit-test branches
-def BBNEZC_NM : CBranchBitNM<"bbnezc", brtarget, setne, GPR32NMOpnd, simm32, simm32power2>;
-def BBEQZC_NM : CBranchBitNM<"bbeqzc", brtarget, seteq, GPR32NMOpnd, simm32, simm32power2>;
+def BBNEZC_NM : CBranchBitNM<"bbnezc", brtarget, setne, GPRNM32Opnd, simm32, simm32power2>;
+def BBEQZC_NM : CBranchBitNM<"bbeqzc", brtarget, seteq, GPRNM32Opnd, simm32, simm32power2>;
 
 }
 
@@ -610,9 +610,9 @@ class TailCallBase : PseudoInstNM<(outs), (ins calltarget:$target), []>,
 }
 def TAILCALL_NM : TailCallBase;
 
-class TailCallRegBase : PseudoInstNM<(outs), (ins RegisterOperand<GPR32NM_TAIL>:$rs),
-                                     [(MipsTailCall RegisterOperand<GPR32NM_TAIL>:$rs)]>,
-                        PseudoInstExpansion<(JRC_NM GPR32NMOpnd:$rs)> {
+class TailCallRegBase : PseudoInstNM<(outs), (ins RegisterOperand<GPRNM32_TAIL>:$rs),
+                                     [(MipsTailCall RegisterOperand<GPRNM32_TAIL>:$rs)]>,
+                        PseudoInstExpansion<(JRC_NM GPRNM32Opnd:$rs)> {
   let isCall = 1;
   let isTerminator = 1;
   let isReturn = 1;
@@ -628,34 +628,34 @@ def : NMPat<(MipsTailCall (i32 texternalsym:$dst)),
             (TAILCALL_NM texternalsym:$dst)>;
 
 // '>-1' can be represented as '>=0'.
-def : NMPat<(brcond (i32 (setgt GPR32NM:$lhs, -1)), bb:$dst),
-            (BGEC_NM GPR32NM:$lhs, ZERO_NM, bb:$dst)>;
+def : NMPat<(brcond (i32 (setgt GPRNM32:$lhs, -1)), bb:$dst),
+            (BGEC_NM GPRNM32:$lhs, ZERO_NM, bb:$dst)>;
 
 // Reversed branch conditions:
-def : NMPat<(brcond (i32 (setugt GPR32NM:$lhs, GPR32NM:$rhs)), bb:$dst),
-            (BLTUC_NM GPR32NM:$rhs, GPR32NM:$lhs, bb:$dst)>;
-def : NMPat<(brcond (i32 (setgt GPR32NM:$lhs, GPR32NM:$rhs)), bb:$dst),
-            (BLTC_NM GPR32NM:$rhs, GPR32NM:$lhs, bb:$dst)>;
-def : NMPat<(brcond (i32 (setule GPR32NM:$lhs, GPR32NM:$rhs)), bb:$dst),
-            (BGEUC_NM GPR32NM:$rhs, GPR32NM:$lhs, bb:$dst)>;
-def : NMPat<(brcond (i32 (setle GPR32NM:$lhs, GPR32NM:$rhs)), bb:$dst),
-            (BGEC_NM GPR32NM:$rhs, GPR32NM:$lhs, bb:$dst)>;
+def : NMPat<(brcond (i32 (setugt GPRNM32:$lhs, GPRNM32:$rhs)), bb:$dst),
+            (BLTUC_NM GPRNM32:$rhs, GPRNM32:$lhs, bb:$dst)>;
+def : NMPat<(brcond (i32 (setgt GPRNM32:$lhs, GPRNM32:$rhs)), bb:$dst),
+            (BLTC_NM GPRNM32:$rhs, GPRNM32:$lhs, bb:$dst)>;
+def : NMPat<(brcond (i32 (setule GPRNM32:$lhs, GPRNM32:$rhs)), bb:$dst),
+            (BGEUC_NM GPRNM32:$rhs, GPRNM32:$lhs, bb:$dst)>;
+def : NMPat<(brcond (i32 (setle GPRNM32:$lhs, GPRNM32:$rhs)), bb:$dst),
+            (BGEC_NM GPRNM32:$rhs, GPRNM32:$lhs, bb:$dst)>;
 
 // Immediate comparison branches with offset
-def : NMPat<(brcond (i32 (setgt GPR32NM:$lhs, immZExt7Plus1:$imm)), bb:$dst),
-            (BGEIC_NM GPR32NM:$lhs, (Plus1 $imm), bb:$dst)>;
-def : NMPat<(brcond (i32 (setugt GPR32NM:$lhs, immZExt7Plus1:$imm)), bb:$dst),
-            (BGEIUC_NM GPR32NM:$lhs, (Plus1 $imm), bb:$dst)>;
+def : NMPat<(brcond (i32 (setgt GPRNM32:$lhs, immZExt7Plus1:$imm)), bb:$dst),
+            (BGEIC_NM GPRNM32:$lhs, (Plus1 $imm), bb:$dst)>;
+def : NMPat<(brcond (i32 (setugt GPRNM32:$lhs, immZExt7Plus1:$imm)), bb:$dst),
+            (BGEIUC_NM GPRNM32:$lhs, (Plus1 $imm), bb:$dst)>;
 
 // Branch on integer value
-def : NMPat<(brcond (i32 GPR32NM:$lhs), bb:$dst),
-            (BNEC_NM GPR32NM:$lhs, ZERO_NM, bb:$dst)>;
+def : NMPat<(brcond (i32 GPRNM32:$lhs), bb:$dst),
+            (BNEC_NM GPRNM32:$lhs, ZERO_NM, bb:$dst)>;
 
 // Bit-test branch
-def : NMPat<(brcond (i32 (setne (and GPR32NM:$rt, simm32power2:$imm), 0)), bb:$offset),
-          (BBNEZC_NM GPR32NM:$rt, (Log2XForm $imm), bb:$offset)>;
-def : NMPat<(brcond (i32 (seteq (and GPR32NM:$rt, simm32power2:$imm), 0)), bb:$offset),
-          (BBEQZC_NM GPR32NM:$rt, (Log2XForm $imm), bb:$offset)>;
+def : NMPat<(brcond (i32 (setne (and GPRNM32:$rt, simm32power2:$imm), 0)), bb:$offset),
+          (BBNEZC_NM GPRNM32:$rt, (Log2XForm $imm), bb:$offset)>;
+def : NMPat<(brcond (i32 (seteq (and GPRNM32:$rt, simm32power2:$imm), 0)), bb:$offset),
+          (BBEQZC_NM GPRNM32:$rt, (Log2XForm $imm), bb:$offset)>;
 
 
 //===----------------------------------------------------------------------===//
@@ -670,37 +670,37 @@ let isCodeGenOnly = 1 in {
 //       addruimm12 needs to come before addrsimm9, because addrsimm9 handles
 //       loads/store that do not fit the offset. If we put the same handling in
 //       addruimm12, this will cause addrsimm9 to never get selected.
-def LWs9_NM : LoadMemoryNM<"lw", GPR32NMOpnd, mem, load, addrsimm9, II_LW>, InstSize32;
-def LW_NM : LoadMemoryNM<"lw", GPR32NMOpnd, mem, load, addruimm12, II_LW>, InstSize32;
-def LWXS_NM : LoadMemoryNM<"lwxs", GPR32NMOpnd, mem, load, addrindexedlsl2, II_LW>, InstSize32;
-def LWX_NM : LoadMemoryNM<"lwx", GPR32NMOpnd, mem, load, addrindexed, II_LW>, InstSize32;
-def SW_NM : StoreMemoryNM<"sw", GPR32NMOpnd, mem, store, addruimm12, II_SW>, InstSize32;
-def SWs9_NM : StoreMemoryNM<"sw", GPR32NMOpnd, mem, store, addrsimm9, II_SW>, InstSize32;
-def SWXS_NM : StoreMemoryNM<"swxs", GPR32NMOpnd, mem, store, addrindexedlsl2, II_SW>, InstSize32;
-def SWX_NM : StoreMemoryNM<"swx", GPR32NMOpnd, mem, store, addrindexed, II_SW>, InstSize32;
+def LWs9_NM : LoadMemoryNM<"lw", GPRNM32Opnd, mem, load, addrsimm9, II_LW>, InstSize32;
+def LW_NM : LoadMemoryNM<"lw", GPRNM32Opnd, mem, load, addruimm12, II_LW>, InstSize32;
+def LWXS_NM : LoadMemoryNM<"lwxs", GPRNM32Opnd, mem, load, addrindexedlsl2, II_LW>, InstSize32;
+def LWX_NM : LoadMemoryNM<"lwx", GPRNM32Opnd, mem, load, addrindexed, II_LW>, InstSize32;
+def SW_NM : StoreMemoryNM<"sw", GPRNM32Opnd, mem, store, addruimm12, II_SW>, InstSize32;
+def SWs9_NM : StoreMemoryNM<"sw", GPRNM32Opnd, mem, store, addrsimm9, II_SW>, InstSize32;
+def SWXS_NM : StoreMemoryNM<"swxs", GPRNM32Opnd, mem, store, addrindexedlsl2, II_SW>, InstSize32;
+def SWX_NM : StoreMemoryNM<"swx", GPRNM32Opnd, mem, store, addrindexed, II_SW>, InstSize32;
 
-def LHU_NM : LoadMemoryNM<"lhu", GPR32NMOpnd, mem, zextloadi16, addruimm12, II_LHU>, InstSize32;
-def LHUs9_NM : LoadMemoryNM<"lhu", GPR32NMOpnd, mem, zextloadi16, addrsimm9, II_LHU>, InstSize32;
-def LHUXS_NM : LoadMemoryNM<"lhuxs", GPR32NMOpnd, mem, zextloadi16, addrindexedlsl1, II_LHU>, InstSize32;
-def LHUX_NM : LoadMemoryNM<"lhux", GPR32NMOpnd, mem, zextloadi16, addrindexed, II_LHU>, InstSize32;
-def LH_NM : LoadMemoryNM<"lh", GPR32NMOpnd, mem, sextloadi16, addruimm12, II_LH>, InstSize32;
-def LHs9_NM : LoadMemoryNM<"lh", GPR32NMOpnd, mem, sextloadi16, addrsimm9, II_LH>, InstSize32;
-def LHXS_NM : LoadMemoryNM<"lhxs", GPR32NMOpnd, mem, sextloadi16, addrindexedlsl1, II_LH>, InstSize32;
-def LHX_NM : LoadMemoryNM<"lhx", GPR32NMOpnd, mem, sextloadi16, addrindexed, II_LH>, InstSize32;
-def SH_NM : StoreMemoryNM<"sh", GPR32NMOpnd, mem, truncstorei16, addruimm12, II_SH>, InstSize32;
-def SHs9_NM : StoreMemoryNM<"sh", GPR32NMOpnd, mem, truncstorei16, addrsimm9, II_SH>, InstSize32;
-def SHXS_NM : StoreMemoryNM<"shxs", GPR32NMOpnd, mem, truncstorei16, addrindexedlsl1, II_SH>, InstSize32;
-def SHX_NM : StoreMemoryNM<"shx", GPR32NMOpnd, mem, truncstorei16, addrindexed, II_SH>, InstSize32;
+def LHU_NM : LoadMemoryNM<"lhu", GPRNM32Opnd, mem, zextloadi16, addruimm12, II_LHU>, InstSize32;
+def LHUs9_NM : LoadMemoryNM<"lhu", GPRNM32Opnd, mem, zextloadi16, addrsimm9, II_LHU>, InstSize32;
+def LHUXS_NM : LoadMemoryNM<"lhuxs", GPRNM32Opnd, mem, zextloadi16, addrindexedlsl1, II_LHU>, InstSize32;
+def LHUX_NM : LoadMemoryNM<"lhux", GPRNM32Opnd, mem, zextloadi16, addrindexed, II_LHU>, InstSize32;
+def LH_NM : LoadMemoryNM<"lh", GPRNM32Opnd, mem, sextloadi16, addruimm12, II_LH>, InstSize32;
+def LHs9_NM : LoadMemoryNM<"lh", GPRNM32Opnd, mem, sextloadi16, addrsimm9, II_LH>, InstSize32;
+def LHXS_NM : LoadMemoryNM<"lhxs", GPRNM32Opnd, mem, sextloadi16, addrindexedlsl1, II_LH>, InstSize32;
+def LHX_NM : LoadMemoryNM<"lhx", GPRNM32Opnd, mem, sextloadi16, addrindexed, II_LH>, InstSize32;
+def SH_NM : StoreMemoryNM<"sh", GPRNM32Opnd, mem, truncstorei16, addruimm12, II_SH>, InstSize32;
+def SHs9_NM : StoreMemoryNM<"sh", GPRNM32Opnd, mem, truncstorei16, addrsimm9, II_SH>, InstSize32;
+def SHXS_NM : StoreMemoryNM<"shxs", GPRNM32Opnd, mem, truncstorei16, addrindexedlsl1, II_SH>, InstSize32;
+def SHX_NM : StoreMemoryNM<"shx", GPRNM32Opnd, mem, truncstorei16, addrindexed, II_SH>, InstSize32;
 
-def LBU_NM : LoadMemoryNM<"lbu", GPR32NMOpnd, mem, zextloadi8, addruimm12, II_LBU>, InstSize32;
-def LBUs9_NM : LoadMemoryNM<"lbu", GPR32NMOpnd, mem, zextloadi8, addrsimm9, II_LBU>, InstSize32;
-def LBUX_NM : LoadMemoryNM<"lbux", GPR32NMOpnd, mem, zextloadi8, addrindexed, II_LBU>, InstSize32;
-def LB_NM : LoadMemoryNM<"lb", GPR32NMOpnd, mem, sextloadi8, addruimm12, II_LB>, InstSize32;
-def LBs9_NM : LoadMemoryNM<"lb", GPR32NMOpnd, mem, sextloadi8, addrsimm9, II_LB>, InstSize32;
-def LBX_NM : LoadMemoryNM<"lbx", GPR32NMOpnd, mem, sextloadi8, addrindexed, II_LB>, InstSize32;
-def SB_NM : StoreMemoryNM<"sb", GPR32NMOpnd, mem, truncstorei8, addruimm12, II_SB>, InstSize32;
-def SBs9_NM : StoreMemoryNM<"sb", GPR32NMOpnd, mem, truncstorei8, addrsimm9, II_SB>, InstSize32;
-def SBX_NM : StoreMemoryNM<"sbx", GPR32NMOpnd, mem, truncstorei8, addrindexed, II_SB>, InstSize32;
+def LBU_NM : LoadMemoryNM<"lbu", GPRNM32Opnd, mem, zextloadi8, addruimm12, II_LBU>, InstSize32;
+def LBUs9_NM : LoadMemoryNM<"lbu", GPRNM32Opnd, mem, zextloadi8, addrsimm9, II_LBU>, InstSize32;
+def LBUX_NM : LoadMemoryNM<"lbux", GPRNM32Opnd, mem, zextloadi8, addrindexed, II_LBU>, InstSize32;
+def LB_NM : LoadMemoryNM<"lb", GPRNM32Opnd, mem, sextloadi8, addruimm12, II_LB>, InstSize32;
+def LBs9_NM : LoadMemoryNM<"lb", GPRNM32Opnd, mem, sextloadi8, addrsimm9, II_LB>, InstSize32;
+def LBX_NM : LoadMemoryNM<"lbx", GPRNM32Opnd, mem, sextloadi8, addrindexed, II_LB>, InstSize32;
+def SB_NM : StoreMemoryNM<"sb", GPRNM32Opnd, mem, truncstorei8, addruimm12, II_SB>, InstSize32;
+def SBs9_NM : StoreMemoryNM<"sb", GPRNM32Opnd, mem, truncstorei8, addrsimm9, II_SB>, InstSize32;
+def SBX_NM : StoreMemoryNM<"sbx", GPRNM32Opnd, mem, truncstorei8, addrindexed, II_SB>, InstSize32;
 
 // TODO: Halfword load/store is never selected, this needs to be looked into.
 def UALH_NM : UnalignedLoad<"ualh", NMUnalignedLH>;
@@ -708,20 +708,20 @@ def UALW_NM : UnalignedLoad<"ualw", NMUnalignedLW>;
 def UASH_NM : UnalignedStore<"uash", NMUnalignedSH>;
 def UASW_NM : UnalignedStore<"uasw", NMUnalignedSW>;
 
-def LWGP_NM : LoadMemoryNM<"lw", GPR32NMOpnd, mem>, InstSize32;
+def LWGP_NM : LoadMemoryNM<"lw", GPRNM32Opnd, mem>, InstSize32;
 
-def SWPC_NM : StorePCBase<GPR32NMOpnd, simm32>;
-def LWPC_NM : LoadPCBase<GPR32NMOpnd, simm32>;
+def SWPC_NM : StorePCBase<GPRNM32Opnd, simm32>;
+def LWPC_NM : LoadPCBase<GPRNM32Opnd, simm32>;
 
 def LWM_NM : LoadMultipleNM<"lwm">;
 def UALWM_NM : LoadMultipleNM<"ualwm">;
 def SWM_NM : StoreMultipleNM<"swm">;
 def UASWM_NM : StoreMultipleNM<"uaswm">;
 
-def MOVE_NM : InstNM<(outs GPR32NMOpnd:$rt), (ins GPR32NMOpnd:$rs),
+def MOVE_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins GPRNM32Opnd:$rs),
                       "move\t$rt, $rs", []>, InstSize16;
-def MOVEP_NM : InstNM<(outs GPR32NMOpnd:$dst1, GPR32NMOpnd:$dst2),
-                      (ins GPR32NMOpnd:$src1, GPR32NMOpnd:$src2),
+def MOVEP_NM : InstNM<(outs GPRNM32Opnd:$dst1, GPRNM32Opnd:$dst2),
+                      (ins GPRNM32Opnd:$src1, GPRNM32Opnd:$src2),
                       "movep\t$dst1, $dst2, $src1, $src2", []>, InstSize16;
 
 }
@@ -739,42 +739,42 @@ def MOVEP_NM : InstNM<(outs GPR32NMOpnd:$dst1, GPR32NMOpnd:$dst2),
 // instructions.
 //
 let AddedComplexity = 3 in {
-def : NMPat<(i32 (extloadi8 (add GPR32NM:$rs, immFitsAddiu32:$imm))),
-            (LBU_NM (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
-def : NMPat<(i32 (zextloadi8 (add GPR32NM:$rs, immFitsAddiu32:$imm))),
-            (LBU_NM (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
-def : NMPat<(i32 (sextloadi8 (add GPR32NM:$rs, immFitsAddiu32:$imm))),
-            (LB_NM (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
-def : NMPat<(i32 (extloadi16 (add GPR32NM:$rs, immFitsAddiu32:$imm))),
-            (LHU_NM (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
-def : NMPat<(i32 (zextloadi16 (add GPR32NM:$rs, immFitsAddiu32:$imm))),
-            (LHU_NM (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
-def : NMPat<(i32 (sextloadi16 (add GPR32NM:$rs, immFitsAddiu32:$imm))),
-            (LH_NM (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
-def : NMPat<(i32 (load (add GPR32NM:$rs, immFitsAddiu32:$imm))),
-            (LW_NM (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
-def : NMPat<(truncstorei8 GPR32NM:$rt, (add GPR32NM:$rs, immFitsAddiu32:$imm)),
-            (SB_NM GPR32NM:$rt, (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
-def : NMPat<(truncstorei16 GPR32NM:$rt, (add GPR32NM:$rs, immFitsAddiu32:$imm)),
-            (SH_NM GPR32NM:$rt, (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
-def : NMPat<(store GPR32NM:$rt, (add GPR32NM:$rs, immFitsAddiu32:$imm)),
-            (SW_NM GPR32NM:$rt, (ADDiu_NM GPR32NM:$rs, imm:$imm), 0)>;
+def : NMPat<(i32 (extloadi8 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
+            (LBU_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+def : NMPat<(i32 (zextloadi8 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
+            (LBU_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+def : NMPat<(i32 (sextloadi8 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
+            (LB_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+def : NMPat<(i32 (extloadi16 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
+            (LHU_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+def : NMPat<(i32 (zextloadi16 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
+            (LHU_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+def : NMPat<(i32 (sextloadi16 (add GPRNM32:$rs, immFitsAddiu32:$imm))),
+            (LH_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+def : NMPat<(i32 (load (add GPRNM32:$rs, immFitsAddiu32:$imm))),
+            (LW_NM (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+def : NMPat<(truncstorei8 GPRNM32:$rt, (add GPRNM32:$rs, immFitsAddiu32:$imm)),
+            (SB_NM GPRNM32:$rt, (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+def : NMPat<(truncstorei16 GPRNM32:$rt, (add GPRNM32:$rs, immFitsAddiu32:$imm)),
+            (SH_NM GPRNM32:$rt, (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
+def : NMPat<(store GPRNM32:$rt, (add GPRNM32:$rs, immFitsAddiu32:$imm)),
+            (SW_NM GPRNM32:$rt, (ADDiu_NM GPRNM32:$rs, imm:$imm), 0)>;
 } // AddedComplexity = 3
 
 // Catching out-of-range immediate loads/stores.
-def : NMPat<(i32 (extloadi8 GPR32NM:$rs)), (LBU_NM GPR32NM:$rs, 0)>;
-def : NMPat<(i32 (zextloadi8 GPR32NM:$rs)), (LBU_NM GPR32NM:$rs, 0)>;
-def : NMPat<(i32 (sextloadi8 GPR32NM:$rs)), (LB_NM GPR32NM:$rs, 0)>;
-def : NMPat<(i32 (extloadi16 GPR32NM:$rs)), (LHU_NM GPR32NM:$rs, 0)>;
-def : NMPat<(i32 (zextloadi16 GPR32NM:$rs)), (LHU_NM GPR32NM:$rs, 0)>;
-def : NMPat<(i32 (sextloadi16 GPR32NM:$rs)), (LH_NM GPR32NM:$rs, 0)>;
-def : NMPat<(i32 (load GPR32NM:$rs)), (LW_NM GPR32NM:$rs, 0)>;
-def : NMPat<(truncstorei8 GPR32NM:$rt, GPR32NM:$rs),
-            (SB_NM GPR32NM:$rt, GPR32NM:$rs, 0)>;
-def : NMPat<(truncstorei16 GPR32NM:$rt, GPR32NM:$rs),
-            (SH_NM GPR32NM:$rt, GPR32NM:$rs, 0)>;
-def : NMPat<(store GPR32NM:$rt, GPR32NM:$rs),
-            (SW_NM GPR32NM:$rt, GPR32NM:$rs, 0)>;
+def : NMPat<(i32 (extloadi8 GPRNM32:$rs)), (LBU_NM GPRNM32:$rs, 0)>;
+def : NMPat<(i32 (zextloadi8 GPRNM32:$rs)), (LBU_NM GPRNM32:$rs, 0)>;
+def : NMPat<(i32 (sextloadi8 GPRNM32:$rs)), (LB_NM GPRNM32:$rs, 0)>;
+def : NMPat<(i32 (extloadi16 GPRNM32:$rs)), (LHU_NM GPRNM32:$rs, 0)>;
+def : NMPat<(i32 (zextloadi16 GPRNM32:$rs)), (LHU_NM GPRNM32:$rs, 0)>;
+def : NMPat<(i32 (sextloadi16 GPRNM32:$rs)), (LH_NM GPRNM32:$rs, 0)>;
+def : NMPat<(i32 (load GPRNM32:$rs)), (LW_NM GPRNM32:$rs, 0)>;
+def : NMPat<(truncstorei8 GPRNM32:$rt, GPRNM32:$rs),
+            (SB_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
+def : NMPat<(truncstorei16 GPRNM32:$rt, GPRNM32:$rs),
+            (SH_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
+def : NMPat<(store GPRNM32:$rt, GPRNM32:$rs),
+            (SW_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
 
 // Any-extending loads
 def : NMPat<(i32 (extloadi8 addruimm12:$addr)), (LBU_NM addruimm12:$addr)>;
@@ -787,14 +787,14 @@ def : NMPat<(i32 (extloadi16 addrindexedlsl1:$addr)),
 def : NMPat<(i32 (extloadi16 addrindexed:$addr)), (LHUX_NM addrindexed:$addr)>;
 
 // Catching out-of-range immediate unaligned loads/stores.
-def : NMPat<(i32 (NMUnalignedLW GPR32NM:$rs, GPR32NM:$src)),
-            (UALW_NM GPR32NM:$rs, 0, GPR32NM:$src)>;
-def : NMPat<(NMUnalignedSW GPR32NM:$rt, GPR32NM:$rs),
-            (UASW_NM GPR32NM:$rt, GPR32NM:$rs, 0)>;
-def : NMPat<(i32 (NMUnalignedLH GPR32NM:$rs, GPR32NM:$src)),
-            (UALH_NM GPR32NM:$rs, 0, GPR32NM:$src)>;
-def : NMPat<(NMUnalignedSH GPR32NM:$rt, GPR32NM:$rs),
-            (UASH_NM GPR32NM:$rt, GPR32NM:$rs, 0)>;
+def : NMPat<(i32 (NMUnalignedLW GPRNM32:$rs, GPRNM32:$src)),
+            (UALW_NM GPRNM32:$rs, 0, GPRNM32:$src)>;
+def : NMPat<(NMUnalignedSW GPRNM32:$rt, GPRNM32:$rs),
+            (UASW_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
+def : NMPat<(i32 (NMUnalignedLH GPRNM32:$rs, GPRNM32:$src)),
+            (UALH_NM GPRNM32:$rs, 0, GPRNM32:$src)>;
+def : NMPat<(NMUnalignedSH GPRNM32:$rt, GPRNM32:$rs),
+            (UASH_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
 
 // GP-relative load.
 def : NMPat<(i32 (load (add GP_NM, (MipsGPRel tglobaladdr:$in)))),
@@ -812,13 +812,13 @@ def : NMPat<(atomic_store_8 addr:$a, GPR32:$v), (SB_NM GPR32:$v, addr:$a)>;
 def : NMPat<(atomic_store_16 addr:$a, GPR32:$v), (SH_NM GPR32:$v, addr:$a)>;
 def : NMPat<(atomic_store_32 addr:$a, GPR32:$v), (SW_NM GPR32:$v, addr:$a)>;
 
-def LL_NM : InstNM<(outs GPR32NMOpnd:$rd), (ins mem_simm9:$addr),
+def LL_NM : InstNM<(outs GPRNM32Opnd:$rd), (ins mem_simm9:$addr),
                     "ll\t$rd, $addr", []>, InstSize32 {
   let mayLoad = 1;
   let hasNoSchedulingInfo = 1;
 }
 
-def SC_NM : InstNM<(outs GPR32NMOpnd:$dst), (ins GPR32NMOpnd:$rt, mem_simm9:$addr),
+def SC_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, mem_simm9:$addr),
                    "sc\t$rt, $addr", []>, InstSize32 {
   let mayStore = 1;
   let Constraints = "$rt = $dst";
@@ -826,15 +826,15 @@ def SC_NM : InstNM<(outs GPR32NMOpnd:$dst), (ins GPR32NMOpnd:$rt, mem_simm9:$add
 }
 
 // Conditional Moves
-def MOVZ_NM : InstNM<(outs GPR32NMOpnd:$rd),
-                     (ins GPR32NMOpnd:$rs, GPR32NMOpnd:$rt, GPR32NMOpnd:$F),
+def MOVZ_NM : InstNM<(outs GPRNM32Opnd:$rd),
+                     (ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, GPRNM32Opnd:$F),
                      "movz\t$rd, $rs, $rt",
                      []>, InstSize32 {
   let Constraints = "$F = $rd";
 }
 
-def MOVN_NM : InstNM<(outs GPR32NMOpnd:$rd),
-                     (ins GPR32NMOpnd:$rs, GPR32NMOpnd:$rt, GPR32NMOpnd:$F),
+def MOVN_NM : InstNM<(outs GPRNM32Opnd:$rd),
+                     (ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, GPRNM32Opnd:$F),
                      "movn\t$rd, $rs, $rt",
                      []>, InstSize32 {
     let Constraints = "$F = $rd";
@@ -873,8 +873,10 @@ multiclass MovzPats0NM<RegisterClass CRC, RegisterClass DRC,
 }
 
 // Use MIPS conditional instruction definitions
-defm : MovzPats0NM<GPR32NM, GPR32NM, MOVZ_NM, SLT_NM, SLTU_NM, SLTI_NM,
+defm : MovzPats0NM<GPRNM32, GPRNM32, MOVZ_NM, SLT_NM, SLTU_NM, SLTI_NM,
                    SLTIU_NM>;
-defm : MovzPats1<GPR32NM, GPR32NM, MOVZ_NM, XOR_NM>, ISA_NANOMIPS;
-defm : MovzPats2NM<GPR32NM, GPR32NM, MOVZ_NM, XORI_NM>;
-defm : MovnPats<GPR32NM, GPR32NM, MOVN_NM, XOR_NM>, ISA_NANOMIPS;
+
+
+defm : MovzPats1<GPRNM32, GPRNM32, MOVZ_NM, XOR_NM>, ISA_NANOMIPS;
+defm : MovzPats2NM<GPRNM32, GPRNM32, MOVZ_NM, XORI_NM>;
+defm : MovnPats<GPRNM32, GPRNM32, MOVN_NM, XOR_NM>, ISA_NANOMIPS;

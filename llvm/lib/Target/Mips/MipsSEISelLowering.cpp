@@ -69,7 +69,7 @@ MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
 
   // Set up the register classes
   if (STI.isABI_P32())
-    addRegisterClass(MVT::i32, &Mips::GPR32NMRegClass);
+    addRegisterClass(MVT::i32, &Mips::GPRNM32RegClass);
   else
     addRegisterClass(MVT::i32, &Mips::GPR32RegClass);
 

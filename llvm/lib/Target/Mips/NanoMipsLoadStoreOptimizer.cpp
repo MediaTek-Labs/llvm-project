@@ -57,7 +57,7 @@ struct NMLoadStoreOpt : public MachineFunctionPass {
       {Mips::S1_NM, 4}, {Mips::S2_NM, 5}, {Mips::S3_NM, 6},  {Mips::S4_NM, 7},
       {Mips::S5_NM, 8}, {Mips::S6_NM, 9}, {Mips::S7_NM, 10},
   };
-  MCRegisterClass RC = MipsMCRegisterClasses[Mips::GPR32NMRegClassID];
+  MCRegisterClass RC = MipsMCRegisterClasses[Mips::GPRNM32RegClassID];
 
   NMLoadStoreOpt() : MachineFunctionPass(ID) {}
   StringRef getPassName() const override { return NM_LOAD_STORE_OPT_NAME; }

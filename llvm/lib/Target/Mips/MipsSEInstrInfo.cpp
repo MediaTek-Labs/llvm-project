@@ -168,8 +168,8 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
     if (Mips::MSA128BRegClass.contains(SrcReg))
       Opc = Mips::MOVE_V;
   }
-  else if (Mips::GPR32NMRegClass.contains(SrcReg)) {
-    if (Mips::GPR32NMRegClass.contains(DestReg))
+  else if (Mips::GPRNM32RegClass.contains(SrcReg)) {
+    if (Mips::GPRNM32RegClass.contains(DestReg))
       Opc = Mips::MOVE_NM;
   }
 
@@ -266,7 +266,7 @@ void MipsSEInstrInfo::storeRegToStack(MachineBasicBlock &MBB,
     Opc = Mips::SD;
   else if (Mips::DSPRRegClass.hasSubClassEq(RC))
     Opc = Mips::SWDSP;
-  else if (Mips::GPR32NMRegClass.hasSubClassEq(RC))
+  else if (Mips::GPRNM32RegClass.hasSubClassEq(RC))
     Opc = Mips::SW_NM;
 
   // Hi, Lo are normally caller save but they are callee save
@@ -346,7 +346,7 @@ void MipsSEInstrInfo::loadRegFromStack(
     Opc = Mips::LD;
   else if (Mips::DSPRRegClass.hasSubClassEq(RC))
     Opc = Mips::LWDSP;
-  else if (Mips::GPR32NMRegClass.hasSubClassEq(RC))
+  else if (Mips::GPRNM32RegClass.hasSubClassEq(RC))
     Opc = Mips::LW_NM;
 
   assert(Opc && "Register class not handled!");
@@ -628,7 +628,7 @@ unsigned MipsSEInstrInfo::loadImmediate(int64_t Imm, MachineBasicBlock &MBB,
   if (Subtarget.hasNanoMips()) {
     assert(Imm == (int32_t)Imm);
     MachineRegisterInfo &RegInfo = MBB.getParent()->getRegInfo();
-    const TargetRegisterClass *RC = &Mips::GPR32NMRegClass;
+    const TargetRegisterClass *RC = &Mips::GPRNM32RegClass;
     Register Reg = RegInfo.createVirtualRegister(RC);
     BuildMI(MBB, II, DL, get(Mips::Li_NM), Reg).addImm((int32_t)Imm);
     return Reg;

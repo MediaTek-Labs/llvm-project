@@ -366,6 +366,30 @@ bool MipsSEDAGToDAGISel::selectAddrDefault(SDValue Addr, SDValue &Base,
   return true;
 }
 
+bool MipsSEDAGToDAGISel::selectAddrSym(SDValue Addr, SDValue &Base) const {
+  SDValue Opnd0 = Addr;
+  if (isa<ConstantPoolSDNode>(Opnd0) || isa<GlobalAddressSDNode>(Opnd0) ||
+      isa<JumpTableSDNode>(Opnd0) || isa<MCSymbolSDNode>(Opnd0) ||
+      isa<BasicBlockSDNode>(Opnd0) ||
+      isa<ExternalSymbolSDNode>(Opnd0)) {
+      Base = Addr;
+      return true;
+    }
+  else
+    return false;
+}
+
+bool MipsSEDAGToDAGISel::selectAddrSymGPRel(SDValue Addr, SDValue &Base) const {
+  SDValue Opnd0 = Addr;
+  if (isa<GlobalAddressSDNode>(Opnd0) ||
+      isa<ExternalSymbolSDNode>(Opnd0)) {
+      Base = Addr;
+      return true;
+    }
+  else
+    return false;
+}
+
 bool MipsSEDAGToDAGISel::selectIntAddr(SDValue Addr, SDValue &Base,
                                        SDValue &Offset) const {
   return selectAddrRegImm(Addr, Base, Offset) ||
@@ -1702,6 +1726,31 @@ void MipsSEDAGToDAGISel::PostprocessISelDAG()
     NanoMipsDAGPeepholes();
 }
 
+static bool selectOffsetGP(SelectionDAG *CurDAG, SDValue Addr, SDValue &Offset,
+			   unsigned OffsetBits, unsigned ShiftAmount = 0) {
+  if (Addr.getOpcode() == MipsISD::GPRel ||
+      isa<GlobalAddressSDNode>(Addr) ||
+      isa<ExternalSymbolSDNode>(Addr)) {
+    ConstantSDNode *CN = dyn_cast<ConstantSDNode>(Addr.getOperand(0));
+    if (isUIntN(OffsetBits + ShiftAmount, CN->getZExtValue())) {
+      EVT ValTy = Addr.getValueType();
+      Offset =
+          CurDAG->getTargetConstant(CN->getZExtValue(), SDLoc(Addr), ValTy);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MipsSEDAGToDAGISel::selectOffsetGP18(SDValue Addr,
+					  SDValue &Offset) const {
+  return selectOffsetGP(CurDAG, Addr, Offset, 18);
+}
+
+bool MipsSEDAGToDAGISel::selectOffsetGP19s2(SDValue Addr,
+					    SDValue &Offset) const {
+  return selectOffsetGP(CurDAG, Addr, Offset, 19, 2);
+}
 
 FunctionPass *llvm::createMipsSEISelDag(MipsTargetMachine &TM,
                                         CodeGenOpt::Level OptLevel) {

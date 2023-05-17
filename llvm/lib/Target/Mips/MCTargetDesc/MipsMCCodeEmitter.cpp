@@ -632,6 +632,83 @@ mapExprToFixupKindNM(const MipsMCExpr *MipsExpr) {
 }
 
 unsigned MipsMCCodeEmitter::
+getSymPCRel(const MCInst &MI, unsigned OpNo,
+	    SmallVectorImpl<MCFixup> &Fixups,
+	    const MCSubtargetInfo &STI) const {
+  const MCExpr *Expr;
+  const MCOperand &MO = MI.getOperand(OpNo);
+  unsigned Offset = 0;
+  unsigned FType = Mips::fixup_NANOMIPS_PC21_S1;
+
+  switch (MI.getOpcode()) {
+    case Mips::LAPC48_NM:
+      Offset = 2;
+      FType = Mips::fixup_NANOMIPS_PC_I32;
+      break;
+    default:
+      break;
+  }
+
+  if (MO.isExpr())
+    Expr = MO.getExpr();
+  else if (MO.isImm())
+    Expr = MCConstantExpr::create(static_cast<unsigned>(MO.getImm()), Ctx);
+  Fixups.push_back(MCFixup::create(Offset, Expr, MCFixupKind(FType)));
+
+  return 0;
+}
+
+unsigned MipsMCCodeEmitter::
+getSymGPRel(const MCInst &MI, unsigned OpNo,
+	    SmallVectorImpl<MCFixup> &Fixups,
+	    const MCSubtargetInfo &STI) const {
+  const MCExpr *Expr;
+  const MCOperand MO = MI.getOperand(OpNo);
+
+  if (MO.isExpr()) {
+    Expr = MO.getExpr();
+    const MipsMCExpr *MipsExpr = cast<MipsMCExpr>(Expr);
+    Mips::Fixups FixupKind = Mips::Fixups(0);
+    unsigned Offset = 0;
+    assert (MipsExpr->getKind() == MipsMCExpr::MEK_GPREL);
+    Expr = MO.getExpr();
+    switch (MI.getOpcode()) {
+    case Mips::ADDIUGPW_NM:
+      FixupKind = Mips::fixup_NANOMIPS_GPREL19_S2;
+      break;
+    case Mips::ADDIUGP48_NM:
+      FixupKind = Mips::fixup_NANOMIPS_GPREL_I32;
+      Offset = 2;
+      break;
+    default:
+    case Mips::ADDIUGPB_NM:
+      FixupKind = Mips::fixup_NANOMIPS_GPREL18;
+      break;
+    }
+
+    Fixups.push_back(MCFixup::create(Offset, Expr,
+				     MCFixupKind(FixupKind)));
+  }
+  else if (MO.isImm())
+    return MO.getImm();
+
+  return 0;
+}
+
+unsigned MipsMCCodeEmitter::
+getSymAbs(const MCInst &MI, unsigned OpNo,
+	  SmallVectorImpl<MCFixup> &Fixups,
+	  const MCSubtargetInfo &STI) const {
+  const MCOperand &MO = MI.getOperand(OpNo);
+  if (MO.isExpr())
+    Fixups.push_back(MCFixup::create(2, MO.getExpr(),
+				     MCFixupKind(Mips::fixup_NANOMIPS_I32)));
+  else if (MO.isImm())
+    return MO.getImm();
+  return 0;
+}
+
+unsigned MipsMCCodeEmitter::
 getExprOpValue(const MCExpr *Expr, SmallVectorImpl<MCFixup> &Fixups,
                const MCSubtargetInfo &STI) const {
   int64_t Res;

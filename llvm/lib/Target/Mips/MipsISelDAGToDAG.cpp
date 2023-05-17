@@ -86,6 +86,16 @@ bool MipsDAGToDAGISel::selectAddrDefault(SDValue Addr, SDValue &Base,
   return false;
 }
 
+bool MipsDAGToDAGISel::selectAddrSym(SDValue Addr, SDValue &Base) const {
+  llvm_unreachable("Unimplemented function.");
+  return false;
+}
+
+bool MipsDAGToDAGISel::selectAddrSymGPRel(SDValue Addr, SDValue &Base) const {
+  llvm_unreachable("Unimplemented function.");
+  return false;
+}
+
 bool MipsDAGToDAGISel::selectIntAddr(SDValue Addr, SDValue &Base,
                                      SDValue &Offset) const {
   llvm_unreachable("Unimplemented function.");
@@ -381,3 +391,13 @@ SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
 char MipsDAGToDAGISel::ID = 0;
 
 INITIALIZE_PASS(MipsDAGToDAGISel, DEBUG_TYPE, PASS_NAME, false, false)
+
+bool MipsDAGToDAGISel::selectOffsetGP18(SDValue Addr, SDValue &Offset) const {
+  llvm_unreachable("Unimplemented function.");
+  return false;
+}
+
+bool MipsDAGToDAGISel::selectOffsetGP19s2(SDValue Addr, SDValue &Offset) const {
+  llvm_unreachable("Unimplemented function.");
+  return false;
+}

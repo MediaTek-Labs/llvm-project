@@ -264,6 +264,18 @@ public:
                                  SmallVectorImpl<MCFixup> &Fixups,
                                  const MCSubtargetInfo &STI) const;
 
+  unsigned getSymPCRel(const MCInst &MI, unsigned OpNo,
+		       SmallVectorImpl<MCFixup> &Fixups,
+		       const MCSubtargetInfo &STI) const;
+
+  unsigned getSymGPRel(const MCInst &MI, unsigned OpNo,
+		       SmallVectorImpl<MCFixup> &Fixups,
+		       const MCSubtargetInfo &STI) const;
+
+  unsigned getSymAbs(const MCInst &MI, unsigned OpNo,
+		       SmallVectorImpl<MCFixup> &Fixups,
+		       const MCSubtargetInfo &STI) const;
+
   unsigned getExprOpValue(const MCExpr *Expr, SmallVectorImpl<MCFixup> &Fixups,
                           const MCSubtargetInfo &STI) const;
 

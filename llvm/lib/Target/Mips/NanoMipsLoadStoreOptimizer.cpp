@@ -653,7 +653,7 @@ static bool isLoadStoreShortChar(MachineInstr *MI) {
 bool NMLoadStoreOpt::generatePCRelative(MachineBasicBlock &MBB) {
   SmallVector<std::pair<MachineInstr *, MachineInstr *>> Candidates;
   for (auto &MI : MBB) {
-    if (MI.getOpcode() == Mips::LA_NM) {
+    if (MI.getOpcode() == Mips::LAPC48_NM) {
       bool IsRedefined = false;
       bool IsUsedByMultipleMIs = false;
       MachineInstr *FirstUse = nullptr;
@@ -716,7 +716,7 @@ bool NMLoadStoreOpt::generatePCRelative(MachineBasicBlock &MBB) {
   for (auto Pair : Candidates) {
     auto *LA = Pair.first;
     auto *Use = Pair.second;
-    auto &Address = LA->getOperand(1);
+    auto &Address = LA->getOperand((LA->getOpcode() == Mips::LAPC48_NM)? 1 : 2);
     auto Dst = Use->getOperand(0).getReg();
     int64_t Offset = Use->getOperand(2).getImm() + Address.getOffset();
 

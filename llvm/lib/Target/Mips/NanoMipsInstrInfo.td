@@ -154,6 +154,14 @@ class NMUImmAsmOperandClass<int Bits,
   let SuperClasses = Supers;
 }
 
+class NMUImm16AsmOperandClass<list<AsmOperandClass> Supers = []> :
+      AsmOperandClass {
+  let Name = "NMUImm16";
+  let RenderMethod = "addUImmOperands<16>";
+  let PredicateMethod = "isLo12OrUImm16Offset";
+  let SuperClasses = Supers;
+}
+
 class NMSImmAsmOperandClass<int Bits,
 			    list<AsmOperandClass> Supers = [],
 			    int Offset = 0> :
@@ -172,6 +180,39 @@ class NMUImmScaledAsmOperandClass<int Bits,
   let RenderMethod = "addConstantUImmOperands<32>";
   let PredicateMethod = "isScaledUImm<" # Bits # "," # Shift # ">";
   let SuperClasses = Supers;
+}
+
+class Hi20AsmOperandClass<string Suffix = ""> : AsmOperandClass {
+  let Name = "Hi20Offset" # Suffix;
+  let RenderMethod = "addSImmOperands<20>";
+}
+
+class SymAsmOperandClass<string Type = "", string Suffix = "",
+			list<AsmOperandClass> Supers = []>
+    : AsmOperandClass{
+  let Name = "Sym" # Type # Suffix;
+  let DiagnosticType = "Sym" # Type;
+  let PredicateMethod = "isSym" # Type;
+  let SuperClasses = Supers;
+  let RenderMethod = "addSym" # Type # "Operands";
+}
+
+def SymAsmOperand : SymAsmOperandClass;
+
+def SymAsmOperandGPRel18 : SymAsmOperandClass<"GPRel", "18"> {
+  let PredicateMethod = "isSymGPRel<18>";
+  let RenderMethod = "addSymGPRelOperands<18>";
+}
+def SymAsmOperandGPRel19s2 : SymAsmOperandClass<"GPRel", "19s2"> {
+  let PredicateMethod = "isSymGPRel<19, 2>";
+  let RenderMethod = "addSymGPRelOperands<21,0>";
+}
+def SymAsmOperandGPRel : SymAsmOperandClass<"GPRel">;
+
+def UImm18AsmOperand : NMUImmAsmOperandClass<18>;
+
+def uimm18_nm : Operand<i32> {
+  let ParserMatchClass = UImm18AsmOperand;
 }
 
 def uimm12_nm : Operand<i32> {
@@ -197,7 +238,7 @@ def nimm12_nm : Operand<i32> {
 }
 def uimm16_nm : Operand<i32> {
   let PrintMethod = "printUImm<16>";
-  let ParserMatchClass = !cast<AsmOperandClass>("UImm16AsmOperandClass");
+  let ParserMatchClass = NMUImm16AsmOperandClass<>;
 }
 def uimm5s1_nm : Operand<i32> {
   let PrintMethod = "printUImm<5>";
@@ -235,6 +276,44 @@ def simm32_nm : Operand<i32> {
   let EncoderMethod = "getSImm32Encoding";
 }
 
+def simm32s12_nm : Operand<i32> {
+  let ParserMatchClass = Hi20AsmOperandClass<>;
+  let PrintMethod = "printHi20";
+}
+
+def simm32s12_pcrel_nm : Operand<i32> {
+  let ParserMatchClass = Hi20AsmOperandClass<"PCRel">;
+  let PrintMethod = "printHi20PCRel";
+}
+
+def sym32_pc_nm : Operand<iPTRAny> {
+  let EncoderMethod = "getSymPCRel";
+  let ParserMatchClass = SymAsmOperand;
+}
+
+def sym32_gp_nm : Operand<iPTRAny> {
+  let EncoderMethod = "getSymGPRel";
+  let ParserMatchClass = SymAsmOperandGPRel;
+  let DecoderMethod = "DecodeSImmWithReg<32, 0, 1, Mips::GP_NM>";
+}
+
+def sym32_gp18_nm : Operand<iPTRAny> {
+  let EncoderMethod = "getSymGPRel";
+  let ParserMatchClass = SymAsmOperandGPRel18;
+  let DecoderMethod = "DecodeUImmWithReg<18, 0, 1, Mips::GP_NM>";
+}
+
+def sym32_gp19s2_nm : Operand<iPTRAny> {
+  let EncoderMethod = "getSymGPRel";
+  let ParserMatchClass = SymAsmOperandGPRel19s2;
+  let DecoderMethod = "DecodeUImmWithReg<21, 0, 1, Mips::GP_NM>";
+}
+
+def sym32_nm : Operand<iPTRAny> {
+  let EncoderMethod = "getSymAbs";
+  let ParserMatchClass = SymAsmOperand;
+}
+
 def simm32power2 : IntImmLeaf<i32, [{ return isPowerOf2_32(Imm.getSExtValue()); }]>;
 
 def addrsimm9 : ComplexPattern<iPTR, 2, "selectIntAddrSImm9", [frameindex]>;
@@ -242,6 +321,19 @@ def addruimm12 : ComplexPattern<iPTR, 2, "selectIntAddrUImm12", [frameindex]>;
 def addrindexed : ComplexPattern<iPTR, 2, "selectIntAddrIndexed", [frameindex]>;
 def addrindexedlsl1 : ComplexPattern<iPTR, 2, "selectIntAddrIndexedLsl1", [frameindex]>;
 def addrindexedlsl2 : ComplexPattern<iPTR, 2, "selectIntAddrIndexedLsl2", []>;
+def addruimm6s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm6s2", [frameindex]>;
+def addruimm3s1 : ComplexPattern<iPTR, 2, "selectIntAddrUImm3s1", [frameindex]>;
+def addruimm2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm2", [frameindex]>;
+def addruimm4s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm4s2", [frameindex]>;
+def addrgp19s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm19s2", [frameindex]>;
+def addrgp18 : ComplexPattern<iPTR, 2, "selectIntAddrUImm18", [frameindex]>;
+def addrgp17s1 : ComplexPattern<iPTR, 2, "selectIntAddrUImm17s1", [frameindex]>;
+def addrgp7s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm7s2", [frameindex]>;
+def addrsp5s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm5s2", [frameindex]>;
+def addrsym : ComplexPattern<iPTR, 1, "selectAddrSym", [frameindex]>;
+def addrgprel : ComplexPattern<iPTR, 1, "selectAddrSymGPRel", [frameindex]>;
+def offsetgp19s2 : ComplexPattern<iPTR, 1, "selectOffsetGP19s2", [frameindex]>;
+def offsetgp18 : ComplexPattern<iPTR, 1, "selectOffsetGP18", [frameindex]>;
 
 def Log2XForm : SDNodeXForm<imm, [{ return CurDAG->getTargetConstant(Log2_32(N->getZExtValue()),
                                                                    SDLoc(N), MVT::i32);
@@ -253,10 +345,6 @@ class RegConstraint<string C> {
 class NoEncode<string E> {
   string DisableEncoding = E;
 }
-class ReMat {
-  bit isReMaterializable = 1;
-}
-
 
 //===----------------------------------------------------------------------===//
 //
@@ -634,6 +722,18 @@ class AddImmediate<string opstr, Operand Od, RegisterOperand DRO,
 		   SDPatternOperator OpNode = null_frag> :
   ArithLogicINM2Reg<opstr, Od, DRO, SRO, imm_type, OpNode>;
 
+class LoadUpperI32<string opstr, Operand Od, RegisterOperand RO,
+		   SDPatternOperator imm_type = null_frag,
+		   SDPatternOperator OpNode = null_frag> :
+  ArithLogicINM<opstr, Od, RO, imm_type, OpNode>, _Pool_P32<0b00000> {
+  bits<5> rt;
+  bits<5> rs;
+  bits<16> imm;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs;
+  let Inst{15...0} = imm;
+}
+
 class DivMod<string opstr, SDPatternOperator OpNode = null_frag> :
     ArithLogicR32_Desc<opstr, GPRNM32Opnd, OpNode> {
   // Need to insert TEQ, because DIV(U)/MOD(U) don't trap on division by zero.
@@ -742,9 +842,28 @@ class StoreMemoryNM<string opstr, DAGOperand RO, DAGOperand MO,
   string BaseOpcode = opstr;
 }
 
+class StoreMemoryNM4x4<string opstr, RegisterOperand RO, DAGOperand MO,
+                       SDPatternOperator OpNode = null_frag,
+                       ComplexPattern Addr = addr,
+                       InstrItinClass itin> :
+    InstNM<(outs), (ins GPRNM4ZOpnd:$rt, MO:$addr), !strconcat(opstr, "\t$rt, $addr"),
+           [(OpNode GPRNM4ZOpnd:$rt, Addr:$addr)],
+           itin> {
+  let mayStore = 1;
+  string BaseOpcode = opstr;
+}
+
+class Op48_Addr_Enc<bits<5> isel> : _Pool_P48I<isel> {
+  bits<5> rt;
+  bits<32> addr;
+  let Inst{41...37} = rt;
+  let Inst{31...16} = addr{15...0};
+  let Inst{15...0} = addr{31...16};
+}
+
 class LoadPCBase<DAGOperand RO, DAGOperand MO> :
-    InstNM<(outs RO:$rt), (ins MO:$addr), "lwpc\t$rt, $addr", [], II_LW>,
-    InstSize48 {
+     InstNM<(outs RO:$rt), (ins MO:$addr), "lwpc\t$rt, $addr", [], II_LW>,
+     InstSize48 {
   let mayLoad = 1;
 }
 
@@ -896,6 +1015,22 @@ class LoadImmediateNM<string opstr, RegisterOperand RO, Operand Od,
   InstNM<(outs RO:$rt), (ins Od:$eu),
          !strconcat(opstr, "\t$rt, $eu"),
          [(set RO:$rt, imm_type:$eu)]>;
+
+class LoadAddressPCRelNM<string opstr, RegisterOperand RO,
+			 DAGOperand MO, ComplexPattern Addr> :
+  InstNM<(outs RO:$rt), (ins MO:$addr),
+         !strconcat(opstr, "\t$rt, $addr"),
+         [(set RO:$rt, Addr:$addr)]>;
+
+class LoadAddressGPRelNM<string opstr, RegisterOperand RO, DAGOperand MO, ComplexPattern Addr> :
+  InstNM<(outs RO:$rt), (ins RO:$rs, MO:$addr),
+         !strconcat(opstr, "\t$rt, $rs, $addr"),
+         [(set RO:$rt, (add RO:$rs, Addr:$addr))]>;
+
+class LoadAddressAbsNM<string opstr, RegisterOperand RO, DAGOperand MO, ComplexPattern Addr> :
+  InstNM<(outs RO:$rt), (ins MO:$imm),
+         !strconcat(opstr, "\t$rt, $imm"),
+         [(set RO:$rt, Addr:$imm)]>;
 
 //===----------------------------------------------------------------------===//
 //
@@ -1100,9 +1235,62 @@ class Op48_Imm_Enc<bits<5> isel> : _Pool_P48I<isel> {
   let Inst{15...0} = imm{31...16};
 }
 
-def ADDIU48_NM : ArithLogicINM<"addiu", simm32_relaxed, GPRNM48Opnd,
-                               imm32_NM, add>, Op48_Imm_Enc<0b00001>,
-			       RegConstraint<"$rs = $rt">;
+def ADDIU48_NM : ArithLogicINM<"addiu", sym32_nm, GPRNM48Opnd,
+			imm32_NM, add>,
+			Op48_Imm_Enc<0b00001>,
+			RegConstraint<"$rs = $rt">;
+
+class AddImmediateGP<string opstr, Operand Od, RegisterOperand RO,
+		     ComplexPattern offset_type,
+		     SDPatternOperator OpNode = null_frag> :
+  InstNM<(outs RO:$rt), (ins GPRNMGPOpnd:$rs, Od:$offset),
+	 !strconcat(opstr, "\t$rt, $rs, $offset"),
+	 [(set RO:$rt, (add GPRNMGPOpnd:$rs, offset_type:$offset))]>;
+
+def ADDIUGPB_NM : AddImmediateGP<"addiu", sym32_gp18_nm, GPRNM32Opnd,
+				offsetgp18, add>,
+				_Pool_P_GP_BH<0b011>, NoEncode<"$rs"> {
+  bits<5> rt;
+  bits<18> offset;
+  let Inst{25...21} = rt;
+  let Inst{17...0} = offset;
+ }
+
+def ADDIUGPW_NM : AddImmediateGP<"addiu[gp.w]", sym32_gp19s2_nm, GPRNM32Opnd,
+				offsetgp19s2>,
+				_Pool_P_GP_W<0b00>, NoEncode<"$rs"> {
+  bits<5> rt;
+  bits<21> offset;
+  let Inst{25...21} = rt;
+  let Inst{20...2} = offset{20...2};
+}
+
+class Op32_Addr_Enc<bits<5> isel> : _Pool_P32<isel> {
+  bits<5> rt;
+  bits<22> addr;
+  let Inst{25...21} = rt;
+  let Inst{20...1} = addr{20...1};
+  let Inst{0} = addr{21};
+}
+
+def : MipsInstAlias<"addiu.b $rt, $rs, $offset",
+			(ADDIUGPB_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp_nm:$offset)>,
+			ISA_NANOMIPS;
+def : MipsInstAlias<"addiu.w $rt, $rs, $offset",
+			(ADDIUGPW_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp_nm:$offset)>,
+			ISA_NANOMIPS;
+
+let isReMaterializable = 1 in {
+  def LAPC32_NM : LoadAddressPCRelNM<"lapc.h", GPRNM32Opnd, sym32_pc_nm,
+				     addrsym>, Op32_Addr_Enc<0b00001>;
+  def LAPC48_NM : LoadAddressPCRelNM<"lapc.b", GPRNM48Opnd, sym32_pc_nm,
+				     addrsym>, Op48_Addr_Enc<0b00011>;
+}
+
+def ADDIUPC48_NM : MipsInstAlias<"addiupc $rt, $addr",
+			    (LAPC48_NM GPRNM48Opnd: $rt, sym32_pc_nm:$addr), 0>,
+			    ISA_NANOMIPS;
+def : MnemonicAlias<"lapc", "lapc.h">, ISA_NANOMIPS;
 
 def LSA_NM : LoadScaledAddressNM<"lsa", GPRNM32Opnd>, LoadScaledAddress_Enc;
 
@@ -1137,19 +1325,51 @@ class LI16_Enc<bits<5> isel> : _Pool_P16<isel>
   let Inst{6...0} = eu;
 }
 
-def LI16_NM : LoadImmediateNM<"li", GPRNM16R3Opnd, nimm7_nm, imm7M1To126>,
-	      LI16_Enc<0b11000>, ReMat;
+let isReMaterializable = 1 in {
+  def LI16_NM : LoadImmediateNM<"li[16]", GPRNM16R3Opnd, nimm7_nm, imm7M1To126>,
+	        LI16_Enc<0b11000>;
 
-def : NMPat<(i32 imm32ZExt16:$imm), (ADDIU_NM ZERO_NM, imm32ZExt16:$imm)>;
+  def LI48_NM : LoadAddressAbsNM<"li[48]", GPRNM48Opnd, sym32_nm,
+			         addrsym>, Op48_Imm_Enc<0b00000>;
 
-def : NMPat<(i32 imm32Neg12:$imm), (ADDIUNEG_NM ZERO_NM, imm32Neg12:$imm)>;
+  def ADDIUGP48_NM : LoadAddressGPRelNM<"addiu[gp48]", GPRNM48Opnd, sym32_gp_nm,
+				        addrgprel>, Op48_Addr_Enc<0b00010>,
+				        NoEncode<"$rs">;
+}
 
-def LI48_NM : RegImmNM<"li", simm32_relaxed, GPRNM32Opnd>, InstSize48, ReMat;
-def LA_NM : RegImmNM<"la", simm32_relaxed, GPRNM32Opnd>, InstSize48, ReMat;
+def ADDIUB32_NM : MipsInstAlias<"addiu.b32 $rt, $rs, $addr",
+				(ADDIUGP48_NM GPRNM48Opnd:$rt,
+				GPRNMGPOpnd:$rs, sym32_gp_nm:$addr)>,
+				ISA_NANOMIPS;
+def LA_NM : MipsInstAlias<"la $rt, $addr",
+			  (LAPC48_NM GPRNM48Opnd:$rt, sym32_pc_nm:$addr)>,
+			  ISA_NANOMIPS;
 
-def ALUIPC_NM : RegImmNM<"aluipc", simm32_relaxed, GPRNM32Opnd>, InstSize32;
+class LUI_Enc<bits<1> isel> : _Pool_P_LUI<isel> {
+  bits<5> rt;
+  bits<20> imm;
+  let Inst{25...21} = rt;
+  let Inst{20...12} = imm{8...0};
+  let Inst{11...2} = imm{18...9};
+  let Inst{0} = imm{19};
+}
 
-def LEA_ADDIU_NM : EffectiveAddressNM<"addiu", GPRNM32Opnd>, InstSize32;
+let isReMaterializable = 1 in {
+  def LUI_NM : RegImmNM<"lui", simm32s12_nm, GPRNM32Opnd, imm32SExt20s12>,
+	       LUI_Enc<0b0>;
+}
+
+def : NMPat<(i32 imm32SExt20s12:$imm), (LUI_NM imm32SExt20s12:$imm)>;
+
+def ALUIPC_NM : RegImmNM<"aluipc", simm32s12_pcrel_nm, GPRNM32Opnd, imm32SExt20s12>, LUI_Enc<0b1>;
+
+def LEA_ADDIU_NM : EffectiveAddressNM<"addiu", GPRNM32Opnd>, _Pool_P32<0b00000> {
+  bits<5> rt;
+  bits<16> addr;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = 0b00000;
+  let Inst{15...0} = addr;
+}
 
 def RDHWR_NM : ReadHardwareNM<GPRNM32Opnd, HWRegsOpnd>;
 
@@ -1195,10 +1415,10 @@ def : NMPat<(i32 imm32_NM:$imm), (LI48_NM imm:$imm)>;
 
 def : NMPat<(MipsJmpLink (i32 texternalsym:$dst)), (BALC_NM texternalsym:$dst)>;
 
-def : NMPat<(MipsFullAddr tglobaladdr:$in), (LA_NM tglobaladdr:$in)>;
-def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (LA_NM tglobaltlsaddr:$in)>;
-def : NMPat<(MipsFullAddr tblockaddress:$in), (LA_NM tblockaddress:$in)>;
-def : NMPat<(MipsFullAddr tjumptable:$in), (LA_NM tjumptable:$in)>;
+def : NMPat<(MipsFullAddr tglobaladdr:$in), (LAPC48_NM tglobaladdr:$in)>;
+def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (LAPC48_NM tglobaltlsaddr:$in)>;
+def : NMPat<(MipsFullAddr tblockaddress:$in), (LAPC48_NM tblockaddress:$in)>;
+def : NMPat<(MipsFullAddr tjumptable:$in), (LAPC48_NM tjumptable:$in)>;
 def : NMPat<(MipsFullAddrAdd GPRNM32:$rs, tglobaladdr:$in), (ADDIU48_NM GPRNM32:$rs, tglobaladdr:$in)>;
  
 def : NMPat<(not (or GPRNM32:$rs, GPRNM32:$rt)),

@@ -520,6 +520,7 @@ public:
     Match_RequiresPosSizeRange0_32,
     Match_RequiresPosSizeRange33_64,
     Match_RequiresPosSizeUImm6,
+    Match_RequiresBaseGP,
     Match_RequiresBaseSP,
 #define GET_OPERAND_DIAGNOSTIC_TYPES
 #include "MipsGenAsmMatcher.inc"
@@ -1289,6 +1290,23 @@ public:
     addConstantSImmOperands<Bits, 0, 0>(Inst, N);
   }
 
+  void addSymOperands(MCInst &Inst, unsigned N) const {
+    if (isImm() && !isConstantImm()) {
+      addExpr(Inst, getImm());
+      return;
+    }
+    addConstantSImmOperands<32, 0, 0>(Inst, N);
+  }
+
+  template <unsigned Bits = 32, unsigned Offset = 0>
+  void addSymGPRelOperands(MCInst &Inst, unsigned N) const {
+    if (isImm() && !isConstantImm()) {
+      addExpr(Inst, getImm());
+      return;
+    }
+    addConstantUImmOperands<Bits, Offset, 0>(Inst, N);
+  }
+
   template <unsigned Bits>
   void addUImmOperands(MCInst &Inst, unsigned N) const {
     if (isImm() && !isConstantImm()) {
@@ -1475,6 +1493,58 @@ public:
     return isConstantImm() &&
            isShiftedUInt<Bits, ShiftLeftAmount>(getConstantImm());
   }
+
+  bool isSym() const {
+    return isImm();
+  }
+
+  template <unsigned Bits = 32, int Shift = 0>
+  bool isSymGPRel() const {
+    MCValue Res;
+    bool Success;
+
+    Success = getImm()->evaluateAsRelocatable(Res, nullptr, nullptr);
+    if (Success && Res.getRefKind() == MipsMCExpr::MEK_GPREL)
+      return Success;
+    else
+      return isScaledUImm<Bits, Shift>();
+  }
+
+  bool isHi20Offset() const {
+    MCValue Res;
+    bool Success;
+
+    Success = getImm()->evaluateAsRelocatable(Res, nullptr, nullptr);
+    if (Success && Res.getRefKind() == MipsMCExpr::MEK_HI)
+      return Success;
+    else
+      return isConstantSImm<20>() || isConstantUImm<20>();
+  }
+
+  bool isLo12OrUImm16Offset() const {
+    MCValue Res;
+    bool Success;
+
+    if (Kind != k_Immediate)
+      return false;
+    Success = getImm()->evaluateAsRelocatable(Res, nullptr, nullptr);
+    if (Success && Res.getRefKind() == MipsMCExpr::MEK_LO)
+      return Success;
+    else
+      return isConstantUImm<16>();
+  }
+
+  bool isHi20OffsetPCRel() const {
+    MCValue Res;
+    bool Success;
+
+    Success = getImm()->evaluateAsRelocatable(Res, nullptr, nullptr);
+    if (Success && Res.getRefKind() == MipsMCExpr::MEK_PCREL_HI)
+      return Success;
+    else
+      return isConstantUImm<20>();
+  }
+
 
   template <unsigned Bits, unsigned ShiftLeftAmount>
   bool isScaledSImm() const {
@@ -6158,6 +6228,12 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
     if (Inst.getOperand(1).getReg() != Mips::SP_NM)
       return Match_RequiresBaseSP;
     return Match_Success;
+  case Mips::ADDIUGPB_NM:
+  case Mips::ADDIUGPW_NM:
+  case Mips::ADDIUGP48_NM:
+    if (Inst.getOperand(1).getReg() != Mips::GP_NM)
+      return Match_RequiresBaseGP;
+    return Match_Success;
   }
 
   uint64_t TSFlags = MII.get(Inst.getOpcode()).TSFlags;
@@ -6381,6 +6457,14 @@ bool MipsAsmParser::matchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
     }
   case Match_RequiresBaseSP:
     return Error(IDLoc, "expected $sp as base register");
+  case Match_RequiresBaseGP:
+    return Error(IDLoc, "expected $gp as base register");
+  case Match_Sym:
+    return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
+                 "expected symbol");
+  case Match_SymGPRel:
+    return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
+                 "expected %gp_rel expression");
   }
 
   llvm_unreachable("Implement any new match types added!");

@@ -57,6 +57,10 @@ private:
   virtual bool selectAddrDefault(SDValue Addr, SDValue &Base,
                                  SDValue &Offset) const;
 
+  virtual bool selectAddrSym(SDValue Addr, SDValue &Base) const;
+
+  virtual bool selectAddrSymGPRel(SDValue Addr, SDValue &Base) const;
+
   /// Match integer address pattern.
   virtual bool selectIntAddr(SDValue Addr, SDValue &Base,
                              SDValue &Offset) const;
@@ -160,6 +164,10 @@ private:
                                     InlineAsm::ConstraintCode ConstraintID,
                                     std::vector<SDValue> &OutOps) override;
   bool isUnneededShiftMask(SDNode *N, unsigned ShAmtBits) const;
+
+  // Select a GP-relative offset expressions
+  virtual bool selectOffsetGP18(SDValue Addr, SDValue &Offset) const;
+  virtual bool selectOffsetGP19s2(SDValue Addr, SDValue &Offset) const;
 };
 
 class MipsDAGToDAGISelLegacy : public SelectionDAGISelLegacy {

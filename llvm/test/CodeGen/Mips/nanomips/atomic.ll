@@ -385,7 +385,7 @@ define signext i16 @AtomicLoadAdd16(i16 signext %incr) nounwind {
 ; CHECK-NEXT:    and $a4, $a1, $a2
 ; CHECK-NEXT:    andi $a1, $a1, 3
 ; CHECK-NEXT:    sll $a7, $a1, 3
-; CHECK-NEXT:    ori $a3, $zero, 4095
+; CHECK-NEXT:    li $a3, 65535
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
 ; CHECK-NEXT:    nor $a5, $zero, $a6
 ; CHECK-NEXT:    sllv $a2, $a0, $a7
@@ -422,12 +422,12 @@ define {i16, i1} @foo(i16* %addr, i16 %l, i16 %r, i16 %new) {
 ; CHECK-NEXT:    and $a4, $a0, $a2
 ; CHECK-NEXT:    andi $a0, $a0, 3
 ; CHECK-NEXT:    sll $t1, $a0, 3
-; CHECK-NEXT:    ori $a0, $zero, 4095
+; CHECK-NEXT:    li $a0, 65535
 ; CHECK-NEXT:    sllv $t0, $a0, $t1
 ; CHECK-NEXT:    nor $a6, $zero, $t0
-; CHECK-NEXT:    andi $a0, $s0, 65535
+; CHECK-NEXT:    ext $a0, $s0, 0, 16
 ; CHECK-NEXT:    sllv $a7, $a0, $t1
-; CHECK-NEXT:    andi $a0, $a3, 65535
+; CHECK-NEXT:    ext $a0, $a3, 0, 16
 ; CHECK-NEXT:    sllv $a3, $a0, $t1
 ; CHECK-NEXT:  .LBB15_1: # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a4)

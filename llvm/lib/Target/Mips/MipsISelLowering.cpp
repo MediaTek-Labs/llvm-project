@@ -2277,8 +2277,12 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicBinaryPartword(
       .addReg(PtrLSB2).addImm((Size == 1) ? 3 : 2);
     BuildMI(BB, DL, TII->get(SLL), ShiftAmt).addReg(Off).addImm(3);
   }
-  BuildMI(BB, DL, TII->get(ORi), MaskUpper)
-    .addReg(ZERO).addImm(MaskImm);
+  if (Subtarget.hasNanoMips() && MaskImm > 4095)
+    BuildMI(BB, DL, TII->get(Mips::Li_NM), MaskUpper)
+      .addImm(MaskImm);
+  else
+    BuildMI(BB, DL, TII->get(ORi), MaskUpper)
+      .addReg(ZERO).addImm(MaskImm);
   BuildMI(BB, DL, TII->get(SLLV), Mask)
     .addReg(MaskUpper).addReg(ShiftAmt);
   BuildMI(BB, DL, TII->get(NOR), Mask2).addReg(ZERO).addReg(Mask);
@@ -2417,6 +2421,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
   unsigned SLLV = Mips::SLLV;
   unsigned NOR = Mips::NOR;
   unsigned ZERO = Mips::ZERO;
+  unsigned EXT = Mips::EXT;
   
   if (Subtarget.hasNanoMips()) {
     SLL = Mips::SLL_NM;
@@ -2426,6 +2431,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
     SLLV = Mips::SLLV_NM;
     NOR = Mips::NOR_NM;
     ZERO = Mips::ZERO_NM;
+    EXT = Mips::EXT_NM;
   }
 
   // The scratch registers here with the EarlyClobber | Define | Dead | Implicit
@@ -2468,6 +2474,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
   //    andi    maskednewval,newval,255
   //    sll     shiftednewval,maskednewval,shiftamt
   int64_t MaskImm = (Size == 1) ? 255 : 65535;
+  int64_t MaskImmBits = (Size == 1) ? 8 : 16 ;
   BuildMI(BB, DL, TII->get(ABI.GetPtrAddiuOp()), MaskLSB2)
     .addReg(ABI.GetNullPtr()).addImm(-4);
   BuildMI(BB, DL, TII->get(ABI.GetPtrAndOp()), AlignedAddr)
@@ -2482,17 +2489,29 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
       .addReg(PtrLSB2).addImm((Size == 1) ? 3 : 2);
     BuildMI(BB, DL, TII->get(SLL), ShiftAmt).addReg(Off).addImm(3);
   }
-  BuildMI(BB, DL, TII->get(ORi), MaskUpper)
-    .addReg(ZERO).addImm(MaskImm);
+  if (Subtarget.hasNanoMips() && MaskImm > 4095)
+    BuildMI(BB, DL, TII->get(Mips::Li_NM), MaskUpper)
+      .addImm(MaskImm);
+  else
+    BuildMI(BB, DL, TII->get(ORi), MaskUpper)
+      .addReg(ZERO).addImm(MaskImm);
   BuildMI(BB, DL, TII->get(SLLV), Mask)
     .addReg(MaskUpper).addReg(ShiftAmt);
   BuildMI(BB, DL, TII->get(NOR), Mask2).addReg(ZERO).addReg(Mask);
-  BuildMI(BB, DL, TII->get(ANDi), MaskedCmpVal)
-    .addReg(CmpVal).addImm(MaskImm);
+  if (Subtarget.hasNanoMips() && MaskImm > 4095)
+    BuildMI(BB, DL, TII->get(EXT), MaskedCmpVal)
+      .addReg(CmpVal).addImm(0).addImm(MaskImmBits);
+  else
+    BuildMI(BB, DL, TII->get(ANDi), MaskedCmpVal)
+      .addReg(CmpVal).addImm(MaskImm);
   BuildMI(BB, DL, TII->get(SLLV), ShiftedCmpVal)
     .addReg(MaskedCmpVal).addReg(ShiftAmt);
-  BuildMI(BB, DL, TII->get(ANDi), MaskedNewVal)
-    .addReg(NewVal).addImm(MaskImm);
+  if (Subtarget.hasNanoMips() && MaskImm > 4095)
+    BuildMI(BB, DL, TII->get(EXT), MaskedNewVal)
+      .addReg(NewVal).addImm(0).addImm(MaskImmBits);
+  else
+    BuildMI(BB, DL, TII->get(ANDi), MaskedNewVal)
+      .addReg(NewVal).addImm(MaskImm);
   BuildMI(BB, DL, TII->get(SLLV), ShiftedNewVal)
     .addReg(MaskedNewVal).addReg(ShiftAmt);
 

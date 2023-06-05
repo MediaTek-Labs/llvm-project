@@ -2927,3 +2927,24 @@ def GINVT_NM : InstNM<(outs), (ins GPRNM32Opnd:$rs, uimm2:$type),
   let Inst{22...21} = type;
   let Inst{20...16} = rs;
 }
+
+class CRC_Enc<bits<3> isel> : _Pool_POOL32A0_1<0b111101> {
+  bits<5> rt;
+  bits<5> rs;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs;
+  let Inst{12...10} = isel;
+}
+
+class CRC_Op<string opstr> : InstNM<(outs GPRNM32Opnd:$rt),
+			     (ins GPRNM32Opnd:$val, GPRNM32Opnd:$rs),
+      !strconcat(opstr, "\t$rt, $rs"), []> {
+  let Constraints = "$val = $rt";
+}
+
+def CRC32B_NM : CRC_Op<"crc32b">, CRC_Enc<0b000>, ASE_CRC;
+def CRC32H_NM : CRC_Op<"crc32h">, CRC_Enc<0b001>, ASE_CRC;
+def CRC32W_NM : CRC_Op<"crc32w">, CRC_Enc<0b010>, ASE_CRC;
+def CRC32CB_NM : CRC_Op<"crc32cb">, CRC_Enc<0b100>, ASE_CRC;
+def CRC32CH_NM : CRC_Op<"crc32ch">, CRC_Enc<0b101>, ASE_CRC;
+def CRC32CW_NM : CRC_Op<"crc32cw">, CRC_Enc<0b110>, ASE_CRC;

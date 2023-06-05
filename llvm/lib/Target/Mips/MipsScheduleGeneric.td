@@ -134,6 +134,9 @@ def : InstRW<[GenericWriteALU], (instrs ADD_NM, ADDu16_NM, ADDu4x4_NM, ADDu_NM,
                                  SUBu_NM, SUBu16_NM, XOR_NM, XOR16_NM, XORI_NM,
 				 SLL16_NM, SRL16_NM)>;
 
+def : InstRW<[GenericWriteALU], (instrs CRC32B_NM, CRC32H_NM, CRC32W_NM, CRC32CB_NM,
+                                 CRC32CH_NM, CRC32CW_NM)>;
+
 // MIPS64
 // ======
 

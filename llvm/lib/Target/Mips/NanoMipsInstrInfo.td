@@ -831,6 +831,10 @@ class _Pool_POOL32Axf_5<bits<2> psel> : _Pool_POOL32A7<0b111> {
   let Inst{15...14} = psel;
 }
 
+class _Pool_POOL32Axf_5_group0<bits<5> isel> : _Pool_POOL32Axf_5<0b00> {
+  let Inst{13...9} = isel;
+}
+
 class _Pool_POOL32Axf_5_group1<bits<5> isel> : _Pool_POOL32Axf_5<0b01> {
   let Inst{13...9} = isel;
 }
@@ -2908,3 +2912,18 @@ def : MipsInstAlias<"mfc0 $rt, $c0s", (MFC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0
 def : MipsInstAlias<"mfhc0 $rt, $c0s", (MFHC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
 def : MipsInstAlias<"mtc0 $rt, $c0s", (MTC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
 def : MipsInstAlias<"mthc0 $rt, $c0s", (MTHC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
+
+def GINVI_NM : InstNM<(outs), (ins GPRNM32Opnd:$rs), "ginvi\t$rs", []>,
+		_Pool_POOL32Axf_5_group0<0b01111>, ASE_GINV {
+  bits<5> rs;
+  let Inst{20...16} = rs;
+}
+
+def GINVT_NM : InstNM<(outs), (ins GPRNM32Opnd:$rs, uimm2:$type),
+		"ginvt\t$rs, $type", []>,
+		_Pool_POOL32Axf_5_group0<0b00111>, ASE_GINV {
+  bits<5> rs;
+  bits<2> type;
+  let Inst{22...21} = type;
+  let Inst{20...16} = rs;
+}

@@ -187,6 +187,9 @@ def FeatureCRC : SubtargetFeature<"crc", "HasCRC", "true", "Mips R6 CRC ASE">;
 def FeatureVirt : SubtargetFeature<"virt", "HasVirt", "true",
                                    "Mips Virtualization ASE">;
 
+def FeatureTLB : SubtargetFeature<"tlb", "HasTLB", "true",
+                                   "Mips TLB support">;
+
 def FeatureGINV : SubtargetFeature<"ginv", "HasGINV", "true",
                                    "Mips Global Invalidate ASE">;
 

@@ -259,6 +259,8 @@ def HasVirt  : Predicate<"Subtarget->hasVirt()">,
                AssemblerPredicate<(all_of FeatureVirt)>;
 def HasGINV  : Predicate<"Subtarget->hasGINV()">,
                AssemblerPredicate<(all_of FeatureGINV)>;
+def HasTLB  : Predicate<"Subtarget->hasTLB()">,
+               AssemblerPredicate<(all_of FeatureTLB)>;
 // TODO: Add support for FPOpFusion::Standard
 def AllowFPOpFusion : Predicate<"TM.Options.AllowFPOpFusion =="
                                 " FPOpFusion::Fast">;
@@ -484,6 +486,10 @@ class ASE_CRC {
 
 class ASE_VIRT {
   list <Predicate> ASEPredicate = [HasVirt];
+}
+
+class ASE_TLB {
+  list <Predicate> ASEPredicate = [HasTLB];
 }
 
 class ASE_GINV {

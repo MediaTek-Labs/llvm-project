@@ -744,6 +744,10 @@ public:
     return getSTI().getFeatureBits()[Mips::FeatureGINV];
   }
 
+  bool hasTLB() const {
+    return getSTI().getFeatureBits()[Mips::FeatureTLB];
+  }
+
   /// Warn if RegIndex is the same as the current AT.
   void warnIfRegIndexIsAT(unsigned RegIndex, SMLoc Loc);
 

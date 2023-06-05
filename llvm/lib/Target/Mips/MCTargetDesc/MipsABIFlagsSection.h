@@ -173,6 +173,8 @@ public:
       ASESet |= Mips::AFL_ASE_GINV;
     if (P.hasNanoMips()) {
       ASESet |= Mips::AFL_ASE_xNMS; // always enabled, NMS unsupported!
+      if (P.hasTLB())
+        ASESet |= Mips::AFL_ASE_TLB;
     }
   }
 

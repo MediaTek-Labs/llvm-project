@@ -760,6 +760,9 @@ def : InstRW<[GenericWriteCache], (instrs CACHE_NM)>;
 def : InstRW<[GenericWriteSync], (instrs SYNC_NM, SYNCI_NM, SYNCIs9_NM)>;
 // ginv*
 def : InstRW<[GenericWriteSync], (instrs GINVI_NM, GINVT_NM)>;
+// tlb*
+def : InstRW<[GenericWriteCOP0TLB], (instrs TLBP_NM, TLBR_NM, TLBWI_NM, TLBWR_NM)>;
+def : InstRW<[GenericWriteCOP0TLB], (instrs TLBINV_NM, TLBINVF_NM)>;
 
 // microMIPS32r6
 // =============

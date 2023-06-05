@@ -2948,3 +2948,10 @@ def CRC32W_NM : CRC_Op<"crc32w">, CRC_Enc<0b010>, ASE_CRC;
 def CRC32CB_NM : CRC_Op<"crc32cb">, CRC_Enc<0b100>, ASE_CRC;
 def CRC32CH_NM : CRC_Op<"crc32ch">, CRC_Enc<0b101>, ASE_CRC;
 def CRC32CW_NM : CRC_Op<"crc32cw">, CRC_Enc<0b110>, ASE_CRC;
+
+def TLBINV_NM : MnemonicOnly<"tlbinv">, _Pool_POOL32Axf_5_group0<0b00011>, ASE_TLB;
+def TLBINVF_NM : MnemonicOnly<"tlbinvf">, _Pool_POOL32Axf_5_group0<0b01011>, ASE_TLB;
+def TLBP_NM : MnemonicOnly<"tlbp">, _Pool_POOL32Axf_5_group0<0b00001>, ASE_TLB;
+def TLBR_NM : MnemonicOnly<"tlbr">, _Pool_POOL32Axf_5_group0<0b01001>, ASE_TLB;
+def TLBWI_NM : MnemonicOnly<"tlbwi">, _Pool_POOL32Axf_5_group0<0b10001>, ASE_TLB;
+def TLBWR_NM : MnemonicOnly<"tlbwr">, _Pool_POOL32Axf_5_group0<0b11001>, ASE_TLB;

@@ -30,6 +30,7 @@ enum AFL_REG {
 // Masks for the ases word of an ABI flags structure.
 enum AFL_ASE {
   AFL_ASE_DSP = 0x00000001,       // DSP ASE
+  AFL_ASE_TLB = 0x00000001,	  // Re-uses above bit
   AFL_ASE_DSPR2 = 0x00000002,     // DSP R2 ASE
   AFL_ASE_EVA = 0x00000004,       // Enhanced VA Scheme
   AFL_ASE_MCU = 0x00000008,       // MCU (MicroController) ASE

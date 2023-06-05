@@ -749,6 +749,10 @@ public:
     return !(MCID.TSFlags & MipsII::IsCTI);
   }
 
+  bool hasTLB() const {
+    return getSTI().getFeatureBits()[Mips::FeatureTLB];
+  }
+
   void onEndOfFile() override;
 
   /// Warn if RegIndex is the same as the current AT.

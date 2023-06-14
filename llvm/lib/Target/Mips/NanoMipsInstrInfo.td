@@ -418,7 +418,7 @@ def MOVEBALC_NM : MoveBalcBase;
 
 let isReMaterializable = 1 in {
 let isCodeGenOnly = 1 in
-def Li_NM : RegImmNM<"li", simm32_relaxed, GPRNM32Opnd>, InstSize48;
+def LI48_NM : RegImmNM<"li", simm32_relaxed, GPRNM32Opnd>, InstSize48;
 def LA_NM : RegImmNM<"la", simm32_relaxed, GPRNM32Opnd>, InstSize48;
 } // isReMaterializable = 1
 
@@ -466,7 +466,7 @@ let hasPostISelHook = 1, isCall = 1, isCTI = 1, Defs = [RA_NM] in {
     PseudoInstExpansion<(JALRC_NM RA_NM, GPRNM32Opnd:$rs)>;
 }
 
-def : NMPat<(i32 imm32_NM:$imm), (Li_NM imm:$imm)>;
+def : NMPat<(i32 imm32_NM:$imm), (LI48_NM imm:$imm)>;
 
 def : NMPat<(MipsJmpLink (i32 texternalsym:$dst)), (BALC_NM texternalsym:$dst)>;
 

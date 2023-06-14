@@ -546,7 +546,7 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
       int64_t MaxAlign = -(int64_t)MFI.getMaxAlign().value();
 
       if (ABI.IsP32())
-        BuildMI(MBB, MBBI, dl, TII.get(Mips::Li_NM), VR).addImm(MaxAlign);
+        BuildMI(MBB, MBBI, dl, TII.get(Mips::LI48_NM), VR).addImm(MaxAlign);
       else
         BuildMI(MBB, MBBI, dl, TII.get(ADDiu), VR)
             .addReg(ZERO)

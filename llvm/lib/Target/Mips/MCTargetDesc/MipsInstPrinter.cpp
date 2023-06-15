@@ -126,6 +126,22 @@ void MipsInstPrinter::printInst(const MCInst *MI, uint64_t Address,
 
 void MipsInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
                                    const MCSubtargetInfo &STI, raw_ostream &O) {
+  switch (MI->getOpcode()) {
+  default:
+    break;
+  case Mips::AND16_NM:
+  case Mips::XOR16_NM:
+  case Mips::OR16_NM:
+    if (MI->getNumOperands() == 2 && OpNo == 2)
+      OpNo = 0; // rt, rs -> rt, rs, rt
+    break;
+  case Mips::ADDu4x4_NM:
+  case Mips::MUL4x4_NM:
+    if (MI->getNumOperands() == 2 && OpNo > 0)
+      OpNo = OpNo - 1; // rt, rs -> rt, rt, rs
+    break;
+  }
+
   const MCOperand &Op = MI->getOperand(OpNo);
   if (Op.isReg()) {
     printRegName(O, Op.getReg());

@@ -145,6 +145,17 @@ namespace MipsII {
   };
 }
 
+  namespace NanoMips {
+  enum OperandType : unsigned {
+    OPERAND_FIRST_NM_MEM_IMM = MipsII::OPERAND_LAST_MIPS_MEM_IMM+1,
+    OPERAND_NM_SPREL7 = OPERAND_FIRST_NM_MEM_IMM,
+    OPERAND_NM_GPREL9,
+    OPERAND_NM_GPREL18,
+    OPERAND_NM_GPREL21,
+    OPERAND_LAST_NM_MEM_IMM = OPERAND_NM_GPREL21
+  };
+  }
+
 inline static MCRegister getMSARegFromFReg(MCRegister Reg) {
   if (Reg >= Mips::F0 && Reg <= Mips::F31)
     return Reg - Mips::F0 + Mips::W0;

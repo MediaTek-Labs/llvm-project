@@ -229,7 +229,36 @@ void MipsInstPrinter::printMemOperand(const MCInst *MI, int opNum,
   }
 
   O << markup("<mem:");
-  printOperand(MI, opNum + 1, STI, O);
+  // Index register is encoded as immediate value
+  // in case of nanoMIPS indexed instructions
+  switch (MI->getOpcode()) {
+    // No offset needed for paired LL/SC
+    case Mips::LLWP_NM:
+    case Mips::SCWP_NM:
+      break;
+    case Mips::LWX_NM:
+    case Mips::LWXS_NM:
+    case Mips::LWXS16_NM:
+    case Mips::LBX_NM:
+    case Mips::LBUX_NM:
+    case Mips::LHX_NM:
+    case Mips::LHUX_NM:
+    case Mips::LHXS_NM:
+    case Mips::LHUXS_NM:
+    case Mips::SWX_NM:
+    case Mips::SWXS_NM:
+    case Mips::SBX_NM:
+    case Mips::SHX_NM:
+    case Mips::SHXS_NM:
+      if (!MI->getOperand(opNum+1).isReg()) {
+	printRegName(O, MI->getOperand(opNum+1).getImm());
+	break;
+      }
+      // Fall through
+    default:
+      printOperand(MI, opNum+1,STI ,O);
+      break;
+  }
   O << "(";
   printOperand(MI, opNum, STI, O);
   O << ")";

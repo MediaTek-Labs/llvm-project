@@ -115,11 +115,22 @@ static inline unsigned getLoadStoreOffsetSizeInBits(const unsigned Opcode,
   case Mips::SWs9_NM:
   case Mips::SHs9_NM:
   case Mips::SBs9_NM:
-  case Mips::UALW_NM:
-  case Mips::UASW_NM:
+  case Mips::UALWM_NM:
+  case Mips::UASWM_NM:
+  case Mips::LWM_NM:
+  case Mips::SWM_NM:
   case Mips::UALH_NM:
   case Mips::UASH_NM:
+  case Mips::LL_NM:
+  case Mips::SC_NM:
     return 9;
+  case Mips::LW16_NM:
+  case Mips::SW16_NM:
+    return 6;
+  case Mips::LW4x4_NM:
+  case Mips::SW4x4_NM:
+    return 4;
+
   case Mips::INLINEASM: {
     unsigned ConstraintID = InlineAsm::getMemoryConstraintID(MO.getImm());
     switch (ConstraintID) {
@@ -131,7 +142,7 @@ static inline unsigned getLoadStoreOffsetSizeInBits(const unsigned Opcode,
       if (Subtarget.inMicroMipsMode())
         return 12;
 
-      if (Subtarget.hasMips32r6())
+      if (Subtarget.hasMips32r6() || Subtarget.hasNanoMips())
         return 9;
 
       return 16;

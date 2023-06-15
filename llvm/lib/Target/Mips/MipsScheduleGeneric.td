@@ -691,7 +691,7 @@ def : InstRW<[GenericWriteStore], (instrs Save16, SaveX16, SbRxRyOffMemX16,
 def : InstRW<[GenericWriteLoad], (instrs LBU16_MM, LB_MM, LBu_MM, LHU16_MM,
                                   LH_MM, LHu_MM, LL_MM, LW16_MM, LWGP_MM,
                                   LWL_MM, LWM16_MM, LWM32_MM, LWP_MM, LWR_MM,
-                                  LWSP_MM, LWU_MM, LWXS_MM, LW_MM)>;
+                                  LWSP_MM, LWU_MM, LWXS16_NM, LWXS_MM, LW_MM)>;
 
 def : InstRW<[GenericWriteStore], (instrs SB16_MM, SC_MM, SH16_MM, SH_MM,
                                    SW16_MM, SWL_MM, SWM16_MM, SWM32_MM, SWM_MM,
@@ -714,14 +714,19 @@ def : InstRW<[GenericWriteLoad], (instrs LW_NM, LWGP_NM, LWs9_NM,
                                   LWX_NM, LWXS_NM, LHUX_NM, LHUXS_NM,
                                   LHX_NM, LHXS_NM, LBUX_NM, LBX_NM,
                                   RESTOREJRC_NM, RESTORE_NM, SAVE_NM,
-                                  UALH_NM, UALW_NM, LWM_NM, UALWM_NM,
-                                  LWPC_NM)>;
+                                   UALH_NM, LWM_NM, UALWM_NM, UALW_NM,
+                                  LWPC_NM, LW16_NM, LH16_NM, LHU16_NM,
+				  LB16_NM, LBU16_NM, LBGP_NM, LBUGP_NM,
+				  LHGP_NM, LHUGP_NM, LW4x4_NM,
+				  LL_NM, LLWP_NM)>;
 
-def: InstRW<[GenericWriteStore], (instrs SW_NM, SWs9_NM,
-                                  SH_NM, SHs9_NM,
-                                  SB_NM, SBs9_NM,
+def: InstRW<[GenericWriteStore], (instrs SW_NM, SWs9_NM, SW16_NM, SH16_NM,
+                                  SH_NM, SHs9_NM, SWGP_NM, SBGP_NM, SHGP_NM,
+                                  SB_NM, SBs9_NM, SB16_NM, LWGP16_NM, SWGP16_NM,
+				  LWSP16_NM, SWSP16_NM, SW4x4_NM,
                                   SWX_NM, SWXS_NM, SHX_NM, SHXS_NM, SBX_NM,
-                                  UASH_NM, UASW_NM, SWM_NM, UASWM_NM, SWPC_NM)>;
+                                  UASH_NM, SWM_NM, UASWM_NM, UASW_NM, SWPC_NM,
+				  SC_NM, SCWP_NM)>;
 
 // microMIPS32r6
 // =============

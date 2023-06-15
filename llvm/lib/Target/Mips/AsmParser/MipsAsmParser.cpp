@@ -197,6 +197,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool ParseDirective(AsmToken DirectiveID) override;
 
   OperandMatchResultTy parseMemOperand(OperandVector &Operands);
+  OperandMatchResultTy parseMemNMRX(OperandVector &Operands);
   OperandMatchResultTy
   matchAnyRegisterNameWithoutDollar(OperandVector &Operands,
                                     StringRef Identifier, SMLoc S);
@@ -1336,6 +1337,15 @@ public:
     addExpr(Inst, Expr);
   }
 
+  void addNMMemOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 2 && "Invalid number of operands!");
+
+    Inst.addOperand(MCOperand::createReg(getMemBase()->getGPRNM32Reg()));
+
+    const MCExpr *Expr = getMemOff();
+    addExpr(Inst, Expr);
+  }
+
   void addMicroMipsMemOperands(MCInst &Inst, unsigned N) const {
     assert(N == 2 && "Invalid number of operands!");
 
@@ -1446,6 +1456,79 @@ public:
     return IsReloc && isShiftedInt<Bits, ShiftAmount>(Res.getConstant());
   }
 
+  template <unsigned Bits, unsigned ShiftAmount = 0>
+  bool isMemWithUimmOffset() const {
+    if (!isMem())
+      return false;
+    if (!getMemBase()->isGPRAsmReg())
+      return false;
+    if ((isConstantMemOff() &&
+         isShiftedUInt<Bits, ShiftAmount>(getConstantMemOff())))
+      return true;
+    return false;
+    MCValue Res;
+    bool IsReloc = getMemOff()->evaluateAsRelocatable(Res, nullptr, nullptr);
+    return IsReloc && isShiftedUInt<Bits, ShiftAmount>(Res.getConstant());
+  }
+
+  template <unsigned Bits, unsigned ShiftAmount = 0,
+	    unsigned ClassID = Mips::GPR32RegClassID>
+  bool isMemWithBaseUimmOffset() const {
+    MCValue Res;
+    if (!isMem())
+      return false;
+    if (!getMemBase()->isGPRAsmReg()
+	|| !MipsMCRegisterClasses[ClassID].contains(getMemBase()->getGPRNM32Reg()))
+      return false;
+    if (isConstantMemOff())
+      return isShiftedUInt<Bits, ShiftAmount>(getConstantMemOff());
+    if (ClassID == Mips::GPRNM32RegClassID || ClassID == Mips::GPRNMGPRegClassID)
+      return getMemOff()->evaluateAsRelocatable(Res, nullptr, nullptr);
+    else
+      return false;
+  }
+
+  template <unsigned Bits, unsigned ShiftAmount = 0,
+	    unsigned ClassID = Mips::GPR32RegClassID>
+  bool isMemWithBaseSimmOffset() const {
+    MCValue Res;
+    if (!isMem())
+      return false;
+    if (!getMemBase()->isGPRAsmReg()
+	|| !MipsMCRegisterClasses[ClassID].contains(getMemBase()->getGPRNM32Reg()))
+      return false;
+    if (isConstantMemOff())
+      return isShiftedInt<Bits, ShiftAmount>(getConstantMemOff());
+    return false;
+  }
+
+  template <unsigned ClassID = Mips::GPR32RegClassID>
+  bool isMemWithBaseNoOffset() const {
+    MCValue Res;
+    if (!isMem())
+      return false;
+    if (!getMemBase()->isGPRAsmReg()
+	|| !MipsMCRegisterClasses[ClassID].contains(getMemBase()->getGPRNM32Reg()))
+      return false;
+    if (isConstantMemOff())
+      return getConstantMemOff() == 0;
+    if (ClassID == Mips::GPRNM32RegClassID || ClassID == Mips::GPRNMGPRegClassID)
+      return getMemOff()->evaluateAsRelocatable(Res, nullptr, nullptr);
+    else
+      return false;
+  }
+
+  template <unsigned ClassID = Mips::GPRNM32RegClassID>
+  bool isMemNMRX() const {
+    if (!isMem())
+      return false;
+    if (!getMemBase()->isGPRAsmReg()
+	|| !MipsMCRegisterClasses[ClassID].contains(getMemBase()->getGPRNM32Reg())
+	|| !MipsMCRegisterClasses[ClassID].contains(getConstantMemOff()))
+      return false;
+    return true;
+  }
+
   bool isMemWithPtrSizeOffset() const {
     if (!isMem())
       return false;
@@ -1479,6 +1562,45 @@ public:
     return isMem() && isConstantMemOff() && isInt<Bits>(getConstantMemOff())
       && (getConstantMemOff() % 4 == 0) && getMemBase()->isRegIdx()
       && (getMemBase()->getGPR32Reg() == Mips::GP);
+  }
+
+  bool isConstantUImm3Shift() const {
+    return (isConstantImm() && getConstantImm() > 0 && getConstantImm() <= 8);
+  }
+
+  MipsOperand *getMemBase() const {
+    assert((Kind == k_Memory) && "Invalid access!");
+    return Mem.Base;
+  }
+
+  const MCExpr *getMemOff() const {
+    assert((Kind == k_Memory) && "Invalid access!");
+    return Mem.Off;
+  }
+
+  int64_t getConstantMemOff() const {
+    return static_cast<const MCConstantExpr *>(getMemOff())->getValue();
+  }
+
+  template <unsigned Bits, unsigned Align> bool isMemWithUimmOffsetGP() const {
+    if (isMem() && getMemBase()->isRegIdx() && (getMemBase()->getGPR32Reg() == Mips::GP)) {
+      MCValue Res;
+      bool IsReloc = getMemOff()->evaluateAsRelocatable(Res, nullptr, nullptr);
+
+
+      if (isConstantMemOff())
+	return (isUInt<Bits>(getConstantMemOff()) &&
+		(getConstantMemOff() % Align == 0));
+      else
+	return IsReloc;
+    }
+    return false;
+  }
+
+  template <unsigned Bits, unsigned Align> bool isMemWithUimmOffsetSP() const {
+    return isMem() && isConstantMemOff() && isUInt<Bits>(getConstantMemOff())
+      && (getConstantMemOff() % Align == 0) && getMemBase()->isRegIdx()
+      && (getMemBase()->getGPR32Reg() == Mips::SP);
   }
 
   template <unsigned Bits, unsigned ShiftLeftAmount>
@@ -1615,20 +1737,6 @@ public:
     int64_t Value = 0;
     (void)Val->evaluateAsAbsolute(Value);
     return Value;
-  }
-
-  MipsOperand *getMemBase() const {
-    assert((Kind == k_Memory) && "Invalid access!");
-    return Mem.Base;
-  }
-
-  const MCExpr *getMemOff() const {
-    assert((Kind == k_Memory) && "Invalid access!");
-    return Mem.Off;
-  }
-
-  int64_t getConstantMemOff() const {
-    return static_cast<const MCConstantExpr *>(getMemOff())->getValue();
   }
 
   const SmallVectorImpl<unsigned> &getRegList() const {
@@ -2076,13 +2184,25 @@ static bool needsExpandMemInst(MCInst &Inst, const MCInstrDesc &MCID) {
   const MCOperandInfo &OpInfo = MCID.operands()[NumOp - 1];
   if (OpInfo.OperandType != MCOI::OPERAND_MEMORY &&
       OpInfo.OperandType != MCOI::OPERAND_UNKNOWN &&
-      OpInfo.OperandType != MipsII::OPERAND_MEM_SIMM9)
+      OpInfo.OperandType != MipsII::OPERAND_MEM_SIMM9 &&
+      OpInfo.OperandType != NanoMips::OPERAND_NM_GPREL21 &&
+      OpInfo.OperandType != NanoMips::OPERAND_NM_GPREL18 &&
+      OpInfo.OperandType != NanoMips::OPERAND_NM_GPREL9 &&
+      OpInfo.OperandType != NanoMips::OPERAND_NM_SPREL7)
     return false;
 
   MCOperand &Op = Inst.getOperand(NumOp - 1);
   if (Op.isImm()) {
     if (OpInfo.OperandType == MipsII::OPERAND_MEM_SIMM9)
       return !isInt<9>(Op.getImm());
+    if (OpInfo.OperandType == NanoMips::OPERAND_NM_GPREL21)
+      return !isUInt<21>(Op.getImm());
+    if (OpInfo.OperandType == NanoMips::OPERAND_NM_GPREL18)
+      return !isUInt<18>(Op.getImm());
+    if (OpInfo.OperandType == NanoMips::OPERAND_NM_GPREL9)
+      return !isUInt<9>(Op.getImm());
+    if (OpInfo.OperandType == NanoMips::OPERAND_NM_SPREL7)
+      return !isUInt<7>(Op.getImm());
     // Offset can't exceed 16bit value.
     return !isInt<16>(Op.getImm());
   }
@@ -2391,6 +2511,10 @@ bool MipsAsmParser::processInstruction(MCInst &Inst, SMLoc IDLoc,
       case MipsII::OPERAND_MEM_SIMM9:
         expandMem9Inst(Inst, IDLoc, Out, STI, MCID.mayLoad());
         break;
+      case NanoMips::OPERAND_NM_GPREL18:
+      case NanoMips::OPERAND_NM_GPREL21:
+	// These cases have no legal expansion
+	break;
       default:
         expandMem16Inst(Inst, IDLoc, Out, STI, MCID.mayLoad());
         break;
@@ -6142,6 +6266,8 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
     if (Inst.getOperand(0).getReg() != Inst.getOperand(1).getReg())
       return Match_RequiresSameSrcAndDst;
     return Match_Success;
+  case Mips::SWSP16_NM:
+  case Mips::LWSP16_NM:
   case Mips::ADDIUR1SP_NM:
     if (Inst.getOperand(1).getReg() != Mips::SP_NM)
       return Match_RequiresBaseSP;
@@ -6871,6 +6997,76 @@ MipsAsmParser::parseMemOperand(OperandVector &Operands) {
                                    getContext());
   }
 
+  Operands.push_back(MipsOperand::CreateMem(std::move(op), IdVal, S, E, *this));
+  return MatchOperand_Success;
+}
+
+// Parse register indexed memory operand - $rs($rt)
+OperandMatchResultTy
+MipsAsmParser::parseMemNMRX(OperandVector &Operands) {
+  MCAsmParser &Parser = getParser();
+  LLVM_DEBUG(dbgs() << "parseMemRx\n");
+  const MCExpr *IdVal = nullptr;
+  SMLoc S;
+  OperandMatchResultTy Res = MatchOperand_NoMatch;
+
+  S = Parser.getTok().getLoc();
+
+  if (getLexer().getKind() == AsmToken::LParen) {
+    Parser.Lex();
+  }
+  SmallVector<std::unique_ptr<MCParsedAsmOperand>, 1> Reg;
+  if ((Res = parseAnyRegister(Reg)) != MatchOperand_Success)
+    return Res;
+  else {
+    // Register encoded as immediate to fit struct MemOp
+    MipsOperand &RegOpnd = static_cast<MipsOperand &>(*Reg[0]);
+    IdVal = MCConstantExpr::create(RegOpnd.getGPRNM32Reg(), getContext());
+  }
+
+  if (Parser.getTok().isNot(AsmToken::LParen)) {
+    if (Parser.getTok().is(AsmToken::EndOfStatement)) {
+      SMLoc E =
+	SMLoc::getFromPointer(Parser.getTok().getLoc().getPointer() - 1);
+
+      // Zero register assumed, add a memory operand with ZERO as its base.
+      // "Base" will be managed by k_Memory.
+      auto Base = MipsOperand::createGPRReg(0, "0", getContext().getRegisterInfo(), S, E, *this);
+      Operands.push_back(
+			 MipsOperand::CreateMem(std::move(Base), IdVal, S, E, *this));
+      return MatchOperand_Success;
+    }
+    else {
+      Error(Parser.getTok().getLoc(), "'(' expected");
+      return MatchOperand_ParseFail;
+    }
+  }
+  else
+    Parser.Lex(); // Eat the '(' token.
+
+  Res = parseAnyRegister(Operands);
+  if (Res != MatchOperand_Success)
+    return Res;
+
+  if (Parser.getTok().isNot(AsmToken::RParen)) {
+    Error(Parser.getTok().getLoc(), "')' expected");
+    return MatchOperand_ParseFail;
+  }
+
+  SMLoc E = SMLoc::getFromPointer(Parser.getTok().getLoc().getPointer() - 1);
+
+  Parser.Lex(); // Eat the ')' token.
+
+  if (!IdVal)
+    IdVal = MCConstantExpr::create(0, getContext());
+
+  // Replace the register operand with the memory operand.
+  std::unique_ptr<MipsOperand> op(
+      static_cast<MipsOperand *>(Operands.back().release()));
+  // Remove the register from the operands.
+  // "op" will be managed by k_Memory.
+  Operands.pop_back();
+  // Add the memory operand.
   Operands.push_back(MipsOperand::CreateMem(std::move(op), IdVal, S, E, *this));
   return MatchOperand_Success;
 }

@@ -642,6 +642,8 @@ getSymPCRel(const MCInst &MI, unsigned OpNo,
 
   switch (MI.getOpcode()) {
     case Mips::LAPC48_NM:
+    case Mips::LWPC_NM:
+    case Mips::SWPC_NM:
       Offset = 2;
       FType = Mips::fixup_NANOMIPS_PC_I32;
       break;
@@ -1054,6 +1056,91 @@ getMemEncodingMMImm4sp(const MCInst &MI, unsigned OpNo,
   unsigned OffBits = getMachineOpValue(MI, MI.getOperand(OpNo+1), Fixups, STI);
 
   return ((OffBits >> 2) & 0x0F);
+}
+
+template <unsigned Bits, unsigned ShiftAmount=0>
+unsigned MipsMCCodeEmitter::
+getMemEncodingNMImm(const MCInst &MI, unsigned OpNo,
+                      SmallVectorImpl<MCFixup> &Fixups,
+                      const MCSubtargetInfo &STI) const {
+  // Base register is encoded in [Bits+5...Bits], offset is encoded in bits [Bits...0].
+  assert(MI.getOperand(OpNo).isReg());
+  unsigned RegBits = getMachineOpValue(MI, MI.getOperand(OpNo), Fixups,
+                                       STI) << Bits;
+  unsigned OffBits = getMachineOpValue(MI, MI.getOperand(OpNo+1), Fixups, STI);
+  unsigned Mask = ((1 << Bits) - 1) & ~((1 << ShiftAmount) - 1);
+
+  return (OffBits & Mask) | RegBits;
+}
+
+unsigned MipsMCCodeEmitter::
+getMemEncodingNMGP(const MCInst &MI, unsigned OpNo,
+                           SmallVectorImpl<MCFixup> &Fixups,
+                           const MCSubtargetInfo &STI) const {
+  unsigned RegBits=getMachineOpValue(MI, MI.getOperand(OpNo), Fixups,
+				     STI);
+  assert(MI.getOperand(OpNo).isReg() && RegBits == 28);
+  const MCOperand &MO = MI.getOperand(OpNo+1);
+  unsigned OffBits = getMachineOpValue(MI, MO,
+                                       Fixups, STI);
+
+  if (MO.isExpr()) {
+    const MCExpr *Expr = MO.getExpr();
+    assert (cast<MipsMCExpr>(Expr)->getKind() == MipsMCExpr::MEK_GPREL);
+    Mips::Fixups FixupKind = Mips::Fixups(0);
+    Fixups.pop_back();
+    switch (MI.getOpcode()) {
+      case Mips::LWGP16_NM:
+      case Mips::SWGP16_NM:
+	FixupKind = Mips::fixup_NANOMIPS_GPREL7_S2;
+	break;
+      case Mips::LWGP_NM:
+      case Mips::SWGP_NM:
+	FixupKind = Mips::fixup_NANOMIPS_GPREL19_S2;
+	break;
+      case Mips::LHGP_NM:
+      case Mips::SHGP_NM:
+      case Mips::LHUGP_NM:
+	FixupKind = Mips::fixup_NANOMIPS_GPREL17_S1;
+	break;
+      case Mips::LBGP_NM:
+      case Mips::LBUGP_NM:
+      case Mips::SBGP_NM:
+      default:
+	// Nothing to do; re set for clarity
+	FixupKind = Mips::fixup_NANOMIPS_GPREL18;
+      }
+    Fixups.push_back(MCFixup::create(0, Expr, MCFixupKind(FixupKind)));
+  }
+
+  return OffBits;
+}
+
+unsigned MipsMCCodeEmitter::
+getMemEncodingNMSP(const MCInst &MI, unsigned OpNo,
+                           SmallVectorImpl<MCFixup> &Fixups,
+                           const MCSubtargetInfo &STI) const {
+  unsigned RegBits=getMachineOpValue(MI, MI.getOperand(OpNo), Fixups,
+				     STI);
+  assert(MI.getOperand(OpNo).isReg() && RegBits == 29);
+  unsigned OffBits = getMachineOpValue(MI, MI.getOperand(OpNo+1),
+                                       Fixups, STI);
+  return OffBits;
+}
+
+unsigned MipsMCCodeEmitter::
+getMemEncodingNMRX(const MCInst &MI, unsigned OpNo,
+		   SmallVectorImpl<MCFixup> &Fixups,
+		   const MCSubtargetInfo &STI) const {
+  // Register is encoded in bits 9-5, offset is encoded in bits 4-0.
+  assert(MI.getOperand(OpNo).isReg());
+  unsigned RegBits = getMachineOpValue(MI, MI.getOperand(OpNo), Fixups,
+				       STI) << 5;
+  unsigned Reg = getMachineOpValue(MI, MI.getOperand(OpNo+1),
+                                       Fixups, STI);
+  unsigned OffBits = Ctx.getRegisterInfo()->getEncodingValue(Reg);
+
+  return RegBits | OffBits;
 }
 
 // FIXME: should be called getMSBEncoding

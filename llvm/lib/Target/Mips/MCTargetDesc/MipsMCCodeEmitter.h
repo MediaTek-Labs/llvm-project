@@ -228,6 +228,20 @@ public:
                               SmallVectorImpl<MCFixup> &Fixups,
                               const MCSubtargetInfo &STI) const;
 
+  template <unsigned Bits, unsigned ShiftAmount=0>
+  unsigned getMemEncodingNMImm(const MCInst &MI, unsigned OpNo,
+                                 SmallVectorImpl<MCFixup> &Fixups,
+                                 const MCSubtargetInfo &STI) const;
+  unsigned getMemEncodingNMGP(const MCInst &MI, unsigned OpNo,
+			      SmallVectorImpl<MCFixup> &Fixups,
+			      const MCSubtargetInfo &STI) const;
+  unsigned getMemEncodingNMSP(const MCInst &MI, unsigned OpNo,
+			      SmallVectorImpl<MCFixup> &Fixups,
+			      const MCSubtargetInfo &STI) const;
+  unsigned getMemEncodingNMRX(const MCInst &MI, unsigned OpNo,
+                                 SmallVectorImpl<MCFixup> &Fixups,
+                                 const MCSubtargetInfo &STI) const;
+
   /// Subtract Offset then encode as a N-bit unsigned integer.
   template <unsigned Bits, int Offset>
   unsigned getUImmWithOffsetEncoding(const MCInst &MI, unsigned OpNo,

@@ -602,9 +602,15 @@ static bool isValidUse(MachineInstr *MI, Register Reg) {
   case Mips::LH_NM:
   case Mips::LHU_NM:
   case Mips::SW_NM:
-  case Mips::SWs9_NM:
   case Mips::LW_NM:
+  case Mips::SWs9_NM:
   case Mips::LWs9_NM:
+  case Mips::SBs9_NM:
+  case Mips::LBs9_NM:
+  case Mips::LBUs9_NM:
+  case Mips::SHs9_NM:
+  case Mips::LHs9_NM:
+  case Mips::LHUs9_NM:
   case Mips::ADDIU48_NM:
   case Mips::ADDIU_NM:
   case Mips::ADDIUNEG_NM:

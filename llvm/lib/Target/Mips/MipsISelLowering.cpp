@@ -2193,7 +2193,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicBinaryPartword(
   //    sll     incr2,incr,shiftamt
 
   int64_t MaskImm = (Size == 1) ? 255 : 65535;
-  BuildMI(BB, DL, TII->get(ABI.GetPtrAddiuOp()), MaskLSB2)
+  BuildMI(BB, DL, TII->get(ABI.GetPtrAddiuOp(-4)), MaskLSB2)
     .addReg(ABI.GetNullPtr()).addImm(-4);
   BuildMI(BB, DL, TII->get(ABI.GetPtrAndOp()), AlignedAddr)
     .addReg(Ptr).addReg(MaskLSB2);
@@ -2208,7 +2208,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicBinaryPartword(
     BuildMI(BB, DL, TII->get(SLL), ShiftAmt).addReg(Off).addImm(3);
   }
   if (Subtarget.hasNanoMips() && MaskImm > 4095)
-    BuildMI(BB, DL, TII->get(Mips::Li_NM), MaskUpper)
+    BuildMI(BB, DL, TII->get(Mips::LI48_NM), MaskUpper)
       .addImm(MaskImm);
   else
     BuildMI(BB, DL, TII->get(ORi), MaskUpper)
@@ -2405,7 +2405,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
   //    sll     shiftednewval,maskednewval,shiftamt
   int64_t MaskImm = (Size == 1) ? 255 : 65535;
   int64_t MaskImmBits = (Size == 1) ? 8 : 16 ;
-  BuildMI(BB, DL, TII->get(ABI.GetPtrAddiuOp()), MaskLSB2)
+  BuildMI(BB, DL, TII->get(ABI.GetPtrAddiuOp(-4)), MaskLSB2)
     .addReg(ABI.GetNullPtr()).addImm(-4);
   BuildMI(BB, DL, TII->get(ABI.GetPtrAndOp()), AlignedAddr)
     .addReg(Ptr).addReg(MaskLSB2);
@@ -2420,7 +2420,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
     BuildMI(BB, DL, TII->get(SLL), ShiftAmt).addReg(Off).addImm(3);
   }
   if (Subtarget.hasNanoMips() && MaskImm > 4095)
-    BuildMI(BB, DL, TII->get(Mips::Li_NM), MaskUpper)
+    BuildMI(BB, DL, TII->get(Mips::LI48_NM), MaskUpper)
       .addImm(MaskImm);
   else
     BuildMI(BB, DL, TII->get(ORi), MaskUpper)

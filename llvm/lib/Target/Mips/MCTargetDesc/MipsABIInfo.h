@@ -68,10 +68,11 @@ public:
   unsigned GetNullPtr() const;
   unsigned GetZeroReg() const;
   unsigned GetPtrAdduOp() const;
-  unsigned GetPtrAddiuOp() const;
+  unsigned GetPtrAddiuOp(int Offset) const;
   unsigned GetPtrSubuOp() const;
   unsigned GetPtrAndOp() const;
   unsigned GetGPRMoveOp() const;
+  bool IsPtrAddiuOffset(int Offset) const;
   inline bool ArePtrs64bit() const { return IsN64(); }
   inline bool AreGprs64bit() const { return IsN32() || IsN64(); }
 

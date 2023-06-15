@@ -524,6 +524,7 @@ public:
     Match_RequiresPosSizeRange0_32,
     Match_RequiresPosSizeRange33_64,
     Match_RequiresPosSizeUImm6,
+    Match_RequiresBaseSP,
 #define GET_OPERAND_DIAGNOSTIC_TYPES
 #include "MipsGenAsmMatcher.inc"
 #undef GET_OPERAND_DIAGNOSTIC_TYPES
@@ -1359,6 +1360,10 @@ public:
     return isConstantImm() ? isInt<Bits>(getConstantImm()) : isImm();
   }
 
+  template <unsigned Bits> bool isNegImm() const {
+    return (isConstantImm() && getConstantImm() < 0 && isUInt<Bits>(-getConstantImm()));
+  }
+
   template <unsigned Bits> bool isUImm() const {
     return isConstantImm() ? isUInt<Bits>(getConstantImm()) : isImm();
   }
@@ -1376,6 +1381,23 @@ public:
   template <unsigned Bottom, unsigned Top> bool isConstantUImmRange() const {
     return isConstantImm() && getConstantImm() >= Bottom &&
            getConstantImm() <= Top;
+  }
+
+  template <int Bottom, int Top> bool isConstantSImmRange() const {
+    return isConstantImm() && getConstantImm() >= Bottom &&
+           getConstantImm() <= Top;
+  }
+
+  bool isConstantUImmMask() const {
+    return (isConstantImm() &&
+	    ((getConstantImm() >= 0 &&  getConstantImm() < 11) ||
+	     (getConstantImm() == 0xff) || (getConstantImm() == 0xffff) ||
+	     (getConstantImm() == 0xe) ||  (getConstantImm() == 0xf)));
+  }
+
+  template <signed Bottom, signed Top> bool isConstantNegImmRange() const {
+    return isConstantImm() && getConstantImm() >= -Bottom &&
+           getConstantImm() <= -Top;
   }
 
   bool isToken() const override {
@@ -5902,6 +5924,8 @@ MipsAsmParser::checkEarlyTargetMatchPredicate(MCInst &Inst,
     return Match_Success;
   case Mips::DATI:
   case Mips::DAHI:
+  case Mips::ADDIURS5_NM:
+  case Mips::ADDIU48_NM:
     if (static_cast<MipsOperand &>(*Operands[1])
             .isValidForTie(static_cast<MipsOperand &>(*Operands[2])))
       return Match_Success;
@@ -5993,7 +6017,9 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
     if (Inst.getOperand(0).getReg() == Inst.getOperand(1).getReg())
       return Match_RequiresDifferentOperands;
     return Match_Success;
-  case Mips::DINS: {
+  case Mips::DINS:
+  case Mips::EXT_NM:
+  case Mips::INS_NM: {
     assert(Inst.getOperand(2).isImm() && Inst.getOperand(3).isImm() &&
            "Operands must be immediates for dins!");
     const signed Pos = Inst.getOperand(2).getImm();
@@ -6035,8 +6061,20 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
   case Mips::CRC32H: case Mips::CRC32CH:
   case Mips::CRC32W: case Mips::CRC32CW:
   case Mips::CRC32D: case Mips::CRC32CD:
+  case Mips::AND16_NM:
+  case Mips::OR16_NM:
+  case Mips::XOR16_NM:
     if (Inst.getOperand(0).getReg() != Inst.getOperand(2).getReg())
       return Match_RequiresSameSrcAndDst;
+    return Match_Success;
+  case Mips::ADDu4x4_NM:
+  case Mips::MUL4x4_NM:
+    if (Inst.getOperand(0).getReg() != Inst.getOperand(1).getReg())
+      return Match_RequiresSameSrcAndDst;
+    return Match_Success;
+  case Mips::ADDIUR1SP_NM:
+    if (Inst.getOperand(1).getReg() != Mips::SP_NM)
+      return Match_RequiresBaseSP;
     return Match_Success;
   }
 
@@ -6259,6 +6297,8 @@ bool MipsAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
     return Error(ErrorStart, "size plus position are not in the range 33 .. 64",
                  SMRange(ErrorStart, ErrorEnd));
     }
+  case Match_RequiresBaseSP:
+    return Error(IDLoc, "expected $sp as base register");
   }
 
   llvm_unreachable("Implement any new match types added!");

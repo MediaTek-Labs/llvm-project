@@ -86,6 +86,10 @@ public:
                                 SmallVectorImpl<MCFixup> &Fixups,
                                 const MCSubtargetInfo &STI) const;
 
+  unsigned getSImm20Lsl12Encoding(const MCInst &MI, unsigned OpNo,
+				  SmallVectorImpl<MCFixup> &Fixups,
+				  const MCSubtargetInfo &STI) const;
+
   // getSImm9AddiuspValue - Return binary encoding of the microMIPS addiusp
   // instruction immediate operand.
   unsigned getSImm9AddiuspValue(const MCInst &MI, unsigned OpNo,
@@ -245,6 +249,10 @@ public:
                             SmallVectorImpl<MCFixup> &Fixups,
                             const MCSubtargetInfo &STI) const;
 
+  unsigned getUImm4MaskEncoding(const MCInst &MI, unsigned OpNo,
+				SmallVectorImpl<MCFixup> &Fixups,
+				const MCSubtargetInfo &STI) const;
+
   unsigned getMovePRegPairOpValue(const MCInst &MI, unsigned OpNo,
                                   SmallVectorImpl<MCFixup> &Fixups,
                                   const MCSubtargetInfo &STI) const;
@@ -274,6 +282,17 @@ public:
   unsigned getGPRNM4x4Reg(const MCInst &MI, unsigned OpNo,
 			  SmallVectorImpl<MCFixup> &Fixups,
 			  const MCSubtargetInfo &STI) const;
+
+  unsigned getUImm3ShiftEncoding(const MCInst &MI, unsigned OpNo,
+				 SmallVectorImpl<MCFixup> &Fixups,
+				 const MCSubtargetInfo &STI) const;
+
+  unsigned getNegImm12Encoding(const MCInst &MI, unsigned OpNo,
+			       SmallVectorImpl<MCFixup> &Fixups,
+			       const MCSubtargetInfo &STI) const;
+  unsigned getSImm32Encoding(const MCInst &MI, unsigned OpNo,
+			     SmallVectorImpl<MCFixup> &Fixups,
+			     const MCSubtargetInfo &STI) const;
 
 private:
   void LowerCompactBranch(MCInst& Inst) const;

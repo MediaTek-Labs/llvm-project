@@ -12,7 +12,7 @@ class InstNM<dag outs, dag ins, string asmstr, list<dag> pattern,
   let AsmVariantName = "nanomips";
   let AsmString = asmstr;
   let Pattern   = pattern;
-
+  let FastISelShouldIgnore = 1; // disabled for all NanoMips
   bit isCTI = 0; // Any form of Control Transfer Instruction.
 
   let Itinerary = itin;

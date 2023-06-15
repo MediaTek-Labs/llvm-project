@@ -415,7 +415,6 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
   unsigned FP = ABI.GetFramePtr();
   unsigned ZERO = ABI.GetNullPtr();
   unsigned MOVE = ABI.GetGPRMoveOp();
-  unsigned ADDiu = ABI.GetPtrAddiuOp();
   unsigned AND = ABI.GetPtrAndOp();
 
   const TargetRegisterClass *RC =
@@ -544,6 +543,7 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
       assert((Log2(MFI.getMaxAlign()) < 16) &&
              "Function's alignment size requirement is not supported.");
       int64_t MaxAlign = -(int64_t)MFI.getMaxAlign().value();
+      unsigned ADDiu = ABI.GetPtrAddiuOp(MaxAlign);
 
       if (ABI.IsP32())
         BuildMI(MBB, MBBI, dl, TII.get(Mips::LI48_NM), VR).addImm(MaxAlign);

@@ -261,7 +261,7 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
       const MipsSEInstrInfo &TII =
           *static_cast<const MipsSEInstrInfo *>(
               MBB.getParent()->getSubtarget().getInstrInfo());
-      BuildMI(MBB, II, DL, TII.get(ABI.GetPtrAddiuOp()), Reg)
+      BuildMI(MBB, II, DL, TII.get(ABI.GetPtrAddiuOp(Offset)), Reg)
           .addReg(FrameReg)
           .addImm(Offset);
 

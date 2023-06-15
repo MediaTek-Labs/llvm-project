@@ -580,6 +580,20 @@ getUImm6Lsl2Encoding(const MCInst &MI, unsigned OpNo,
 }
 
 unsigned MipsMCCodeEmitter::
+getSImm20Lsl12Encoding(const MCInst &MI, unsigned OpNo,
+		       SmallVectorImpl<MCFixup> &Fixups,
+		       const MCSubtargetInfo &STI) const {
+  const MCOperand &MO = MI.getOperand(OpNo);
+  unsigned Res = getMachineOpValue(MI, MO, Fixups, STI);
+  if (MO.isImm()) {
+    assert((Res & 0xfff) == 0);
+    return Res;
+  }
+
+  return 0;
+}
+
+unsigned MipsMCCodeEmitter::
 getSImm9AddiuspValue(const MCInst &MI, unsigned OpNo,
                      SmallVectorImpl<MCFixup> &Fixups,
                      const MCSubtargetInfo &STI) const {
@@ -1072,6 +1086,22 @@ MipsMCCodeEmitter::getUImm4AndValue(const MCInst &MI, unsigned OpNo,
 }
 
 unsigned
+MipsMCCodeEmitter::getUImm4MaskEncoding(const MCInst &MI, unsigned OpNo,
+					SmallVectorImpl<MCFixup> &Fixups,
+					const MCSubtargetInfo &STI) const {
+  assert(MI.getOperand(OpNo).isImm());
+  const MCOperand &MO = MI.getOperand(OpNo);
+  unsigned Value = MO.getImm();
+  switch (Value) {
+    case 0xff:   return 12;
+    case 0xffff: return 13;
+    default:	 return Value;
+  }
+  llvm_unreachable("Unexpected value");
+}
+
+
+unsigned
 MipsMCCodeEmitter::getRegisterListOpValue(const MCInst &MI, unsigned OpNo,
                                           SmallVectorImpl<MCFixup> &Fixups,
                                           const MCSubtargetInfo &STI) const {
@@ -1201,6 +1231,37 @@ MipsMCCodeEmitter::getGPRNM4x4Reg(const MCInst &MI, unsigned OpNo,
   case Mips::A7_NM:
     return RegNo - 8;
   }
+}
+
+unsigned
+MipsMCCodeEmitter::getUImm3ShiftEncoding(const MCInst &MI, unsigned OpNo,
+					 SmallVectorImpl<MCFixup> &Fixups,
+					 const MCSubtargetInfo &STI) const {
+  assert(MI.getOperand(OpNo).isImm());
+  const MCOperand &MO = MI.getOperand(OpNo);
+  unsigned Value = MO.getImm();
+  if (Value == 8)
+    return 0;
+  else
+    return Value;
+}
+
+unsigned
+MipsMCCodeEmitter::getNegImm12Encoding(const MCInst &MI, unsigned OpNo,
+				       SmallVectorImpl<MCFixup> &Fixups,
+				       const MCSubtargetInfo &STI) const {
+  int res = MI.getOperand(OpNo).getImm();
+  return static_cast<unsigned>(-res);
+}
+
+unsigned
+MipsMCCodeEmitter::getSImm32Encoding(const MCInst &MI, unsigned OpNo,
+				     SmallVectorImpl<MCFixup> &Fixups,
+				     const MCSubtargetInfo &STI) const {
+  const MCOperand &MO = MI.getOperand(OpNo);
+  assert(MO.isImm() && "getSImm32Encoding expects only an immediate");
+  int Res = static_cast<signed>(MO.getImm());
+  return Res;
 }
 
 #include "MipsGenMCCodeEmitter.inc"

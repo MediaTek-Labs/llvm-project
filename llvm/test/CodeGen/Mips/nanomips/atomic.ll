@@ -6,7 +6,7 @@
 define i32 @AtomicLoadAdd32(i32 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadAdd32:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a2, x
+; CHECK-NEXT:    lapc.b $a2, x
 ; CHECK-NEXT:  .LBB0_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
@@ -25,7 +25,7 @@ entry:
 define i32 @AtomicLoadSub32(i32 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadSub32:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a2, x
+; CHECK-NEXT:    lapc.b $a2, x
 ; CHECK-NEXT:  .LBB1_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
@@ -44,7 +44,7 @@ entry:
 define i32 @AtomicLoadXor32(i32 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadXor32:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a2, x
+; CHECK-NEXT:    lapc.b $a2, x
 ; CHECK-NEXT:  .LBB2_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
@@ -62,7 +62,7 @@ entry:
 define i32 @AtomicLoadOr32(i32 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadOr32:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a2, x
+; CHECK-NEXT:    lapc.b $a2, x
 ; CHECK-NEXT:  .LBB3_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
@@ -80,7 +80,7 @@ entry:
 define i32 @AtomicLoadAnd32(i32 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadAnd32:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a2, x
+; CHECK-NEXT:    lapc.b $a2, x
 ; CHECK-NEXT:  .LBB4_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
@@ -98,7 +98,7 @@ entry:
 define i32 @AtomicLoadNand32(i32 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadNand32:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a2, x
+; CHECK-NEXT:    lapc.b $a2, x
 ; CHECK-NEXT:  .LBB5_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
@@ -120,7 +120,7 @@ define i32 @AtomicSwap32(i32 signext %newval) nounwind {
 ; CHECK:       # %bb.0: # %entry
 ; CHECK-NEXT:    save 16
 ; CHECK-NEXT:    sw $a0, 12($sp)
-; CHECK-NEXT:    la $a2, x
+; CHECK-NEXT:    lapc.b $a2, x
 ; CHECK-NEXT:  .LBB6_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
@@ -144,7 +144,7 @@ define i32 @AtomicCmpSwap32(i32 signext %oldval, i32 signext %newval) nounwind {
 ; CHECK:       # %bb.0: # %entry
 ; CHECK-NEXT:    save 16
 ; CHECK-NEXT:    sw $a1, 12($sp)
-; CHECK-NEXT:    la $a3, x
+; CHECK-NEXT:    lapc.b $a3, x
 ; CHECK-NEXT:  .LBB7_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a2, 0($a3)
@@ -172,12 +172,12 @@ entry:
 define signext i8 @AtomicLoadAdd8(i8 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadAdd8:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a1, y
-; CHECK-NEXT:    addiu $a2, $zero, -4
+; CHECK-NEXT:    lapc.b $a1, y
+; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
 ; CHECK-NEXT:    andi $a1, $a1, 3
 ; CHECK-NEXT:    sll $a7, $a1, 3
-; CHECK-NEXT:    ori $a3, $zero, 255
+; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
 ; CHECK-NEXT:    nor $a5, $zero, $a6
 ; CHECK-NEXT:    sllv $a2, $a0, $a7
@@ -204,12 +204,12 @@ entry:
 define signext i8 @AtomicLoadSub8(i8 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadSub8:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a1, y
-; CHECK-NEXT:    addiu $a2, $zero, -4
+; CHECK-NEXT:    lapc.b $a1, y
+; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
 ; CHECK-NEXT:    andi $a1, $a1, 3
 ; CHECK-NEXT:    sll $a7, $a1, 3
-; CHECK-NEXT:    ori $a3, $zero, 255
+; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
 ; CHECK-NEXT:    nor $a5, $zero, $a6
 ; CHECK-NEXT:    sllv $a2, $a0, $a7
@@ -237,12 +237,12 @@ entry:
 define signext i8 @AtomicLoadNand8(i8 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadNand8:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a1, y
-; CHECK-NEXT:    addiu $a2, $zero, -4
+; CHECK-NEXT:    lapc.b $a1, y
+; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
 ; CHECK-NEXT:    andi $a1, $a1, 3
 ; CHECK-NEXT:    sll $a7, $a1, 3
-; CHECK-NEXT:    ori $a3, $zero, 255
+; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
 ; CHECK-NEXT:    nor $a5, $zero, $a6
 ; CHECK-NEXT:    sllv $a2, $a0, $a7
@@ -271,12 +271,12 @@ entry:
 define signext i8 @AtomicSwap8(i8 signext %newval) nounwind {
 ; CHECK-LABEL: AtomicSwap8:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a1, y
-; CHECK-NEXT:    addiu $a2, $zero, -4
+; CHECK-NEXT:    lapc.b $a1, y
+; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
 ; CHECK-NEXT:    andi $a1, $a1, 3
 ; CHECK-NEXT:    sll $a7, $a1, 3
-; CHECK-NEXT:    ori $a3, $zero, 255
+; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
 ; CHECK-NEXT:    nor $a5, $zero, $a6
 ; CHECK-NEXT:    sllv $a2, $a0, $a7
@@ -302,12 +302,12 @@ entry:
 define signext i8 @AtomicCmpSwap8(i8 signext %oldval, i8 signext %newval) nounwind {
 ; CHECK-LABEL: AtomicCmpSwap8:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a2, y
-; CHECK-NEXT:    addiu $a3, $zero, -4
+; CHECK-NEXT:    lapc.b $a2, y
+; CHECK-NEXT:    li $a3, -4
 ; CHECK-NEXT:    and $a4, $a2, $a3
 ; CHECK-NEXT:    andi $a2, $a2, 3
 ; CHECK-NEXT:    sll $t0, $a2, 3
-; CHECK-NEXT:    ori $a3, $zero, 255
+; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a7, $a3, $t0
 ; CHECK-NEXT:    nor $a5, $zero, $a7
 ; CHECK-NEXT:    andi $a0, $a0, 255
@@ -339,11 +339,11 @@ entry:
 define i1 @AtomicCmpSwapRes8(i8* %ptr, i8 signext %oldval, i8 signext %newval) nounwind {
 ; CHECK-LABEL: AtomicCmpSwapRes8:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    addiu $a3, $zero, -4
+; CHECK-NEXT:    li $a3, -4
 ; CHECK-NEXT:    and $a4, $a0, $a3
 ; CHECK-NEXT:    andi $a0, $a0, 3
 ; CHECK-NEXT:    sll $t0, $a0, 3
-; CHECK-NEXT:    ori $a0, $zero, 255
+; CHECK-NEXT:    li $a0, 255
 ; CHECK-NEXT:    sllv $a5, $a0, $t0
 ; CHECK-NEXT:    nor $a6, $zero, $a5
 ; CHECK-NEXT:    andi $a0, $a1, 255
@@ -380,8 +380,8 @@ entry:
 define signext i16 @AtomicLoadAdd16(i16 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadAdd16:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a1, z
-; CHECK-NEXT:    addiu $a2, $zero, -4
+; CHECK-NEXT:    lapc.b $a1, z
+; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
 ; CHECK-NEXT:    andi $a1, $a1, 3
 ; CHECK-NEXT:    sll $a7, $a1, 3
@@ -418,7 +418,7 @@ define {i16, i1} @foo(i16* %addr, i16 %l, i16 %r, i16 %new) {
 ; CHECK-NEXT:    .cfi_offset 16, -4
 ; CHECK-NEXT:    addu $s0, $a1, $a2
 ; CHECK-NEXT:    sync
-; CHECK-NEXT:    addiu $a2, $zero, -4
+; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a0, $a2
 ; CHECK-NEXT:    andi $a0, $a0, 3
 ; CHECK-NEXT:    sll $t1, $a0, 3
@@ -458,7 +458,7 @@ define i32 @CheckSync(i32 signext %v) nounwind noinline {
 ; CHECK-LABEL: CheckSync:
 ; CHECK:       # %bb.0: # %entry
 ; CHECK-NEXT:    sync
-; CHECK-NEXT:    la $a2, countsint
+; CHECK-NEXT:    lapc.b $a2, countsint
 ; CHECK-NEXT:  .LBB16_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
@@ -481,7 +481,7 @@ define i32 @zeroreg() nounwind {
 ; CHECK:       # %bb.0: # %entry
 ; CHECK-NEXT:    sync
 ; CHECK-NEXT:    li $a0, 1
-; CHECK-NEXT:    la $a1, a
+; CHECK-NEXT:    lapc.b $a1, a
 ; CHECK-NEXT:  .LBB17_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a2, 0($a1)
@@ -506,13 +506,13 @@ entry:
 define i32 @AtomicLoadAdd32_OffGt9Bit(i32 signext %incr) nounwind {
 ; CHECK-LABEL: AtomicLoadAdd32_OffGt9Bit:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a2, x+1024
+; CHECK-NEXT:    lapc.b $a2, x+1024
 ; CHECK-NEXT:  .LBB18_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
 ; CHECK-NEXT:    addu $a3, $a1, $a0
 ; CHECK-NEXT:    sc $a3, 0($a2)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB18_1
+; CHECK-NEXT:    beqzc $a3, .LBB18_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    move $a0, $a1
 ; CHECK-NEXT:    jrc $ra

@@ -13,7 +13,7 @@ define dso_local i32 @foo(i32 signext %i) local_unnamed_addr {
 ; CHECK-NEXT:    lsa $a1, $a0, $a1, 3
 ; CHECK-NEXT:    sll $a0, $a0, 7
 ; CHECK-NEXT:    subu $a0, $a0, $a1
-; CHECK-NEXT:    addiu[48] $a0, $a0, g+100
+; CHECK-NEXT:    addiu $a0, $a0, g+100
 ; CHECK-NEXT:    lw $a0, 0($a0)
 ; CHECK-NEXT:    jrc $ra
 entry:
@@ -25,7 +25,7 @@ entry:
 define dso_local i32 @bar(i32 signext %i) local_unnamed_addr {
 ; CHECK-LABEL: bar:
 ; CHECK:       # %bb.0: # %entry
-; CHECK-NEXT:    la $a1, g2
+; CHECK-NEXT:    lapc.b $a1, g2
 ; CHECK-NEXT:    lwxs $a0, $a0($a1)
 ; CHECK-NEXT:    jrc $ra
 entry:

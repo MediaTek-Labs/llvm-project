@@ -12,7 +12,7 @@ define dso_local i32 @foo(i32 signext %a, i32 signext %b) local_unnamed_addr  {
 ; CHECK-NEXT:    lsa $a2, $a0, $a2, 2
 ; CHECK-NEXT:    sll $a0, $a0, 6
 ; CHECK-NEXT:    addu $a0, $a0, $a2
-; CHECK-NEXT:    addiu[48] $a0, $a0, test
+; CHECK-NEXT:    addiu $a0, $a0, test
 ; CHECK-NEXT:    beqzc $a1, .LBB0_2
 ; CHECK-NEXT:  # %bb.1: # %if.then
 ; CHECK-NEXT:    lw $a0, 80($a0)

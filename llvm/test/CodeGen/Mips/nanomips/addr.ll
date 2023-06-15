@@ -31,7 +31,7 @@ define dso_local void @bar() local_unnamed_addr {
 ; CHECK-NEXT:    save 16, $ra
 ; CHECK-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-NEXT:    .cfi_offset 31, -4
-; CHECK-NEXT:    la $a0, b+40000
+; CHECK-NEXT:    lapc.b $a0, b+40000
 ; CHECK-NEXT:    lw $a1, 4($a0)
 ; CHECK-NEXT:    lw $a0, 0($a0)
 ; CHECK-NEXT:    balc sink

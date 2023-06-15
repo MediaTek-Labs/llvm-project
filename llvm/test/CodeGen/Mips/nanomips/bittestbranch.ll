@@ -18,7 +18,7 @@ b:
 
 a:
 ; CHECK: [[ret1]].a:
-; CHECK: Li_NM 1
+; CHECK: PseudoLI_NM 1
 ; CHECK-LABEL: RetRA
   ret i32 1
 }
@@ -36,7 +36,7 @@ b:
 
 a:
 ; CHECK: [[ret1]].a:
-; CHECK: Li_NM 1
+; CHECK: PseudoLI_NM 1
 ; CHECK-LABEL: RetRA
   ret i32 1
 

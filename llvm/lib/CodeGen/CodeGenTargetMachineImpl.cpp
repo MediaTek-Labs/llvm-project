@@ -186,9 +186,13 @@ CodeGenTargetMachineImpl::createMCStreamer(raw_pwrite_stream &Out,
                                      inconvertibleErrorCode());
     MCAsmBackend *MAB =
         getTarget().createMCAsmBackend(STI, MRI, Options.MCOptions);
-    if (!MAB)
+    if (!MAB) {
+      if (!MCE)
+        return make_error<StringError>("createMCCodeEmitter failed",
+                                       inconvertibleErrorCode());
       return make_error<StringError>("createMCAsmBackend failed",
                                      inconvertibleErrorCode());
+    }
 
     Triple T(getTargetTriple().str());
     AsmStreamer.reset(getTarget().createMCObjectStreamer(

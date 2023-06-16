@@ -280,6 +280,13 @@ struct Config {
   Error addSaveTemps(std::string OutputFileName,
                      bool UseInputModulePath = false,
                      const DenseSet<StringRef> &SaveTempsArgs = {});
+
+  typedef std::function<std::string(unsigned Task, const Module &, StringRef)>
+      GetLTOTaskTempNameHookFn;
+  GetLTOTaskTempNameHookFn GetLTOTaskTempNameHook;
+  bool SaveAsmTemps = false;
+
+  Error addSaveAsmTemps(std::string OutputFileName, std::string SaveTempDir);
 };
 
 struct LTOLLVMDiagnosticHandler : public DiagnosticHandler {

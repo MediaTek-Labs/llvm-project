@@ -1,4 +1,5 @@
-//===-- llvm-lto-sections: tool for reporting sections for LTO bitcode  ---===//
+//===-- llvm-lto-predict-sections: predict symbols and sections for LTO bitcode
+//---===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -22,7 +23,6 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
-
 
 using namespace llvm;
 

@@ -57,6 +57,7 @@ MipsELFMCAsmInfo::MipsELFMCAsmInfo(const Triple &TheTriple,
   if (TheTriple.isNanoMips()) {
     AssemblerDialect = 1;
     UsesCompInstByteOrder = true;
+    UseLogicalShr = false;
   }
 }
 

@@ -809,7 +809,8 @@ void MipsTargetAsmStreamer::emitDirectiveModuleNoGINV() {
 // This part is for ELF object output.
 MipsTargetELFStreamer::MipsTargetELFStreamer(MCStreamer &S,
                                              const MCSubtargetInfo &STI)
-    : MipsTargetStreamer(S), MicroMipsEnabled(false), STI(STI) {
+    : MipsTargetStreamer(S), MicroMipsEnabled(false), NanoMipsEnabled(false),
+      STI(STI) {
   MCAssembler &MCA = getStreamer().getAssembler();
 
   // It's possible that MCObjectFileInfo isn't fully initialized at this point
@@ -887,6 +888,7 @@ MipsTargetELFStreamer::MipsTargetELFStreamer(MCStreamer &S,
   // Pid is only relevant for nanoMIPS, but not yet fully supported.
   Pid = false;
   if (STI.getTargetTriple().getArch() == Triple::ArchType::nanomips) {
+    NanoMipsEnabled = true;
     Pic = false;
   }
 

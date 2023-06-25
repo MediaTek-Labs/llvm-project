@@ -16,9 +16,11 @@
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDwarf.h"
 #include "llvm/MC/MCInst.h"
+#include "llvm/MC/MCValue.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCSymbolELF.h"
 #include "llvm/Support/Casting.h"
+#include "MCTargetDesc/MipsFixupKinds.h"
 
 using namespace llvm;
 
@@ -96,10 +98,88 @@ void MipsELFStreamer::switchSection(MCSection *Section,
   Labels.clear();
 }
 
-void MipsELFStreamer::emitValueImpl(const MCExpr *Value, unsigned Size,
-                                    SMLoc Loc) {
-  MCELFStreamer::emitValueImpl(Value, Size, Loc);
-  Labels.clear();
+static bool isLabelAshr1(const MCExpr *Value) {
+  const auto *MBE = dyn_cast<MCBinaryExpr>(Value);
+  if (MBE == nullptr)
+    return false;
+
+  MCValue E;
+  int64_t Shift = 0;
+  int64_t &Shiftr = Shift;
+  if (MBE->getOpcode() == MCBinaryExpr::AShr &&
+      MBE->getLHS()->evaluateAsRelocatable(E, nullptr, nullptr) &&
+      MBE->getRHS()->evaluateAsAbsolute(Shiftr) &&
+      Shift == 1)
+    return true;
+  else
+    return false;
+}
+
+static bool requiresFixups(MCContext &C, const MCExpr *Value,
+			   const MCExpr *&LHS, const MCExpr *&RHS) {
+  const auto *MBE = dyn_cast<MCBinaryExpr>(Value);
+  if (MBE == nullptr)
+    return false;
+
+  if (isLabelAshr1(Value)) {
+    report_fatal_error("Unsupported jump-table reloc expression\n");
+    return false;
+  }
+
+  MCValue E;
+  if (!Value->evaluateAsRelocatable(E, nullptr, nullptr))
+    return false;
+  if (E.getSymA() == nullptr || E.getSymB() == nullptr)
+    return false;
+
+  const auto &A = E.getSymA()->getSymbol();
+  const auto &B = E.getSymB()->getSymbol();
+
+  LHS =
+    MCBinaryExpr::create(MCBinaryExpr::Add, MCSymbolRefExpr::create(&A, C),
+			 MCConstantExpr::create(E.getConstant(), C), C);
+  RHS = E.getSymB();
+
+  return (A.isInSection() ? A.getSection().hasInstructions()
+	  : !A.getName().empty()) ||
+    (B.isInSection() ? B.getSection().hasInstructions()
+     : !B.getName().empty());
+}
+
+void MipsELFStreamer::emitValueImpl(const MCExpr *Value, unsigned Size, SMLoc Loc) {
+  const MCExpr *A, *B;
+  MipsTargetELFStreamer *ELFTargetStreamer =
+    static_cast<MipsTargetELFStreamer *>(getTargetStreamer());
+  enum Mips::Fixups reloc;
+  MCDataFragment *DF;
+
+  if (!ELFTargetStreamer->isNanoMipsEnabled() ||
+      !requiresFixups(getContext(), Value, A, B)) {
+    MCELFStreamer::emitValueImpl(Value, Size, Loc);
+    return;
+  }
+
+  DF = getOrCreateDataFragment();
+  MCStreamer::emitValueImpl(Value, Size, Loc);
+  flushPendingLabels(DF, DF->getContents().size());
+  MCDwarfLineEntry::make(this, getCurrentSectionOnly());
+
+  switch (Size) {
+  case 1:
+    reloc = Mips::fixup_NANOMIPS_UNSIGNED_8; break;
+  case 2:
+    reloc = Mips::fixup_NANOMIPS_UNSIGNED_16; break;
+  case 4:
+    reloc = Mips::fixup_NANOMIPS_32; break;
+  default:
+    report_fatal_error("Unhandled value size\n"); break;
+  }
+
+  DF->getFixups().push_back(MCFixup::create(
+	DF->getContents().size(), B, MCFixupKind(Mips::fixup_NANOMIPS_NEG), Loc));
+  DF->getFixups().push_back(MCFixup::create(
+	DF->getContents().size(), A, MCFixupKind(reloc), Loc));
+  DF->getContents().resize(DF->getContents().size() + Size, 0);
 }
 
 void MipsELFStreamer::emitIntValue(uint64_t Value, unsigned Size) {

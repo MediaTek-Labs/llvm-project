@@ -317,12 +317,14 @@ public:
 // This part is for ELF object output
 class MipsTargetELFStreamer : public MipsTargetStreamer {
   bool MicroMipsEnabled;
+  bool NanoMipsEnabled;
   const MCSubtargetInfo &STI;
   bool Pic;
   bool Pid;
 
 public:
   bool isMicroMipsEnabled() const { return MicroMipsEnabled; }
+  bool isNanoMipsEnabled() const { return NanoMipsEnabled; }
   MCELFStreamer &getStreamer();
   MipsTargetELFStreamer(MCStreamer &S, const MCSubtargetInfo &STI);
 

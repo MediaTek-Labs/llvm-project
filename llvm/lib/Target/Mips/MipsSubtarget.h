@@ -202,6 +202,9 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   // Assume 32-bit GOT.
   bool UseXGOT = false;
 
+  
+  bool UseAbsoluteJumpTables;
+
   // Use unaliged loads and stores (nanoMIPS only).
   bool UseUnalignedLoadStore = false;
 
@@ -347,6 +350,10 @@ public:
   bool useLongCalls() const { return UseLongCalls; }
 
   bool useXGOT() const { return UseXGOT; }
+
+  bool useAbsoluteJumpTables() const {
+    return UseAbsoluteJumpTables && hasNanoMips();
+  }
 
   bool useUnalignedLoadStore() const { return UseUnalignedLoadStore; };
 

@@ -105,7 +105,9 @@ public:
   InstructionCost getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
                                      CmpInst::Predicate VecPred,
                                      TTI::TargetCostKind CostKind,
-                                     const Instruction *I = nullptr);
+                                     const Instruction *I = nullptr,
+                                     ArrayRef<const Value *> Operands =
+                                         ArrayRef<const Value *>() );
   using BaseT::getVectorInstrCost;
   InstructionCost getVectorInstrCost(unsigned Opcode, Type *Val,
                                      TTI::TargetCostKind CostKind,

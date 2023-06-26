@@ -1292,7 +1292,8 @@ public:
       TTI::TargetCostKind CostKind,
       TTI::OperandValueInfo Op1Info = {TTI::OK_AnyValue, TTI::OP_None},
       TTI::OperandValueInfo Op2Info = {TTI::OK_AnyValue, TTI::OP_None},
-      const Instruction *I = nullptr) {
+      const Instruction *I = nullptr, ArrayRef<const Value *> Operands =
+                                       ArrayRef<const Value *>()) {
     const TargetLoweringBase *TLI = getTLI();
     int ISD = TLI->InstructionOpcodeToISD(Opcode);
     assert(ISD && "Invalid opcode");
@@ -1300,7 +1301,7 @@ public:
     // TODO: Handle other cost kinds.
     if (CostKind != TTI::TCK_RecipThroughput)
       return BaseT::getCmpSelInstrCost(Opcode, ValTy, CondTy, VecPred, CostKind,
-                                       Op1Info, Op2Info, I);
+                                       Op1Info, Op2Info, I, Operands);
 
     // Selects on vectors are actually vector selects.
     if (ISD == ISD::SELECT) {
@@ -1329,7 +1330,8 @@ public:
         CondTy = CondTy->getScalarType();
       InstructionCost Cost =
           thisT()->getCmpSelInstrCost(Opcode, ValVTy->getScalarType(), CondTy,
-                                      VecPred, CostKind, Op1Info, Op2Info, I);
+                                      VecPred, CostKind, Op1Info, Op2Info, I,
+                                      Operands);
 
       // Return the cost of multiple scalar invocation plus the cost of
       // inserting and extracting the values.

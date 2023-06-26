@@ -1431,13 +1431,13 @@ public:
   /// types are passed, \p VecPred must be used for all lanes.  For a
   /// comparison, the two operands are the natural values.  For a select, the
   /// two operands are the *value* operands, not the condition operand.
-  InstructionCost
-  getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
-                     CmpInst::Predicate VecPred,
-                     TTI::TargetCostKind CostKind = TTI::TCK_RecipThroughput,
-                     OperandValueInfo Op1Info = {OK_AnyValue, OP_None},
-                     OperandValueInfo Op2Info = {OK_AnyValue, OP_None},
-                     const Instruction *I = nullptr) const;
+  InstructionCost getCmpSelInstrCost(
+      unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
+      TTI::TargetCostKind CostKind = TTI::TCK_RecipThroughput,
+      OperandValueInfo Op1Info = {OK_AnyValue, OP_None},
+      OperandValueInfo Op2Info = {OK_AnyValue, OP_None},
+      const Instruction *I = nullptr,
+      ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) const;
 
   /// \return The expected cost of vector Insert and Extract.
   /// Use -1 to indicate that there is no information on the index value.
@@ -2181,7 +2181,9 @@ public:
   getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
                      CmpInst::Predicate VecPred, TTI::TargetCostKind CostKind,
                      OperandValueInfo Op1Info, OperandValueInfo Op2Info,
-                     const Instruction *I) = 0;
+                     const Instruction *I,
+                     ArrayRef<const Value *> Operands) = 0;
+
   virtual InstructionCost getVectorInstrCost(unsigned Opcode, Type *Val,
                                              TTI::TargetCostKind CostKind,
                                              unsigned Index, Value *Op0,
@@ -2897,9 +2899,10 @@ public:
                                      TTI::TargetCostKind CostKind,
                                      OperandValueInfo Op1Info,
                                      OperandValueInfo Op2Info,
-                                     const Instruction *I) override {
+                                     const Instruction *I,
+                                     ArrayRef<const Value *> Operands) override {
     return Impl.getCmpSelInstrCost(Opcode, ValTy, CondTy, VecPred, CostKind,
-                                   Op1Info, Op2Info, I);
+                                   Op1Info, Op2Info, I, Operands);
   }
   InstructionCost getVectorInstrCost(unsigned Opcode, Type *Val,
                                      TTI::TargetCostKind CostKind,

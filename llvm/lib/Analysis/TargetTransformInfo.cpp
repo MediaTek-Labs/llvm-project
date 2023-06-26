@@ -1067,11 +1067,13 @@ InstructionCost TargetTransformInfo::getCFInstrCost(
 InstructionCost TargetTransformInfo::getCmpSelInstrCost(
     unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
     TTI::TargetCostKind CostKind, OperandValueInfo Op1Info,
-    OperandValueInfo Op2Info, const Instruction *I) const {
+    OperandValueInfo Op2Info, const Instruction *I,
+    ArrayRef<const Value *> Operands) const {
   assert((I == nullptr || I->getOpcode() == Opcode) &&
          "Opcode should reflect passed instruction.");
   InstructionCost Cost = TTIImpl->getCmpSelInstrCost(
-      Opcode, ValTy, CondTy, VecPred, CostKind, Op1Info, Op2Info, I);
+      Opcode, ValTy, CondTy, VecPred, CostKind, Op1Info, Op2Info, I,
+      Operands);
   assert(Cost >= 0 && "TTI should not produce negative costs!");
   return Cost;
 }

@@ -1815,38 +1815,38 @@ class InsBase<string opstr, RegisterOperand RO, Operand PosOpnd,
 }
 
 // Atomic instructions with 2 source operands (ATOMIC_SWAP & ATOMIC_LOAD_*).
-class Atomic2Ops<PatFrag Op, RegisterClass DRC> :
+class Atomic2Ops<PatFrag Op, DAGOperand DRC> :
   PseudoSE<(outs DRC:$dst), (ins PtrRC:$ptr, DRC:$incr),
            [(set DRC:$dst, (Op iPTR:$ptr, DRC:$incr))]> {
   let hasNoSchedulingInfo = 1;
 }
 
-class Atomic2OpsPostRA<RegisterClass RC> :
+class Atomic2OpsPostRA<DAGOperand RC> :
   PseudoSE<(outs RC:$dst), (ins PtrRC:$ptr, RC:$incr), []> {
   let mayLoad = 1;
   let mayStore = 1;
 }
 
-class Atomic2OpsSubwordPostRA<RegisterClass RC> :
+class Atomic2OpsSubwordPostRA<DAGOperand RC> :
   PseudoSE<(outs RC:$dst), (ins PtrRC:$ptr, RC:$incr, RC:$mask, RC:$mask2,
                                 RC:$shiftamnt), []>;
 
 // Atomic Compare & Swap.
 // Atomic compare and swap is lowered into two stages. The first stage happens
 // during ISelLowering, which produces the PostRA version of this instruction.
-class AtomicCmpSwap<PatFrag Op, RegisterClass DRC> :
+class AtomicCmpSwap<PatFrag Op, DAGOperand DRC> :
   PseudoSE<(outs DRC:$dst), (ins PtrRC:$ptr, DRC:$cmp, DRC:$swap),
            [(set DRC:$dst, (Op iPTR:$ptr, DRC:$cmp, DRC:$swap))]> {
   let hasNoSchedulingInfo = 1;
 }
 
-class AtomicCmpSwapPostRA<RegisterClass RC> :
+class AtomicCmpSwapPostRA<DAGOperand RC> :
   PseudoSE<(outs RC:$dst), (ins PtrRC:$ptr, RC:$cmp, RC:$swap), []> {
   let mayLoad = 1;
   let mayStore = 1;
 }
 
-class AtomicCmpSwapSubwordPostRA<RegisterClass RC> :
+class AtomicCmpSwapSubwordPostRA<DAGOperand RC> :
   PseudoSE<(outs RC:$dst), (ins PtrRC:$ptr, RC:$mask, RC:$ShiftCmpVal,
                                 RC:$mask2, RC:$ShiftNewVal, RC:$ShiftAmt), []> {
   let mayLoad = 1;
@@ -1913,6 +1913,8 @@ def ADJCALLSTACKUP   : MipsPseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
                                   [(callseq_end timm:$amt1, timm:$amt2)]>;
 }
 
+def GPR32_M_NM : Operand<i32>, PointerLikeRegClass<4>;
+
 let usesCustomInserter = 1 in {
   def ATOMIC_LOAD_ADD_I8   : Atomic2Ops<atomic_load_add_i8, GPR32>;
   def ATOMIC_LOAD_ADD_I16  : Atomic2Ops<atomic_load_add_i16, GPR32>;
@@ -1955,45 +1957,45 @@ let usesCustomInserter = 1 in {
   def ATOMIC_LOAD_UMAX_I32 : Atomic2Ops<atomic_load_umax_i32, GPR32>;
 }
 
-def ATOMIC_LOAD_ADD_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_ADD_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_ADD_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_SUB_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_SUB_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_SUB_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_AND_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_AND_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_AND_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_OR_I8_POSTRA    : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_OR_I16_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_OR_I32_POSTRA   : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_XOR_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_XOR_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_XOR_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_NAND_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_NAND_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_NAND_I32_POSTRA : Atomic2OpsPostRA<GPR32>;
+def ATOMIC_LOAD_ADD_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_ADD_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_ADD_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_SUB_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_SUB_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_SUB_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_AND_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_AND_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_AND_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_OR_I8_POSTRA    : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_OR_I16_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_OR_I32_POSTRA   : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_XOR_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_XOR_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_XOR_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_NAND_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_NAND_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_NAND_I32_POSTRA : Atomic2OpsPostRA<GPR32_M_NM>;
 
-def ATOMIC_SWAP_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_SWAP_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_SWAP_I32_POSTRA : Atomic2OpsPostRA<GPR32>;
+def ATOMIC_SWAP_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_SWAP_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_SWAP_I32_POSTRA : Atomic2OpsPostRA<GPR32_M_NM>;
 
-def ATOMIC_CMP_SWAP_I8_POSTRA : AtomicCmpSwapSubwordPostRA<GPR32>;
-def ATOMIC_CMP_SWAP_I16_POSTRA : AtomicCmpSwapSubwordPostRA<GPR32>;
-def ATOMIC_CMP_SWAP_I32_POSTRA : AtomicCmpSwapPostRA<GPR32>;
+def ATOMIC_CMP_SWAP_I8_POSTRA : AtomicCmpSwapSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_CMP_SWAP_I16_POSTRA : AtomicCmpSwapSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_CMP_SWAP_I32_POSTRA : AtomicCmpSwapPostRA<GPR32_M_NM>;
 
-def ATOMIC_LOAD_MIN_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_MIN_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_MIN_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_MAX_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_MAX_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_MAX_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_UMIN_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_UMIN_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_UMIN_I32_POSTRA : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_UMAX_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_UMAX_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_UMAX_I32_POSTRA : Atomic2OpsPostRA<GPR32>;
+def ATOMIC_LOAD_MIN_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MIN_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MIN_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MAX_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MAX_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MAX_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMIN_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMIN_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMIN_I32_POSTRA : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMAX_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMAX_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMAX_I32_POSTRA : Atomic2OpsPostRA<GPR32_M_NM>;
 
 /// Pseudo instructions for loading and storing accumulator registers.
 let isPseudo = 1, isCodeGenOnly = 1, hasNoSchedulingInfo = 1 in {

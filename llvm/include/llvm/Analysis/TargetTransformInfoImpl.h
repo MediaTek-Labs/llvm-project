@@ -706,12 +706,11 @@ public:
     return 1;
   }
 
-  InstructionCost getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
-                                     CmpInst::Predicate VecPred,
-                                     TTI::TargetCostKind CostKind,
-                                     TTI::OperandValueInfo Op1Info,
-                                     TTI::OperandValueInfo Op2Info,
-                                     const Instruction *I) const {
+  InstructionCost getCmpSelInstrCost(
+      unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
+      TTI::TargetCostKind CostKind, TTI::OperandValueInfo Op1Info,
+      TTI::OperandValueInfo Op2Info, const Instruction *I,
+      ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) const {
     return 1;
   }
 

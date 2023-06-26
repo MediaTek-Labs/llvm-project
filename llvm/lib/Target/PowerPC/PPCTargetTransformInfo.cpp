@@ -656,14 +656,15 @@ InstructionCost PPCTTIImpl::getCastInstrCost(unsigned Opcode, Type *Dst,
 InstructionCost PPCTTIImpl::getCmpSelInstrCost(
     unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
     TTI::TargetCostKind CostKind, TTI::OperandValueInfo Op1Info,
-    TTI::OperandValueInfo Op2Info, const Instruction *I) {
+    TTI::OperandValueInfo Op2Info, const Instruction *I,
+    ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) {
   InstructionCost CostFactor =
       vectorCostAdjustmentFactor(Opcode, ValTy, nullptr);
   if (!CostFactor.isValid())
     return InstructionCost::getMax();
 
   InstructionCost Cost = BaseT::getCmpSelInstrCost(
-      Opcode, ValTy, CondTy, VecPred, CostKind, Op1Info, Op2Info, I);
+      Opcode, ValTy, CondTy, VecPred, CostKind, Op1Info, Op2Info, I, Operands);
   // TODO: Handle other cost kinds.
   if (CostKind != TTI::TCK_RecipThroughput)
     return Cost;

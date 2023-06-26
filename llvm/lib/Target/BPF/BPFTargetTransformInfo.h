@@ -49,12 +49,13 @@ public:
       TTI::TargetCostKind CostKind,
       TTI::OperandValueInfo Op1Info = {TTI::OK_AnyValue, TTI::OP_None},
       TTI::OperandValueInfo Op2Info = {TTI::OK_AnyValue, TTI::OP_None},
-      const llvm::Instruction *I = nullptr) {
+      const llvm::Instruction *I = nullptr,
+      ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) {
     if (Opcode == Instruction::Select)
       return SCEVCheapExpansionBudget.getValue();
 
     return BaseT::getCmpSelInstrCost(Opcode, ValTy, CondTy, VecPred, CostKind,
-                                     Op1Info, Op2Info, I);
+                                     Op1Info, Op2Info, I, Operands);
   }
 
   InstructionCost getArithmeticInstrCost(

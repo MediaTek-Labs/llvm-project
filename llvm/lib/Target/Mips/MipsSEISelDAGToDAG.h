@@ -138,6 +138,11 @@ private:
   bool SelectInlineAsmMemoryOperand(const SDValue &Op,
                                     InlineAsm::ConstraintCode ConstraintID,
                                     std::vector<SDValue> &OutOps) override;
+
+  void NanoMipsDAGPeepholes();
+
+  void PostprocessISelDAG() override;
+
 };
 
 class MipsSEDAGToDAGISelLegacy : public MipsDAGToDAGISelLegacy {

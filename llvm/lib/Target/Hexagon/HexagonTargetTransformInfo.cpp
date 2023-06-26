@@ -258,7 +258,9 @@ InstructionCost HexagonTTIImpl::getInterleavedMemoryOpCost(
 InstructionCost HexagonTTIImpl::getCmpSelInstrCost(
     unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
     TTI::TargetCostKind CostKind, TTI::OperandValueInfo Op1Info,
-    TTI::OperandValueInfo Op2Info, const Instruction *I) {
+    TTI::OperandValueInfo Op2Info, const Instruction *I,
+    const Instruction *I,
+    ArrayRef<const Value *>Operands) {
   if (ValTy->isVectorTy() && CostKind == TTI::TCK_RecipThroughput) {
     if (!isHVXVectorType(ValTy) && ValTy->isFPOrFPVectorTy())
       return InstructionCost::getMax();
@@ -267,7 +269,7 @@ InstructionCost HexagonTTIImpl::getCmpSelInstrCost(
       return LT.first + FloatFactor * getTypeNumElements(ValTy);
   }
   return BaseT::getCmpSelInstrCost(Opcode, ValTy, CondTy, VecPred, CostKind,
-                                   Op1Info, Op2Info, I);
+                                   Op1Info, Op2Info, I, Operands);
 }
 
 InstructionCost HexagonTTIImpl::getArithmeticInstrCost(

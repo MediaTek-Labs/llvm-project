@@ -249,6 +249,9 @@ class TargetRegisterClass;
       DOUBLE_SELECT_I,
       DOUBLE_SELECT_I64,
 
+      // nanoMIPS br_jt.
+      BR_JT,
+
       // Load/Store Left/Right nodes.
       FIRST_MEMORY_OPCODE,
       LWL = FIRST_MEMORY_OPCODE,
@@ -584,6 +587,7 @@ class TargetRegisterClass;
     SDValue lowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerBlockAddress(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const;
+    SDValue lowerBR_JT(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerJumpTable(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerSELECT(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerSETCC(SDValue Op, SelectionDAG &DAG) const;

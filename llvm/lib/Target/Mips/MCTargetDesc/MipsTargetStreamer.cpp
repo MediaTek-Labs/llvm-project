@@ -917,10 +917,16 @@ void MipsTargetELFStreamer::finish() {
   MCA.registerSection(DataSection);
   MCSection &BSSSection = *OFI.getBSSSection();
   MCA.registerSection(BSSSection);
-
-  TextSection.ensureMinAlignment(Align(16));
-  DataSection.ensureMinAlignment(Align(16));
-  BSSSection.ensureMinAlignment(Align(16));
+  if (isNanoMipsEnabled()) {
+    TextSection.ensureMinAlignment(Align(2u));
+    DataSection.ensureMinAlignment(Align(4u));
+    BSSSection.ensureMinAlignment(Align(4u));
+  }
+  else {
+    TextSection.ensureMinAlignment(Align(16u));
+    DataSection.ensureMinAlignment(Align(16u));
+    BSSSection.ensureMinAlignment(Align(16u));
+  }
 
   if (RoundSectionSizes) {
     // Make sections sizes a multiple of the alignment. This is useful for
@@ -983,11 +989,13 @@ void MipsTargetELFStreamer::finish() {
 
   MCA.setELFHeaderEFlags(EFlags);
 
-  // Emit all the option records.
-  // At the moment we are only emitting .Mips.options (ODK_REGINFO) and
-  // .reginfo.
-  MipsELFStreamer &MEF = static_cast<MipsELFStreamer &>(Streamer);
-  MEF.EmitMipsOptionRecords();
+  if (!isNanoMipsEnabled()) {
+    // Emit all the option records.
+    // At the moment we are only emitting .Mips.options (ODK_REGINFO) and
+    // .reginfo.
+    MipsELFStreamer &MEF = static_cast<MipsELFStreamer &>(Streamer);
+    MEF.EmitMipsOptionRecords();
+  }
 
   emitMipsAbiFlags();
 }
@@ -1048,30 +1056,32 @@ void MipsTargetELFStreamer::emitDirectiveEnd(StringRef Name) {
   MCContext &Context = MCA.getContext();
   MCStreamer &OS = getStreamer();
 
-  MCSectionELF *Sec = Context.getELFSection(".pdr", ELF::SHT_PROGBITS, 0);
-
   MCSymbol *Sym = Context.getOrCreateSymbol(Name);
   const MCSymbolRefExpr *ExprRef =
       MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Context);
 
-  MCA.registerSection(*Sec);
-  Sec->setAlignment(Align(4));
+  if (!isNanoMipsEnabled()) {
+    MCSectionELF *Sec = Context.getELFSection(".pdr", ELF::SHT_PROGBITS, 0);
+    MCA.registerSection(*Sec);
+    Sec->setAlignment(Align(4));
 
   OS.pushSection();
 
   OS.switchSection(Sec);
 
-  OS.emitValueImpl(ExprRef, 4);
+    OS.emitValueImpl(ExprRef, 4);
 
-  OS.emitIntValue(GPRInfoSet ? GPRBitMask : 0, 4); // reg_mask
-  OS.emitIntValue(GPRInfoSet ? GPROffset : 0, 4);  // reg_offset
+    OS.emitIntValue(GPRInfoSet ? GPRBitMask : 0, 4); // reg_mask
+    OS.emitIntValue(GPRInfoSet ? GPROffset : 0, 4);  // reg_offset
 
-  OS.emitIntValue(FPRInfoSet ? FPRBitMask : 0, 4); // fpreg_mask
-  OS.emitIntValue(FPRInfoSet ? FPROffset : 0, 4);  // fpreg_offset
+    OS.emitIntValue(FPRInfoSet ? FPRBitMask : 0, 4); // fpreg_mask
+    OS.emitIntValue(FPRInfoSet ? FPROffset : 0, 4);  // fpreg_offset
 
-  OS.emitIntValue(FrameInfoSet ? FrameOffset : 0, 4); // frame_offset
-  OS.emitIntValue(FrameInfoSet ? FrameReg : 0, 4);    // frame_reg
-  OS.emitIntValue(FrameInfoSet ? ReturnReg : 0, 4);   // return_reg
+    OS.emitIntValue(FrameInfoSet ? FrameOffset : 0, 4); // frame_offset
+    OS.emitIntValue(FrameInfoSet ? FrameReg : 0, 4);    // frame_reg
+    OS.emitIntValue(FrameInfoSet ? ReturnReg : 0, 4);   // return_reg
+    OS.popSection();
+  }
 
   // The .end directive marks the end of a procedure. Invalidate
   // the information gathered up until this point.
@@ -1374,8 +1384,16 @@ void MipsTargetELFStreamer::emitMipsAbiFlags() {
   MCAssembler &MCA = getStreamer().getAssembler();
   MCContext &Context = MCA.getContext();
   MCStreamer &OS = getStreamer();
-  MCSectionELF *Sec = Context.getELFSection(
+  MCSectionELF *Sec;
+
+  if (isNanoMipsEnabled()) {
+  Sec = Context.getELFSection(
+      ".nanoMIPS.abiflags", ELF::SHT_NANOMIPS_ABIFLAGS, ELF::SHF_ALLOC, 24);
+  }
+  else {
+  Sec = Context.getELFSection(
       ".MIPS.abiflags", ELF::SHT_MIPS_ABIFLAGS, ELF::SHF_ALLOC, 24);
+  }
   MCA.registerSection(*Sec);
   Sec->setAlignment(Align(8));
   OS.switchSection(Sec);

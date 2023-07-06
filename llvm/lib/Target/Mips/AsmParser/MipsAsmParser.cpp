@@ -360,6 +360,9 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool expandSaaAddr(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
                      const MCSubtargetInfo *STI);
 
+  bool expandAlignNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+                     const MCSubtargetInfo *STI);
+
   bool reportParseError(const Twine &ErrorMsg);
   bool reportParseError(SMLoc Loc, const Twine &ErrorMsg);
 
@@ -3047,6 +3050,8 @@ MipsAsmParser::tryExpandInstruction(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
   case Mips::SaaAddr:
   case Mips::SaadAddr:
     return expandSaaAddr(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
+  case Mips::ALIGN_NM:
+    return expandAlignNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   }
 }
 
@@ -6315,6 +6320,29 @@ bool MipsAsmParser::expandSaaAddr(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     return true;
 
   TOut.emitRR(Opcode, RtReg, ATReg, IDLoc, STI);
+  return false;
+}
+
+/// Expand ALIGN as EXTW by mapping byte position to shift
+bool MipsAsmParser::expandAlignNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+				  const MCSubtargetInfo *STI) {
+  assert(Inst.getNumOperands() == 4 && "expected three operands");
+  assert(Inst.getOperand(0).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(1).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(2).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(3).isImm() && "expected immediate operand kind");
+  assert(isUInt<2>(Inst.getOperand(3).getImm()) && "expected immediate operand [0..3]");
+
+  MipsTargetStreamer &TOut = getTargetStreamer();
+  unsigned rd = Inst.getOperand(0).getReg();
+  unsigned rs = Inst.getOperand(1).getReg();
+  unsigned rt = Inst.getOperand(2).getReg();
+  unsigned bp = Inst.getOperand(3).getImm();
+
+  if (bp != 0)
+    TOut.emitRRRI(Mips::EXTW_NM, rd, rs, rt, ((4 - bp) << 3), IDLoc, STI);
+  else
+    TOut.emitRR(Mips::MOVE_NM, rd, rt, IDLoc, STI);
   return false;
 }
 

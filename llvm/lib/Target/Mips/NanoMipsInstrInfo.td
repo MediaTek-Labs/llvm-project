@@ -75,8 +75,8 @@ def imm7M1To126 : IntImmLeaf<i32, [{
 // Immediate range for unsigned 18-bit
 def imm32ZExt18 : IntImmLeaf<i32, [{ return isInt<18>(Imm.getZExtValue());}]>;
 
-// Immediate range for unsigned 18-bit
-def imm32ZExt4 : IntImmLeaf<i32, [{ return isInt<4>(Imm.getZExtValue());}]>;
+// Immediate range for signed 4-bit
+def imm32ZExt4 : IntImmLeaf<i32, [{ return isInt<4>(Imm.getSExtValue());}]>;
 
 // Immediate range for unsigned 21-bit word-aligned
 def imm32ZExt21s2 : IntImmLeaf<i32, [{ return isInt<21>(Imm.getZExtValue()) &&
@@ -1508,13 +1508,13 @@ class LoadAddressAbsNM<string opstr, RegisterOperand RO, DAGOperand MO, ComplexP
 // 16-bit register operations
 def NOT16_NM : ArithLogicR16U_Desc<"not", GPRNM16R3Opnd, not>,
 	       ArithLogicR16_Enc<0b00>;
-let isCommutable=1 in {
-def XOR16_NM : ArithLogicR16_Desc<"xor", GPRNM16R3Opnd, xor>,
-	       ArithLogicR16_Enc<0b01>;
-def AND16_NM : ArithLogicR16_Desc<"and", GPRNM16R3Opnd, and>,
-	       ArithLogicR16_Enc<0b10>;
-def OR16_NM  : ArithLogicR16_Desc<"or	", GPRNM16R3Opnd, or>,
-	       ArithLogicR16_Enc<0b11>;
+let isCommutable=1, TwoOperandAliasConstraint = "$rt = $dst" in {
+    def XOR16_NM : ArithLogicR16_Desc<"xor", GPRNM16R3Opnd, xor>,
+	           ArithLogicR16_Enc<0b01>;
+    def AND16_NM : ArithLogicR16_Desc<"and", GPRNM16R3Opnd, and>,
+	           ArithLogicR16_Enc<0b10>;
+    def OR16_NM  : ArithLogicR16_Desc<"or", GPRNM16R3Opnd, or>,
+	           ArithLogicR16_Enc<0b11>;
 }
 
 class CommuteBinOpAlias<string op, InstNM OpCode, RegisterOperand RO> :
@@ -1541,6 +1541,7 @@ def ANDI16_NM : ArithLogicAsmNM<"andi", uimm4mask_nm, GPRNM16R3Opnd,
 				ANDI16_Enc<0b11100>;
 
 // _POOL32A0_0 pool of instructions.
+let TwoOperandAliasConstraint = "$rs = $rd" in {
 def SLLV_NM  : ArithLogicR32_Desc<"sllv", GPRNM32Opnd, shl>,
 	       ArithLogicR32_Enc<0b000010>;
 def SRLV_NM  : ArithLogicR32_Desc<"srlv", GPRNM32Opnd, srl>,
@@ -1587,10 +1588,12 @@ def MODU_NM  : DivMod<"modu", urem>,
 	       ArithLogicR32_Enc<0b011111>;
 def SOV_NM   : ArithLogicR32_Desc<"sov", GPRNM32Opnd>,
 	       ArithLogicR32_Enc<0b111110>;
-
+}
 def NOT_NM   : MipsInstAlias<"not $rt, $rs",
 			    (NOR_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, ZERO_NM)>,
 			    ISA_NANOMIPS;
+
+def : NMPat<(not GPRNM32Opnd:$rt), (NOR_NM GPRNM32Opnd:$rt, ZERO_NM)>;
 
 // 16-bit register operations
 let isCommutable=1 in {
@@ -1609,8 +1612,13 @@ def : CommuteBinOpAlias<"mul", MUL4x4_NM, GPRNM4Opnd>;
 
 
 // P.U12 pool of instructions
+let TwoOperandAliasConstraint = "$rs = $rt" in {
 def ORI_NM   : CondLogicI32_Desc<"ori", uimm12_nm, GPRNM32Opnd, imm32ZExt12, or>,
 	       CondLogicI32_Enc<0b0000>;
+}
+def : NanoMipsInstAlias<"or $rt, $imm",
+			(ORI_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rt, uimm12_nm:$imm), 0>;
+
 def XORI_NM  : CondLogicI32_Desc<"xori", uimm12_nm, GPRNM32Opnd, imm32ZExt12, xor>,
 	       CondLogicI32_Enc<0b0001>;
 def ANDI_NM  : CondLogicI32_Desc<"andi", uimm12_nm, GPRNM32Opnd, imm32ZExt12ANDI, and>,
@@ -1651,6 +1659,8 @@ def ADDIU_NM : AddImmediate<"addiu", uimm16_nm, GPRNM32NZOpnd, GPRNM32Opnd,
   let Inst{15...0} = imm;
   let TwoOperandAliasConstraint = "$rt = $rs";
 }
+def : NanoMipsInstAlias<"addu $rt, $rs, $imm",
+		        (ADDIU_NM GPRNM32NZOpnd:$rt, GPRNM32Opnd:$rs, uimm16_nm:$imm), 0>;
 
 def LI_NM : MipsInstAlias<"li $rt, $imm",
 			  (ADDIU_NM GPRNM32NZOpnd:$rt, ZERO_NM, uimm16_nm:$imm)>,
@@ -2768,6 +2778,10 @@ def EXTW_NM : InstNM<(outs GPRNM32Opnd:$rd),
   let Inst{15...11} = rd;
   let Inst{10...6} = shift;
 }
+
+def ALIGN_NM : NanoMipsAsmPseudoInst<(outs GPRNM32Opnd:$rd),
+			(ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, uimm2_nm:$bp),
+			"align\t$rd, $rs, $rt, $bp">;
 
 class ROTX_Enc : _Pool_P_U12<0b1101> {
   bits<5> rt;

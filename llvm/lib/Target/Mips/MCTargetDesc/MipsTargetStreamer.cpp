@@ -252,6 +252,12 @@ void MipsTargetStreamer::emitRRI(unsigned Opcode, unsigned Reg0, unsigned Reg1,
   emitRRX(Opcode, Reg0, Reg1, MCOperand::createImm(Imm), IDLoc, STI);
 }
 
+void MipsTargetStreamer::emitRRRI(unsigned Opcode, unsigned Reg0, unsigned Reg1,
+                                 unsigned Reg2, int16_t Imm, SMLoc IDLoc,
+                                 const MCSubtargetInfo *STI) {
+  emitRRRX(Opcode, Reg0, Reg1, Reg2, MCOperand::createImm(Imm), IDLoc, STI);
+}
+
 void MipsTargetStreamer::emitRRIII(unsigned Opcode, unsigned Reg0,
                                    unsigned Reg1, int16_t Imm0, int16_t Imm1,
                                    int16_t Imm2, SMLoc IDLoc,

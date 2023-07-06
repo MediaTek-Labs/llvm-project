@@ -137,6 +137,8 @@ public:
                SMLoc IDLoc, const MCSubtargetInfo *STI);
   void emitRRRX(unsigned Opcode, unsigned Reg0, unsigned Reg1, unsigned Reg2,
                 MCOperand Op3, SMLoc IDLoc, const MCSubtargetInfo *STI);
+  void emitRRRI(unsigned Opcode, unsigned Reg0, unsigned Reg1, unsigned Reg2,
+		int16_t Imm, SMLoc IDLoc, const MCSubtargetInfo *STI);
   void emitRRI(unsigned Opcode, unsigned Reg0, unsigned Reg1, int16_t Imm,
                SMLoc IDLoc, const MCSubtargetInfo *STI);
   void emitRRIII(unsigned Opcode, unsigned Reg0, unsigned Reg1, int16_t Imm0,

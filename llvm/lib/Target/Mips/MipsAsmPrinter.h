@@ -85,7 +85,8 @@ private:
 
   void emitJumpTableDir(MCStreamer &OutStreamer, unsigned int EntrySize,
                         unsigned int EntryNum, bool Signed);
-
+  void emitJumpTableEntry(MCStreamer &OutStreamer, unsigned int EntrySize,
+                        const MCExpr *Entry, bool Signed);
   // lowerOperand - Convert a MachineOperand into the equivalent MCOperand.
   bool lowerOperand(const MachineOperand &MO, MCOperand &MCOp);
 

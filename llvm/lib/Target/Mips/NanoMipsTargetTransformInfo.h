@@ -36,10 +36,12 @@ class NanoMipsTTIImpl : public BasicTTIImplBase<NanoMipsTTIImpl> {
   const MipsSubtarget *getST() const { return ST; }
   const MipsTargetLowering *getTLI() const { return TLI; }
 
+  const Function *F;
+
 public:
   explicit NanoMipsTTIImpl(const MipsTargetMachine *TM, const Function &F)
       : BaseT(TM, F.getParent()->getDataLayout()), ST(TM->getSubtargetImpl(F)),
-        TLI(ST->getTargetLowering()) {}
+        TLI(ST->getTargetLowering()), F(&F) {}
 
   InstructionCost getIntImmCost(const APInt &Imm, Type *Ty,
                                 TTI::TargetCostKind CostKind);
@@ -59,6 +61,8 @@ public:
       TTI::OperandValueInfo Op2Info = {TTI::OK_AnyValue, TTI::OP_None},
       const Instruction *I = nullptr,
       ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) const;
+
+  bool hasDivRemOp(Type *DataType, bool IsSigned);
 };
 
 } // end namespace llvm

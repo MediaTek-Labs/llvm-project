@@ -126,7 +126,7 @@ unsigned MipsABIInfo::GetPtrAddiuOp(int Offset) const {
 }
 
 bool MipsABIInfo::IsPtrAddiuOffset(int Offset) const {
-  return IsP32() ? (isUInt<16>(Offset) || isUInt<12>(-Offset)) : isInt<16>(Offset);
+  return IsP32() ? isInt<32>(Offset) : isInt<16>(Offset);
 }
 
 unsigned MipsABIInfo::GetPtrSubuOp() const {

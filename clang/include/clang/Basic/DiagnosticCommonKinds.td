@@ -329,6 +329,8 @@ def err_opt_not_valid_on_target : Error<
   "option '%0' cannot be specified on this target">;
 def err_invalid_feature_combination : Error<
   "invalid feature combination: %0">;
+def err_feature_not_valid_on_target : Error<
+  "feature '%0' cannot be specified on this target">;
 
 // Source manager
 def err_cannot_open_file : Error<"cannot open file '%0': %1">, DefaultFatal;

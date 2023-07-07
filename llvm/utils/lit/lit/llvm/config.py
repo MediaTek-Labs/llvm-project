@@ -175,7 +175,9 @@ class LLVMConfig(object):
         if not user_is_root():
             features.add("non-root-user")
 
-        use_gmalloc = lit_config.params.get("use_gmalloc", None)
+        features.add('nanomips')
+
+        use_gmalloc = lit_config.params.get('use_gmalloc', None)
         if lit.util.pythonize_bool(use_gmalloc):
             # Allow use of an explicit path for gmalloc library.
             # Will default to '/usr/lib/libgmalloc.dylib' if not set.

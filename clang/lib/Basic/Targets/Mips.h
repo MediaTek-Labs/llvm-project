@@ -68,20 +68,18 @@ public:
         IsSingleFloat(false), IsNoABICalls(false), CanUseBSDABICalls(false),
         FloatABI(HardFloat), DspRev(NoDSP), HasMSA(false), DisableMadd4(false),
         UseIndirectJumpHazard(false), FPMode(FPXX) {
-
     TheCXXABI.set(TargetCXXABI::GenericMIPS);
 
-    if (Triple.isMIPS32()) 
+    if (Triple.isMIPS32()) {
       setABI("o32");
-    else if (Triple.isABIN32())
-      setABI("n32");
-    else if (Triple.isNanoMips()) {
+    } else if (Triple.isNanoMips()) {
       setABI("p32");
       IsNanoMips = true;
-    } else if (Triple.getEnvironment() == llvm::Triple::GNUABIN32)
+    } else if (Triple.getEnvironment() == llvm::Triple::GNUABIN32) {
       setABI("n32");
-    else
+    } else {
       setABI("n64");
+    }
 
     CPU = ABI == "p32" ? "nanomips" : ABI == "o32" ? "mips32r2" : "mips64r2";
 
@@ -349,10 +347,7 @@ public:
     IsNan2008 = isIEEE754_2008Default();
     IsAbs2008 = isIEEE754_2008Default();
     IsSingleFloat = false;
-    if (IsNanoMips)
-      FloatABI = SoftFloat;
-    else
-      FloatABI = HardFloat;
+    FloatABI = IsNanoMips ? SoftFloat : HardFloat;
     DspRev = NoDSP;
     NoOddSpreg = false;
     FPMode = getDefaultFPMode();

@@ -3026,12 +3026,9 @@ InstructionCost X86TTIImpl::getCastInstrCost(unsigned Opcode, Type *Dst,
 }
 
 InstructionCost X86TTIImpl::getCmpSelInstrCost(
-    unsigned Opcode, Type *ValTy,
-    Type *CondTy,
-    CmpInst::Predicate VecPred,
-    TTI::TargetCostKind CostKind,
-    const Instruction *I,
-    ArrayRef<const Value *> Operands = ArrayRef<const Value *>() ) {
+    unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
+    TTI::TargetCostKind CostKind, const Instruction *I,
+    ArrayRef<const Value *> Operands) {
   // Early out if this type isn't scalar/vector integer/float.
   if (!(ValTy->isIntOrIntVectorTy() || ValTy->isFPOrFPVectorTy()))
     return BaseT::getCmpSelInstrCost(Opcode, ValTy, CondTy, VecPred, CostKind,

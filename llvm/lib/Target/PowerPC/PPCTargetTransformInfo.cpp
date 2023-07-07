@@ -657,13 +657,10 @@ InstructionCost PPCTTIImpl::getCastInstrCost(unsigned Opcode, Type *Dst,
 }
 
 InstructionCost PPCTTIImpl::getCmpSelInstrCost(
-    unsigned Opcode, Type *ValTy,
-    Type *CondTy,
-    CmpInst::Predicate VecPred,
-    TTI::TargetCostKind CostKind,
-    const Instruction *I,
-    ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) {
-     InstructionCost CostFactor =
+    unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
+    TTI::TargetCostKind CostKind, const Instruction *I,
+    ArrayRef<const Value *> Operands) {
+  InstructionCost CostFactor =
       vectorCostAdjustmentFactor(Opcode, ValTy, nullptr);
   if (!CostFactor.isValid())
     return InstructionCost::getMax(); 

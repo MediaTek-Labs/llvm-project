@@ -2329,15 +2329,59 @@ SDValue MipsTargetLowering::lowerBRCOND(SDValue Op, SelectionDAG &DAG) const {
   // The first operand is the chain, the second is the condition, the third is
   // the block to branch to if the condition is true.
   SDValue Chain = Op.getOperand(0);
+  SDValue Cond = Op.getOperand(1);
   SDValue Dest = Op.getOperand(2);
-  SDLoc DL(Op);
+  SDNode *Node = Op.getNode();
 
+  SDLoc DL(Op);
   assert(!Subtarget.hasMips32r6() && !Subtarget.hasMips64r6());
   SDValue CondRes = createFPCmp(DAG, Op.getOperand(1));
-
   // Return if flag is not set by a floating point comparison.
-  if (CondRes.getOpcode() != MipsISD::FPCmp)
-    return Op;
+  if (CondRes.getOpcode() != MipsISD::FPCmp) {
+    // For NanoMips we can try to optimize conditional branches. Try to
+    // recognize the following pattern:
+    // COND:      CondV, TrueV, FalseV
+    // i32 = select t25, t22, t23
+    // CondV:  t25: i32 = setcc t4, t8, seteq:ch
+    // TrueV:  t22: i32 = setcc t2, t6, setult:ch
+    // FalseV: t23: i32 = setcc t4, t8, setlt:ch
+    if (!(Subtarget.hasNanoMips() && DAG.shouldOptForSize() &&
+          Cond.getOpcode() == ISD::SELECT && Node->hasOneUse()))
+      return Op;
+    auto BrNode = *Node->use_begin();
+    if (BrNode->getOpcode() != ISD::BR)
+      return Op;
+    SDValue ThenDest = BrNode->getOperand(1);
+    //DAG.DeleteNode(BrNode);
+    SDValue CondV = Cond.getOperand(0);
+    SDValue TrueV = Cond.getOperand(1);
+    SDValue FalseV = Cond.getOperand(2);
+    if (CondV.getOpcode() != ISD::SETCC || TrueV.getOpcode() != ISD::SETCC ||
+        FalseV.getOpcode() != ISD::SETCC)
+      return Op;
+    CondCodeSDNode *condCodeCV = dyn_cast<CondCodeSDNode>(CondV.getOperand(2));
+    CondCodeSDNode *condCodeTV = dyn_cast<CondCodeSDNode>(TrueV.getOperand(2));
+    CondCodeSDNode *condCodeFV = dyn_cast<CondCodeSDNode>(FalseV.getOperand(2));
+    if (!condCodeCV || !condCodeTV || !condCodeFV)
+      return Op;
+    // Form NanoMips conditional branch nodes:
+    SDValue BrFalse =
+        DAG.getNode(ISD::BRCOND, DL, MVT::Other, Chain, FalseV, Dest);
+    SDValue BrCond =
+        DAG.getNode(ISD::BRCOND, DL, MVT::Other, BrFalse,
+                    DAG.getSetCC(DL, CondV->getValueType(0),
+                                 CondV->getOperand(0), CondV->getOperand(1),
+                                 ISD::getSetCCInverse(
+                                     condCodeCV->get(),
+                                     CondV->getOperand(0)->getValueType(0))),
+                    ThenDest);
+    SDValue BrTrue =
+        DAG.getNode(ISD::BRCOND, DL, MVT::Other, BrCond, TrueV, Dest);
+    // Instruction selection will be able to match these BRCOND nodes with the
+    // nanoMIPS conditional branch instructions.
+
+    return BrTrue;
+  }
 
   SDValue CCNode  = CondRes.getOperand(2);
   Mips::CondCode CC =

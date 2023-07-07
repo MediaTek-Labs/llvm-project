@@ -199,11 +199,10 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
 
   // Assume 32-bit GOT.
   bool UseXGOT = false;
-
+  
   // Disable unaligned load store for r6.
   bool StrictAlign;
-  
-  bool UseAbsoluteJumpTables;
+  bool UseAbsoluteJumpTables = false;
 
   // Use unaliged loads and stores (nanoMIPS only).
   bool UseUnalignedLoadStore = false;

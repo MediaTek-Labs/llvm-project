@@ -71,12 +71,15 @@ public:
 
     TheCXXABI.set(TargetCXXABI::GenericMIPS);
 
-    if (Triple.isMIPS32())
+    if (Triple.isMIPS32()) 
       setABI("o32");
     else if (Triple.isABIN32())
       setABI("n32");
-    else if (Triple.isNanoMips())
+    else if (Triple.isNanoMips()) {
       setABI("p32");
+      IsNanoMips = true;
+    } else if (Triple.getEnvironment() == llvm::Triple::GNUABIN32)
+      setABI("n32");
     else
       setABI("n64");
 

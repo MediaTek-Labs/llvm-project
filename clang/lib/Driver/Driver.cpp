@@ -5491,7 +5491,8 @@ class ToolSelector final {
         return nullptr;
     }
 
-    if (!T->hasIntegratedAssembler())
+    if (!T->hasIntegratedAssembler() ||
+	(TC.getTriple().isNanoMips() && TC.useIntegratedAs()))
       return nullptr;
 
     Inputs = CJ->getInputs();
@@ -5514,7 +5515,8 @@ class ToolSelector final {
     if (!T)
       return nullptr;
 
-    if (!T->hasIntegratedAssembler())
+    if (!T->hasIntegratedAssembler() ||
+	(TC.getTriple().isNanoMips() && TC.useIntegratedAs()))
       return nullptr;
 
     Inputs = BJ->getInputs();

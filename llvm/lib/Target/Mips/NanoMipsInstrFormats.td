@@ -44,6 +44,20 @@ class PseudoInstNM<dag outs, dag ins, list<dag> pattern,
   let isPseudo = 1;
 }
 
+class NanoMipsAsmPseudoInst<dag outs, dag ins, string asmstr> :
+	 InstNM<outs, ins, asmstr, [], IIPseudo> {
+  let isPseudo = 1;
+  let hasNoSchedulingInfo = 1;
+  let Pattern = [];
+}
+
 class NMPat<dag pattern, dag result> : Pat<pattern, result>, PredicateControl,
                                        ISA_NANOMIPS;
 
+class NanoMipsInstAlias<string asm, dag result, bit emit = 0b1>:
+	InstAlias<asm, result, emit>, ISA_NANOMIPS;
+
+class NanoMipsMTInst : InstNM<(outs), (ins), "", [], NoItinerary>, InstSize32 {
+  bit hasSideEffects = 1;
+  bit isNotDuplicable = 1;
+}

@@ -354,6 +354,9 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool expandMXTRAlias(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
                        const MCSubtargetInfo *STI);
 
+  bool expandMXTRAliasNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+                         const MCSubtargetInfo *STI);
+
   bool expandSaaAddr(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
                      const MCSubtargetInfo *STI);
 
@@ -3034,6 +3037,13 @@ MipsAsmParser::tryExpandInstruction(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
   case Mips::MFTHC1:  case Mips::MTTHC1:
   case Mips::CFTC1:   case Mips::CTTC1:
     return expandMXTRAlias(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
+  case Mips::MFTC0_NM:   case Mips::MTTC0_NM:
+  case Mips::MFTGPR_NM:  case Mips::MTTGPR_NM:
+  case Mips::MFTLO_NM:   case Mips::MTTLO_NM:
+  case Mips::MFTHI_NM:   case Mips::MTTHI_NM:
+  case Mips::MFTACX_NM:  case Mips::MTTACX_NM:
+  case Mips::MFTDSP_NM:  case Mips::MTTDSP_NM:
+    return expandMXTRAliasNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   case Mips::SaaAddr:
   case Mips::SaadAddr:
     return expandSaaAddr(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
@@ -6127,6 +6137,150 @@ bool MipsAsmParser::expandMXTRAlias(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
                                                  : Inst.getOperand(0).getReg());
 
   TOut.emitRRIII(IsMFTR ? Mips::MFTR : Mips::MTTR, Op0, Op1, u, sel, h, IDLoc,
+                 STI);
+  return false;
+}
+
+// Map the DSP accumulator and control register to the corresponding gpr
+// operand. Unlike the other alias, the m(f|t)t(lo|hi|acx) instructions
+// do not map the DSP registers contigously to gpr registers.
+static unsigned getRegisterForMxtrDSPNM(MCInst &Inst, bool IsMFDSP) {
+  switch (Inst.getOpcode()) {
+  case Mips::MFTLO_NM:
+  case Mips::MTTLO_NM:
+    switch (Inst.getOperand(IsMFDSP ? 1 : 0).getReg()) {
+    case Mips::AC0:
+      return Mips::ZERO_NM;
+    case Mips::AC1:
+      return Mips::A0_NM;
+    case Mips::AC2:
+      return Mips::A4_NM;
+    case Mips::AC3:
+      return Mips::T0_NM;
+    default:
+      llvm_unreachable("Unknown register for 'mttr' alias!");
+    }
+  case Mips::MFTHI_NM:
+  case Mips::MTTHI_NM:
+    switch (Inst.getOperand(IsMFDSP ? 1 : 0).getReg()) {
+    case Mips::AC0:
+      return Mips::AT_NM;
+    case Mips::AC1:
+      return Mips::A1_NM;
+    case Mips::AC2:
+      return Mips::A5_NM;
+    case Mips::AC3:
+      return Mips::T1_NM;
+    default:
+      llvm_unreachable("Unknown register for 'mttr' alias!");
+    }
+  case Mips::MFTACX_NM:
+  case Mips::MTTACX_NM:
+    switch (Inst.getOperand(IsMFDSP ? 1 : 0).getReg()) {
+    case Mips::AC0:
+      return Mips::T4_NM;
+    case Mips::AC1:
+      return Mips::A2_NM;
+    case Mips::AC2:
+      return Mips::A6_NM;
+    case Mips::AC3:
+      return Mips::T2_NM;
+    default:
+      llvm_unreachable("Unknown register for 'mttr' alias!");
+    }
+  case Mips::MFTDSP_NM:
+  case Mips::MTTDSP_NM:
+    return Mips::S0_NM;
+  default:
+      llvm_unreachable("Unknown instruction for 'mttr' dsp alias!");
+  }
+}
+
+// Map the coprocessor operand the corresponding gpr register operand.
+static unsigned getRegisterForMxtrC0NM(MCInst &Inst, bool IsMFTC0) {
+  switch (Inst.getOperand(IsMFTC0 ? 1 : 0).getReg()) {
+    case Mips::COP00:  return Mips::ZERO_NM;
+    case Mips::COP01:  return Mips::AT_NM;
+    case Mips::COP02:  return Mips::T4_NM;
+    case Mips::COP03:  return Mips::T5_NM;
+    case Mips::COP04:  return Mips::A0_NM;
+    case Mips::COP05:  return Mips::A1_NM;
+    case Mips::COP06:  return Mips::A2_NM;
+    case Mips::COP07:  return Mips::A3_NM;
+    case Mips::COP08:  return Mips::A4_NM;
+    case Mips::COP09:  return Mips::A5_NM;
+    case Mips::COP010: return Mips::A6_NM;
+    case Mips::COP011: return Mips::A7_NM;
+    case Mips::COP012: return Mips::T0_NM;
+    case Mips::COP013: return Mips::T1_NM;
+    case Mips::COP014: return Mips::T2_NM;
+    case Mips::COP015: return Mips::T3_NM;
+    case Mips::COP016: return Mips::S0_NM;
+    case Mips::COP017: return Mips::S1_NM;
+    case Mips::COP018: return Mips::S2_NM;
+    case Mips::COP019: return Mips::S3_NM;
+    case Mips::COP020: return Mips::S4_NM;
+    case Mips::COP021: return Mips::S5_NM;
+    case Mips::COP022: return Mips::S6_NM;
+    case Mips::COP023: return Mips::S7_NM;
+    case Mips::COP024: return Mips::T8_NM;
+    case Mips::COP025: return Mips::T9_NM;
+    case Mips::COP026: return Mips::K0_NM;
+    case Mips::COP027: return Mips::K1_NM;
+    case Mips::COP028: return Mips::GP_NM;
+    case Mips::COP029: return Mips::SP_NM;
+    case Mips::COP030: return Mips::FP_NM;
+    case Mips::COP031: return Mips::RA_NM;
+    default: llvm_unreachable("Unknown register for mttc0 alias!");
+  }
+}
+
+/// Expand an alias of 'mftr' or 'mttr' into the full instruction, by producing
+/// an mftr or mttr with the correctly mapped gpr register, u, sel and h bits.
+bool MipsAsmParser::expandMXTRAliasNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+				      const MCSubtargetInfo *STI) {
+  MipsTargetStreamer &TOut = getTargetStreamer();
+  unsigned rd = 0;
+  unsigned u = 1;
+  unsigned sel = 0;
+  unsigned h = 0;
+  bool IsMFTR = false;
+  switch (Inst.getOpcode()) {
+    case Mips::MFTC0_NM:
+      IsMFTR = true;
+      LLVM_FALLTHROUGH;
+    case Mips::MTTC0_NM:
+      u = 0;
+      rd = getRegisterForMxtrC0NM(Inst, IsMFTR);
+      sel = Inst.getOperand(2).getImm();
+      break;
+    case Mips::MFTGPR_NM:
+      IsMFTR = true;
+      LLVM_FALLTHROUGH;
+    case Mips::MTTGPR_NM:
+      rd = Inst.getOperand(IsMFTR ? 1 : 0).getReg();
+      break;
+    case Mips::MFTLO_NM:
+    case Mips::MFTHI_NM:
+    case Mips::MFTACX_NM:
+    case Mips::MFTDSP_NM:
+      IsMFTR = true;
+      LLVM_FALLTHROUGH;
+    case Mips::MTTLO_NM:
+    case Mips::MTTHI_NM:
+    case Mips::MTTACX_NM:
+    case Mips::MTTDSP_NM:
+      rd = getRegisterForMxtrDSPNM(Inst, IsMFTR);
+      sel = 1;
+      break;
+  }
+  unsigned Op0 = IsMFTR ? Inst.getOperand(0).getReg() : rd;
+  unsigned Op1 =
+      IsMFTR ? rd
+             : (Inst.getOpcode() != Mips::MTTDSP_NM ? Inst.getOperand(1).getReg()
+                                                    : Inst.getOperand(0).getReg());
+
+  TOut.emitRRIII(IsMFTR ? Mips::MFTR_NM : Mips::MTTR_NM, Op0, Op1, u, sel, h, IDLoc,
                  STI);
   return false;
 }

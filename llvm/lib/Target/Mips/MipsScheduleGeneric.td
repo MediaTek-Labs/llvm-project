@@ -564,7 +564,6 @@ def : InstRW<[GenericWriteCOPOther], (instrs DMFC2, DMTC2)>;
 // dependant.
 def : InstRW<[GenericWriteMove], (instrs CFC2_MM, CTC2_MM)>;
 
-
 // nanoMIPS
 // =============
 
@@ -581,6 +580,16 @@ def : InstRW<[GenericWriteMove], (instrs DMT, DVPE, EMT, EVPE, MFTR,
 def : InstRW<[GenericReadWriteCOP0Long], (instrs YIELD)>;
 
 def : InstRW<[GenericWriteCOP0Short], (instrs FORK)>;
+
+// NanoMIPS MT ASE - hasMT
+// ====================
+
+def : InstRW<[GenericWriteMove], (instrs DMT_NM, DVPE_NM, EMT_NM, EVPE_NM,
+                                  MFTR_NM, MTTR_NM)>;
+
+def : InstRW<[GenericReadWriteCOP0Long], (instrs YIELD_NM)>;
+
+def : InstRW<[GenericWriteCOP0Short], (instrs FORK_NM)>;
 
 // MIPS Virtualization ASE
 // =======================

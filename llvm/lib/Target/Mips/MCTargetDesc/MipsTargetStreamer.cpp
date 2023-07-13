@@ -939,11 +939,11 @@ void MipsTargetELFStreamer::finish() {
     BSSSection.ensureMinAlignment(Align(16u));
   }
 
-  if (RoundSectionSizes) {
+  if (RoundSectionSizes || isNanoMipsEnabled()) {
     // Make sections sizes a multiple of the alignment. This is useful for
     // verifying the output of IAS against the output of other assemblers but
     // it's not necessary to produce a correct object and increases section
-    // size.
+    // size. Do this by default for nanoMIPS code sections.
     for (MCSection &Sec : MCA) {
       MCSectionELF &Section = static_cast<MCSectionELF &>(Sec);
 
@@ -951,7 +951,7 @@ void MipsTargetELFStreamer::finish() {
       S.switchSection(&Section);
       if (Section.useCodeAlign())
         S.emitCodeAlignment(Alignment, &STI, Alignment.value());
-      else
+      else if (RoundSectionSizes)
         S.emitValueToAlignment(Alignment, 0, 1, Alignment.value());
     }
   }

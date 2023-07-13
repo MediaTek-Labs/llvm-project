@@ -69,6 +69,11 @@ public:
   bool shouldForceRelocation(const MCAssembler &Asm, const MCFixup &Fixup,
                              const MCValue &Target) override;
 
+  // Insert target specific fixup type for alignment directive in code section.
+  bool shouldInsertFixupForCodeAlign(MCAssembler &Asm,
+                                     const MCAsmLayout &Layout,
+                                     MCAlignFragment &AF) override;
+
   bool isMicroMips(const MCSymbol *Sym) const override;
 }; // class MipsAsmBackend
 

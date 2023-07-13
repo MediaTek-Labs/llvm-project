@@ -689,14 +689,29 @@ getFixupKindInfo(MCFixupKind Kind) const {
 /// \return - True on success.
 bool MipsAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
                                   const MCSubtargetInfo *STI) const {
-  // Check for a less than instruction size number of bytes
-  // FIXME: 16 bit instructions are not handled yet here.
-  // We shouldn't be using a hard coded number for instruction size.
+  if (TheTriple.isNanoMips()) {
+    const char nop16[] = {'\x08', '\x90'};
+    const char nop32[] = {0, '\x80', 0, '\xc0'};
+    // Emit one 16-bit NOP, followed by as many 32-bit NOPs
+    // as required for desired alignment.
+    if (Count % 4)
+      OS.write(nop16, 2);
+    Count -= (Count % 4);
+    while (Count > 0) {
+      OS.write(nop32, 4);
+      Count -= 4;
+    }
+  }
+  else {
+    // Check for a less than instruction size number of bytes
+    // FIXME: 16 bit instructions are not handled yet here.
+    // We shouldn't be using a hard coded number for instruction size.
 
-  // If the count is not 4-byte aligned, we must be writing data into the text
-  // section (otherwise we have unaligned instructions, and thus have far
-  // bigger problems), so just write zeros instead.
-  OS.write_zeros(Count);
+    // If the count is not 4-byte aligned, we must be writing data into the text
+    // section (otherwise we have unaligned instructions, and thus have far
+    // bigger problems), so just write zeros instead.
+    OS.write_zeros(Count);
+  }
   return true;
 }
 
@@ -775,6 +790,31 @@ bool MipsAsmBackend::isMicroMips(const MCSymbol *Sym) const {
       return true;
   }
   return false;
+}
+
+// We need to insert R_NANOMIPS_ALIGN relocation type to indicate the
+// position of Nops and the total bytes of the Nops have been inserted
+// when linker relaxation enabled.
+bool MipsAsmBackend::shouldInsertFixupForCodeAlign(MCAssembler &Asm,
+						   const MCAsmLayout &Layout,
+						   MCAlignFragment &AF) {
+  MCContext &Ctx = Asm.getContext();
+  // Insert the fixup only when alignment is greater than 2.
+  // FIXME: skip when linker relaxation is disabled.
+  if (!Ctx.getTargetTriple().isNanoMips() || AF.getAlignment() == 2)
+    return false;
+
+  const MCExpr *Dummy = MCConstantExpr::create(0, Ctx);
+  // Create fixup
+  MCFixup Fixup =
+      MCFixup::create(0, Dummy, MCFixupKind(Mips::fixup_NANOMIPS_ALIGN), SMLoc());
+
+  uint64_t FixedValue = 0;
+  MCValue NopBytes = MCValue::get(AF.getAlignment().value());
+
+  Asm.getWriter().recordRelocation(Asm, Layout, &AF, Fixup, NopBytes,
+                                   FixedValue);
+  return true;
 }
 
 MCAsmBackend *llvm::createMipsAsmBackend(const Target &T,

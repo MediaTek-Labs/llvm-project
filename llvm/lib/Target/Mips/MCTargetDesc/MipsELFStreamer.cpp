@@ -18,7 +18,9 @@
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCValue.h"
 #include "llvm/MC/MCObjectWriter.h"
+#include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCSymbolELF.h"
+#include "llvm/MC/MCAsmInfo.h"
 #include "llvm/Support/Casting.h"
 #include "MCTargetDesc/MipsFixupKinds.h"
 
@@ -190,6 +192,49 @@ void MipsELFStreamer::emitIntValue(uint64_t Value, unsigned Size) {
 void MipsELFStreamer::EmitMipsOptionRecords() {
   for (const auto &I : MipsOptionRecords)
     I->EmitMipsOptionRecord();
+}
+
+// When relaxation is disabled, emit NOP padding without generating
+// an ALIGN relocation or enabling hasEmitNops.
+void MipsELFStreamer::emitCodeAlignment(Align ByteAlignment, const MCSubtargetInfo *STI,
+					unsigned MaxBytesToEmit) {
+  MipsTargetELFStreamer *ELFTargetStreamer =
+    static_cast<MipsTargetELFStreamer *>(getTargetStreamer());
+  unsigned Flags = getAssembler().getELFHeaderEFlags();
+  if (!ELFTargetStreamer->isNanoMipsEnabled() || 
+      (Flags & ELF::EF_NANOMIPS_LINKRELAX))
+    MCObjectStreamer::emitCodeAlignment(ByteAlignment,STI ,MaxBytesToEmit);
+  else if (ByteAlignment >= 4) {
+    // Code alignment of 2 is always guaranteed
+    // Emit one 16-bit NOP, followed by as many 32-bit NOPs
+    // as required for desired alignment.
+    MCObjectStreamer::emitValueToAlignment(Align(4), 0x9008,
+					   2, 2);
+    MCObjectStreamer::emitValueToAlignment(ByteAlignment, 0xc0008000,
+					   4, MaxBytesToEmit);
+  }
+}
+
+// TODO: this can be acheived with a direct override of
+// MCObjectFileInfo::getTextSectionAlignment() after updrade to LLVM17
+void MipsELFStreamer::initSections(bool NoExecStack,  const MCSubtargetInfo &STI) {
+  MipsTargetELFStreamer *ELFTargetStreamer =
+    static_cast<MipsTargetELFStreamer *>(getTargetStreamer());
+  // Just call parent method for non-nanoMIPS
+  if (!ELFTargetStreamer->isNanoMipsEnabled()) {
+    MCELFStreamer::initSections(NoExecStack, STI);
+    return;
+  }
+
+  // For nanoMIPS, don't set default alignment to 4 for text sections
+  // at initialization.
+  MCContext &Ctx = getContext();
+  if (NoExecStack)
+    switchSection(Ctx.getAsmInfo()->getNonexecutableStackSection(Ctx));
+  else {
+    switchSection(Ctx.getObjectFileInfo()->getTextSection());
+    MCObjectStreamer::emitCodeAlignment(Align(2), &STI);
+  }
 }
 
 MCELFStreamer *llvm::createMipsELFStreamer(

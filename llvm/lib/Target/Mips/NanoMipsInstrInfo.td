@@ -1543,9 +1543,16 @@ class ANDI16_Enc<bits<5> isel> : _Pool_P16<isel>
   let Inst{3...0} = imm;
 }
 
-def ANDI16_NM : ArithLogicAsmNM<"andi", uimm4mask_nm, GPRNM16R3Opnd,
-				GPRNM16R3Opnd, imm4Mask, and>,
-				ANDI16_Enc<0b11100>;
+let TwoOperandAliasConstraint = "$rs = $rt" in {
+  def ANDI16_NM : ArithLogicAsmNM<"andi[16]", uimm4mask_nm, GPRNM16R3Opnd,
+				 GPRNM16R3Opnd, imm4Mask>,
+				 ANDI16_Enc<0b11100>;
+  def PseudoANDI_NM : NanoMipsAsmPseudoInst<(outs GPRNM32Opnd:$rt),
+					    (ins GPRNM32Opnd:$rs, uimm16_nm:$mask),
+					    "andi\t$rt, $rs, $mask",
+					    [(set GPRNM32Opnd:$rt, (and GPRNM32Opnd:$rs,
+								    imm32ZExt12ANDI:$mask))]>;
+}
 
 // _POOL32A0_0 pool of instructions.
 let TwoOperandAliasConstraint = "$rs = $rd" in {
@@ -1628,7 +1635,7 @@ def : NanoMipsInstAlias<"or $rt, $imm",
 
 def XORI_NM  : CondLogicI32_Desc<"xori", uimm12_nm, GPRNM32Opnd, imm32ZExt12, xor>,
 	       CondLogicI32_Enc<0b0001>;
-def ANDI_NM  : CondLogicI32_Desc<"andi", uimm12_nm, GPRNM32Opnd, imm32ZExt12ANDI, and>,
+def ANDI_NM  : CondLogicI32_Desc<"andi[32]", uimm12_nm, GPRNM32Opnd, imm32ZExt12ANDI, and>,
 	       CondLogicI32_Enc<0b0010>;
 def SLTI_NM  : CondLogicI32_Desc<"slti", uimm12_nm, GPRNM32Opnd, imm32ZExt12, setlt>,
 	       CondLogicI32_Enc<0b0100>;

@@ -337,6 +337,17 @@ bool MipsInstPrinter::printAlias(const char *Str, const MCInst &MI,
   return true;
 }
 
+bool MipsInstPrinter::printAlias(const char *Str, const MCInst &MI,uint64_t Address,
+                                 unsigned OpNo0, unsigned OpNo1,
+                                 unsigned OpNo2,const MCSubtargetInfo &STI ,raw_ostream &OS) {
+  printAlias(Str, MI, Address, OpNo0,STI ,OS);
+  OS << ", ";
+  printOperand(&MI, OpNo1,STI ,OS);
+  OS << ", ";
+  printOperand(&MI, OpNo2,STI ,OS);
+  return true;
+}
+
 bool MipsInstPrinter::printAlias(const MCInst &MI, uint64_t Address,
                                  const MCSubtargetInfo &STI, raw_ostream &OS) {
   switch (MI.getOpcode()) {
@@ -403,6 +414,10 @@ bool MipsInstPrinter::printAlias(const MCInst &MI, uint64_t Address,
     // addu $r0, $r1, $zero => move $r0, $r1
     return isReg<Mips::ZERO>(MI, 2) &&
            printAlias("move", MI, Address, 0, 1, STI, OS);
+  case Mips::ANDI16_NM:
+  case Mips::ANDI_NM:
+    // andi[16/32] $r0, $r1, imm => andi $r0, $r1, imm
+    return printAlias("andi", MI, Address, 0, 1, 2, STI, OS);
   default:
     return false;
   }

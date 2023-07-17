@@ -141,6 +141,8 @@ public:
 		int16_t Imm, SMLoc IDLoc, const MCSubtargetInfo *STI);
   void emitRRI(unsigned Opcode, unsigned Reg0, unsigned Reg1, int16_t Imm,
                SMLoc IDLoc, const MCSubtargetInfo *STI);
+  void emitRRII(unsigned Opcode, unsigned Reg0, unsigned Reg1, int16_t Imm0,
+                int16_t Imm1, SMLoc IDLoc, const MCSubtargetInfo *STI);
   void emitRRIII(unsigned Opcode, unsigned Reg0, unsigned Reg1, int16_t Imm0,
                  int16_t Imm1, int16_t Imm2, SMLoc IDLoc,
                  const MCSubtargetInfo *STI);

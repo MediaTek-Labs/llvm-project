@@ -50,11 +50,10 @@ class PseudoInstNM<dag outs, dag ins, list<dag> pattern,
   let isPseudo = 1;
 }
 
-class NanoMipsAsmPseudoInst<dag outs, dag ins, string asmstr> :
-	 InstNM<outs, ins, asmstr, [], IIPseudo> {
+class NanoMipsAsmPseudoInst<dag outs, dag ins, string asmstr, list<dag> pattern = []> :
+	 InstNM<outs, ins, asmstr, pattern, IIPseudo> {
   let isPseudo = 1;
   let hasNoSchedulingInfo = 1;
-  let Pattern = [];
 }
 
 class NMPat<dag pattern, dag result> : Pat<pattern, result>, PredicateControl,

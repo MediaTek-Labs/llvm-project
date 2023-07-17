@@ -2090,7 +2090,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicBinaryPartword(
 
   if (Subtarget.hasNanoMips()) {
     SLL = Mips::SLL_NM;
-    ANDi = Mips::ANDI_NM;
+    ANDi = Mips::PseudoANDI_NM;
     XORi = Mips::XORI_NM;
     ORi = Mips::ORI_NM;
     SLLV = Mips::SLLV_NM;
@@ -2363,7 +2363,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
   
   if (Subtarget.hasNanoMips()) {
     SLL = Mips::SLL_NM;
-    ANDi = Mips::ANDI_NM;
+    ANDi = Mips::PseudoANDI_NM;
     XORi = Mips::XORI_NM;
     ORi = Mips::ORI_NM;
     SLLV = Mips::SLLV_NM;
@@ -2428,7 +2428,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
     BuildMI(BB, DL, TII->get(SLL), ShiftAmt).addReg(Off).addImm(3);
   }
   if (Subtarget.hasNanoMips() && MaskImm > 4095)
-    BuildMI(BB, DL, TII->get(Mips::LI48_NM), MaskUpper)
+    BuildMI(BB, DL, TII->get(Mips::PseudoLI_NM), MaskUpper)
       .addImm(MaskImm);
   else
     BuildMI(BB, DL, TII->get(ORi), MaskUpper)

@@ -324,6 +324,46 @@ static void emitDirectiveRelocJalr(const MachineInstr &MI,
   }
 }
 
+void MipsAsmPrinter::emitPseudoAndiNM(MCStreamer &OutStreamer,
+				      const MachineInstr *MI) {
+  MCInst Inst;
+  MCOperand Imm;
+  unsigned Mask;
+  const TargetRegisterClass *RC = MF->getSubtarget().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
+  Register Rt = MI->getOperand(0).getReg();
+  Register Rs;
+
+  Inst.addOperand(MCOperand::createReg(Rt));
+
+  if (MI->getNumOperands() == 3) {
+    Rs = MI->getOperand(1).getReg();
+    Inst.addOperand(MCOperand::createReg(Rs));
+    lowerOperand(MI->getOperand(2), Imm);
+  }
+  else {
+    Rs = Rt;
+    lowerOperand(MI->getOperand(1), Imm);
+  }
+
+  Mask = Imm.getImm();
+  if (RC->contains(Rt) && RC->contains(Rs)
+      && (Mask <= 11 || Mask == 0xff || Mask == 0xffff || Mask == 14 || Mask == 15)) {
+    Inst.addOperand(Imm);
+    Inst.setOpcode(Mips::ANDI16_NM);
+  }
+  else if (isUInt<12>(Mask)) {
+    Inst.addOperand(Imm);
+    Inst.setOpcode(Mips::ANDI_NM);
+  }
+  else if (Mask == 0xffff) {
+    // FIXME: add EXT_NM expansion for any contiguous mask pattern
+    Inst.addOperand(MCOperand::createImm(0));
+    Inst.addOperand(MCOperand::createImm(16));
+    Inst.setOpcode(Mips::EXT_NM);
+  }
+  EmitToStreamer(OutStreamer, Inst);
+}
+
 void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
   // FIXME: Enable feature predicate checks once all the test pass.
   // Mips_MC::verifyInstructionPredicates(MI->getOpcode(),
@@ -424,6 +464,10 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
 
     if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::BRSC_NM) {
       emitBrsc(*OutStreamer, &*I);
+      continue;
+    }
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoANDI_NM) {
+      emitPseudoAndiNM(*OutStreamer, &*I);
       continue;
     }
     // The inMips16Mode() test is not permanent.

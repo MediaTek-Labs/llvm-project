@@ -121,6 +121,8 @@ private:
                   raw_ostream &OS, bool IsBranch = false);
   bool printAlias(const MCInst &MI, uint64_t Address,
                   const MCSubtargetInfo &STI, raw_ostream &OS);
+  bool printAlias(const char *Str, const MCInst &MI,uint64_t Address, unsigned OpNo0,
+                  unsigned OpNo1, unsigned OpNo2, const MCSubtargetInfo &STI, raw_ostream &OS);
   void printSaveRestore(const MCInst *MI, const MCSubtargetInfo &STI,
                         raw_ostream &O);
   void printRegisterList(const MCInst *MI, int opNum,

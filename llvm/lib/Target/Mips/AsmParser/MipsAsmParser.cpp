@@ -364,6 +364,9 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool expandAlignNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
                      const MCSubtargetInfo *STI);
 
+  bool expandAndiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+                    const MCSubtargetInfo *STI);
+
   bool reportParseError(const Twine &ErrorMsg);
   bool reportParseError(SMLoc Loc, const Twine &ErrorMsg);
 
@@ -3094,6 +3097,8 @@ MipsAsmParser::tryExpandInstruction(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     return expandSaaAddr(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   case Mips::ALIGN_NM:
     return expandAlignNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
+  case Mips::PseudoANDI_NM:
+    return expandAndiNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   }
 }
 
@@ -6385,6 +6390,32 @@ bool MipsAsmParser::expandAlignNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     TOut.emitRRRI(Mips::EXTW_NM, rd, rs, rt, ((4 - bp) << 3), IDLoc, STI);
   else
     TOut.emitRR(Mips::MOVE_NM, rd, rt, IDLoc, STI);
+  return false;
+}
+
+// Expand to appropriate AND instruction
+// FIXME: extend to use EXT for larger masks
+bool MipsAsmParser::expandAndiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+				 const MCSubtargetInfo *STI) {
+  assert(Inst.getNumOperands() == 3 && "expected three operands");
+  assert(Inst.getOperand(0).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(1).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(2).isImm() && "expected immediate operand kind");
+
+  MipsTargetStreamer &TOut = getTargetStreamer();
+  unsigned rt = Inst.getOperand(0).getReg();
+  unsigned rs = Inst.getOperand(1).getReg();
+  unsigned mask = Inst.getOperand(2).getImm();
+  MCRegisterClass RC = getContext().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
+  assert((isUInt<12>(mask) || mask == 0xffff) && "unsupported immediate");
+  if (RC.contains(rt) && RC.contains(rs)
+      && (mask <= 11 || mask == 0xff || mask == 0xffff || mask == 14 || mask == 15))
+    TOut.emitRRX(Mips::ANDI16_NM, rt, rs, MCOperand::createImm(mask), IDLoc, STI);
+  else if (isUInt<12>(mask))
+    TOut.emitRRX(Mips::ANDI_NM, rt, rs, MCOperand::createImm(mask), IDLoc, STI);
+  else if (mask == 0xffff)
+    // FIXME: add EXT_NM expansion for any contiguous mask pattern
+    TOut.emitRRII(Mips::EXT_NM, rt, rs, 0, 16, IDLoc, STI);
   return false;
 }
 

@@ -1676,16 +1676,8 @@ def ADDIU_NM : AddImmediate<"addiu", uimm16_nm, GPRNM32NZOpnd, GPRNM32Opnd,
 def : NanoMipsInstAlias<"addu $rt, $rs, $imm",
 		        (ADDIU_NM GPRNM32NZOpnd:$rt, GPRNM32Opnd:$rs, uimm16_nm:$imm), 0>;
 
-def LI_NM : MipsInstAlias<"li $rt, $imm",
-			  (ADDIU_NM GPRNM32NZOpnd:$rt, ZERO_NM, uimm16_nm:$imm)>,
-			  ISA_NANOMIPS;
-
 def ADDIUNEG_NM : AddImmediate<"addiu", nimm12_nm, GPRNM32Opnd, GPRNM32Opnd,
                                imm32Neg12, add>, CondLogicI32_Enc<0b1000>;
-
-def LINEG_NM : MipsInstAlias<"li $rt, $imm",
-			     (ADDIUNEG_NM GPRNM32Opnd:$rt, ZERO_NM, nimm12_nm:$imm)>,
-			     ISA_NANOMIPS;
 
 def ADDIUR2_NM : ArithLogicAsmNM<"addiu", uimm5s2_nm, GPRNM16R3Opnd, GPRNM16R3Opnd,
                                  imm32ZExt5, add>, _Pool_P16_A2<0b0> {
@@ -1829,6 +1821,11 @@ let isReMaterializable = 1 in {
   def LI48_NM : LoadAddressAbsNM<"li[48]", GPRNM48Opnd, sym32_nm,
 			         addrsym>, Op48_Imm_Enc<0b00000>;
 
+  def PseudoLI_NM : NanoMipsAsmPseudoInst<(outs GPRNM32Opnd:$rt),
+					  (ins sym32_nm:$imm),
+					  "li\t$rt, $imm",
+					  [(set GPRNM32Opnd:$rt, imm:$imm)]>;
+
   def ADDIUGP48_NM : LoadAddressGPRelNM<"addiu[gp48]", GPRNM48Opnd, sym32_gp_nm,
 				        addrgprel>, Op48_Addr_Enc<0b00010>,
 				        NoEncode<"$rs">;
@@ -1855,8 +1852,6 @@ let isReMaterializable = 1 in {
   def LUI_NM : RegImmNM<"lui", simm32s12_nm, GPRNM32Opnd, imm32SExt20s12>,
 	       LUI_Enc<0b0>;
 }
-
-def : NMPat<(i32 imm32SExt20s12:$imm), (LUI_NM imm32SExt20s12:$imm)>;
 
 def ALUIPC_NM : RegImmNM<"aluipc", simm32s12_pcrel_nm, GPRNM32Opnd, imm32SExt20s12>, LUI_Enc<0b1>;
 
@@ -1956,8 +1951,6 @@ let hasPostISelHook = 1, isCall = 1, isCTI = 1, Defs = [RA_NM] in {
 def : MipsInstAlias<"jalrc $rt", (JALRC16_NM RA_NM, GPRNM32Opnd:$rt), 0>, ISA_NANOMIPS;
 def : MipsInstAlias<"jalrc.hb $rt", (JALRCHB_NM RA_NM, GPRNM32Opnd:$rt), 0>, ISA_NANOMIPS;
 def : MipsInstAlias<"jrc.hb $rs", (JALRCHB_NM ZERO_NM, GPRNM32Opnd:$rs), 1>, ISA_NANOMIPS;
-
-def : NMPat<(i32 imm32_NM:$imm), (LI48_NM imm:$imm)>;
 
 def : NMPat<(MipsFullAddr tglobaladdr:$in), (LAPC48_NM tglobaladdr:$in)>;
 def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (LAPC48_NM tglobaltlsaddr:$in)>;

@@ -546,7 +546,7 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
       unsigned ADDiu = ABI.GetPtrAddiuOp(MaxAlign);
 
       if (ABI.IsP32())
-        BuildMI(MBB, MBBI, dl, TII.get(Mips::LI48_NM), VR).addImm(MaxAlign);
+        BuildMI(MBB, MBBI, dl, TII.get(Mips::PseudoLI_NM), VR).addImm(MaxAlign);
       else
         BuildMI(MBB, MBBI, dl, TII.get(ADDiu), VR)
             .addReg(ZERO)

@@ -364,6 +364,35 @@ void MipsAsmPrinter::emitPseudoAndiNM(MCStreamer &OutStreamer,
   EmitToStreamer(OutStreamer, Inst);
 }
 
+// FIXME: This is deliberately conservative for now, knowing that the
+// assembler will pick the most optimal form.
+void MipsAsmPrinter::emitLoadImmediateNM(MCStreamer &OutStreamer,
+					 const MachineInstr *MI) {
+  MCInst Inst;
+  MCOperand Imm;
+  const TargetRegisterClass *RC = MF->getSubtarget().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
+  Register Rt = MI->getOperand(0).getReg();
+  lowerOperand(MI->getOperand(1), Imm);
+  int32_t ImmVal = Imm.getImm();
+
+  Inst.addOperand(MCOperand::createReg(Rt));
+  if (RC->contains(Rt) && ImmVal >= -1 && ImmVal <= 126)
+    Inst.setOpcode(Mips::LI16_NM);
+  else if (Rt != Mips::ZERO_NM && ImmVal > 0 && ImmVal <= 65535) {
+    Inst.setOpcode(Mips::ADDIU_NM);
+    Inst.addOperand(MCOperand::createReg(Mips::ZERO_NM));
+  }
+  else if (ImmVal < 0 && ImmVal >= -4095) {
+    Inst.setOpcode(Mips::ADDIUNEG_NM);
+    Inst.addOperand(MCOperand::createReg(Mips::ZERO_NM));
+  }
+  else
+    Inst.setOpcode(Mips::LI48_NM);
+
+  Inst.addOperand(Imm);
+  EmitToStreamer(OutStreamer, Inst);
+}
+
 void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
   // FIXME: Enable feature predicate checks once all the test pass.
   // Mips_MC::verifyInstructionPredicates(MI->getOpcode(),
@@ -468,6 +497,10 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
     }
     if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoANDI_NM) {
       emitPseudoAndiNM(*OutStreamer, &*I);
+      continue;
+    }
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoLI_NM) {
+      emitLoadImmediateNM(*OutStreamer, &*I);
       continue;
     }
     // The inMips16Mode() test is not permanent.

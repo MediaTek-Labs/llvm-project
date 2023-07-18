@@ -660,7 +660,7 @@ unsigned MipsSEInstrInfo::loadImmediate(int64_t Imm, MachineBasicBlock &MBB,
     MachineRegisterInfo &RegInfo = MBB.getParent()->getRegInfo();
     const TargetRegisterClass *RC = &Mips::GPRNM32RegClass;
     Register Reg = RegInfo.createVirtualRegister(RC);
-    BuildMI(MBB, II, DL, get(Mips::LI48_NM), Reg).addImm((int32_t)Imm);
+    BuildMI(MBB, II, DL, get(Mips::PseudoLI_NM), Reg).addImm((int32_t)Imm);
     return Reg;
   }
 

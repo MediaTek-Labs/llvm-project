@@ -367,6 +367,9 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool expandAndiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
                     const MCSubtargetInfo *STI);
 
+  bool expandLiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+		  const MCSubtargetInfo *STI);
+
   bool reportParseError(const Twine &ErrorMsg);
   bool reportParseError(SMLoc Loc, const Twine &ErrorMsg);
 
@@ -3099,6 +3102,8 @@ MipsAsmParser::tryExpandInstruction(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     return expandAlignNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   case Mips::PseudoANDI_NM:
     return expandAndiNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
+  case Mips::PseudoLI_NM:
+    return expandLiNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   }
 }
 
@@ -6416,6 +6421,33 @@ bool MipsAsmParser::expandAndiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
   else if (mask == 0xffff)
     // FIXME: add EXT_NM expansion for any contiguous mask pattern
     TOut.emitRRII(Mips::EXT_NM, rt, rs, 0, 16, IDLoc, STI);
+  return false;
+}
+
+// Expand to appropriate LI instruction
+bool MipsAsmParser::expandLiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+			       const MCSubtargetInfo *STI) {
+  assert(Inst.getNumOperands() == 2 && "expected two operands");
+  assert(Inst.getOperand(0).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(1).isImm() && "expected immediate operand kind");
+
+  MipsTargetStreamer &TOut = getTargetStreamer();
+  unsigned rt = Inst.getOperand(0).getReg();
+  int imm = Inst.getOperand(1).getImm();
+  MCRegisterClass RC = getContext().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
+
+  if (imm == 0 && !RC.contains(rt))
+    TOut.emitRR(Mips::MOVE_NM, rt, Mips::ZERO_NM, IDLoc, STI);
+  else if (RC.contains(rt) && imm >= -1 && imm <= 126)
+    TOut.emitRI(Mips::LI16_NM, rt, imm, IDLoc, STI);
+  else if (rt != Mips::ZERO_NM && imm >= 0 && imm <= 0xffff)
+    TOut.emitRRX(Mips::ADDIU_NM, rt, Mips::ZERO_NM, MCOperand::createImm(imm), IDLoc, STI);
+  else if (imm < 0 && imm >= -4095)
+    TOut.emitRRX(Mips::ADDIUNEG_NM, rt, Mips::ZERO_NM, MCOperand::createImm(imm), IDLoc, STI);
+  else if (imm % 0x1000 == 0)
+    TOut.emitRI(Mips::LUI_NM, rt, imm >> 12, IDLoc, STI);
+  else
+    TOut.emitRI(Mips::LI48_NM, rt, imm, IDLoc, STI);
   return false;
 }
 

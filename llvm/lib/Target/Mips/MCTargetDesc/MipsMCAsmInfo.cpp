@@ -58,5 +58,6 @@ MipsMCAsmInfo::MipsMCAsmInfo(const Triple &TheTriple,
     AssemblerDialect = 1;
     UsesCompInstByteOrder = true;
     UseLogicalShr = false;
+    AllowBracInName = true;
   }
 }

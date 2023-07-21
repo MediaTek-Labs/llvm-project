@@ -224,6 +224,10 @@ protected:
   /// still be lexed as a comment.
   bool AllowHashAtStartOfIdentifier = false;
 
+  /// This is true if the assembler allows the "[]" characters within an
+  /// identifier.
+  bool AllowBracInName = false;
+
   /// If this is true, symbol names with invalid characters will be printed in
   /// quotes.
   bool SupportsQuotedNames = true;
@@ -702,6 +706,7 @@ public:
   bool doesAllowHashAtStartOfIdentifier() const {
     return AllowHashAtStartOfIdentifier;
   }
+  bool doesAllowBracInName() const { return AllowBracInName; }
   bool supportsNameQuoting() const { return SupportsQuotedNames; }
 
   bool doesSupportDataRegionDirectives() const {

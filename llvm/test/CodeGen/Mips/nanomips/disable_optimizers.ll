@@ -1,15 +1,17 @@
 ; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | FileCheck %s
-; RUIN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs -disable-nm-save-restore < %s | FileCheck %s --check-prefix=CHECK-NO-SAVE-RESTORE
-; RUIN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs -disable-nm-lwm-swm < %s | FileCheck %s --check-prefix=CHECK-NO-LWM-SWM
-; RUIN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs -disable-nm-pcrel-opt < %s | FileCheck %s --check-prefix=CHECK-NO-PCREL
-; RUIN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs -disable-nm-move-opt < %s | FileCheck %s --check-prefix=CHECK-NO-MOVE
+; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs -disable-nm-save-restore < %s | FileCheck %s --check-prefix=CHECK-NO-SAVE-RESTORE
+; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs -disable-nm-lwm-swm < %s | FileCheck %s --check-prefix=CHECK-NO-LWM-SWM
+; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs -disable-nm-pcrel-opt < %s | FileCheck %s --check-prefix=CHECK-NO-PCREL
+; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs -disable-nm-move-opt < %s | FileCheck %s --check-prefix=CHECK-NO-MOVE
 
 ; CHECK-LABEL: test4:
 ; CHECK-NO-SAVE-RESTORE-LABEL: test4:
 ; CHECK-NO-LWM-SWM-LABEL: test4:
 ; CHECK-NO-PCREL-LABEL: test4:
 
-define void @test4(i32 %n, ...) {
+attributes #0 = { optsize }
+
+define void @test4(i32 %n, ...) #0 {
 ; CHECK: swm $a1, 4($sp), 7
 ; CHECK-NO-SAVE-RESTORE: swm $a1, 4($sp), 7
 ; CHECK-NO-LWM-SWM-NOT: swm
@@ -26,7 +28,7 @@ define void @test4(i32 %n, ...) {
 ; CHECK-NO-LWM-SWM-LABEL: square:
 ; CHECK-NO-PCREL-LABEL: square:
 
-define void @square(%struct.bar* %ints) {
+define void @square(%struct.bar* %ints) #0 {
 
 ; CHECK: lwm $a1, 0($a0), 2
 ; CHECK-NO-SAVE-RESTORE: lwm $a1, 0($a0), 2
@@ -95,15 +97,13 @@ define i32 @test_pcrel() {
 
 declare i32 @bar(i32, i32)
 
+; CHECK-LABEL: movep:
 ; CHECK-NO-SAVE-RESTORE-LABEL: movep:
 ; CHECK-NO-LWM-SWM-LABEL: movep:
 ; CHECK-NO-PCREL-LABEL: movep:
 
-; CHECK-LABEL: movep:
-; CHECK-NO-PCREL-LABEL: movep:
-
 define void @movep(i32 %a, i32 %b, i32 %c, i32 %d) {
-; CHECK-NO-MOVE-NOT: movep
+; CHECK-NO-MOVE-NOT: movep{{.*,.*,.*,}}
 ; CHECK: movep $s1, $s0, $a0, $a1
 ; CHECK: movep $a0, $a1, $a2, $a3
   call i32 @bar(i32 %c, i32 %d)

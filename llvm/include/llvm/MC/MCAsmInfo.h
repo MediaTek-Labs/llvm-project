@@ -191,6 +191,10 @@ protected:
   /// still be lexed as a comment.
   bool AllowAtAtStartOfIdentifier = false;
 
+  /// This is true if the assembler allows the "[]" characters within an
+  /// identifier.
+  bool AllowBracInName = false;
+
   /// If this is true, symbol names with invalid characters will be printed in
   /// quotes.
   bool SupportsQuotedNames = true;
@@ -580,6 +584,7 @@ public:
   bool doesAllowDollarAtStartOfIdentifier() const {
     return AllowDollarAtStartOfIdentifier;
   }
+  bool doesAllowBracInName() const { return AllowBracInName; }
   bool supportsNameQuoting() const { return SupportsQuotedNames; }
 
   bool doesSupportDataRegionDirectives() const {

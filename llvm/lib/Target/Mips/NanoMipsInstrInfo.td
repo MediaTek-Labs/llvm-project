@@ -1827,17 +1827,18 @@ let isReMaterializable = 1 in {
 					  [(set GPRNM32Opnd:$rt, imm:$imm)]>;
 
   def ADDIUGP48_NM : LoadAddressGPRelNM<"addiu[gp48]", GPRNM48Opnd, sym32_gp_nm,
-				        addrgprel>, Op48_Addr_Enc<0b00010>,
-				        NoEncode<"$rs">;
+					addrgprel>, Op48_Addr_Enc<0b00010>,
+					NoEncode<"$rs">;
+
+  def PseudoLA_NM : NanoMipsAsmPseudoInst<(outs GPRNM32Opnd:$rt), (ins sym32_nm:$addr),
+					  "la\t$rt, $addr",
+					  [(set GPRNM32Opnd:$rt, addrsym:$addr)]>;
 }
 
 def ADDIUB32_NM : MipsInstAlias<"addiu.b32 $rt, $rs, $addr",
 				(ADDIUGP48_NM GPRNM48Opnd:$rt,
 				GPRNMGPOpnd:$rs, sym32_gp_nm:$addr)>,
 				ISA_NANOMIPS;
-def LA_NM : MipsInstAlias<"la $rt, $addr",
-			  (LAPC48_NM GPRNM48Opnd:$rt, sym32_pc_nm:$addr)>,
-			  ISA_NANOMIPS;
 
 class LUI_Enc<bits<1> isel> : _Pool_P_LUI<isel> {
   bits<5> rt;
@@ -1952,9 +1953,9 @@ def : MipsInstAlias<"jalrc $rt", (JALRC16_NM RA_NM, GPRNM32Opnd:$rt), 0>, ISA_NA
 def : MipsInstAlias<"jalrc.hb $rt", (JALRCHB_NM RA_NM, GPRNM32Opnd:$rt), 0>, ISA_NANOMIPS;
 def : MipsInstAlias<"jrc.hb $rs", (JALRCHB_NM ZERO_NM, GPRNM32Opnd:$rs), 1>, ISA_NANOMIPS;
 
-def : NMPat<(MipsFullAddr tglobaladdr:$in), (LAPC48_NM tglobaladdr:$in)>;
-def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (LAPC48_NM tglobaltlsaddr:$in)>;
-def : NMPat<(MipsFullAddr tblockaddress:$in), (LAPC48_NM tblockaddress:$in)>;
+def : NMPat<(MipsFullAddr tglobaladdr:$in), (PseudoLA_NM tglobaladdr:$in)>;
+def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (PseudoLA_NM tglobaltlsaddr:$in)>;
+def : NMPat<(MipsFullAddr tblockaddress:$in), (PseudoLA_NM tblockaddress:$in)>;
 def : NMPat<(MipsFullAddr tjumptable:$in), (LAPC48_NM tjumptable:$in)>;
 def : NMPat<(MipsFullAddrAdd GPRNM32:$rs, tglobaladdr:$in), (ADDIU48_NM GPRNM32:$rs, tglobaladdr:$in)>;
  

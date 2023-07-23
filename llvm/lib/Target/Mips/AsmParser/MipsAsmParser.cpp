@@ -370,6 +370,9 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool expandLiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
 		  const MCSubtargetInfo *STI);
 
+  bool expandLaNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+                  const MCSubtargetInfo *STI);
+
   bool reportParseError(const Twine &ErrorMsg);
   bool reportParseError(SMLoc Loc, const Twine &ErrorMsg);
 
@@ -3104,6 +3107,8 @@ MipsAsmParser::tryExpandInstruction(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     return expandAndiNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   case Mips::PseudoLI_NM:
     return expandLiNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
+  case Mips::PseudoLA_NM:
+    return expandLaNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   }
 }
 
@@ -6448,6 +6453,22 @@ bool MipsAsmParser::expandLiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     TOut.emitRI(Mips::LUI_NM, rt, imm >> 12, IDLoc, STI);
   else
     TOut.emitRI(Mips::LI48_NM, rt, imm, IDLoc, STI);
+  return false;
+}
+
+// Expand to appropriate address calculation instruction
+bool MipsAsmParser::expandLaNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+			       const MCSubtargetInfo *STI) {
+  assert(Inst.getNumOperands() == 2 && "expected two operands");
+  assert(Inst.getOperand(0).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(1).isExpr() &&
+	 Inst.getOperand(1).getExpr()->getKind() == MCExpr::SymbolRef &&
+	 "expected symbol reference operand");
+
+  MipsTargetStreamer &TOut = getTargetStreamer();
+  unsigned rt = Inst.getOperand(0).getReg();
+  unsigned Op = STI->getFeatureBits()[Mips::FeaturePCRel] ? Mips::LAPC48_NM : Mips::LI48_NM;
+  TOut.emitRX(Op, rt, Inst.getOperand(1), IDLoc, STI);
   return false;
 }
 

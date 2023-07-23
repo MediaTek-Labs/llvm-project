@@ -393,6 +393,23 @@ void MipsAsmPrinter::emitLoadImmediateNM(MCStreamer &OutStreamer,
   EmitToStreamer(OutStreamer, Inst);
 }
 
+void MipsAsmPrinter::emitLoadAddressNM(MCStreamer &OutStreamer,
+                                       const MachineInstr *MI) {
+  Register Reg = MI->getOperand(0).getReg();
+  MCInst LA;
+  MCOperand Addr;
+
+   if (Subtarget->usePCRel())
+    LA.setOpcode(Mips::LAPC48_NM);
+  else
+    LA.setOpcode(Mips::LI48_NM);
+
+  lowerOperand(MI->getOperand(1), Addr);
+  LA.addOperand(MCOperand::createReg(Reg));
+  LA.addOperand(Addr);
+  EmitToStreamer(OutStreamer, LA);
+}
+
 void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
   // FIXME: Enable feature predicate checks once all the test pass.
   // Mips_MC::verifyInstructionPredicates(MI->getOpcode(),
@@ -503,6 +520,11 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
       emitLoadImmediateNM(*OutStreamer, &*I);
       continue;
     }
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoLA_NM) {
+      emitLoadAddressNM(*OutStreamer, &*I);
+      continue;
+    }
+
     // The inMips16Mode() test is not permanent.
     // Some instructions are marked as pseudo right now which
     // would make the test fail for the wrong reason but

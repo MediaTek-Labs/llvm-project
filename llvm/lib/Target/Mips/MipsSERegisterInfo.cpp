@@ -175,6 +175,8 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
       static_cast<const MipsTargetMachine &>(MF.getTarget()).getABI();
   const MipsRegisterInfo *RegInfo =
     static_cast<const MipsRegisterInfo *>(MF.getSubtarget().getRegisterInfo());
+  const MipsSubtarget &STI =
+      *static_cast<const MipsSubtarget *>(&MF.getSubtarget());
 
   const std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
   int MinCSFI = 0;
@@ -220,7 +222,29 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
   bool IsKill = false;
   int64_t Offset;
 
-  Offset = SPOffset + (int64_t)StackSize;
+  if (STI.hasNanoMips()) {
+
+    if (MipsFI->isTwoStepStackSetup(MF)) {
+
+      int64_t CalleeSavedStackSize = MipsFI->getCalleeSavedStackSize();
+      if (FrameIndex >= MinCSFI && FrameIndex <= MaxCSFI)
+        Offset = SPOffset + (int64_t)CalleeSavedStackSize;
+      else if (FrameReg == Mips::FP_NM)
+        Offset = SPOffset + 4096;
+      else
+        Offset = SPOffset + StackSize;
+
+    } else {
+
+      if (FrameReg == Mips::FP_NM)
+        Offset = SPOffset + 4096;
+      else
+        Offset = SPOffset + StackSize;
+    }
+
+  } else
+    Offset = SPOffset + (int64_t)StackSize;
+
   Offset += MI.getOperand(OpNo + 1).getImm();
 
   LLVM_DEBUG(errs() << "Offset     : " << Offset << "\n"
@@ -247,7 +271,9 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
     // TODO: This doesn't work well for nanoMIPS, because it has unsigned
     // offsets and this check assumes signed.
     if (OffsetBitSize < 16 && isInt<16>(Offset) &&
-        (!isIntN(OffsetBitSize, Offset) || !isAligned(OffsetAlign, Offset))) {
+        (STI.hasNanoMips() ? !isUIntN(OffsetBitSize, Offset)
+                           : !isIntN(OffsetBitSize, Offset) ||
+                                 !isAligned(OffsetAlign, Offset))) {
       // If we have an offset that needs to fit into a signed n-bit immediate
       // (where n < 16) and doesn't, but does fit into 16-bits then use an ADDiu
       MachineBasicBlock &MBB = *MI.getParent();

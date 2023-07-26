@@ -201,3 +201,19 @@ int MipsFunctionInfo::getMoveF64ViaSpillFI(MachineFunction &MF,
 }
 
 void MipsFunctionInfo::anchor() {}
+
+unsigned MipsFunctionInfo::getCalleeSavedStackSize() {
+  return CalleeSavedStackSize;
+}
+
+void MipsFunctionInfo::setCalleeSavedStackSize(unsigned Size) {
+  CalleeSavedStackSize = Size;
+}
+
+bool MipsFunctionInfo::isTwoStepStackSetup(MachineFunction &MF) {
+
+  const MipsSubtarget &STI =
+      *static_cast<const MipsSubtarget *>(&MF.getSubtarget());
+
+  return (MF.getFrameInfo().getStackSize() > 4096) && STI.hasNanoMips();
+}

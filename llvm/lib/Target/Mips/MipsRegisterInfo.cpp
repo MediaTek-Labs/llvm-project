@@ -303,10 +303,20 @@ Register MipsRegisterInfo::
 getFrameRegister(const MachineFunction &MF) const {
   const MipsSubtarget &Subtarget = MF.getSubtarget<MipsSubtarget>();
   const TargetFrameLowering *TFI = Subtarget.getFrameLowering();
+  const MachineFrameInfo &MFI = MF.getFrameInfo();
+  const TargetRegisterInfo *TRI = Subtarget.getRegisterInfo();
   bool IsN64 =
       static_cast<const MipsTargetMachine &>(MF.getTarget()).getABI().IsN64();
   bool IsP32 =
       static_cast<const MipsTargetMachine &>(MF.getTarget()).getABI().IsP32();
+
+  // If function doesn't have var-sized objects and function doesn't need stack
+  // realignment but frame pointer elimination is disabled we want offsets to be
+  // relative to sp instead of fp
+  if (Subtarget.hasNanoMips())
+    if (!MFI.hasVarSizedObjects() && !TRI->hasStackRealignment(MF) &&
+        MF.getTarget().Options.DisableFramePointerElim(MF))
+      return Mips::SP_NM;
 
   if (Subtarget.inMips16Mode())
     return TFI->hasFP(MF) ? Mips::S0 : Mips::SP;

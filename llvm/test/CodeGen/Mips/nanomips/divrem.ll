@@ -3,7 +3,7 @@
 ; Make sure to generate __udivmoddi4 libcall when udiv and urem 
 ; instructions with the same operands are present 
 ; and the operands are of type int64
-define void @test1(i64 %a, i64 %b, i64* %divmod) {    
+define void @test1(i64 %a, i64 %b, i64* %divmod) optsize {
   ; CHECK: save	16, $ra, $s0
   ; CHECK: move	$s0, $a4
   ; CHECK: move	$a4, $sp
@@ -24,7 +24,7 @@ define void @test1(i64 %a, i64 %b, i64* %divmod) {
 
 ; Make sure to generate __umoddi3 libcall when only urem is present
 ; and the operands are of type int64
-define void @test2(i64 %a, i64 %b, i64* %divmod) {
+define void @test2(i64 %a, i64 %b, i64* %divmod) optsize {
 	; CHECK: save	16, $ra, $s0
 	; CHECK: move	$s0, $a4
 	; CHECK: balc	__umoddi3
@@ -38,7 +38,7 @@ define void @test2(i64 %a, i64 %b, i64* %divmod) {
 
 ; Make sure to generate __udivdi3 libcall when only udiv is present
 ; and the operands are of type int64
-define void @test3(i64 %a, i64 %b, i64* %divmod) {
+define void @test3(i64 %a, i64 %b, i64* %divmod) optsize {
 	; CHECK: save	16, $ra, $s0
 	; CHECK: move	$s0, $a4
 	; CHECK: balc	__udivdi3
@@ -51,7 +51,7 @@ define void @test3(i64 %a, i64 %b, i64* %divmod) {
 
 ; If urem is expanded into mul+sub and the operands 
 ; are of type int64, make sure to stay that way
-define void @test4(i64 %a, i64 %b, i64* %divmod) {
+define void @test4(i64 %a, i64 %b, i64* %divmod) optsize {
   ; CHECK: save	32, $ra, $s0, $s1, $s2, $s3, $s4
 	; CHECK: movep	$s1, $s0, $a3, $a4
 	; CHECK: movep	$s4, $s2, $a1, $a2
@@ -85,7 +85,7 @@ define void @test4(i64 %a, i64 %b, i64* %divmod) {
 ; Make sure to generate divu and modu when udiv and urem 
 ; instructions with the same operands are present 
 ; and the operands are of type int32
-define void @test5(i32 %a, i32 %b, i32* %divmod) {
+define void @test5(i32 %a, i32 %b, i32* %divmod) optsize {
   ; CHECK: modu	$a3, $a0, $a1
 	; CHECK: teq	$zero, $a1, 7
 	; CHECK: sw	$a3, 4($a2)
@@ -103,7 +103,7 @@ define void @test5(i32 %a, i32 %b, i32* %divmod) {
 
 ; Make sure to generate modu when only urem is present
 ; and the operands are of type int32
-define  void @test6(i32 %a, i32 %b, i32* %divmod) {
+define  void @test6(i32 %a, i32 %b, i32* %divmod) optsize {
   ; CHECK: modu	$a0, $a0, $a1
 	; CHECK: teq	$zero, $a1, 7
 	; CHECK: sw	$a0, 4($a2)
@@ -116,7 +116,7 @@ define  void @test6(i32 %a, i32 %b, i32* %divmod) {
 
 ; Make sure to generate divu when only udiv is present
 ; and the operands are of type int32
-define void @test7(i32 %a, i32 %b, i32* %divmod) {
+define void @test7(i32 %a, i32 %b, i32* %divmod) optsize {
   ; CHECK: divu	$a0, $a0, $a1
 	; CHECK: teq	$zero, $a1, 7
 	; CHECK: sw	$a0, 0($a2)
@@ -128,7 +128,7 @@ define void @test7(i32 %a, i32 %b, i32* %divmod) {
 
 ; If urem is expanded into mul+sub and the operands 
 ; are of type int32, make sure to stay that way.
-define void @test8(i32 %a, i32 %b, i32* %divmod) {
+define void @test8(i32 %a, i32 %b, i32* %divmod) optsize {
   ; CHECK: divu	$a3, $a0, $a1
 	; CHECK: teq	$zero, $a1, 7
 	; CHECK: sw	$a3, 0($a2)

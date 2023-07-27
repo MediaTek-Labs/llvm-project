@@ -9,7 +9,7 @@
 ; CHECK-NO-LWM-SWM-LABEL: test4:
 ; CHECK-NO-PCREL-LABEL: test4:
 
-define void @test4(i32 %n, ...) {
+define void @test4(i32 %n, ...) optsize {
 ; CHECK: swm $a1, 4($sp), 7
 ; CHECK-NO-SAVE-RESTORE: swm $a1, 4($sp), 7
 ; CHECK-NO-LWM-SWM-NOT: swm
@@ -26,7 +26,7 @@ define void @test4(i32 %n, ...) {
 ; CHECK-NO-LWM-SWM-LABEL: square:
 ; CHECK-NO-PCREL-LABEL: square:
 
-define void @square(%struct.bar* %ints) {
+define void @square(%struct.bar* %ints) optsize {
 
 ; CHECK: lwm $a1, 0($a0), 2
 ; CHECK-NO-SAVE-RESTORE: lwm $a1, 0($a0), 2
@@ -49,7 +49,7 @@ define void @square(%struct.bar* %ints) {
 ; CHECK-NO-PCREL-LABEL: test:
 
 ; Make sure that SAVE/RESTORE instructions are used for saving and restoring callee-saved registers.
-define void @test() {
+define void @test() optsize {
 ; CHECK: save 32, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
 ; CHECK-NO-SAVE-RESTORE-NOT: save
 ; CHECK-NO-LWM-SWM: save 32, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
@@ -74,7 +74,7 @@ define void @test() {
 ; CHECK-NO-LWM-SWM-LABEL: test_pcrel:
 ; CHECK-NO-PCREL-LABEL: test_pcrel:
 
-define i32 @test_pcrel() {
+define i32 @test_pcrel() optsize {
 
 ; CHECK: lwpc {{.*}}, a+8
 ; CHECK-NO-SAVE-RESTORE: lwpc {{.*}}, a+8
@@ -102,7 +102,7 @@ declare i32 @bar(i32, i32)
 ; CHECK-LABEL: movep:
 ; CHECK-NO-PCREL-LABEL: movep:
 
-define void @movep(i32 %a, i32 %b, i32 %c, i32 %d) {
+define void @movep(i32 %a, i32 %b, i32 %c, i32 %d) optsize {
 ; CHECK-NO-MOVE-NOT: movep
 ; CHECK: movep $s1, $s0, $a0, $a1
 ; CHECK: movep $a0, $a1, $a2, $a3

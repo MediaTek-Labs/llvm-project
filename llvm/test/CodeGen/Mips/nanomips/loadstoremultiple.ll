@@ -1,6 +1,6 @@
 ; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | FileCheck %s
 
-define void @test4(i32 %n, ...) {
+define void @test4(i32 %n, ...) optsize {
 ; CHECK: swm $a1, 4($sp), 7
   call void asm sideeffect "", ""()
   ret void
@@ -8,7 +8,7 @@ define void @test4(i32 %n, ...) {
 
 %struct.bar = type { i32, i32, i32 }
 
-define void @square(%struct.bar* %ints) {
+define void @square(%struct.bar* %ints) optsize {
 ; CHECK: lwm $a1, 0($a0), 2
   %a = getelementptr inbounds %struct.bar, %struct.bar* %ints, i32 0, i32 0
   %1 = load i32, i32* %a, align 4

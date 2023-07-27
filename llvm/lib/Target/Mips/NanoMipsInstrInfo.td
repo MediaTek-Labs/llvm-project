@@ -1787,7 +1787,7 @@ let isReMaterializable = 1 in {
 def ADDIUPC48_NM : MipsInstAlias<"addiupc $rt, $addr",
 			    (LAPC48_NM GPRNM48Opnd: $rt, sym32_pc_nm:$addr), 0>,
 			    ISA_NANOMIPS;
-def : MnemonicAlias<"lapc", "lapc.h">, ISA_NANOMIPS;
+def : MnemonicAlias<"lapc", "lapc.h">, Requires<[HasNanoMips]>;
 
 def LSA_NM : LoadScaledAddressNM<"lsa", GPRNM32Opnd>, LoadScaledAddress_Enc;
 
@@ -1941,6 +1941,7 @@ class IndirectCall16_Enc<bits<1> isel> : _Pool_P16_BR<0b0000>
 }
 
 def JRC_NM : IndirectBranchNM<"jrc", GPRNM32Opnd>, IndirectBranch16_Enc<0>;
+def : MnemonicAlias<"jr", "jrc">, Requires<[HasNanoMips]>;
 
 // Indirect branch is matched as PseudoIndirectBranchNM and expanded to JRC_NM.
 def PseudoIndirectBranchNM :
@@ -1967,6 +1968,8 @@ let hasPostISelHook = 1, isCall = 1, isCTI = 1, Defs = [RA_NM] in {
 def : MipsInstAlias<"jalrc $rt", (JALRC16_NM RA_NM, GPRNM32Opnd:$rt), 0>, ISA_NANOMIPS;
 def : MipsInstAlias<"jalrc.hb $rt", (JALRCHB_NM RA_NM, GPRNM32Opnd:$rt), 0>, ISA_NANOMIPS;
 def : MipsInstAlias<"jrc.hb $rs", (JALRCHB_NM ZERO_NM, GPRNM32Opnd:$rs), 1>, ISA_NANOMIPS;
+def : MnemonicAlias<"jalr", "jalrc">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"jalr.hb", "jalrc.hb">, Requires<[HasNanoMips]>;
 
 def : NMPat<(MipsFullAddr tglobaladdr:$in), (PseudoLA_NM tglobaladdr:$in)>;
 def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (PseudoLA_NM tglobaltlsaddr:$in)>;
@@ -2140,6 +2143,10 @@ def BALC16_NM : CallNM<"balc", MipsJmpLink, calltarget10_nm>, BC16_Enc<0b00110>;
 
 def : NMPat<(MipsJmpLink (i32 texternalsym:$dst)), (BALC_NM texternalsym:$dst)>;
 
+def : MnemonicAlias<"b", "bc">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"bal", "balc">, Requires<[HasNanoMips]>;
+def : NanoMipsInstAlias<"j $target", (BC_NM brtarget25_nm:$target), 0>;
+
 class B4_Enc : _Pool_P16<0b11010> {
   bits<3> rs;
   bits<3> rt;
@@ -2200,6 +2207,16 @@ def BGEIUC_NM : CBranchImmNM<"bgeiuc", brtarget11_nm, setuge, GPRNM32Opnd, uimm7
 	        BRI_Enc<0b011>;
 def BLTIUC_NM : CBranchImmNM<"bltiuc", brtarget11_nm, setult, GPRNM32Opnd, uimm7, immZExt7>,
 	        BRI_Enc<0b111>;
+
+def : MnemonicAlias<"beq", "beqc">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"bne", "bnec">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"blt", "bltc">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"bgtz", "bgtzc">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"bge", "b">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"bltu", "bltuc">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"bgeu", "bgeuc">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"beqz", "beqzc">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"bnez", "bnezc">, Requires<[HasNanoMips]>;
 
 let hasNoSchedulingInfo = 1,
     hasDelaySlot = 0, isBranch = 1,

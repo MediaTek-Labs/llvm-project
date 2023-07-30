@@ -515,6 +515,10 @@ def simm32_nm : Operand<i32> {
   let EncoderMethod = "getSImm32Encoding";
 }
 
+def uimm32_nm : Operand<i32> {
+  let ParserMatchClass = UImmAsmOperandClass<32>;
+}
+
 def simm32s12_nm : Operand<i32> {
   let ParserMatchClass = Hi20AsmOperand;
   let PrintMethod = "printHi20";
@@ -1678,6 +1682,10 @@ def : NanoMipsInstAlias<"addu $rt, $rs, $imm",
 
 def ADDIUNEG_NM : AddImmediate<"addiu", nimm12_nm, GPRNM32Opnd, GPRNM32Opnd,
                                imm32Neg12, add>, CondLogicI32_Enc<0b1000>;
+
+def PseudoSUBU_NM: NanoMipsAsmPseudoInst<(outs GPRNM32Opnd:$rt),
+					 (ins GPRNM32Opnd:$rs, uimm32_nm:$imm),
+					 "subu\t$rt, $rs, $imm", []>;
 
 def ADDIUR2_NM : ArithLogicAsmNM<"addiu", uimm5s2_nm, GPRNM16R3Opnd, GPRNM16R3Opnd,
                                  imm32ZExt5, add>, _Pool_P16_A2<0b0> {

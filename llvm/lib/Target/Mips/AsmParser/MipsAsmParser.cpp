@@ -373,6 +373,9 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool expandLaNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
                   const MCSubtargetInfo *STI);
 
+  bool expandSubuNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+		    const MCSubtargetInfo *STI);
+
   bool reportParseError(const Twine &ErrorMsg);
   bool reportParseError(SMLoc Loc, const Twine &ErrorMsg);
 
@@ -3109,6 +3112,8 @@ MipsAsmParser::tryExpandInstruction(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     return expandLiNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   case Mips::PseudoLA_NM:
     return expandLaNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
+  case Mips::PseudoSUBU_NM:
+    return expandSubuNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   }
 }
 
@@ -6469,6 +6474,30 @@ bool MipsAsmParser::expandLaNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
   unsigned rt = Inst.getOperand(0).getReg();
   unsigned Op = STI->getFeatureBits()[Mips::FeaturePCRel] ? Mips::LAPC48_NM : Mips::LI48_NM;
   TOut.emitRX(Op, rt, Inst.getOperand(1), IDLoc, STI);
+  return false;
+}
+
+// Expand to appropriate ADDIU instruction for negative immediates
+bool MipsAsmParser::expandSubuNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+				 const MCSubtargetInfo *STI) {
+  assert(Inst.getNumOperands() == 3 && "expected three operands");
+  assert(Inst.getOperand(0).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(1).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(2).isImm() && "expected immediate operand kind");
+  assert(Inst.getOperand(2).getImm() < 0 && "expected immediate operand >= 0");
+
+  MipsTargetStreamer &TOut = getTargetStreamer();
+  unsigned rt = Inst.getOperand(0).getReg();
+  unsigned rs = Inst.getOperand(1).getReg();
+  int imm = Inst.getOperand(2).getImm();
+  if (isUInt<12>(imm))
+    TOut.emitRRX(Mips::ADDIUNEG_NM, rt, rs, MCOperand::createImm(-imm), IDLoc, STI);
+  else if (rt == rs)
+    TOut.emitRRX(Mips::ADDIU48_NM, rt, rs, MCOperand::createImm(-imm), IDLoc, STI);
+  else {
+    TOut.emitRI(Mips::LI48_NM, rt, -imm, IDLoc, STI);
+    TOut.emitRRR(Mips::ADDu_NM, rt, rs, rt, IDLoc, STI);
+  }
   return false;
 }
 

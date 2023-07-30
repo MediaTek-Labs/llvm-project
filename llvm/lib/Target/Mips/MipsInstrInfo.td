@@ -2884,6 +2884,7 @@ let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
                       (RDHWR GPR32Opnd:$rt, HWRegsOpnd:$rs, 0), 1>, ISA_MIPS1;
 
 }
+let AdditionalPredicates = [NotNanoMips] in {
 def : MipsInstAlias<"sub, $rd, $rs, $imm",
                     (ADDi GPR32Opnd:$rd, GPR32Opnd:$rs,
                           InvertedImOperand:$imm), 0>, ISA_MIPS1_NOT_32R6_64R6;
@@ -2895,6 +2896,7 @@ def : MipsInstAlias<"subu, $rd, $rs, $imm",
                            InvertedImOperand:$imm), 0>;
 def : MipsInstAlias<"subu $rs, $imm", (ADDiu GPR32Opnd:$rs, GPR32Opnd:$rs,
                                              InvertedImOperand:$imm), 0>;
+}
 let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def : MipsInstAlias<"sll $rd, $rt, $rs",
                       (SLLV GPR32Opnd:$rd, GPR32Opnd:$rt, GPR32Opnd:$rs), 0>;

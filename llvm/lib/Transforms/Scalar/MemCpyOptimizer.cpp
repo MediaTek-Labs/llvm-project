@@ -297,7 +297,7 @@ void MemsetRanges::addRange(int64_t Start, int64_t Size, Value *Ptr,
     I->Start = Start;
     I->StartPtr = Ptr;
     I->Alignment = Alignment;
-    if (I->MaxAlignmentOffset != 0)
+    if (I->MaxAlignment != 0)
       I->MaxAlignmentOffset = (I->MaxAlignmentOffset + Size) % I->MaxAlignment;
     else
       I->MaxAlignmentOffset = 0;

@@ -420,7 +420,17 @@ bool MipsInstPrinter::printAlias(const MCInst &MI, uint64_t Address,
     return printAlias("li", MI, Address, 0, 1, STI, OS);
   case Mips::ADDIU_NM:
   case Mips::ADDIUNEG_NM:
-    return isReg<Mips::ZERO_NM>(MI, 1) && printAlias("li", MI, Address, 0, 2, STI, OS);
+    if (isReg<Mips::ZERO_NM>(MI, 1))
+      return printAlias("li", MI, Address, 0, 2, STI, OS);
+    else
+      return printAlias("addiu", MI, Address, 0, 1, 2, STI, OS);
+  case Mips::ADDIU48_NM:
+  case Mips::ADDIURS5_NM:
+  case Mips::ADDIUR1SP_NM:
+  case Mips::ADDIUR2_NM:
+  case Mips::ADDIUGPB_NM:
+  case Mips::ADDIUGPW_NM:
+    return printAlias("addiu", MI, Address, 0, 1, 2, STI, OS);
   case Mips::ANDI16_NM:
   case Mips::ANDI_NM:
     // andi[16/32] $r0, $r1, imm => andi $r0, $r1, imm

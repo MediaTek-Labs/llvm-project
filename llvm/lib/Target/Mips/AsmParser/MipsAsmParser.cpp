@@ -376,6 +376,9 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool expandSubuNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
 		    const MCSubtargetInfo *STI);
 
+  bool expandAddiuNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+                     const MCSubtargetInfo *STI);
+
   bool reportParseError(const Twine &ErrorMsg);
   bool reportParseError(SMLoc Loc, const Twine &ErrorMsg);
 
@@ -3114,6 +3117,8 @@ MipsAsmParser::tryExpandInstruction(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     return expandLaNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   case Mips::PseudoSUBU_NM:
     return expandSubuNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
+  case Mips::PseudoADDIU_NM:
+    return expandAddiuNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   }
 }
 
@@ -6501,6 +6506,64 @@ bool MipsAsmParser::expandSubuNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
   return false;
 }
 
+// Expand to appropriate ADDIU instruction
+bool MipsAsmParser::expandAddiuNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+				  const MCSubtargetInfo *STI) {
+  assert(Inst.getNumOperands() == 3 && "expected three operands");
+  assert(Inst.getOperand(0).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(1).isReg() && "expected register operand kind");
+  assert((Inst.getOperand(2).isImm() || Inst.getOperand(2).isExpr()) &&
+	 "expected immediate operand kind");
+
+  MipsTargetStreamer &TOut = getTargetStreamer();
+  unsigned rt = Inst.getOperand(0).getReg();
+  unsigned rs = Inst.getOperand(1).getReg();
+  if (Inst.getOperand(2).isImm()) {
+    int imm = Inst.getOperand(2).getImm();
+    MCRegisterClass RC = getContext().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
+    if (RC.contains(rt) && RC.contains(rs) && isUInt<5>(imm) && imm % 4 == 0)
+      TOut.emitRRX(Mips::ADDIUR2_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+    else if (rt == rs && isInt<4>(imm))
+      TOut.emitRRX(Mips::ADDIURS5_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+    else if (RC.contains(rt) && rs == Mips::SP_NM && isUInt<8>(imm) && imm % 4 == 0)
+      TOut.emitRRX(Mips::ADDIUR1SP_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+    else if (rs == Mips::GP_NM) {
+      if (isUInt<18>(imm))
+	TOut.emitRRX(Mips::ADDIUGPB_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+      else if (isUInt<21>(imm) && imm % 4 == 0)
+	TOut.emitRRX(Mips::ADDIUGPW_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+      else
+	TOut.emitRRX(Mips::ADDIUGP48_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+    }
+    else if (imm < 0 && imm >= -4095)
+      TOut.emitRRX(Mips::ADDIUNEG_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+    else if (imm >= 0 && imm <= 65535)
+      TOut.emitRRX(Mips::ADDIU_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+    else if (rt == rs)
+      TOut.emitRRX(Mips::ADDIU48_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+    else {
+      TOut.emitRR(Mips::MOVE_NM, rt, rs, IDLoc, STI);
+      // FIXME: use 16-bit instructions if possible
+      TOut.emitRRX(Mips::ADDIU48_NM, rt, rt, MCOperand::createImm(imm), IDLoc, STI);
+    }
+  }
+  else {
+    const MipsMCExpr *Expr = static_cast<const MipsMCExpr*>(Inst.getOperand(2).getExpr());
+    if (Expr->getKind() == MipsMCExpr::MEK_LO)
+      TOut.emitRRX(Mips::ADDIU_NM, rt, rs, MCOperand::createExpr(Expr), IDLoc, STI);
+    else if (Expr->getKind() == MipsMCExpr::MEK_GPREL)
+      TOut.emitRRX(Mips::ADDIUGPB_NM, rt, rs, MCOperand::createExpr(Expr), IDLoc, STI);
+    else {
+      if (rt != rs) {
+	TOut.emitRR(Mips::MOVE_NM, rt, rs, IDLoc, STI);
+	rs = rt;
+      }
+      TOut.emitRRX(Mips::ADDIU48_NM, rt, rs, MCOperand::createExpr(Expr), IDLoc, STI);
+    }
+  }
+  return false;
+}
+
 unsigned
 MipsAsmParser::checkEarlyTargetMatchPredicate(MCInst &Inst,
                                               const OperandVector &Operands) {
@@ -6682,6 +6745,10 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
   case Mips::MOVEPREV_NM:
     if (Inst.getOperand(3).getReg() != Inst.getOperand(2).getReg() + 1)
       return Match_RequiresSrcRegPair;
+    return Match_Success;
+  case Mips::ADDIU_NM:
+    if (Inst.getOperand(0).getReg() == Mips::ZERO_NM)
+      return Match_RequiresNoZeroRegister;
     return Match_Success;
   case Mips::SWSP16_NM:
   case Mips::LWSP16_NM:

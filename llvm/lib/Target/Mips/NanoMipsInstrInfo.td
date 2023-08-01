@@ -1667,7 +1667,8 @@ def ROTR_NM : ShiftI_Desc<"rotr", uimm5, GPRNM32Opnd, imm32ZExt5, rotr>,
 def EXT_NM : ExtBaseNM, ExtInsBase_Enc<0b1111>;
 def INS_NM : InsBaseNM, ExtInsBase_Enc<0b1110>;
 
-def ADDIU_NM : AddImmediate<"addiu", uimm16_nm, GPRNM32NZOpnd, GPRNM32Opnd,
+let TwoOperandAliasConstraint = "$rs = $rt" in {
+def ADDIU_NM : AddImmediate<"addiu[32]", uimm16_nm, GPRNM32Opnd, GPRNM32Opnd,
                             imm32ZExt16, add>, _Pool_P32<0b00000> {
   bits<5> rt;
   bits<5> rs;
@@ -1675,19 +1676,25 @@ def ADDIU_NM : AddImmediate<"addiu", uimm16_nm, GPRNM32NZOpnd, GPRNM32Opnd,
   let Inst{25...21} = rt;
   let Inst{20...16} = rs;
   let Inst{15...0} = imm;
-  let TwoOperandAliasConstraint = "$rt = $rs";
 }
+
+def PseudoADDIU_NM: NanoMipsAsmPseudoInst<(outs GPRNM32Opnd:$rt),
+					  (ins GPRNM32Opnd:$rs, sym32_nm:$imm),
+					  "addiu\t$rt, $rs, $imm",
+					  []>;
+}
+
 def : NanoMipsInstAlias<"addu $rt, $rs, $imm",
 		        (ADDIU_NM GPRNM32NZOpnd:$rt, GPRNM32Opnd:$rs, uimm16_nm:$imm), 0>;
 
-def ADDIUNEG_NM : AddImmediate<"addiu", nimm12_nm, GPRNM32Opnd, GPRNM32Opnd,
+def ADDIUNEG_NM : AddImmediate<"addiu[neg]", nimm12_nm, GPRNM32Opnd, GPRNM32Opnd,
                                imm32Neg12, add>, CondLogicI32_Enc<0b1000>;
 
 def PseudoSUBU_NM: NanoMipsAsmPseudoInst<(outs GPRNM32Opnd:$rt),
 					 (ins GPRNM32Opnd:$rs, uimm32_nm:$imm),
 					 "subu\t$rt, $rs, $imm", []>;
 
-def ADDIUR2_NM : ArithLogicAsmNM<"addiu", uimm5s2_nm, GPRNM16R3Opnd, GPRNM16R3Opnd,
+def ADDIUR2_NM : ArithLogicAsmNM<"addiu[r2]", uimm5s2_nm, GPRNM16R3Opnd, GPRNM16R3Opnd,
                                  imm32ZExt5, add>, _Pool_P16_A2<0b0> {
   bits<3> rt;
   bits<3> rs;
@@ -1697,7 +1704,7 @@ def ADDIUR2_NM : ArithLogicAsmNM<"addiu", uimm5s2_nm, GPRNM16R3Opnd, GPRNM16R3Op
   let Inst{2...0} = imm{4...2};
 }
 
-def ADDIURS5_NM : AddImmediate<"addiu", simm4, GPRNM16R5NZOpnd, GPRNM16R5NZOpnd,
+def ADDIURS5_NM : AddImmediate<"addiu[rs5]", simm4, GPRNM16R5NZOpnd, GPRNM16R5NZOpnd,
 			       imm32ZExt4, add>, _Pool_P16_A2<0b1>,
 			       RegConstraint<"$rs = $rt">, NoEncode<"$rs">  {
   bits<5> rt;
@@ -1707,7 +1714,7 @@ def ADDIURS5_NM : AddImmediate<"addiu", simm4, GPRNM16R5NZOpnd, GPRNM16R5NZOpnd,
   let Inst{2...0} = imm{2...0};
 }
 
-def ADDIUR1SP_NM : ArithLogicAsmNM<"addiu", uimm8s2_nm, GPRNM16R3Opnd,
+def ADDIUR1SP_NM : ArithLogicAsmNM<"addiu[r1.sp]", uimm8s2_nm, GPRNM16R3Opnd,
 				   GPRNMSPOpnd, imm32ZExt8s2, add>,
 				   _Pool_P16<0b01100>, NoEncode<"$rs"> {
   bits<3> rt;
@@ -1725,7 +1732,7 @@ class Op48_Imm_Enc<bits<5> isel> : _Pool_P48I<isel> {
   let Inst{15...0} = imm{31...16};
 }
 
-def ADDIU48_NM : ArithLogicINM<"addiu", sym32_nm, GPRNM48Opnd,
+def ADDIU48_NM : ArithLogicINM<"addiu[48]", sym32_nm, GPRNM48Opnd,
 			imm32_NM, add>,
 			Op48_Imm_Enc<0b00001>,
 			RegConstraint<"$rs = $rt">;
@@ -1737,7 +1744,7 @@ class AddImmediateGP<string opstr, Operand Od, RegisterOperand RO,
 	 !strconcat(opstr, "\t$rt, $rs, $offset"),
 	 [(set RO:$rt, (add GPRNMGPOpnd:$rs, offset_type:$offset))]>;
 
-def ADDIUGPB_NM : AddImmediateGP<"addiu", sym32_gp18_nm, GPRNM32Opnd,
+def ADDIUGPB_NM : AddImmediateGP<"addiu[gp.b]", sym32_gp18_nm, GPRNM32Opnd,
 				offsetgp18, add>,
 				_Pool_P_GP_BH<0b011>, NoEncode<"$rs"> {
   bits<5> rt;
@@ -1834,14 +1841,14 @@ let isReMaterializable = 1 in {
 					  "li\t$rt, $imm",
 					  [(set GPRNM32Opnd:$rt, imm:$imm)]>;
 
-  def ADDIUGP48_NM : LoadAddressGPRelNM<"addiu[gp48]", GPRNM48Opnd, sym32_gp_nm,
-					addrgprel>, Op48_Addr_Enc<0b00010>,
-					NoEncode<"$rs">;
-
   def PseudoLA_NM : NanoMipsAsmPseudoInst<(outs GPRNM32Opnd:$rt), (ins sym32_nm:$addr),
 					  "la\t$rt, $addr",
 					  [(set GPRNM32Opnd:$rt, addrsym:$addr)]>;
 }
+
+def ADDIUGP48_NM : LoadAddressGPRelNM<"addiu[gp48]", GPRNM48Opnd, sym32_gp_nm,
+				      addrgprel>, Op48_Addr_Enc<0b00010>,
+				      NoEncode<"$rs">;
 
 def ADDIUB32_NM : MipsInstAlias<"addiu.b32 $rt, $rs, $addr",
 				(ADDIUGP48_NM GPRNM48Opnd:$rt,

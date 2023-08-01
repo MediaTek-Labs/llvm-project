@@ -103,7 +103,8 @@ bool NMLoadStoreOpt::runOnMachineFunction(MachineFunction &Fn) {
 
 bool NMLoadStoreOpt::isStackPointerAdjustment(MachineInstr &MI,
                                               bool IsRestore) {
-  if (MI.getOpcode() != Mips::ADDIU_NM && MI.getOpcode() != Mips::ADDIUNEG_NM)
+  if (MI.getOpcode() != Mips::ADDIU_NM &&
+      MI.getOpcode() != Mips::ADDIUNEG_NM)
     return false;
   Register DstReg = MI.getOperand(0).getReg();
   Register SrcReg = MI.getOperand(1).getReg();

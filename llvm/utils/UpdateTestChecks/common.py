@@ -56,6 +56,7 @@ class Filter(Regex):
     result = copy.deepcopy(super(Filter, self), memo)
     result.is_filter_out = copy.deepcopy(self.is_filter_out, memo)
     return result
+outlined_fn_to_filecheck_var = {}
 
 def parse_commandline_args(parser):
   class RegexAction(argparse.Action):
@@ -894,6 +895,8 @@ def generalize_asm_check_lines(lines, vars_seen, global_vars_seen):
                                        ASM_VALUE_RE, True)
 
 def add_checks(output_lines, comment_marker, prefix_list, func_dict, func_name, check_label_format, is_backend, is_analyze, global_vars_seen_dict, is_filtered):
+  global outlined_function_counter
+  outlined_function_counter = 0
   # prefix_exclusions are prefixes we cannot use to print the function because it doesn't exist in run lines that use these prefixes as well.
   prefix_exclusions = set()
   printed_prefixes = []
@@ -951,7 +954,17 @@ def add_checks(output_lines, comment_marker, prefix_list, func_dict, func_name, 
         output_lines.append(check_label_format % (checkprefix, func_name, '', func_name_separator))
         output_lines.append('%s %s-SAME: %s' % (comment_marker, checkprefix, args_and_sig))
       else:
-        output_lines.append(check_label_format % (checkprefix, func_name, args_and_sig, func_name_separator))
+        # Check if we generated new name for outlined function that contains FileCheck
+        # variable in it and if so, use that name in CHECK directive.
+        is_outlined_fn = func_name.find("OUTLINED_FUNCTION")
+        if is_outlined_fn != -1:
+          new_func_name = outlined_fn_to_filecheck_var[func_name][1]
+          # FileCheck local variables don't work inside CHECK-LABEL so we will use CHECK
+          # for outlined function names.
+          new_check_format = '{} %s: %s%s:'.format(comment_marker)
+          output_lines.append(new_check_format % (checkprefix, new_func_name, args_and_sig))
+        else:
+          output_lines.append(check_label_format % (checkprefix, func_name, args_and_sig, func_name_separator))
       func_body = str(func_dict[checkprefix][func_name]).splitlines()
       if not func_body:
         # We have filtered everything.
@@ -973,8 +986,41 @@ def add_checks(output_lines, comment_marker, prefix_list, func_dict, func_name, 
             output_lines.append('%s %s-EMPTY:' % (comment_marker, checkprefix))
           else:
             check_suffix = '-NEXT' if not is_filtered else ''
-            output_lines.append('%s %s%s:  %s' % (comment_marker, checkprefix,
-                                                  check_suffix, func_line))
+            # We want to generalize outlined function suffixes.
+            # For this purpose we use FileCheck variables and we replace outlined
+            # function names with it as we go through the assembly instructions.
+            outlined_fn_prefix = "OUTLINED_FUNCTION"
+            outlined_fn_prefix_index = func_line.find(outlined_fn_prefix)
+            if outlined_fn_prefix_index != -1:
+              # Get original outlined function name
+              full_outlined_fn_name = func_line[outlined_fn_prefix_index:].split()[0]
+              new_outlined_fn_name = ''
+              # If we already saw this outlined function get it's new name that contains
+              # FileCheck variable reference.
+              if full_outlined_fn_name in outlined_fn_to_filecheck_var.keys():
+                new_outlined_fn_name = outlined_fn_to_filecheck_var[full_outlined_fn_name][1]
+              else:
+                # If we see this outlined function name for the first time, generate FileCheck variable
+                # with regex expression to capture name suffix and save it in
+                # outlined_fn_to_filecheck_var map.
+                suffix = "[[SUFFIX" + str(outlined_function_counter) + ":.*]]"
+                new_outlined_fn_name = full_outlined_fn_name[:len(outlined_fn_prefix)] + suffix
+
+                suffix_ref = "[[SUFFIX" + str(outlined_function_counter) +"]]"
+                # new_outlined_fn_name_ref is new outlined function name to emit with CHECK-LABEL directive
+                # later, when we encounter appropriate outlined function label.
+                new_outlined_fn_name_ref = full_outlined_fn_name[:len(outlined_fn_prefix)] + suffix_ref
+                outlined_fn_to_filecheck_var[full_outlined_fn_name] = (new_outlined_fn_name, new_outlined_fn_name_ref)
+
+                # Increase the counter to distinguish the following suffixes from the previous ones.
+                outlined_function_counter = outlined_function_counter + 1
+
+              # Update outlined function name inside current line and emit CHECK directive.
+              new_func_line = func_line[:outlined_fn_prefix_index] + new_outlined_fn_name \
+                                + func_line[outlined_fn_prefix_index+len(full_outlined_fn_name):]
+              output_lines.append('%s %s%s:  %s' % (comment_marker, checkprefix, check_suffix, new_func_line))
+            else:
+              output_lines.append('%s %s%s:  %s' % (comment_marker, checkprefix, check_suffix, func_line))
         # Remember new global variables we have not seen before
         for key in global_vars_seen:
           if key not in global_vars_seen_before:

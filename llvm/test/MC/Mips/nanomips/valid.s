@@ -1049,14 +1049,14 @@
 				# CHECK-NEXT: <MCInst #{{.*}} BNEC_NM
 	beqc	$a2, $zero, 1b	# CHECK: beqzc $a2, .Ltmp0 # encoding: [0b0AAAAAAA,0x9b]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp0+0, kind: fixup_NANOMIPS_PC7_S1
-				# CHECK-NEXT: <MCInst #{{.*}} BEQZC_NM
-	beqc	$a6, $zero, 1b	# CHECK: beqc $a6, $zero, .Ltmp0 # encoding: [0x0a,0x88,A,0b00AAAAAA]
+				# CHECK-NEXT: <MCInst #{{.*}} BEQCzero_NM
+	beqc	$a6, $zero, 1b	# CHECK: beqzc $a6, .Ltmp0 # encoding: [0x0a,0x88,A,0b00AAAAAA]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp0+0, kind: fixup_NANOMIPS_PC14_S1
 				# CHECK-NEXT: <MCInst #{{.*}} BEQC_NM
 	bnec	$s2, $zero, 1f	# CHECK: bnezc $s2, .Ltmp1 # encoding: [0b0AAAAAAA,0xb9]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp1+0, kind: fixup_NANOMIPS_PC7_S1
-				# CHECK-NEXT: <MCInst #{{.*}} BNEZC_NM
-	bnec	$s4, $zero, 1f	# CHECK: bnec $s4, $zero, .Ltmp1 # encoding: [0x14,0xa8,A,0b00AAAAAA]
+				# CHECK-NEXT: <MCInst #{{.*}} BNECzero_NM
+	bnec	$s4, $zero, 1f	# CHECK: bnezc $s4, .Ltmp1 # encoding: [0x14,0xa8,A,0b00AAAAAA]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp1+0, kind: fixup_NANOMIPS_PC14_S1
 				# CHECK-NEXT: <MCInst #{{.*}} BNEC_NM
 	beqic	$a0, 0, 1f	# CHECK: beqic $a0, 0, .Ltmp1 # encoding: [0x80,0xc8,A,0b00000AAA]

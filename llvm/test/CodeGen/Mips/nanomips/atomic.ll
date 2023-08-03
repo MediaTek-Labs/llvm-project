@@ -153,7 +153,7 @@ define i32 @AtomicCmpSwap32(i32 signext %oldval, i32 signext %newval) nounwind {
 ; CHECK-NEXT:    # in Loop: Header=BB7_1 Depth=1
 ; CHECK-NEXT:    move $a4, $a1
 ; CHECK-NEXT:    sc $a4, 0($a3)
-; CHECK-NEXT:    beqc $a4, $zero, .LBB7_1
+; CHECK-NEXT:    beqzc $a4, .LBB7_1
 ; CHECK-NEXT:  .LBB7_3: # %entry
 ; CHECK-NEXT:    move $a0, $a2
 ; CHECK-NEXT:    restore.jrc 16
@@ -189,7 +189,7 @@ define signext i8 @AtomicLoadAdd8(i8 signext %incr) nounwind {
 ; CHECK-NEXT:    and $t0, $a3, $a5
 ; CHECK-NEXT:    or $t0, $t0, $a1
 ; CHECK-NEXT:    sc $t0, 0($a4)
-; CHECK-NEXT:    beqc $t0, $zero, .LBB8_1
+; CHECK-NEXT:    beqzc $t0, .LBB8_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    and $a0, $a3, $a6
 ; CHECK-NEXT:    srlv $a0, $a0, $a7
@@ -221,7 +221,7 @@ define signext i8 @AtomicLoadSub8(i8 signext %incr) nounwind {
 ; CHECK-NEXT:    and $t0, $a3, $a5
 ; CHECK-NEXT:    or $t0, $t0, $a1
 ; CHECK-NEXT:    sc $t0, 0($a4)
-; CHECK-NEXT:    beqc $t0, $zero, .LBB9_1
+; CHECK-NEXT:    beqzc $t0, .LBB9_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    and $a0, $a3, $a6
 ; CHECK-NEXT:    srlv $a0, $a0, $a7
@@ -255,7 +255,7 @@ define signext i8 @AtomicLoadNand8(i8 signext %incr) nounwind {
 ; CHECK-NEXT:    and $t0, $a3, $a5
 ; CHECK-NEXT:    or $t0, $t0, $a1
 ; CHECK-NEXT:    sc $t0, 0($a4)
-; CHECK-NEXT:    beqc $t0, $zero, .LBB10_1
+; CHECK-NEXT:    beqzc $t0, .LBB10_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    and $a0, $a3, $a6
 ; CHECK-NEXT:    srlv $a0, $a0, $a7
@@ -287,7 +287,7 @@ define signext i8 @AtomicSwap8(i8 signext %newval) nounwind {
 ; CHECK-NEXT:    and $t0, $a3, $a5
 ; CHECK-NEXT:    or $t0, $t0, $a1
 ; CHECK-NEXT:    sc $t0, 0($a4)
-; CHECK-NEXT:    beqc $t0, $zero, .LBB11_1
+; CHECK-NEXT:    beqzc $t0, .LBB11_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    and $a0, $a3, $a6
 ; CHECK-NEXT:    srlv $a0, $a0, $a7
@@ -397,7 +397,7 @@ define signext i16 @AtomicLoadAdd16(i16 signext %incr) nounwind {
 ; CHECK-NEXT:    and $t0, $a3, $a5
 ; CHECK-NEXT:    or $t0, $t0, $a1
 ; CHECK-NEXT:    sc $t0, 0($a4)
-; CHECK-NEXT:    beqc $t0, $zero, .LBB14_1
+; CHECK-NEXT:    beqzc $t0, .LBB14_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    and $a0, $a3, $a6
 ; CHECK-NEXT:    srlv $a0, $a0, $a7

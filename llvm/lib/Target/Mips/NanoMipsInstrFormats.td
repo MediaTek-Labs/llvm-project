@@ -18,6 +18,12 @@ class InstNM<dag outs, dag ins, string asmstr, list<dag> pattern,
   let Itinerary = itin;
 }
 
+class InstAsmNM<dag outs, dag ins, string asmstr, list<dag> pattern,
+               InstrItinClass itin = NoItinerary>:
+	       InstNM<outs, ins, asmstr, [], itin> {
+  list<dag> UnusedPattern = pattern;
+}
+
 class InstSize16 {
   field bits<16> Inst;
   int Size = 2;

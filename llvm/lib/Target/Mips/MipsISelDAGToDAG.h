@@ -103,18 +103,6 @@ private:
   virtual bool selectIntAddrUImm12(SDValue Addr, SDValue &Base,
                                    SDValue &Offset) const;
 
-  virtual bool selectIntAddrUImm6s2(SDValue Addr, SDValue &Base,
-                                    SDValue &Offset) const;
-
-  virtual bool selectIntAddrUImm3s1(SDValue Addr, SDValue &Base,
-                                    SDValue &Offset) const;
-
-  virtual bool selectIntAddrUImm2(SDValue Addr, SDValue &Base,
-                                    SDValue &Offset) const;
-
-  virtual bool selectIntAddrUImm4s2(SDValue Addr, SDValue &Base,
-				    SDValue &Offset) const;
-
   virtual bool selectIntAddrUImm19s2(SDValue Addr, SDValue &Base,
 				     SDValue &Offset) const;
 
@@ -122,12 +110,6 @@ private:
 				   SDValue &Offset) const;
 
   virtual bool selectIntAddrUImm17s1(SDValue Addr, SDValue &Base,
-				     SDValue &Offset) const;
-
-  virtual bool selectIntAddrUImm7s2(SDValue Addr, SDValue &Base,
-				     SDValue &Offset) const;
-
-  virtual bool selectIntAddrUImm5s2(SDValue Addr, SDValue &Base,
 				     SDValue &Offset) const;
 
   virtual bool selectIntAddrIndexed(SDValue Addr, SDValue &Base, SDValue &Offset) const;

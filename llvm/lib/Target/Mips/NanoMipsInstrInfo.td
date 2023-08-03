@@ -555,15 +555,9 @@ def addruimm12 : ComplexPattern<iPTR, 2, "selectIntAddrUImm12", [frameindex]>;
 def addrindexed : ComplexPattern<iPTR, 2, "selectIntAddrIndexed", [frameindex]>;
 def addrindexedlsl1 : ComplexPattern<iPTR, 2, "selectIntAddrIndexedLsl1", [frameindex]>;
 def addrindexedlsl2 : ComplexPattern<iPTR, 2, "selectIntAddrIndexedLsl2", []>;
-def addruimm6s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm6s2", [frameindex]>;
-def addruimm3s1 : ComplexPattern<iPTR, 2, "selectIntAddrUImm3s1", [frameindex]>;
-def addruimm2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm2", [frameindex]>;
-def addruimm4s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm4s2", [frameindex]>;
 def addrgp19s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm19s2", [frameindex]>;
 def addrgp18 : ComplexPattern<iPTR, 2, "selectIntAddrUImm18", [frameindex]>;
 def addrgp17s1 : ComplexPattern<iPTR, 2, "selectIntAddrUImm17s1", [frameindex]>;
-def addrgp7s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm7s2", [frameindex]>;
-def addrsp5s2 : ComplexPattern<iPTR, 2, "selectIntAddrUImm5s2", [frameindex]>;
 def addrsym : ComplexPattern<iPTR, 1, "selectAddrSym", [frameindex]>;
 def addrgprel : ComplexPattern<iPTR, 1, "selectAddrSymGPRel", [frameindex]>;
 def offsetgp19s2 : ComplexPattern<iPTR, 1, "selectOffsetGP19s2", [frameindex]>;
@@ -856,7 +850,7 @@ class _Pool_POOL32A0_1<bits<6> psel> : _Pool_POOL32A0<0b1> {
 // 16-bit arithmetic and logical instructions with 4x4 register operands, P16_4X4
 class Arith4x4_Desc<string opstr, RegisterOperand RO,
 			SDPatternOperator OpNode = null_frag>:
-    InstNM<(outs RO:$dst), (ins RO:$rt, RO:$rs),
+    InstAsmNM<(outs RO:$dst), (ins RO:$rt, RO:$rs),
 	!strconcat(opstr, "\t$dst, $rt, $rs"),
 	   [(set RO:$dst, (OpNode RO:$rt, RO:$rs))]> {
   Format Form = FrmR;
@@ -892,15 +886,15 @@ class ArithLogicR32_Enc<bits<6> psel>: _Pool_POOL32A0_0<psel> {
 // 16-bit arithmetic and logical instructions with 2 register operands, POOL16C_0
 class ArithLogicR16_Desc<string opstr, RegisterOperand RO,
 		    SDPatternOperator OpNode = null_frag>:
-    InstNM<(outs RO:$dst), (ins RO:$rs, RO:$rt),
-	!strconcat(opstr, "\t$dst, $rs, $rt"),
-	   [(set RO:$dst, (OpNode RO:$rs, RO:$rt))]>;
+    InstAsmNM<(outs RO:$dst), (ins RO:$rs, RO:$rt),
+	      !strconcat(opstr, "\t$dst, $rs, $rt"),
+	      [(set RO:$dst, (OpNode RO:$rs, RO:$rt))]>;
 
 class ArithLogicR16U_Desc<string opstr, RegisterOperand RO,
 				 SDPatternOperator OpNode = null_frag>:
     InstNM<(outs RO:$rt), (ins RO:$rs),
-	!strconcat(opstr, "\t$rt, $rs"),
-	   [(set RO:$rt, (OpNode RO:$rs))]> {
+	      !strconcat(opstr, "\t$rt, $rs"),
+	      [(set RO:$rt, (OpNode RO:$rs))]> {
 }
 
 class ArithLogicR16_Enc<bits<2> isel>: _Pool_POOL16C_00<isel> {
@@ -927,8 +921,8 @@ class LogicU32_Enc<bits<6> isel>: _Pool_POOL32A0_0<isel> {
 // 16-bit arithmetic instructions with 2 register operands, POOL16C_0
 class AddSubR16_Desc<string opstr, RegisterOperand RO,
 		    SDPatternOperator OpNode = null_frag>:
-    InstNM<(outs RO:$rd), (ins RO:$rs, RO:$rt), !strconcat(opstr, "\t$rd, $rs, $rt"),
-	   [(set RO:$rd, (OpNode RO:$rs, RO:$rt))]>;
+    InstAsmNM<(outs RO:$rd), (ins RO:$rs, RO:$rt), !strconcat(opstr, "\t$rd, $rs, $rt"),
+	      [(set RO:$rd, (OpNode RO:$rs, RO:$rt))]>;
 
 class AddSubR16_Enc<bits<1> isel>: _Pool_P16_ADDU<isel> {
   bits<3> rd;
@@ -947,6 +941,14 @@ class ArithLogicINM2Reg<string opstr, Operand Od, RegisterOperand DRO,
   InstNM<(outs DRO:$rt), (ins SRO:$rs, Od:$imm),
 	 !strconcat(opstr, "\t$rt, $rs, $imm"),
 	 [(set DRO:$rt, (OpNode SRO:$rs, imm_type:$imm))]>;
+
+class ArithLogicAsmNM<string opstr, Operand Od, RegisterOperand DRO,
+		      RegisterOperand SRO,
+		      SDPatternOperator imm_type = null_frag,
+		      SDPatternOperator OpNode = null_frag> :
+  InstAsmNM<(outs DRO:$rt), (ins SRO:$rs, Od:$imm),
+	    !strconcat(opstr, "\t$rt, $rs, $imm"),
+	    [(set DRO:$rt, (OpNode SRO:$rs, imm_type:$imm))]>;
 
 // Arithmetic and logical instructions with 2 register operands and immediate.
 class ArithLogicINM<string opstr, Operand Od, RegisterOperand RO,
@@ -1230,6 +1232,16 @@ class StoreMemoryNM<string opstr, RegisterOperand RO, DAGOperand MO,
   string BaseOpcode = opstr;
 }
 
+class LoadAsmNM<string opstr, RegisterOperand RO, DAGOperand MO,
+		SDPatternOperator OpNode, InstrItinClass itin = NoItinerary> :
+    InstAsmNM<(outs RO:$rt), (ins MO:$addr), !strconcat(opstr, "\t$rt, $addr"),
+              [(set RO:$rt, (OpNode addrDefault:$addr))], itin>;
+
+class StoreAsmNM<string opstr, RegisterOperand RO, DAGOperand MO,
+		 SDPatternOperator OpNode, InstrItinClass itin = NoItinerary> :
+    InstAsmNM<(outs), (ins RO:$rt, MO:$addr), !strconcat(opstr, "\t$rt, $addr"),
+              [(OpNode RO:$rt, addrDefault:$addr)], itin>;
+
 class Op48_Addr_Enc<bits<5> isel> : _Pool_P48I<isel> {
   bits<5> rt;
   bits<32> addr;
@@ -1464,11 +1476,11 @@ class ReverseNM<string opstr, RegisterOperand RO, SDNode OpNode>:
   InstNM<(outs RO:$rd), (ins RO:$rs), !strconcat(opstr, "\t$rd, $rs"),
          [(set RO:$rd, (OpNode RO:$rs))]>;
 
-class LoadImmediateNM<string opstr, RegisterOperand RO, Operand Od,
+class LoadImmAsmNM<string opstr, RegisterOperand RO, Operand Od,
 			SDPatternOperator imm_type = null_frag> :
-  InstNM<(outs RO:$rt), (ins Od:$eu),
-         !strconcat(opstr, "\t$rt, $eu"),
-         [(set RO:$rt, imm_type:$eu)]>;
+  InstAsmNM<(outs RO:$rt), (ins Od:$eu),
+            !strconcat(opstr, "\t$rt, $eu"),
+            [(set RO:$rt, imm_type:$eu)]>;
 
 class LoadAddressPCRelNM<string opstr, RegisterOperand RO,
 			 DAGOperand MO, ComplexPattern Addr> :
@@ -1524,10 +1536,9 @@ class ANDI16_Enc<bits<5> isel> : _Pool_P16<isel>
   let Inst{3...0} = imm;
 }
 
-let FastISelShouldIgnore = 1 in {
-def ANDI16_NM : ArithLogicINM<"andi", uimm4mask_nm, GPRNM16R3Opnd,
-                               imm4Mask, and>, ANDI16_Enc<0b11100>;
-}
+def ANDI16_NM : ArithLogicAsmNM<"andi", uimm4mask_nm, GPRNM16R3Opnd,
+				GPRNM16R3Opnd, imm4Mask, and>,
+				ANDI16_Enc<0b11100>;
 
 // _POOL32A0_0 pool of instructions.
 def SLLV_NM  : ArithLogicR32_Desc<"sllv", GPRNM32Opnd, shl>,
@@ -1612,12 +1623,14 @@ def SEQI_NM  : CondLogicI32_Desc<"seqi", uimm12_nm, GPRNM32Opnd, imm32ZExt12, se
 	       CondLogicI32_Enc<0b0110>;
 
 // P.SHIFT pool of instructions
-def SLL16_NM  : ShiftI_Desc<"sll", uimm3shift_nm, GPRNM16R3Opnd, imm32ZExt3, shl>,
-	      ShiftI16_Enc<0b0>;
+def SLL16_NM : ArithLogicAsmNM<"sll", uimm3shift_nm, GPRNM16R3Opnd, GPRNM16R3Opnd,
+	       imm32ZExt3, shl>,
+	       ShiftI16_Enc<0b0>;
 def SLL_NM  : ShiftI_Desc<"sll", uimm5, GPRNM32Opnd, imm32ZExt5, shl>,
 	      ShiftI32_Enc<0b0000>;
-def SRL16_NM  : ShiftI_Desc<"srl", uimm3shift_nm, GPRNM16R3Opnd, imm32ZExt3, srl>,
-	      ShiftI16_Enc<0b1>;
+def SRL16_NM : ArithLogicAsmNM<"srl", uimm3shift_nm, GPRNM16R3Opnd, GPRNM16R3Opnd, 
+	       imm32ZExt3, srl>,
+	       ShiftI16_Enc<0b1>;
 def SRL_NM  : ShiftI_Desc<"srl", uimm5, GPRNM32Opnd, imm32ZExt5, srl>,
 	      ShiftI32_Enc<0b0010>;
 def SRA_NM  : ShiftI_Desc<"sra", uimm5, GPRNM32Opnd, imm32ZExt5, sra>,
@@ -1650,8 +1663,8 @@ def LINEG_NM : MipsInstAlias<"li $rt, $imm",
 			     (ADDIUNEG_NM GPRNM32Opnd:$rt, ZERO_NM, nimm12_nm:$imm)>,
 			     ISA_NANOMIPS;
 
-def ADDIUR2_NM : AddImmediate<"addiu", uimm5s2_nm, GPRNM16R3Opnd, GPRNM16R3Opnd,
-                              imm32ZExt5, add>, _Pool_P16_A2<0b0> {
+def ADDIUR2_NM : ArithLogicAsmNM<"addiu", uimm5s2_nm, GPRNM16R3Opnd, GPRNM16R3Opnd,
+                                 imm32ZExt5, add>, _Pool_P16_A2<0b0> {
   bits<3> rt;
   bits<3> rs;
   bits<5> imm;
@@ -1670,10 +1683,9 @@ def ADDIURS5_NM : AddImmediate<"addiu", simm4, GPRNM16R5NZOpnd, GPRNM16R5NZOpnd,
   let Inst{2...0} = imm{2...0};
 }
 
-def ADDIUR1SP_NM : AddImmediate<"addiu", uimm8s2_nm, GPRNM16R3Opnd,
-				GPRNMSPOpnd, imm32ZExt8s2, add>,
-				_Pool_P16<0b01100>,
-				NoEncode<"$rs"> {
+def ADDIUR1SP_NM : ArithLogicAsmNM<"addiu", uimm8s2_nm, GPRNM16R3Opnd,
+				   GPRNMSPOpnd, imm32ZExt8s2, add>,
+				   _Pool_P16<0b01100>, NoEncode<"$rs"> {
   bits<3> rt;
   bits<8> imm;
   let Inst{9...7} = rt;
@@ -1786,10 +1798,10 @@ class LI16_Enc<bits<5> isel> : _Pool_P16<isel>
   let Inst{6...0} = eu;
 }
 
-let isReMaterializable = 1 in {
-  def LI16_NM : LoadImmediateNM<"li[16]", GPRNM16R3Opnd, nimm7_nm, imm7M1To126>,
-	        LI16_Enc<0b11000>;
+def LI16_NM : LoadImmAsmNM<"li", GPRNM16R3Opnd, nimm7_nm, imm7M1To126>,
+	      LI16_Enc<0b11000>;
 
+let isReMaterializable = 1 in {
   def LI48_NM : LoadAddressAbsNM<"li[48]", GPRNM48Opnd, sym32_nm,
 			         addrsym>, Op48_Imm_Enc<0b00000>;
 
@@ -1978,6 +1990,17 @@ class CBranchNM<string opstr, DAGOperand opnd, PatFrag cond_op,
   bit isCTI = 1;
 }
 
+class CBranchAsmNM<string opstr, DAGOperand opnd, PatFrag cond_op,
+		   RegisterOperand RS, RegisterOperand RT>
+    : InstAsmNM<(outs), (ins RS:$rs, RT:$rt, opnd:$offset),
+                !strconcat(opstr, "\t$rs, $rt, $offset"),
+                [(brcond (i32 (cond_op RS:$rs, RT:$rt)), bb:$offset)]> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  let hasDelaySlot = 0;
+  bit isCTI = 1;
+}
+
 class CBranchImmNM<string opstr, DAGOperand opnd, PatFrag cond_op,
                    RegisterOperand RO,
                    Operand imm_type, SDPatternOperator ImmOp>
@@ -1992,9 +2015,9 @@ class CBranchImmNM<string opstr, DAGOperand opnd, PatFrag cond_op,
 
 class CBranchZeroNM<string opstr, DAGOperand opnd, PatFrag cond_op,
                     RegisterOperand RO>
-    : InstNM<(outs), (ins RO:$rs, opnd:$offset),
-             !strconcat(opstr, "\t$rs, $offset"),
-             [(brcond (i32 (cond_op RO:$rs, 0)), bb:$offset)]> {
+    : InstAsmNM<(outs), (ins RO:$rs, opnd:$offset),
+                !strconcat(opstr, "\t$rs, $offset"),
+                [(brcond (i32 (cond_op RO:$rs, 0)), bb:$offset)]> {
   let isBranch = 1;
   let isTerminator = 1;
   bit isCTI = 1;
@@ -2095,8 +2118,8 @@ class B4_Enc : _Pool_P16<0b11010> {
 
 def BEQC_NM : CBranchNM<"beqc", brtarget14_nm, seteq, GPRNM32Opnd>,
 	      B14_Enc<0b000>;
-def BEQC16_NM : CBranchNM<"beqc", brtarget4s1_nm, seteq, GPRNM16R3Opnd>,
-	      B4_Enc;
+def BEQC16_NM : CBranchAsmNM<"beqc", brtarget4s1_nm, seteq, GPRNM16R3Opnd, GPRNM16R3Opnd>,
+	        B4_Enc;
 def BGEC_NM : CBranchNM<"bgec", brtarget14_nm, setge, GPRNM32Opnd>,
 	      B14_Enc<0b010>;
 def BGEUC_NM : CBranchNM<"bgeuc", brtarget14_nm, setuge, GPRNM32Opnd>,
@@ -2104,8 +2127,8 @@ def BGEUC_NM : CBranchNM<"bgeuc", brtarget14_nm, setuge, GPRNM32Opnd>,
 
 def BNEC_NM : CBranchNM<"bnec", brtarget14_nm, setne, GPRNM32Opnd>,
 	      B14_Enc<0b100>;
-def BNEC16_NM : CBranchNM<"bnec", brtarget4s1_nm, setne, GPRNM16R3Opnd>,
-	      B4_Enc;
+def BNEC16_NM : CBranchAsmNM<"bnec", brtarget4s1_nm, setne, GPRNM16R3Opnd, GPRNM16R3Opnd>,
+	        B4_Enc;
 def BLTC_NM : CBranchNM<"bltc", brtarget14_nm, setlt, GPRNM32Opnd>,
 	      B14_Enc<0b110>;
 def BLTUC_NM : CBranchNM<"bltuc", brtarget14_nm, setult, GPRNM32Opnd>,
@@ -2225,32 +2248,31 @@ def : NMPat<(brcond (i32 (seteq (and GPRNM32:$rt, simm32power2:$imm), 0)), bb:$o
 // Load / store instructions
 //
 //===----------------------------------------------------------------------===//
-
-def LWSP16_NM : LoadMemoryNM<"lw", GPRNM32Opnd, mem_nm_sp5s2, load, addrsp5s2, II_LW>,
+def LWSP16_NM : LoadAsmNM<"lw", GPRNM32Opnd, mem_nm_sp5s2, load, II_LW>,
 	        LSSPRegMem16_Enc<0b00101>;
-def SWSP16_NM : StoreMemoryNM<"sw", GPRNM32Opnd, mem_nm_sp5s2, store, addrsp5s2, II_SW>,
+def SWSP16_NM : StoreAsmNM<"sw", GPRNM32Opnd, mem_nm_sp5s2, store, II_SW>,
 	        LSSPRegMem16_Enc<0b10101>;
-def LWGP16_NM : LoadMemoryNM<"lw", GPRNM16R3Opnd, mem_nm_gp7s2, load, addrgp7s2, II_LW>,
+def LWGP16_NM : LoadAsmNM<"lw", GPRNM16R3Opnd, mem_nm_gp7s2, load, II_LW>,
 	        LSGPRegMem16_Enc<0b01001>;
-def SWGP16_NM : StoreMemoryNM<"sw", GPRNM16R3ZOpnd, mem_nm_gp7s2, store, addrgp7s2, II_SW>,
+def SWGP16_NM : StoreAsmNM<"sw", GPRNM16R3ZOpnd, mem_nm_gp7s2, store, II_SW>,
 	        LSGPRegMem16_Enc<0b11001>;
 
-def LW16_NM : LoadMemoryNM<"lw", GPRNM16R3Opnd, mem_nm6s2, load, addruimm6s2, II_LW>,
-	      LSMem16_Enc<0b00001>;
-def SW16_NM : StoreMemoryNM<"sw", GPRNM16R3ZOpnd, mem_nm6s2, store, addruimm6s2, II_SW>,
-	      LSMem16_Enc<0b10001>;
-def LH16_NM : LoadMemoryNM<"lh", GPRNM16R3Opnd, mem_nm3s1, sextloadi16, addruimm3s1, II_LH>,
-	      LHMem16_Enc<0b00>;
-def LHU16_NM : LoadMemoryNM<"lhu", GPRNM16R3Opnd, mem_nm3s1, zextloadi16, addruimm3s1, II_LH>,
-	      LHMem16_Enc<0b10>;
-def SH16_NM : StoreMemoryNM<"sh", GPRNM16R3ZOpnd, mem_nm3s1, truncstorei16, addruimm3s1, II_SH>,
-	      LHMem16_Enc<0b01>;
+def LW16_NM : LoadAsmNM<"lw", GPRNM16R3Opnd, mem_nm6s2, load, II_LW>,
+    	      LSMem16_Enc<0b00001>;
+def SW16_NM : StoreAsmNM<"sw", GPRNM16R3ZOpnd, mem_nm6s2, store, II_SW>,
+    	      LSMem16_Enc<0b10001>;
+def LH16_NM : LoadAsmNM<"lh", GPRNM16R3Opnd, mem_nm3s1, sextloadi16, II_LH>,
+    	      LHMem16_Enc<0b00>;
+def LHU16_NM : LoadAsmNM<"lhu", GPRNM16R3Opnd, mem_nm3s1, zextloadi16, II_LH>,
+    	      LHMem16_Enc<0b10>;
+def SH16_NM : StoreAsmNM<"sh", GPRNM16R3ZOpnd, mem_nm3s1, truncstorei16, II_SH>,
+    	      LHMem16_Enc<0b01>;
 
-def LB16_NM : LoadMemoryNM<"lb", GPRNM16R3Opnd, mem_nm2, sextloadi8, addruimm2, II_LB>,
-	      LBMem16_Enc<0b00>;
-def LBU16_NM : LoadMemoryNM<"lbu", GPRNM16R3Opnd, mem_nm2, zextloadi8, addruimm2, II_LB>,
-	      LBMem16_Enc<0b10>;
-def SB16_NM : StoreMemoryNM<"sb", GPRNM16R3ZOpnd, mem_nm2, truncstorei8, addruimm2, II_SB>,
+def LB16_NM : LoadAsmNM<"lb", GPRNM16R3Opnd, mem_nm2, sextloadi8, II_LB>,
+    	      LBMem16_Enc<0b00>;
+def LBU16_NM : LoadAsmNM<"lbu", GPRNM16R3Opnd, mem_nm2, zextloadi8, II_LB>,
+    	      LBMem16_Enc<0b10>;
+def SB16_NM : StoreAsmNM<"sb", GPRNM16R3ZOpnd, mem_nm2, truncstorei8, II_SB>,
 	      LBMem16_Enc<0b01>;
 
 def LWGP_NM : LoadMemoryNM<"lw", GPRNM32Opnd, mem_nm_gp19s2, load, addrgp19s2, II_LW>,
@@ -2334,7 +2356,7 @@ def SHXS_NM : StoreMemoryNM<"shxs", GPRNM32Opnd, mem_nmrx, truncstorei16, addrin
 		LSMemX_Enc<0b1, 0b0101>;
 def LHUXS_NM : LoadMemoryNM<"lhuxs", GPRNM32Opnd, mem_nmrx, zextloadi16, addrindexedlsl1, II_LHU>,
 		LSMemX_Enc<0b1, 0b0110>;
-def LWXS16_NM : LoadMemoryNM<"lwxs", GPRNM16R3Opnd, mem_nmrx16, load, addrindexedlsl2, II_LW>,
+def LWXS16_NM : LoadAsmNM<"lwxs", GPRNM16R3Opnd, mem_nmrx16, load, II_LW>,
 		_Pool_P16C<0b1> {
   bits<3> rt;
   // Uses same encoding method as LWXS to get 5+5 register bits
@@ -2362,9 +2384,9 @@ def UASW_NM : UnalignedStore<"uasw", NMUnalignedSW>, LSMem_S9_Enc<0b101, 0b0011>
 def SWPC_NM : StorePCBase<GPRNM32Opnd, sym32_pc_nm, addrsym>, Op48_Addr_Enc<0b01111>;
 def LWPC_NM : LoadPCBase<GPRNM32Opnd, sym32_pc_nm, addrsym>, Op48_Addr_Enc<0b01011>;
 
-def LW4x4_NM : LoadMemoryNM<"lw", GPRNM4Opnd, mem_nm4s2, load, addruimm4s2, II_LW>,
+def LW4x4_NM : LoadAsmNM<"lw", GPRNM4Opnd, mem_nm4s2, load, II_LW>,
 	       LSMem4x4_Enc<0b01101>;
-def SW4x4_NM : StoreMemoryNM<"sw", GPRNM4ZOpnd, mem_nm4s2, store, addruimm4s2, II_SW>,
+def SW4x4_NM : StoreAsmNM<"sw", GPRNM4ZOpnd, mem_nm4s2, store, II_SW>,
 	       LSMem4x4_Enc<0b11101>;
 
 class MOVE_Enc : _Pool_P16_MV
@@ -2430,18 +2452,16 @@ class StoreExtend <SDPatternOperator OpNode, RegisterOperand RO,
 	     (InstStore RO:$rt, (InstAdd GPRNM32:$rs, imm:$imm), 0)>;
 
 multiclass LoadStoreExtend_M<SDPatternOperator ImmType, InstNM InstAdd> {
-  def : LoadExtend<extloadi8, LBU16_NM, ImmType, InstAdd>;
-  def : LoadExtend<zextloadi8, LBU16_NM, ImmType, InstAdd>;
-  def : LoadExtend<sextloadi8, LB16_NM, ImmType, InstAdd>;
-  def : LoadExtend<extloadi16, LHU16_NM, ImmType, InstAdd>;
-  def : LoadExtend<zextloadi16, LHU16_NM, ImmType, InstAdd>;
-  def : LoadExtend<sextloadi16, LH16_NM, ImmType, InstAdd>;
-  def : LoadExtend<load, LW16_NM, ImmType, InstAdd>;
-  def : LoadExtend<load, LW4x4_NM, ImmType, InstAdd>;
-  def : StoreExtend<truncstorei8, GPRNM16R3ZOpnd, SB16_NM, ImmType, InstAdd>;
-  def : StoreExtend<truncstorei16, GPRNM16R3ZOpnd, SH16_NM, ImmType, InstAdd>;
-  def : StoreExtend<store, GPRNM16R3ZOpnd, SW16_NM, ImmType, InstAdd>;
-  def : StoreExtend<store, GPRNM4ZOpnd, SW4x4_NM, ImmType, InstAdd>;
+  def : LoadExtend<extloadi8, LBU_NM, ImmType, InstAdd>;
+  def : LoadExtend<zextloadi8, LBU_NM, ImmType, InstAdd>;
+  def : LoadExtend<sextloadi8, LB_NM, ImmType, InstAdd>;
+  def : LoadExtend<extloadi16, LHU_NM, ImmType, InstAdd>;
+  def : LoadExtend<zextloadi16, LHU_NM, ImmType, InstAdd>;
+  def : LoadExtend<sextloadi16, LH_NM, ImmType, InstAdd>;
+  def : LoadExtend<load, LW_NM, ImmType, InstAdd>;
+  def : StoreExtend<truncstorei8, GPRNM32Opnd, SB_NM, ImmType, InstAdd>;
+  def : StoreExtend<truncstorei16, GPRNM32Opnd, SH_NM, ImmType, InstAdd>;
+  def : StoreExtend<store, GPRNM32Opnd, SW_NM, ImmType, InstAdd>;
 }
 
 // These patterns help generate better loads/stores when the immediate doesn't
@@ -2491,7 +2511,6 @@ let AddedComplexity = 1 in {
             (LHUXS_NM addrindexedlsl1:$addr)>;
   def : NMPat<(sextloadi16 addrindexedlsl1:$addr),
              (LHXS_NM addrindexedlsl1:$addr)>;
-  def : NMPat<(load addrindexedlsl2:$addr), (LWXS16_NM addrindexedlsl2:$addr)>;
   def : NMPat<(load addrindexedlsl2:$addr), (LWXS_NM addrindexedlsl2:$addr)>;
   def : NMPat<(truncstorei16 GPRNM32:$rt, addrindexedlsl1:$addr),
             (SHXS_NM GPRNM32:$rt, addrindexedlsl1:$addr)>;

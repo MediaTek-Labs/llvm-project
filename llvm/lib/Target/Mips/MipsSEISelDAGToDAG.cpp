@@ -568,68 +568,19 @@ bool MipsSEDAGToDAGISel::selectIntAddrUImm12(SDValue Addr, SDValue &Base,
   return selectAddrFrameIndexUOffset(Addr, Base, Offset, 12, 0);
 }
 
-bool MipsSEDAGToDAGISel::selectIntAddrUImm6s2(SDValue Addr, SDValue &Base,
-                                             SDValue &Offset) const {
-  // FIXME: 16-bit load/store selection disabled for DAG
-  return false;
-}
-
-bool MipsSEDAGToDAGISel::selectIntAddrUImm3s1(SDValue Addr, SDValue &Base,
-                                             SDValue &Offset) const {
-  // FIXME: 16-bit load/store selection disabled for DAG
-  return false;
-}
-
-bool MipsSEDAGToDAGISel::selectIntAddrUImm2(SDValue Addr, SDValue &Base,
-                                             SDValue &Offset) const {
-  // FIXME: 16-bit load/store selection disabled for DAG
-  return false;
-
-}
-
-bool MipsSEDAGToDAGISel::selectIntAddrUImm4s2(SDValue Addr, SDValue &Base,
-					      SDValue &Offset) const {
-  // FIXME: 16-bit load/store selection disabled for DAG
-  return false;
-}
-
 bool MipsSEDAGToDAGISel::selectIntAddrUImm19s2(SDValue Addr, SDValue &Base,
                                              SDValue &Offset) const {
-  bool Retval = selectAddrFrameIndexUOffset(Addr, Base, Offset, 19, 2);
-  if (Base == CurDAG->getRegister(Mips::GP_NM, MVT::i32))
-    return Retval;
-  else
-    return false;
+  // FIXME: 16-bit load/store selection disabled for DAG
+  return false;
 }
 
 bool MipsSEDAGToDAGISel::selectIntAddrUImm17s1(SDValue Addr, SDValue &Base,
                                              SDValue &Offset) const {
-  bool Retval = selectAddrFrameIndexUOffset(Addr, Base, Offset, 17, 1);
-  if (Base == CurDAG->getRegister(Mips::GP_NM, MVT::i32))
-    return Retval;
-  else
-    return false;
+  // FIXME: 16-bit load/store selection disabled for DAG
+  return false;
 }
 
 bool MipsSEDAGToDAGISel::selectIntAddrUImm18(SDValue Addr, SDValue &Base,
-                                             SDValue &Offset) const {
-  bool Retval = selectAddrFrameIndexUOffset(Addr, Base, Offset, 19);
-  if (Base == CurDAG->getRegister(Mips::GP_NM, MVT::i32))
-    return Retval;
-  else
-    return false;
-}
-
-bool MipsSEDAGToDAGISel::selectIntAddrUImm7s2(SDValue Addr, SDValue &Base,
-                                             SDValue &Offset) const {
-  bool Retval = selectAddrFrameIndexUOffset(Addr, Base, Offset, 7, 2);
-  if (Base == CurDAG->getRegister(Mips::GP_NM, MVT::i32))
-    return Retval;
-  else
-    return false;
-}
-
-bool MipsSEDAGToDAGISel::selectIntAddrUImm5s2(SDValue Addr, SDValue &Base,
                                              SDValue &Offset) const {
   // FIXME: 16-bit load/store selection disabled for DAG
   return false;

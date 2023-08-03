@@ -475,7 +475,8 @@ def : InstRW<[GenericWriteJump], (instrs JRC_NM, BC_NM, BEQC_NM, BGEC_NM, BGEUC_
 					 BNEZC_NM, BEQIC_NM, BGEIC_NM, BLTIC_NM,
 					 BNEIC_NM, BGEIUC_NM, BLTIUC_NM, BBNEZC_NM,
 					 BBEQZC_NM, BC16_NM, BALC16_NM,
-					 BRSC_NM, BEQC16_NM, BNEC16_NM)>;
+					 BRSC_NM, BEQC16_NM, BNEC16_NM, BEQZC16_NM,
+					 BNEZC16_NM, BEQCzero_NM, BNECzero_NM)>;
 
 def : InstRW<[GenericWriteJump], (instrs PseudoReturnNM,
                                          PseudoIndirectBranchNM, TAILCALL_NM,

@@ -2051,6 +2051,16 @@ class CBranchImmNM<string opstr, DAGOperand opnd, PatFrag cond_op,
 
 class CBranchZeroNM<string opstr, DAGOperand opnd, PatFrag cond_op,
                     RegisterOperand RO>
+    : InstNM<(outs), (ins RO:$rs, opnd:$offset),
+             !strconcat(opstr, "\t$rs, $offset"),
+             [(brcond (i32 (cond_op RO:$rs, 0)), bb:$offset)]> {
+  let isBranch = 1;
+  let isTerminator = 1;
+  bit isCTI = 1;
+}
+
+class CBranchZeroAsmNM<string opstr, DAGOperand opnd, PatFrag cond_op,
+		       RegisterOperand RO>
     : InstAsmNM<(outs), (ins RO:$rs, opnd:$offset),
                 !strconcat(opstr, "\t$rs, $offset"),
                 [(brcond (i32 (cond_op RO:$rs, 0)), bb:$offset)]> {
@@ -2101,6 +2111,16 @@ class B14_Enc<bits<3> isel> : _Pool_P_BR12<isel>
   bits<15> offset;
   let Inst{25...21} = rt;
   let Inst{20...16} = rs;
+  let Inst{13...1} = offset{13...1};
+  let Inst{0} =  offset{14};
+}
+
+class B14Zero_Enc<bits<3> isel> : _Pool_P_BR12<isel>
+{
+  bits<5> rs;
+  bits<15> offset;
+  let Inst{25...21} = rs;
+  let Inst{20...16} = 0b00000;
   let Inst{13...1} = offset{13...1};
   let Inst{0} =  offset{14};
 }
@@ -2174,26 +2194,60 @@ def BLTC_NM : CBranchNM<"bltc", brtarget14_nm, setlt, GPRNM32Opnd>,
 def BLTUC_NM : CBranchNM<"bltuc", brtarget14_nm, setult, GPRNM32Opnd>,
 	       B14_Enc<0b111>;
 
-def BEQZC_NM : CBranchZeroNM<"beqzc", brtarget7_nm, seteq, GPRNM16R3Opnd>,
-	       BZ16_Enc<0b10010>;
-def BNEZC_NM : CBranchZeroNM<"bnezc", brtarget7_nm, setne, GPRNM16R3Opnd>,
-	       BZ16_Enc<0b10110>;
-
 def : MipsInstAlias<"beqc $rt, $rs, $offset",
       (BEQC16_NM GPRNM16R3Opnd:$rs, GPRNM16R3Opnd:$rt, brtarget4s1_nm:$offset), 1>,
       ISA_NANOMIPS;
 def : MipsInstAlias<"bnec $rt, $rs, $offset",
       (BNEC16_NM GPRNM16R3Opnd:$rs, GPRNM16R3Opnd:$rt, brtarget4s1_nm:$offset), 1>,
       ISA_NANOMIPS;
-def : MipsInstAlias<"beqzc $rt, $offset",
-      (BEQC_NM ZERO_NM, GPRNM32Opnd:$rt, brtarget14_nm:$offset)>, ISA_NANOMIPS;
-def : MipsInstAlias<"bnezc $rt, $offset",
-      (BNEC_NM ZERO_NM, GPRNM32Opnd:$rt, brtarget14_nm:$offset)>, ISA_NANOMIPS;
 
-def : MipsInstAlias<"beqc $rs, $zero, $offset",
-      (BEQZC_NM GPRNM16R3Opnd:$rs, brtarget7_nm:$offset)>, ISA_NANOMIPS;
-def : MipsInstAlias<"bnec $rs, $zero, $offset",
-      (BNEZC_NM GPRNM16R3Opnd:$rs, brtarget7_nm:$offset)>, ISA_NANOMIPS;
+def BEQZC16_NM : CBranchZeroAsmNM<"beqzc", brtarget7_nm, seteq, GPRNM16R3Opnd>,
+	     BZ16_Enc<0b10010>;
+def BNEZC16_NM : CBranchZeroAsmNM<"bnezc", brtarget7_nm, setne, GPRNM16R3Opnd>,
+	       BZ16_Enc<0b10110>;
+
+// Encode b[eq|ne]c with $zero operand as b[eq|ne]c16
+let isAsmParserOnly = 1 in {
+  def BEQCzero_NM : CBranchAsmNM<"beqc", brtarget7_nm, seteq,
+				 GPRNM16R3Opnd, GPR32ZeroOpnd>,
+				BZ16_Enc<0b10010>, NoEncode<"$rt">;
+  def BNECzero_NM : CBranchAsmNM<"bnec", brtarget7_nm, setne, GPRNM16R3Opnd,
+				 GPR32ZeroOpnd>,
+				BZ16_Enc<0b10110>, NoEncode<"$rt">;
+}
+
+// Above pattern with operands commuted
+def : NanoMipsInstAlias<"beqc $rt, $rs, $offset",
+			(BEQCzero_NM GPRNM16R3Opnd:$rs, GPR32ZeroOpnd:$rt,
+			brtarget7_nm:$offset), 0>;
+def : NanoMipsInstAlias<"bnec $rt, $rs, $offset",
+			(BNECzero_NM  GPRNM16R3Opnd:$rs, GPR32ZeroOpnd:$rt,
+			brtarget7_nm:$offset), 0>;
+
+// Encode BEQZC/BNEZC using BEQC/BNEC
+let isAsmParserOnly = 1 in {
+def BEQZC_NM : CBranchZeroNM<"beqzc", brtarget14_nm, seteq, GPRNM32Opnd>,
+	       B14Zero_Enc<0b000>;
+def BNEZC_NM : CBranchZeroNM<"bnezc", brtarget14_nm, setne, GPRNM32Opnd>,
+	       B14Zero_Enc<0b100>;
+}
+
+// Aliases required to disassemble above pattern as BEQZC/BNEZC
+def : NanoMipsInstAlias<"beqzc $rt, $offset",
+			(BEQC_NM GPRNM32Opnd:$rt, ZERO_NM,
+			brtarget14_nm:$offset), 1>;
+def : NanoMipsInstAlias<"bnezc $rt, $offset",
+			(BNEC_NM  GPRNM32Opnd:$rt, ZERO_NM,
+			brtarget14_nm:$offset), 1>;
+def : NanoMipsInstAlias<"beqzc $rt, $offset",
+			(BEQC_NM ZERO_NM, GPRNM32Opnd:$rt,
+			brtarget14_nm:$offset), 1>;
+def : NanoMipsInstAlias<"bnezc $rt, $offset",
+			(BNEC_NM ZERO_NM, GPRNM32Opnd:$rt,
+			brtarget14_nm:$offset), 1>;
+
+def : MipsInstAlias<"bgtzc $rt, $offset",
+		(BLTC_NM ZERO_NM, GPRNM32Opnd:$rt, brtarget14_nm:$offset), 0>, ISA_NANOMIPS;
 
 def BEQIC_NM : CBranchImmNM<"beqic", brtarget11_nm, seteq, GPRNM32Opnd, uimm7, immZExt7>,
 	       BRI_Enc<0b000>;

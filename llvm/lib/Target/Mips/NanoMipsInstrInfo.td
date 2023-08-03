@@ -226,8 +226,14 @@ class NMUImmScaledAsmOperandClass<int Bits,
   let SuperClasses = Supers;
 }
 
-class Hi20AsmOperandClass<string Suffix = ""> : AsmOperandClass {
-  let Name = "Hi20Offset" # Suffix;
+def Hi20AsmOperand : AsmOperandClass {
+  let Name = "Hi20Offset";
+  let RenderMethod = "addHi20Operands";
+  let ParserMethod = "parseHi20Op";
+}
+
+def Hi20PCRelAsmOperand : AsmOperandClass {
+  let Name = "Hi20OffsetPCRel";
   let RenderMethod = "addSImmOperands<20>";
 }
 
@@ -498,7 +504,6 @@ def calltarget10_nm : Operand<iPTR> {
   // Prefer BALC[32] over BALC[16] and let the linker relax it where possible.
   let ParserMatchClass = NMJumpTargetAsmOperandClass<10, [calltarget25_nm.ParserMatchClass]>;
 }
-
 def jmptarget_nm   : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValueNM<25>";
   let ParserMatchClass = NMJumpTargetAsmOperand;
@@ -511,13 +516,15 @@ def simm32_nm : Operand<i32> {
 }
 
 def simm32s12_nm : Operand<i32> {
-  let ParserMatchClass = Hi20AsmOperandClass<>;
+  let ParserMatchClass = Hi20AsmOperand;
   let PrintMethod = "printHi20";
+  let DecoderMethod = "DecodeSImm32s12";
 }
 
 def simm32s12_pcrel_nm : Operand<i32> {
-  let ParserMatchClass = Hi20AsmOperandClass<"PCRel">;
+  let ParserMatchClass = Hi20PCRelAsmOperand;
   let PrintMethod = "printHi20PCRel";
+  let DecoderMethod = "DecodeSImm32s12";
 }
 
 def sym32_pc_nm : Operand<iPTRAny> {

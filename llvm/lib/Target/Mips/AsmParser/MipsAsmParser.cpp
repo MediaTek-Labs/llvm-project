@@ -208,6 +208,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   ParseStatus parseInvNum(OperandVector &Operands);
   ParseStatus parseRegisterList(OperandVector &Operands);
   ParseStatus parseNMRegisterList(OperandVector &Operands);
+  ParseStatus parseHi20Op(OperandVector &Operands);
 
   bool searchSymbolAlias(OperandVector &Operands);
 
@@ -880,6 +881,7 @@ private:
     k_RegisterIndex, /// A register index in one or more RegKind.
     k_Token,         /// A simple token
     k_RegList,       /// A physical register list
+    k_Hi20Part,      /// HI20 part of constant expression
   } Kind;
 
 public:
@@ -896,6 +898,7 @@ public:
     case k_Immediate:
     case k_RegisterIndex:
     case k_Token:
+    case k_Hi20Part:
       break;
     }
   }
@@ -929,12 +932,17 @@ private:
     SmallVector<unsigned, 10> *List;
   };
 
+  struct Hi20Op {
+    const MCExpr *Val;
+  };
+
   union {
     struct Token Tok;
     struct RegIdxOp RegIdx;
     struct ImmOp Imm;
     struct MemOp Mem;
     struct RegListOp RegList;
+    struct Hi20Op Hi20;
   };
 
   SMLoc StartLoc, EndLoc;
@@ -1394,6 +1402,17 @@ public:
       Inst.addOperand(MCOperand::createReg(RegNo));
   }
 
+  void addHi20Operands(MCInst &Inst, unsigned N) const {
+    MCOperand Op;
+    if (isConstantImm())
+      Op = MCOperand::createImm(getConstantImm() << 4);
+    else if (isImm())
+      Op = MCOperand::createExpr(getImm());
+    else
+      Op = MCOperand::createImm(getConstantHi20());
+    Inst.addOperand(Op);
+  }
+
   bool isReg() const override {
     // As a special case until we sort out the definition of div/divu, accept
     // $0/$zero here so that MCK_ZERO works correctly.
@@ -1614,6 +1633,13 @@ public:
     return static_cast<const MCConstantExpr *>(getMemOff())->getValue();
   }
 
+  int64_t getConstantHi20() const {
+    assert((Kind == k_Hi20Part) && "Invalid access!");
+    int64_t Value = 0;
+    (void)Hi20.Val->evaluateAsAbsolute(Value);
+    return Value >> 12;
+  }
+
   template <unsigned Bits, unsigned Align> bool isMemWithUimmOffsetGP() const {
     if (isMem() && getMemBase()->isRegIdx() && (getMemBase()->getGPR32Reg() == Mips::GP)) {
       MCValue Res;
@@ -1661,11 +1687,13 @@ public:
     MCValue Res;
     bool Success;
 
+    if (Kind == k_Hi20Part)
+      return isUInt<20>(getConstantHi20());
     Success = getImm()->evaluateAsRelocatable(Res, nullptr, nullptr);
     if (Success && Res.getRefKind() == MipsMCExpr::MEK_HI)
       return Success;
     else
-      return isConstantSImm<20>() || isConstantUImm<20>();
+      return isConstantUImm<16>();
   }
 
   bool isLo12OrUImm16Offset() const {
@@ -1918,6 +1946,15 @@ public:
     return Op;
   }
 
+  static std::unique_ptr<MipsOperand>
+  CreateHi20Op(const MCExpr *Val, SMLoc S, SMLoc E, MipsAsmParser &Parser) {
+    auto Op = std::make_unique<MipsOperand>(k_Hi20Part, Parser);
+    Op->Hi20.Val = Val;
+    Op->StartLoc = S;
+    Op->EndLoc = E;
+    return Op;
+  }
+
  bool isGPRZeroAsmReg() const {
     return isRegIdx() && RegIdx.Kind & RegKind_GPR && RegIdx.Index == 0;
   }
@@ -2139,6 +2176,11 @@ public:
       OS << "RegList< ";
       for (auto Reg : (*RegList.List))
         OS << Reg << " ";
+      OS <<  ">";
+      break;
+    case k_Hi20Part:
+      OS << "%hi<20>< ";
+      OS << *Hi20.Val << " ";
       OS <<  ">";
       break;
     }
@@ -7816,6 +7858,54 @@ MipsAsmParser::parseNMRegisterList(OperandVector &Operands) {
 
   SMLoc E = Parser.getTok().getLoc();
   Operands.push_back(MipsOperand::CreateRegListNM(Regs, S, E, *this));
+  return ParseStatus::Success;
+}
+
+ParseStatus
+MipsAsmParser::parseHi20Op(OperandVector &Operands) {
+  MCAsmParser &Parser = getParser();
+  const MCExpr *IdVal;
+
+  SMLoc S = Parser.getTok().getLoc();
+  SMLoc E;
+  if (!Parser.getTok().is(AsmToken::PercentHi)) {
+    // Literal value
+    if (getParser().parseExpression(IdVal))
+      return ParseStatus::Failure;
+    const MCConstantExpr *MCE = dyn_cast<MCConstantExpr>(IdVal);
+    if (!MCE)
+      return ParseStatus::Failure;
+    int64_t Val = MCE->getValue();
+    Operands.push_back(MipsOperand::CreateImm(MCConstantExpr::create(Val, getContext()), S, E, *this));
+    E = SMLoc::getFromPointer(Parser.getTok().getLoc().getPointer() - 1);
+    return ParseStatus::Success;
+  }
+
+  Parser.Lex();
+  if (Parser.getTok().isNot(AsmToken::LParen)) {
+    Error(Parser.getTok().getLoc(), "'(' expected");
+    return ParseStatus::Failure;
+  }
+
+  if (Parser.parseExpression(IdVal))
+    return ParseStatus::Failure;
+  const MCConstantExpr *MCE = dyn_cast<MCConstantExpr>(IdVal);
+
+  if (!MCE)
+    Operands.push_back(MipsOperand::CreateImm(createTargetUnaryExpr(IdVal, AsmToken::PercentHi,
+								    getContext()), S, E, *this));
+  else
+    Operands.push_back(MipsOperand::CreateHi20Op(MCConstantExpr::create(MCE->getValue(),
+									getContext()), S, E, *this));
+
+  if (Parser.getTok().is(AsmToken::RParen))
+    Parser.Lex(); // Eat the ')' token.
+  else if (Parser.getTok().isNot(AsmToken::RParen) && Parser.getTok().isNot(AsmToken::EndOfStatement)) {
+    Error(Parser.getTok().getLoc(), "')' expected");
+    return ParseStatus::Failure;
+  }
+
+  E = SMLoc::getFromPointer(Parser.getTok().getLoc().getPointer() - 1);
   return ParseStatus::Success;
 }
 

@@ -163,7 +163,7 @@ def FeatureNMS1        : SubtargetFeature<"nms1", "HasNMS",
 				[FeatureNanoMips]>;
 def FeatureI7200       : SubtargetFeature<"i7200", "MipsArchVersion",
                                 "NanoMips",
-                                "NanoMips ISA Support [experimental]">;
+                                "NanoMips ISA Support [experimental]", [FeatureNanoMips]>;
 def FeatureSym32       : SubtargetFeature<"sym32", "HasSym32", "true",
                                           "Symbols are 32 bit on Mips64">;
 
@@ -255,6 +255,7 @@ include "MipsCombine.td"
 
 // Avoid forward declaration issues.
 include "MipsScheduleP5600.td"
+include "MipsScheduleI7200.td"
 include "MipsScheduleGeneric.td"
 
 def MipsInstrInfo : InstrInfo {
@@ -293,7 +294,7 @@ def : Proc<"octeon+", [FeatureMips64r2, FeatureCnMips, FeatureCnMipsP]>;
 def : ProcessorModel<"p5600", MipsP5600Model, [ImplP5600]>;
 def : Proc<"nanomips", [FeatureNanoMips]>;
 def : Proc<"nms1", [FeatureNMS1]>; // Not implemented!
-def : Proc<"i7200", [FeatureNanoMips, FeatureTLB, FeatureEVA,
+def : ProcessorModel<"i7200", MipsI7200Model, [FeatureI7200, FeatureTLB, FeatureEVA,
 		     FeatureMT]>; // FIXME: DSPr3 to be implemented
 
 def MipsAsmParser : AsmParser {

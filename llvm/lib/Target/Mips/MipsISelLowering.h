@@ -61,6 +61,7 @@ class TargetRegisterClass;
 
       // Tail call
       TailCall,
+      MustTailCall,
 
       // Get the Highest (63-48) 16 bits from a 64-bit immediate
       Highest,

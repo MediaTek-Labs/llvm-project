@@ -55,6 +55,8 @@ def MipsJmpLink : SDNode<"MipsISD::JmpLink",SDT_MipsJmpLink,
 // Tail call
 def MipsTailCall : SDNode<"MipsISD::TailCall", SDT_MipsJmpLink,
                           [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
+def MipsMustTailCall : SDNode<"MipsISD::MustTailCall", SDT_MipsJmpLink,
+                              [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
 
 // Hi and Lo nodes are used to handle global addresses. Used on
 // MipsISelLowering to lower stuff like GlobalAddress, ExternalSymbol

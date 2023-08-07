@@ -64,6 +64,7 @@ struct NMLoadStoreOpt : public MachineFunctionPass {
   bool runOnMachineFunction(MachineFunction &Fn) override;
   bool isReturn(MachineInstr &MI);
   bool isTailCall(MachineInstr &MI);
+  bool isMustTailCall(MachineInstr &MI);
   bool isStackPointerAdjustment(MachineInstr &MI, bool IsRestore);
   bool isCalleeSavedLoadStore(MachineInstr &MI, bool IsRestore);
   void sortCalleeSavedLoadStoreList(InstrList &LoadStoreList);
@@ -160,11 +161,17 @@ bool NMLoadStoreOpt::isReturn(MachineInstr &MI) {
 
 bool NMLoadStoreOpt::isTailCall(MachineInstr &MI) {
   unsigned Opcode = MI.getOpcode();
-  if (Opcode != Mips::TAILCALL_NM &&
-      Opcode != Mips::TAILCALLREG_NM)
+  if (Opcode != Mips::TAILCALL_NM && Opcode != Mips::MUSTTAILCALL_NM &&
+      Opcode != Mips::TAILCALLREG_NM && Opcode != Mips::MUSTTAILCALLREG_NM)
     return false;
 
   return true;
+}
+
+bool NMLoadStoreOpt::isMustTailCall(MachineInstr &MI) {
+  unsigned Opcode = MI.getOpcode();
+  return (Opcode == Mips::MUSTTAILCALL_NM ||
+          Opcode == Mips::MUSTTAILCALLREG_NM);
 }
 
 void NMLoadStoreOpt::sortCalleeSavedLoadStoreList(InstrList &LoadStoreList) {
@@ -378,14 +385,13 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
       LoadStoreList.clear();
     }
 
-    if (TailCall &&
+    if (TailCall && !isMustTailCall(*TailCall) &&
         MBB.getParent()->getFunction().hasOptSize() &&
         IsRestore &&
         !NewStackOffset &&
         isRASaved(LoadStoreList) &&
         isValidSaveRestore16Offset(StackOffset)) {
       assert(!Return);
-      // TODO: Prevent this optimization on musttail calls
       auto MII = BuildMI(MBB, std::next(MBBIter(TailCall)),
                           TailCall->getDebugLoc(), TII->get(Mips::RetRA));
       bool IsIndirect = TailCall->getOperand(0).isReg();

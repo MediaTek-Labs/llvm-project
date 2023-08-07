@@ -184,6 +184,7 @@ const char *MipsTargetLowering::getTargetNodeName(unsigned Opcode) const {
   case MipsISD::FIRST_NUMBER:      break;
   case MipsISD::JmpLink:           return "MipsISD::JmpLink";
   case MipsISD::TailCall:          return "MipsISD::TailCall";
+  case MipsISD::MustTailCall:      return "MipsISD::MustTailCall";
   case MipsISD::FullAddr:          return "MipsISD::FullAddr";
   case MipsISD::FullAddrAdd:       return "MipsISD::FullAddrAdd";
   case MipsISD::Highest:           return "MipsISD::Highest";
@@ -3989,7 +3990,9 @@ MipsTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
      }
   }
 
-  if (!IsTailCall && CLI.CB && CLI.CB->isMustTailCall())
+  bool IsMustTailCall = CLI.CB && CLI.CB->isMustTailCall();
+
+  if (!IsTailCall && IsMustTailCall)
     report_fatal_error("failed to perform tail call elimination on a call "
                        "site marked musttail");
 
@@ -4120,6 +4123,12 @@ MipsTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     // Register can't get to this point...
     assert(VA.isMemLoc());
 
+    // If we are lowering a tail-call with in-memory parameters, it
+    // can't be changed back to a call & return because it's now
+    // dependent on stack locations in the calling frame
+    if (IsTailCall)
+      IsMustTailCall = true;
+
     // emit ISD::STORE whichs stores the
     // parameter value to a stack Location
     MemOpChains.push_back(passArgOnStack(StackPtr, VA.getLocMemOffset(),
@@ -4229,7 +4238,12 @@ MipsTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
 
   if (IsTailCall) {
     MF.getFrameInfo().setHasTailCall();
-    SDValue Ret = DAG.getNode(MipsISD::TailCall, DL, MVT::Other, Ops);
+    unsigned Opcode = MipsISD::TailCall;
+    // NanoMips must keep note of which tail calls are MustTailCall to avoid
+    // undoing a tail-call (a late size optimisation)
+    if (Subtarget.hasNanoMips() && IsMustTailCall)
+      Opcode = MipsISD::MustTailCall;
+    SDValue Ret = DAG.getNode(Opcode, DL, MVT::Other, Ops);
     DAG.addCallSiteInfo(Ret.getNode(), std::move(CSInfo));
     return Ret;
   }

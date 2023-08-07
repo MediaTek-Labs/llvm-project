@@ -2314,10 +2314,11 @@ class TailCallBase : PseudoInstNM<(outs), (ins calltarget25_nm:$target), []>,
   let isCTI = 1;
 }
 def TAILCALL_NM : TailCallBase;
+def MUSTTAILCALL_NM : TailCallBase;
 
-class TailCallRegBase : PseudoInstNM<(outs), (ins RegisterOperand<GPRNM32_TAIL>:$rs),
-                                     [(MipsTailCall RegisterOperand<GPRNM32_TAIL>:$rs)]>,
-                        PseudoInstExpansion<(JRC_NM GPRNM32Opnd:$rs)> {
+class TailCallRegBase<list<dag> pattern>
+    : PseudoInstNM<(outs), (ins RegisterOperand<GPRNM32_TAIL>:$rs), pattern>,
+      PseudoInstExpansion<(JRC_NM GPRNM32Opnd:$rs)> {
   let isCall = 1;
   let isTerminator = 1;
   let isReturn = 1;
@@ -2325,12 +2326,19 @@ class TailCallRegBase : PseudoInstNM<(outs), (ins RegisterOperand<GPRNM32_TAIL>:
   let isCTI = 1;
   let hasPostISelHook = 1;
 }
-def TAILCALLREG_NM : TailCallRegBase;
+def TAILCALLREG_NM
+    : TailCallRegBase<[(MipsTailCall RegisterOperand<GPRNM32_TAIL>:$rs)]>;
+def MUSTTAILCALLREG_NM
+    : TailCallRegBase<[(MipsMustTailCall RegisterOperand<GPRNM32_TAIL>:$rs)]>;
 
 def : NMPat<(MipsTailCall (i32 tglobaladdr:$dst)),
             (TAILCALL_NM tglobaladdr:$dst)>;
 def : NMPat<(MipsTailCall (i32 texternalsym:$dst)),
             (TAILCALL_NM texternalsym:$dst)>;
+def : NMPat<(MipsMustTailCall (i32 tglobaladdr:$dst)),
+            (MUSTTAILCALL_NM tglobaladdr:$dst)>;
+def : NMPat<(MipsMustTailCall (i32 texternalsym:$dst)),
+            (MUSTTAILCALL_NM texternalsym:$dst)>;
 
 // '>-1' can be represented as '>=0'.
 def : NMPat<(brcond (i32 (setgt GPRNM32:$lhs, -1)), bb:$dst),

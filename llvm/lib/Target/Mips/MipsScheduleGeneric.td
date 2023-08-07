@@ -479,8 +479,9 @@ def : InstRW<[GenericWriteJump], (instrs JRC_NM, BC_NM, BEQC_NM, BGEC_NM, BGEUC_
 					 BNEZC16_NM, BEQCzero_NM, BNECzero_NM)>;
 
 def : InstRW<[GenericWriteJump], (instrs PseudoReturnNM,
-                                         PseudoIndirectBranchNM, TAILCALL_NM,
-                                         TAILCALLREG_NM)>;
+                                         PseudoIndirectBranchNM,
+                                         TAILCALL_NM, TAILCALLREG_NM,
+                                         MUSTTAILCALL_NM, MUSTTAILCALLREG_NM )>;
 
 def : InstRW<[GenericWriteJumpAndLink], (instrs BALC_NM, MOVEBALC_NM, JALRC_NM,
                                                 JALRCHB_NM, JALRC16_NM,

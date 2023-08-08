@@ -88,7 +88,7 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
       UseTCCInDIV(false), HasSym32(false), HasEVA(false), DisableMadd4(false),
       HasMT(false), HasCRC(false), HasVirt(false), HasGINV(false),
       UseIndirectJumpsHazard(false), StrictAlign(false),
-      UseUnalignedLoadStore(UnalignedLS), UsePCRel(true),
+      UseUnalignedLoadStore(UnalignedLS), HasNMS(false), UsePCRel(true),
       StackAlignOverride(StackAlignOverride), TM(TM), TargetTriple(TT),
       InstrInfo(
           MipsInstrInfo::create(initializeSubtargetDependencies(CPU, FS, TM))),

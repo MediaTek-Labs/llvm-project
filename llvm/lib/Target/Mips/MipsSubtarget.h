@@ -207,6 +207,9 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   
   bool UseAbsoluteJumpTables = false;
 
+  // CPU supports NanoMips low-power subset (NMS)
+  bool HasNMS;
+
   // Use unaliged loads and stores (nanoMIPS only).
   bool UseUnalignedLoadStore = false;
 
@@ -297,6 +300,7 @@ public:
 
   bool hasCnMips() const { return HasCnMips; }
   bool hasCnMipsP() const { return HasCnMipsP; }
+  bool hasNMS() const { return HasNMS; }
 
   bool isLittle() const { return IsLittle; }
   bool isABICalls() const { return !NoABICalls; }

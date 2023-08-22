@@ -124,7 +124,7 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
     ToolChain.addFastMathRuntimeIfAvailable(Args, CmdArgs);
   }
 
-  if (Args.hasArg(options::OPT_mrelax)) {
+  if (Args.hasArg(options::OPT_mrelax, options::OPT_mno_relax, true)) {
     CmdArgs.push_back("--relax");
   }
 
@@ -258,6 +258,10 @@ void NanoMips::AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
     llvm::Triple Triple = GCCInstallation.getTriple();
     std::string Install = getDriver().getInstalledDir();
     addSystemInclude(DriverArgs, CC1Args, Install + "/../" + Triple.str() + "/include");
+
+    // GCC's 'fixed' includes directory
+    addSystemInclude(DriverArgs, CC1Args, (GCCInstallation.getInstallPath()
+                                           + "/include-fixed"));
 
     // GCC's includes dir for multilibs
     addSystemInclude(DriverArgs, CC1Args, GCCInstallation.getInstallPath() + "/include");

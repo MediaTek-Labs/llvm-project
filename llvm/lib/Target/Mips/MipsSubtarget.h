@@ -198,6 +198,8 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
 
   // Assume 32-bit GOT.
   bool UseXGOT = false;
+  
+  bool UseAbsoluteJumpTables = false;
 
   // Use unaliged loads and stores (nanoMIPS only).
   bool UseUnalignedLoadStore = false;
@@ -335,7 +337,7 @@ public:
   bool useIndirectJumpsHazard() const {
     return UseIndirectJumpsHazard && hasMips32r2();
   }
-  bool useSmallSection() const { return UseSmallSection; }
+  bool useSmallSection() const { return UseSmallSection && !hasNanoMips(); }
 
   bool hasStandardEncoding() const { return !InMips16Mode && !InMicroMipsMode; }
 
@@ -344,6 +346,10 @@ public:
   bool useLongCalls() const { return UseLongCalls; }
 
   bool useXGOT() const { return UseXGOT; }
+
+  bool useAbsoluteJumpTables() const {
+    return UseAbsoluteJumpTables && hasNanoMips();
+  }
 
   bool useUnalignedLoadStore() const { return UseUnalignedLoadStore; };
 

@@ -119,7 +119,7 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
     ToolChain.addFastMathRuntimeIfAvailable(Args, CmdArgs);
   }
 
-  if (Args.hasArg(options::OPT_mrelax)) {
+  if (Args.hasArg(options::OPT_mrelax, options::OPT_mno_relax, true)) {
     CmdArgs.push_back("--relax");
   }
 

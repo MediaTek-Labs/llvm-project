@@ -1888,10 +1888,13 @@ void Clang::AddMIPSTargetArgs(const ArgList &Args,
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_G)) {
-    StringRef v = A->getValue();
-    CmdArgs.push_back("-mllvm");
-    CmdArgs.push_back(Args.MakeArgString("-mips-ssection-threshold=" + v));
-    A->claim();
+    // TODO: Emit an error when `v` is not `0` instead of this.
+    if (!Triple.isNanoMips()) {
+      StringRef v = A->getValue();
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back(Args.MakeArgString("-mips-ssection-threshold=" + v));
+      A->claim();
+    }
   }
 
   Arg *GPOpt = Args.getLastArg(options::OPT_mgpopt, options::OPT_mno_gpopt);

@@ -34,11 +34,11 @@ declare void @unaligned1(i32, i32, i32, i64, i32, i32, i32, i64)
 define void @unaligned2(i32 %a, i32 %b) {
 ; CHECK-NOT: sw ${{[ats][0-9]}}, 4($sp)
 ; CHECK-NOT: li $a3
-; CHECK: li ${{[ats][0-9]}}, 5
 ; CHECK: li ${{[ats][0-9]}}, 6
-; CHECK: sw $zero, 12($sp)
 ; CHECK: sw ${{[ats][0-9]}}, 8($sp)
+; CHECK: li ${{[ats][0-9]}}, 5
 ; CHECK: sw ${{[ats][0-9]}}, 0($sp)
+; CHECK: sw $zero, 12($sp)
 ; CHECK: li $a2, 1
 ; CHECK: li $a4, 2
 ; CHECK: li $a6, 3

@@ -12,7 +12,7 @@ define i32 @AtomicLoadAdd32(i32 signext %incr) nounwind {
 ; CHECK-NEXT:    ll $a1, 0($a2)
 ; CHECK-NEXT:    addu $a3, $a1, $a0
 ; CHECK-NEXT:    sc $a3, 0($a2)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB0_1
+; CHECK-NEXT:    beqzc $a3, .LBB0_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    move $a0, $a1
 ; CHECK-NEXT:    jrc $ra
@@ -31,7 +31,7 @@ define i32 @AtomicLoadSub32(i32 signext %incr) nounwind {
 ; CHECK-NEXT:    ll $a1, 0($a2)
 ; CHECK-NEXT:    sub $a3, $a1, $a0
 ; CHECK-NEXT:    sc $a3, 0($a2)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB1_1
+; CHECK-NEXT:    beqzc $a3, .LBB1_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    move $a0, $a1
 ; CHECK-NEXT:    jrc $ra
@@ -50,7 +50,7 @@ define i32 @AtomicLoadXor32(i32 signext %incr) nounwind {
 ; CHECK-NEXT:    ll $a1, 0($a2)
 ; CHECK-NEXT:    xor $a3, $a1, $a0
 ; CHECK-NEXT:    sc $a3, 0($a2)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB2_1
+; CHECK-NEXT:    beqzc $a3, .LBB2_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    move $a0, $a1
 ; CHECK-NEXT:    jrc $ra
@@ -68,7 +68,7 @@ define i32 @AtomicLoadOr32(i32 signext %incr) nounwind {
 ; CHECK-NEXT:    ll $a1, 0($a2)
 ; CHECK-NEXT:    or $a3, $a1, $a0
 ; CHECK-NEXT:    sc $a3, 0($a2)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB3_1
+; CHECK-NEXT:    beqzc $a3, .LBB3_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    move $a0, $a1
 ; CHECK-NEXT:    jrc $ra
@@ -86,7 +86,7 @@ define i32 @AtomicLoadAnd32(i32 signext %incr) nounwind {
 ; CHECK-NEXT:    ll $a1, 0($a2)
 ; CHECK-NEXT:    and $a3, $a1, $a0
 ; CHECK-NEXT:    sc $a3, 0($a2)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB4_1
+; CHECK-NEXT:    beqzc $a3, .LBB4_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    move $a0, $a1
 ; CHECK-NEXT:    jrc $ra
@@ -105,7 +105,7 @@ define i32 @AtomicLoadNand32(i32 signext %incr) nounwind {
 ; CHECK-NEXT:    and $a3, $a1, $a0
 ; CHECK-NEXT:    nor $a3, $zero, $a3
 ; CHECK-NEXT:    sc $a3, 0($a2)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB5_1
+; CHECK-NEXT:    beqzc $a3, .LBB5_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    move $a0, $a1
 ; CHECK-NEXT:    jrc $ra
@@ -126,7 +126,7 @@ define i32 @AtomicSwap32(i32 signext %newval) nounwind {
 ; CHECK-NEXT:    ll $a1, 0($a2)
 ; CHECK-NEXT:    or $a3, $a0, $zero
 ; CHECK-NEXT:    sc $a3, 0($a2)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB6_1
+; CHECK-NEXT:    beqzc $a3, .LBB6_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    move $a0, $a1
 ; CHECK-NEXT:    restore.jrc 16
@@ -324,7 +324,7 @@ define signext i8 @AtomicCmpSwap8(i8 signext %oldval, i8 signext %newval) nounwi
 ; CHECK-NEXT:    and $a3, $a3, $a5
 ; CHECK-NEXT:    or $a3, $a3, $a1
 ; CHECK-NEXT:    sc $a3, 0($a4)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB12_1
+; CHECK-NEXT:    beqzc $a3, .LBB12_1
 ; CHECK-NEXT:  .LBB12_3: # %entry
 ; CHECK-NEXT:    srlv $a0, $a2, $t0
 ; CHECK-NEXT:    seb $a0, $a0
@@ -360,7 +360,7 @@ define i1 @AtomicCmpSwapRes8(i8* %ptr, i8 signext %oldval, i8 signext %newval) n
 ; CHECK-NEXT:    and $a3, $a3, $a6
 ; CHECK-NEXT:    or $a3, $a3, $a2
 ; CHECK-NEXT:    sc $a3, 0($a4)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB13_1
+; CHECK-NEXT:    beqzc $a3, .LBB13_1
 ; CHECK-NEXT:  .LBB13_3: # %entry
 ; CHECK-NEXT:    srlv $a0, $t1, $t0
 ; CHECK-NEXT:    seb $a0, $a0
@@ -437,7 +437,7 @@ define {i16, i1} @foo(i16* %addr, i16 %l, i16 %r, i16 %new) {
 ; CHECK-NEXT:    and $a1, $a1, $a6
 ; CHECK-NEXT:    or $a1, $a1, $a3
 ; CHECK-NEXT:    sc $a1, 0($a4)
-; CHECK-NEXT:    beqc $a1, $zero, .LBB15_1
+; CHECK-NEXT:    beqzc $a1, .LBB15_1
 ; CHECK-NEXT:  .LBB15_3:
 ; CHECK-NEXT:    srlv $a0, $a2, $t1
 ; CHECK-NEXT:    seh $a0, $a0
@@ -464,7 +464,7 @@ define i32 @CheckSync(i32 signext %v) nounwind noinline {
 ; CHECK-NEXT:    ll $a1, 0($a2)
 ; CHECK-NEXT:    addu $a3, $a1, $a0
 ; CHECK-NEXT:    sc $a3, 0($a2)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB16_1
+; CHECK-NEXT:    beqzc $a3, .LBB16_1
 ; CHECK-NEXT:  # %bb.2: # %entry
 ; CHECK-NEXT:    sync
 ; CHECK-NEXT:    move $a0, $a1
@@ -490,7 +490,7 @@ define i32 @zeroreg() nounwind {
 ; CHECK-NEXT:    # in Loop: Header=BB17_1 Depth=1
 ; CHECK-NEXT:    move $a3, $zero
 ; CHECK-NEXT:    sc $a3, 0($a1)
-; CHECK-NEXT:    beqc $a3, $zero, .LBB17_1
+; CHECK-NEXT:    beqzc $a3, .LBB17_1
 ; CHECK-NEXT:  .LBB17_3: # %entry
 ; CHECK-NEXT:    seqi $a0, $a2, 1
 ; CHECK-NEXT:    sync

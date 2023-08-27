@@ -11,6 +11,7 @@
 # appropriately for each branch instruction
 #
 # RUN: llvm-mc %s -triple=nanomips-elf -show-encoding -show-inst 2> %t0 | FileCheck %s
+	.text
 	# CHECK: .text
 	.set noat
 #	.linkrelax
@@ -307,17 +308,21 @@
 
 	lsa $a0, $a1, $a4, 1	# CHECK: lsa $a0, $a1, $a4, 1	# encoding: [0x05,0x21,0x0f,0x22]
 				# CHECK-NEXT: # <MCInst #{{.*}} LSA_NM
-	lsa $s0, $s1, $s4, 2	# CHECK: lsa $s0, $s1, $s4, 2	# encoding: [0x91,0x22,0x0f,0x84]
+	lsa $s0, $s1, $s4, 2	# CHECK: lsa $s0, $s1, $s4, 2	# encoding: [0x91,0x22,0x0f,0x84] 
 				# CHECK-NEXT: # <MCInst #{{.*}} LSA_NM
 	lsa $s3, $a7, $a4, 3	# CHECK: lsa $s3, $a7, $a4, 3	# encoding: [0x0b,0x21,0x0f,0x9e]
 				# CHECK-NEXT: # <MCInst #{{.*}} LSA_NM
 	lsa $t4, $a3, $s4, 0	# CHECK: lsa $t4, $a3, $s4, 0	# encoding: [0x87,0x22,0x0f,0x10]
 				# CHECK-NEXT: # <MCInst #{{.*}} LSA_NM
 
+	di		# CHECK: di # encoding: [0x00,0x20,0x7f,0x47]
+			# CHECK-NEXT: # <MCInst #{{.*}} DI_NM
 	di $a0		# CHECK: di $a0	# encoding: [0x80,0x20,0x7f,0x47]
 			# CHECK-NEXT: # <MCInst #{{.*}} DI_NM
 	di $s7		# CHECK: di $s7	# encoding: [0xe0,0x22,0x7f,0x47]
 			# CHECK-NEXT: # <MCInst #{{.*}} DI_NM
+	ei		# CHECK: ei # encoding: [0x00,0x20,0x7f,0x57]
+			# CHECK-NEXT: # <MCInst #{{.*}} EI_NM
 	ei $ra		# CHECK: ei $ra	# encoding: [0xe0,0x23,0x7f,0x57]
 			# CHECK-NEXT: # <MCInst #{{.*}} EI_NM
 	ei $t0		# CHECK: ei $t0	# encoding: [0x80,0x21,0x7f,0x57]
@@ -1037,23 +1042,23 @@
 				# CHECK-NEXT: <MCInst #{{.*}} BLTUC_NM
 	beqzc	$a0, 1f		# CHECK: beqzc $a0, .Ltmp1 # encoding: [0b0AAAAAAA,0x9a]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp1+0, kind: fixup_NANOMIPS_PC7_S1
-				# CHECK-NEXT: <MCInst #{{.*}} BEQZC_NM
+				# CHECK-NEXT: <MCInst #{{.*}} BEQZC16_NM
 	beqzc	$a4, 1f		# CHECK: beqzc $a4, .Ltmp1 # encoding: [0x00,0x89,A,0b00AAAAAA]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp1+0, kind: fixup_NANOMIPS_PC14_S1
-				# CHECK-NEXT: <MCInst #{{.*}} BEQC_NM
+				# CHECK-NEXT: <MCInst #{{.*}} BEQZC_NM
 	bnezc	$s0, 1b		# CHECK: bnezc $s0, .Ltmp0 # encoding: [0b0AAAAAAA,0xb8]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp0+0, kind: fixup_NANOMIPS_PC7_S1
-				# CHECK-NEXT: <MCInst #{{.*}} BNEZC_NM
+				# CHECK-NEXT: <MCInst #{{.*}} BNEZC16_NM
 	bnezc	$s4, 1b		# CHECK: bnezc $s4, .Ltmp0 # encoding: [0x80,0xaa,A,0b00AAAAAA]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp0+0, kind: fixup_NANOMIPS_PC14_S1
-				# CHECK-NEXT: <MCInst #{{.*}} BNEC_NM
-	beqc	$a2, $zero, 1b	# CHECK: beqzc $a2, .Ltmp0 # encoding: [0b0AAAAAAA,0x9b]
+				# CHECK-NEXT: <MCInst #{{.*}} BNEZC_NM
+	beqc	$a2, $zero, 1b	# CHECK: beqc $a2, $zero, .Ltmp0 # encoding: [0b0AAAAAAA,0x9b]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp0+0, kind: fixup_NANOMIPS_PC7_S1
 				# CHECK-NEXT: <MCInst #{{.*}} BEQCzero_NM
 	beqc	$a6, $zero, 1b	# CHECK: beqzc $a6, .Ltmp0 # encoding: [0x0a,0x88,A,0b00AAAAAA]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp0+0, kind: fixup_NANOMIPS_PC14_S1
 				# CHECK-NEXT: <MCInst #{{.*}} BEQC_NM
-	bnec	$s2, $zero, 1f	# CHECK: bnezc $s2, .Ltmp1 # encoding: [0b0AAAAAAA,0xb9]
+	bnec	$s2, $zero, 1f	# CHECK: bnec $s2, $zero, .Ltmp1 # encoding: [0b0AAAAAAA,0xb9]
 				# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp1+0, kind: fixup_NANOMIPS_PC7_S1
 				# CHECK-NEXT: <MCInst #{{.*}} BNECzero_NM
 	bnec	$s4, $zero, 1f	# CHECK: bnezc $s4, .Ltmp1 # encoding: [0x14,0xa8,A,0b00AAAAAA]
@@ -1102,10 +1107,6 @@
 			# CHECK-NEXT: # <MCInst #{{.*}} JRC_NM
 
 	1:
-	# FIXME: TODO LUI_NM patterns
-	# li	$t3, 65536
-	# li	$t4, -4096
-	# li	$t5, -2147483648
 
 	ll	$a2, -4($s4)	# CHECK: ll $a2, -4($s4) # encoding: [0xd4,0xa4,0xfc,0xd1]
 				# CHECK-NEXT: <MCInst  #{{.*}} LL_NM
@@ -1123,6 +1124,82 @@
 				# CHECK-NEXT: <MCInst  #{{.*}} SC_NM
 	sc	$a1, 252($s2)	# CHECK: sc $a1, 252($s2) # encoding: [0xb2,0xa4,0xfc,0x59]
 				# CHECK-NEXT: <MCInst  #{{.*}} SC_NM
+	llwp	$a0, $a1, ($s2)	# CHECK: llwp $a0, $a1, ($s2) # encoding: [0x92,0xa4,0x29,0x51]
+				# CHECK-NEXT: <MCInst  #{{.*}} LLWP_NM
+	scwp	$t0, $t1, ($s6)	# CHECK: scwp $t0, $t1, ($s6) # encoding: [0x96,0xa5,0x69,0x59]
+				# CHECK-NEXT: <MCInst  #{{.*}} SCWP_NM
+
+	pref	0, -4($s4)	# CHECK: pref 0, -4($s4) # encoding: [0x14,0xa4,0xfc,0x98]
+				# CHECK-NEXT: <MCInst  #{{.*}} PREFs9_NM
+	pref	1, -256($s0)	# CHECK: pref 1, -256($s0) # encoding: [0x30,0xa4,0x00,0x98]
+				# CHECK-NEXT: <MCInst  #{{.*}} PREFs9_NM
+	pref	12, 64($s3)	# CHECK: pref 12, 64($s3) # encoding: [0x93,0x85,0x40,0x30]
+				# CHECK-NEXT: <MCInst  #{{.*}} PREF_NM
+	pref	17, 252($s2)	# CHECK: pref 17, 252($s2) # encoding: [0x32,0x86,0xfc,0x30]
+				# CHECK-NEXT: <MCInst  #{{.*}} PREF_NM
+	pref	30, 4092($t5)	# CHECK: pref 30, 4092($t5) # encoding: [0xc3,0x87,0xfc,0x3f]
+				# CHECK-NEXT: <MCInst  #{{.*}} PREF_NM
+
+	synci	-4($s4)	# CHECK: synci -4($s4) # encoding: [0xf4,0xa7,0xfc,0x98]
+				# CHECK-NEXT: <MCInst  #{{.*}} SYNCIs9_NM
+	synci	-256($s0)	# CHECK: synci -256($s0) # encoding: [0xf0,0xa7,0x00,0x98]
+				# CHECK-NEXT: <MCInst  #{{.*}} SYNCIs9_NM
+	synci	64($s3)	# CHECK: synci 64($s3) # encoding: [0xf3,0x87,0x40,0x30]
+				# CHECK-NEXT: <MCInst  #{{.*}} SYNCI_NM
+	synci	252($s2)	# CHECK: synci 252($s2) # encoding: [0xf2,0x87,0xfc,0x30]
+				# CHECK-NEXT: <MCInst  #{{.*}} SYNCI_NM
+	synci	4092($t5)	# CHECK: synci 4092($t5) # encoding: [0xe3,0x87,0xfc,0x3f]
+				# CHECK-NEXT: <MCInst  #{{.*}} SYNCI_NM
+
+	cache	0, -4($s4)	# CHECK: cache 0, -4($s4) # encoding: [0x14,0xa4,0xfc,0xb9]
+				# CHECK-NEXT: <MCInst  #{{.*}} CACHE_NM
+	cache	1, -256($s0)	# CHECK: cache 1, -256($s0) # encoding: [0x30,0xa4,0x00,0xb9]
+				# CHECK-NEXT: <MCInst  #{{.*}} CACHE_NM
+	cache	12, 64($s3)	# CHECK: cache 12, 64($s3) # encoding: [0x93,0xa5,0x40,0x39]
+				# CHECK-NEXT: <MCInst  #{{.*}} CACHE_NM
+	cache	31, 252($s2)	# CHECK: cache 31, 252($s2) # encoding: [0xf2,0xa7,0xfc,0x39]
+				# CHECK-NEXT: <MCInst  #{{.*}} CACHE_NM
+
+	sync		# CHECK: sync	# encoding: [0x00,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync 0		# CHECK: sync	# encoding: [0x00,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync_wmb	# CHECK: sync_wmb	# encoding: [0x04,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync 4		# CHECK: sync_wmb	# encoding: [0x04,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync_mb		# CHECK: sync_mb	# encoding: [0x10,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync 0x10	# CHECK: sync_mb	# encoding: [0x10,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync_acquire	# CHECK: sync_acquire	# encoding: [0x11,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync 0x11	# CHECK: sync_acquire	# encoding: [0x11,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync_release	# CHECK: sync_release	# encoding: [0x12,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync 0x12	# CHECK: sync_release	# encoding: [0x12,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync_rmb	# CHECK: sync_rmb	# encoding: [0x13,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+	sync 0x13	# CHECK: sync_rmb	# encoding: [0x13,0x80,0x06,0xc0]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYNC_NM
+
+	wait		# CHECK: wait	# encoding: [0x00,0x20,0x7f,0xc3]
+			# CHECK-NEXT: # <MCInst #{{.*}} WAIT_NM
+	wait 0		# CHECK: wait	# encoding: [0x00,0x20,0x7f,0xc3]
+			# CHECK-NEXT: # <MCInst #{{.*}} WAIT_NM
+	wait 1		# CHECK: wait 1	# encoding: [0x01,0x20,0x7f,0xc3]
+			# CHECK-NEXT: # <MCInst #{{.*}} WAIT_NM
+	wait 1023	# CHECK: wait 1023	# encoding: [0xff,0x23,0x7f,0xc3]
+			# CHECK-NEXT: # <MCInst #{{.*}} WAIT_NM
+
+	li	$t3, 65536	# CHECK: lui $t3, %hi(0x10) # encoding: [0xe1,0xe1,0x00,0x00]
+				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
+	li	$t4, -4096	# CHECK: lui $t4, %hi(-0x1) # encoding: [0x5f,0xe0,0xfd,0xff]
+				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
+	li	$t5, -2147483648	# CHECK: lui $t5, %hi(-0x80000) # encoding: [0x60,0xe0,0x01,0x00]
+				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 
 	jrc $ra
 	.type   g_8,@object

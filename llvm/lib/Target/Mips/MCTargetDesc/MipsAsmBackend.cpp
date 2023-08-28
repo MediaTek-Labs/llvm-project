@@ -513,6 +513,7 @@ getFixupKindInfo(MCFixupKind Kind) const {
     { "fixup_MICROMIPS_SUB",             0,     64,   0 },
     { "fixup_Mips_JALR",                 0,     32,   0 },
     { "fixup_MICROMIPS_JALR",            0,     32,   0 },
+    { "fixup_NANOMIPS_NONE",            0,     32,   0 },
     { "fixup_NANOMIPS_32",	0,	32,	0 },
     { "fixup_NANOMIPS_64",	0,	64,	0 },
     { "fixup_NANOMIPS_NEG",	0,	32,	0 },
@@ -570,6 +571,7 @@ getFixupKindInfo(MCFixupKind Kind) const {
     { "fixup_NANOMIPS_JALR16",	0,	32,	0 },
     { "fixup_NANOMIPS_JUMPTABLE_LOAD",	0,	32,	0 },
     { "fixup_NANOMIPS_FRAME_REG",	0,	32,	0 },
+    { "fixup_NANOMIPS_NOTRAMP",	0,	32,	0 },
     { "fixup_NANOMIPS_TLS_DTPMOD",	0,	32,	0 },
     { "fixup_NANOMIPS_TLS_DTPREL",	0,	32,	0 },
     { "fixup_NANOMIPS_TLS_TPREL",	0,	32,	0 },
@@ -780,6 +782,7 @@ bool MipsAsmBackend::shouldForceRelocation(const MCAssembler &Asm,
   case Mips::fixup_NANOMIPS_JUMPTABLE_LOAD:
   case Mips::fixup_NANOMIPS_JALR32:
   case Mips::fixup_NANOMIPS_JALR16:
+  case Mips::fixup_NANOMIPS_NOTRAMP:
     return true;
   }
 }

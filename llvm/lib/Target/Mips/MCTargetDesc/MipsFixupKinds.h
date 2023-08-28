@@ -225,7 +225,8 @@ namespace Mips {
 
     // NanoMIPS relocations
     FirstNanoMipsFixupKind,
-    fixup_NANOMIPS_32 = FirstNanoMipsFixupKind,
+    fixup_NANOMIPS_NONE = FirstNanoMipsFixupKind,
+    fixup_NANOMIPS_32,
     fixup_NANOMIPS_64,
     fixup_NANOMIPS_NEG,
     fixup_NANOMIPS_ASHIFTR_1,
@@ -282,6 +283,7 @@ namespace Mips {
     fixup_NANOMIPS_JALR16,
     fixup_NANOMIPS_JUMPTABLE_LOAD,
     fixup_NANOMIPS_FRAME_REG,
+    fixup_NANOMIPS_NOTRAMP,
     // TLS relocations.
     fixup_NANOMIPS_TLS_DTPMOD,
     fixup_NANOMIPS_TLS_DTPREL,

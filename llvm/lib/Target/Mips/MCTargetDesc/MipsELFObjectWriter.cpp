@@ -264,6 +264,7 @@ static unsigned getNanoMipsRelocType(MCContext &Ctx,
   }
 
   switch (Kind) {
+    case Mips::fixup_NANOMIPS_NONE: return ELF::R_NANOMIPS_NONE;
     case Mips::fixup_NANOMIPS_32: return ELF::R_NANOMIPS_32;
     case Mips::fixup_NANOMIPS_64: return ELF::R_NANOMIPS_64;
     case Mips::fixup_NANOMIPS_NEG: return ELF::R_NANOMIPS_NEG;
@@ -308,6 +309,7 @@ static unsigned getNanoMipsRelocType(MCContext &Ctx,
     case Mips::fixup_NANOMIPS_JALR16: return ELF::R_NANOMIPS_JALR16;
     case Mips::fixup_NANOMIPS_JUMPTABLE_LOAD: return ELF::R_NANOMIPS_JUMPTABLE_LOAD;
     case Mips::fixup_NANOMIPS_FRAME_REG: return ELF::R_NANOMIPS_FRAME_REG;
+    case Mips::fixup_NANOMIPS_NOTRAMP: return ELF::R_NANOMIPS_NOTRAMP;
     // TLS relocations.
     case Mips::fixup_NANOMIPS_TLS_DTPMOD: return ELF::R_NANOMIPS_TLS_DTPMOD;
     case Mips::fixup_NANOMIPS_TLS_DTPREL: return ELF::R_NANOMIPS_TLS_DTPREL;

@@ -433,6 +433,21 @@ std::optional<MCFixupKind> MipsAsmBackend::getFixupKind(StringRef Name) const {
             (MCFixupKind)Mips::fixup_MICROMIPS_TLS_TPREL_LO16)
       .Case("R_MIPS_JALR", (MCFixupKind)Mips::fixup_Mips_JALR)
       .Case("R_MICROMIPS_JALR", (MCFixupKind)Mips::fixup_MICROMIPS_JALR)
+      .Case("R_NANOMIPS_ALIGN", (MCFixupKind)Mips::fixup_NANOMIPS_ALIGN)
+      .Case("R_NANOMIPS_FILL", (MCFixupKind)Mips::fixup_NANOMIPS_FILL)
+      .Case("R_NANOMIPS_MAX", (MCFixupKind)Mips::fixup_NANOMIPS_MAX)
+      .Case("R_NANOMIPS_INSN32", (MCFixupKind)Mips::fixup_NANOMIPS_INSN32)
+      .Case("R_NANOMIPS_FIXED", (MCFixupKind)Mips::fixup_NANOMIPS_FIXED)
+      // FIXME: Unsupported
+      // .Case("R_NANOMIPS_RELAX", (MCFixupKind)Mips::fixup_NANOMIPS_RELAX)
+      // .Case("R_NANOMIPS_NORELAX", (MCFixupKind)Mips::fixup_NANOMIPS_NORELAX)
+      .Case("R_NANOMIPS_SAVERESTORE", (MCFixupKind)Mips::fixup_NANOMIPS_SAVERESTORE)
+      .Case("R_NANOMIPS_INSN16", (MCFixupKind)Mips::fixup_NANOMIPS_INSN16)
+      .Case("R_NANOMIPS_JALR16", (MCFixupKind)Mips::fixup_NANOMIPS_JALR16)
+      .Case("R_NANOMIPS_JALR32", (MCFixupKind)Mips::fixup_NANOMIPS_JALR32)
+      .Case("R_NANOMIPS_NOTRAMP", (MCFixupKind)Mips::fixup_NANOMIPS_NOTRAMP)
+      // FIXME: Unsupported
+      // .Case("R_NANOMIPS_JUMPTABLE_LOAD", (MCFixupKind)Mips::fixup_NANOMIPS_SAVERESTORE)
       .Default(MCAsmBackend::getFixupKind(Name));
 }
 

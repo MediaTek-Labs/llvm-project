@@ -50,11 +50,10 @@ MipsMCAsmInfo::MipsMCAsmInfo(const Triple &TheTriple,
   ExceptionsType = ExceptionHandling::DwarfCFI;
   DwarfRegNumForCFI = true;
   HasMipsExpressions = true;
-  if (TheTriple.isNanoMips())
-    UseIntegratedAssembler = false;
   if (ABI.IsP32())
     HasLEB128Directives = false;
   if (TheTriple.isNanoMips()) {
+    UseIntegratedAssembler = true;
     AssemblerDialect = 1;
     UsesCompInstByteOrder = true;
     UseLogicalShr = false;

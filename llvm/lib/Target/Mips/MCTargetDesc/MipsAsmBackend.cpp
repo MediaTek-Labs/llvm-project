@@ -533,10 +533,10 @@ getFixupKindInfo(MCFixupKind Kind) const {
     { "fixup_NANOMIPS_64",	0,	64,	0 },
     { "fixup_NANOMIPS_NEG",	0,	32,	0 },
     { "fixup_NANOMIPS_ASHIFTR_1",	0,	32,	0 },
-    { "fixup_NANOMIPS_UNSIGNED_8",	0,	32,	0 },
-    { "fixup_NANOMIPS_SIGNED_8",	0,	32,	0 },
-    { "fixup_NANOMIPS_UNSIGNED_16",	0,	32,	0 },
-    { "fixup_NANOMIPS_SIGNED_16",	0,	32,	0 },
+    { "fixup_NANOMIPS_UNSIGNED_8",	0,	8,	0 },
+    { "fixup_NANOMIPS_SIGNED_8",	0,	8,	0 },
+    { "fixup_NANOMIPS_UNSIGNED_16",	0,	16,	0 },
+    { "fixup_NANOMIPS_SIGNED_16",	0,	16,	0 },
     { "fixup_NANOMIPS_RELATIVE",	0,	32,	0 },
     { "fixup_NANOMIPS_GLOBAL",	0,	32,	0 },
     { "fixup_NANOMIPS_JUMP_SLOT",	0,	32,	0 },
@@ -798,6 +798,11 @@ bool MipsAsmBackend::shouldForceRelocation(const MCAssembler &Asm,
   case Mips::fixup_NANOMIPS_JALR32:
   case Mips::fixup_NANOMIPS_JALR16:
   case Mips::fixup_NANOMIPS_NOTRAMP:
+  case Mips::fixup_NANOMIPS_ASHIFTR_1:
+  case Mips::fixup_NANOMIPS_UNSIGNED_16:
+  case Mips::fixup_NANOMIPS_UNSIGNED_8:
+  case Mips::fixup_NANOMIPS_SIGNED_16:
+  case Mips::fixup_NANOMIPS_SIGNED_8:
     return true;
   }
 }

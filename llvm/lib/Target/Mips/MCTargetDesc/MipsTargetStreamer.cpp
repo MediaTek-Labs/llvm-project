@@ -82,6 +82,8 @@ void MipsTargetStreamer::emitDirectiveNaNLegacy() {}
 void MipsTargetStreamer::emitDirectiveOptionPic0() {}
 void MipsTargetStreamer::emitDirectiveOptionPic2() {}
 void MipsTargetStreamer::emitDirectiveInsn() { forbidModuleDirective(); }
+void MipsTargetStreamer::emitSignedValue(
+	const MCExpr *Value, unsigned Size, SMLoc Loc) {}
 void MipsTargetStreamer::emitFrame(unsigned StackReg, unsigned StackSize,
                                    unsigned ReturnReg) {}
 void MipsTargetStreamer::emitMask(unsigned CPUBitmask, int CPUTopSavedRegOff) {}
@@ -1195,6 +1197,13 @@ void MipsTargetELFStreamer::emitDirectiveInsn() {
   MipsTargetStreamer::emitDirectiveInsn();
   MipsELFStreamer &MEF = static_cast<MipsELFStreamer &>(Streamer);
   MEF.createPendingLabelRelocs();
+}
+
+void MipsTargetELFStreamer::emitSignedValue(const MCExpr *Value, unsigned Size,
+					    SMLoc Loc) {
+  MipsTargetStreamer::emitDirectiveInsn();
+  MipsELFStreamer &MEF = static_cast<MipsELFStreamer &>(Streamer);
+  MEF.emitValueImpl(Value, Size, Loc, true);
 }
 
 void MipsTargetELFStreamer::emitFrame(unsigned StackReg, unsigned StackSize,

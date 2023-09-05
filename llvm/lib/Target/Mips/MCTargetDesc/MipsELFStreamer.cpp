@@ -123,10 +123,8 @@ static bool requiresFixups(MCContext &C, const MCExpr *Value,
   if (MBE == nullptr)
     return false;
 
-  if (isLabelAshr1(Value)) {
-    report_fatal_error("Unsupported jump-table reloc expression\n");
-    return false;
-  }
+  if (isLabelAshr1(Value))
+    return requiresFixups(C, MBE->getLHS(), LHS, RHS);
 
   MCValue E;
   if (!Value->evaluateAsRelocatable(E, nullptr, nullptr))
@@ -148,12 +146,14 @@ static bool requiresFixups(MCContext &C, const MCExpr *Value,
      : !B.getName().empty());
 }
 
-void MipsELFStreamer::emitValueImpl(const MCExpr *Value, unsigned Size, SMLoc Loc) {
+void MipsELFStreamer::emitValueImpl(const MCExpr *Value, unsigned Size,
+				    SMLoc Loc, bool isSigned) {
   const MCExpr *A, *B;
   MipsTargetELFStreamer *ELFTargetStreamer =
     static_cast<MipsTargetELFStreamer *>(getTargetStreamer());
   enum Mips::Fixups reloc;
   MCDataFragment *DF;
+  bool Ashr1 = isLabelAshr1(Value);
 
   if (!ELFTargetStreamer->isNanoMipsEnabled() ||
       !requiresFixups(getContext(), Value, A, B)) {
@@ -168,20 +168,40 @@ void MipsELFStreamer::emitValueImpl(const MCExpr *Value, unsigned Size, SMLoc Lo
 
   switch (Size) {
   case 1:
-    reloc = Mips::fixup_NANOMIPS_UNSIGNED_8; break;
+    reloc = isSigned ? Mips::fixup_NANOMIPS_SIGNED_8 : Mips::fixup_NANOMIPS_UNSIGNED_8;
+    break;
   case 2:
-    reloc = Mips::fixup_NANOMIPS_UNSIGNED_16; break;
+    reloc = isSigned ? Mips::fixup_NANOMIPS_SIGNED_16 : Mips::fixup_NANOMIPS_UNSIGNED_16;
+    break;
   case 4:
-    reloc = Mips::fixup_NANOMIPS_32; break;
+    reloc = Mips::fixup_NANOMIPS_32;
+    break;
   default:
-    report_fatal_error("Unhandled value size\n"); break;
+    report_fatal_error("Unhandled value size\n");
+    break;
   }
 
   DF->getFixups().push_back(MCFixup::create(
 	DF->getContents().size(), B, MCFixupKind(Mips::fixup_NANOMIPS_NEG), Loc));
-  DF->getFixups().push_back(MCFixup::create(
+  if (Ashr1) {
+    // Result of SHIFTR is inherently 32-bit and only needs another relocation
+    // for byte or half-word sizes.
+    DF->getFixups().push_back(MCFixup::create(
+	DF->getContents().size(), A,
+	MCFixupKind(Mips::fixup_NANOMIPS_ASHIFTR_1), Loc));
+    if (Size < 4)
+      DF->getFixups().push_back(MCFixup::create(
+	DF->getContents().size(), MCConstantExpr::create(0, getContext()),
+	MCFixupKind(reloc), Loc));
+  }
+  else
+    DF->getFixups().push_back(MCFixup::create(
 	DF->getContents().size(), A, MCFixupKind(reloc), Loc));
   DF->getContents().resize(DF->getContents().size() + Size, 0);
+}
+
+void MipsELFStreamer::emitValueImpl(const MCExpr *Value, unsigned Size, SMLoc Loc) {
+  MipsELFStreamer::emitValueImpl(Value, Size, Loc, false);
 }
 
 void MipsELFStreamer::emitIntValue(uint64_t Value, unsigned Size) {

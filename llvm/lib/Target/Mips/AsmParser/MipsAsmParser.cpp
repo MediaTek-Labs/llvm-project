@@ -434,6 +434,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool parseDirectiveModule();
   bool parseDirectiveModuleFP();
   bool parseDirectiveLinkRelax();
+  bool parseSignedBytes(unsigned Size);
   bool parseFpABIValue(MipsABIFlagsSection::FpABIKind &FpABI,
                        StringRef Directive);
 
@@ -9146,6 +9147,22 @@ bool MipsAsmParser::parseDirectiveLinkRelax() {
   return false;
 }
 
+bool MipsAsmParser::parseSignedBytes(unsigned Size) {
+  MCAsmParser &Parser = getParser();
+  const MCExpr *Value;
+  SMLoc Loc = getLexer().getLoc();
+  if (Parser.parseExpression(Value, Loc)) {
+    reportParseError("expected expression");
+    return true;
+  }
+  getTargetStreamer().emitSignedValue(Value, Size, Loc);
+
+  if (getLexer().isNot(AsmToken::EndOfStatement))
+    return Error(Loc, "unexpected token, expected end of statement");
+  Parser.Lex(); // Eat EndOfStatement token.
+  return false;
+}
+
 bool MipsAsmParser::parseDirectiveSet() {
   const AsmToken &Tok = getParser().getTok();
   StringRef IdVal = Tok.getString();
@@ -10184,6 +10201,10 @@ bool MipsAsmParser::ParseDirective(AsmToken DirectiveID) {
     parseSSectionDirective(IDVal, ELF::SHT_PROGBITS);
     return false;
   }
+  if (IDVal == ".shword")
+    return parseSignedBytes(2);
+  if (IDVal == ".sbyte")
+    return parseSignedBytes(1);
 
   return true;
 }

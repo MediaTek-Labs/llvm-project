@@ -443,8 +443,7 @@ std::optional<MCFixupKind> MipsAsmBackend::getFixupKind(StringRef Name) const {
       .Case("R_NANOMIPS_JALR16", (MCFixupKind)Mips::fixup_NANOMIPS_JALR16)
       .Case("R_NANOMIPS_JALR32", (MCFixupKind)Mips::fixup_NANOMIPS_JALR32)
       .Case("R_NANOMIPS_NOTRAMP", (MCFixupKind)Mips::fixup_NANOMIPS_NOTRAMP)
-      // FIXME: Unsupported
-      // .Case("R_NANOMIPS_JUMPTABLE_LOAD", (MCFixupKind)Mips::fixup_NANOMIPS_SAVERESTORE)
+      .Case("R_NANOMIPS_JUMPTABLE_LOAD", (MCFixupKind)Mips::fixup_NANOMIPS_JUMPTABLE_LOAD)
       .Default(MCAsmBackend::getFixupKind(Name));
 }
 
@@ -581,7 +580,7 @@ getFixupKindInfo(MCFixupKind Kind) const {
     { "fixup_NANOMIPS_INSN16",	0,	0,	0 },
     { "fixup_NANOMIPS_JALR32",	0,	32,	0 },
     { "fixup_NANOMIPS_JALR16",	0,	32,	0 },
-    { "fixup_NANOMIPS_JUMPTABLE_LOAD",	0,	32,	0 },
+    { "fixup_NANOMIPS_JUMPTABLE_LOAD",	0,	32,	MCFixupKindInfo::FKF_IsTarget },
     { "fixup_NANOMIPS_FRAME_REG",	0,	32,	0 },
     { "fixup_NANOMIPS_NOTRAMP",	0,	32,	0 },
     { "fixup_NANOMIPS_TLS_DTPMOD",	0,	32,	0 },
@@ -793,7 +792,6 @@ bool MipsAsmBackend::shouldForceRelocation(const MCAssembler &Asm,
   case Mips::fixup_NANOMIPS_NORELAX:
   case Mips::fixup_NANOMIPS_SAVERESTORE:
   case Mips::fixup_NANOMIPS_INSN16:
-  case Mips::fixup_NANOMIPS_JUMPTABLE_LOAD:
   case Mips::fixup_NANOMIPS_JALR32:
   case Mips::fixup_NANOMIPS_JALR16:
   case Mips::fixup_NANOMIPS_NOTRAMP:
@@ -853,6 +851,20 @@ public:
 };
 
 } // end anonymous namespace
+bool MipsAsmBackend::evaluateTargetFixup(
+    const MCAssembler &Asm, const MCFixup &Fixup,
+    const MCFragment *DF, const MCValue &Target, const MCSubtargetInfo *STI, uint64_t &Value,
+    bool &WasForced) {
+  switch (Fixup.getTargetKind()) {
+  default:
+    llvm_unreachable("Unexpected fixup kind!");
+  case Mips::fixup_NANOMIPS_JUMPTABLE_LOAD:
+    // Eat the fixup so it does not get emitted to output
+    break;
+  }
+
+  return true;
+}
 
 MCAsmBackend *llvm::createMipsAsmBackend(const Target &T,
                                          const MCSubtargetInfo &STI,

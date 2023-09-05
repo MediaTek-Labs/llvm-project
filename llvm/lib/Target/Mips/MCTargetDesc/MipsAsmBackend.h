@@ -63,6 +63,13 @@ public:
                                      MCAlignFragment &AF) override;
 
   bool isMicroMips(const MCSymbol *Sym) const override;
+
+  // Target-specific fixup handling.
+  bool evaluateTargetFixup(const MCAssembler &Asm,
+                           const MCFixup &Fixup, const MCFragment *DF,
+                           const MCValue &Target,
+                           const MCSubtargetInfo *STI, uint64_t &Value,
+                           bool &WasForced) override;
 }; // class MipsAsmBackend
 
 } // namespace

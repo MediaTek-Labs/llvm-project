@@ -12,9 +12,12 @@ foo:
   nop
 .L2:
   nop
+  .reloc	1f,R_NANOMIPS_JUMPTABLE_LOAD,foo # CHECK-NOT: R_NANOMIPS_JUMPTABLE_LOAD
+1:	lbux	$a1,$a2($a3)
   .end foo
 
   .section        .rodata,"a",@progbits
+  .jumptable 1,5,1
   .word (.L1 - .L2)		# CHECK: {{0+}}   00000203 R_NANOMIPS_NEG	{{0+}}2   .L2 + 0
 				# CHECK: {{0+}}   00000101 R_NANOMIPS_32	{{0+}}    .L1 + 0
   .2byte (.L1 - .L2)		# CHECK: {{0+}}4  00000203 R_NANOMIPS_NEG	{{0+}}2   .L2 + 0

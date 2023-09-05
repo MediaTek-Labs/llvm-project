@@ -439,6 +439,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool parseDirectiveModuleFP();
   bool parseDirectiveLinkRelax();
   bool parseSignedBytes(unsigned Size);
+  bool parseDirectiveJumpTable();
   bool parseFpABIValue(MipsABIFlagsSection::FpABIKind &FpABI,
                        StringRef Directive);
 
@@ -9098,6 +9099,50 @@ bool MipsAsmParser::parseSignedBytes(unsigned Size) {
   return false;
 }
 
+// FIXME: Parsed and ignored for now
+bool MipsAsmParser::parseDirectiveJumpTable() {
+  MCAsmParser &Parser = getParser();
+  const MCExpr *Value;
+  int64_t EntrySize, NumEntries, IsSigned;
+  SMLoc Loc = getLexer().getLoc();
+  if (getParser().parseExpression(Value, Loc) ||
+      !Value->evaluateAsAbsolute(EntrySize) ||
+      (EntrySize != 1 && EntrySize != 2 && EntrySize != 4)) {
+    reportParseError("expected number");
+    return false;
+  }
+  if (getLexer().isNot(AsmToken::Comma)) {
+    reportParseError("unexpected token, expected comma");
+    return false;
+  }
+  Parser.Lex(); // Eat the comma.
+
+  if (getParser().parseExpression(Value, Loc) ||
+      !Value->evaluateAsAbsolute(NumEntries) ||
+      NumEntries <= 0) {
+    reportParseError("expected non-zero number");
+    return false;
+  }
+  if (getLexer().isNot(AsmToken::Comma) && getLexer().isNot(AsmToken::EndOfStatement)) {
+    reportParseError("unexpected token, expected comma or end of statement");
+    return false;
+  }
+  if (getLexer().is(AsmToken::Comma)) {
+    Parser.Lex(); // Eat the comma or end of statement.
+    if (getParser().parseExpression(Value, Loc) ||
+	!Value->evaluateAsAbsolute(IsSigned) ||
+	(IsSigned != 0 && IsSigned != 1)) {
+      reportParseError("expected 0 or 1");
+      return false;
+    }
+  }
+
+  if (getLexer().isNot(AsmToken::EndOfStatement))
+    return Error(Loc, "unexpected token, expected end of statement");
+  Parser.Lex(); // Eat EndOfStatement token.
+  return false;
+}
+
 bool MipsAsmParser::parseDirectiveSet() {
   const AsmToken &Tok = getParser().getTok();
   StringRef IdVal = Tok.getString();
@@ -10141,6 +10186,10 @@ bool MipsAsmParser::ParseDirective(AsmToken DirectiveID) {
   if (IDVal == ".sbyte")
     return parseSignedBytes(1);
 
+  if (IDVal == ".jumptable") {
+    parseDirectiveJumpTable();
+    return false;
+  }
   return true;
 }
 

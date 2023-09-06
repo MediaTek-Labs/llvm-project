@@ -627,12 +627,8 @@ bool MipsELFObjectWriter::needsRelocateWithSymbol(const MCSymbol &Sym,
                                                   unsigned Type) const {
   // Conservative assumption for NanoMips, let the linker handle it!
   if (getEMachine() == ELF::EM_NANOMIPS)
-    switch (Type) {
-    default:
-      return true;
-    case ELF::R_NANOMIPS_I32:
-      return false;
-    }
+    return (!Sym.isInSection() ||
+	    !Sym.getSection().getName().startswith(".rodata"));
 
   // If it's a compound relocation for N64 then we need the relocation if any
   // sub-relocation needs it.

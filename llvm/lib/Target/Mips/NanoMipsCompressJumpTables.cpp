@@ -30,6 +30,10 @@ using namespace llvm;
 #define NM_COMPRESS_JUMP_TABLES_OPT_NAME                                       \
   "nanoMIPS compress jump tables optimization pass"
 
+static cl::opt<bool> NMForce16BitJumpTables(
+    "nmips-force-16-bit-jump-table", cl::Hidden, cl::init(true),
+    cl::desc("Force all jump tables to have 16bit wide entries"));
+
 namespace {
 struct NMCompressJumpTables : public MachineFunctionPass {
   static char ID;
@@ -116,6 +120,11 @@ bool NMCompressJumpTables::compressJumpTable(MachineInstr &MI, int Offset) {
 
   auto MFI = MF->getInfo<MipsFunctionInfo>();
   MCSymbol *JTS = MFI->getJumpTableSymbol(JTIdx);
+
+  if (NMForce16BitJumpTables) {
+    MFI->setJumpTableEntryInfo(JTIdx, 2, JTS, Signed);
+    return false;
+  }
 
   bool EntrySize1 =
       (Signed && isInt<8>(MaxOffset)) || (!Signed && isUInt<8>(MaxOffset));

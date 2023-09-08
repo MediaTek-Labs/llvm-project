@@ -8100,7 +8100,7 @@ static void applyMnemonicAliases(StringRef &Mnemonic,
 bool MipsAsmParser::ParseInstruction(ParseInstructionInfo &Info, StringRef Name,
                                      SMLoc NameLoc, OperandVector &Operands) {
   MCAsmParser &Parser = getParser();
-  unsigned AssemblerDialect = Parser.getAssemblerDialect();
+  unsigned AssemblerDialect = getContext().getAsmInfo()->getAssemblerDialect();
   LLVM_DEBUG(dbgs() << "ParseInstruction\n");
 
   // We have reached first instruction, module directive are now forbidden.

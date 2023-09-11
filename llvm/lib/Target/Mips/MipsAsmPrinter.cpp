@@ -1069,7 +1069,7 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
         OutContext.getELFSection(SectionName, ELF::SHT_PROGBITS, 0));
   }
 
-  if (IsNanoMips)
+  if (IsNanoMips && STI.useLinkerRelax())
     TS.emitDirectiveLinkRelax();
 
   if (!IsNanoMips)
@@ -1089,7 +1089,7 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
   if ((ABI.IsO32() && (STI.isABI_FPXX() || STI.isFP64bit())) ||
       STI.useSoftFloat())
     TS.emitDirectiveModuleFP();
-  if (ABI.IsP32())
+  if (ABI.IsP32() && STI.usePCRel())
     TS.emitDirectiveModulePcRel();
 
   // We should always emit a '.module [no]oddspreg' but binutils 2.24 does not

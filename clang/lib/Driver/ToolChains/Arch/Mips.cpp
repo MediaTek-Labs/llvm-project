@@ -423,13 +423,10 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       Features.push_back("+relax");
     else
       Features.push_back("-relax");
-    if (Arg *A = Args.getLastArg(options::OPT_mpcrel,
-				 options::OPT_mno_pcrel)) {
-      if (A->getOption().matches(options::OPT_mno_pcrel))
-	Features.push_back("-pcrel");
-      else
-	Features.push_back("+pcrel");
-    }
+    if (Args.hasFlag(options::OPT_mpcrel, options::OPT_mno_pcrel, true))
+      Features.push_back("+pcrel");
+    else
+      Features.push_back("-pcrel");
   }
 
 }

@@ -214,7 +214,7 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   bool UseUnalignedLoadStore = false;
 
   // Use linker relaxation
-  bool UseLinkerRelax = true;
+  bool UseLinkerRelax = false;
 
   // PC-relative addressing mode (nanoMIPS only).
   bool UsePCRel = false;

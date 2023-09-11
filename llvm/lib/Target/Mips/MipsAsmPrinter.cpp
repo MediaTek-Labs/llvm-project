@@ -1036,14 +1036,15 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
           OutContext.getELFSection(SectionName, ELF::SHT_PROGBITS, 0));
     }
 
-    if (IsNanoMips)
-      TS.emitDirectiveLinkRelax();
-    if (!STI.isABI_P32()) {
-      // NaN: At the moment we only support:
-      // 1. .nan legacy (default)
-      // 2. .nan 2008
-      STI.isNaN2008() ? TS.emitDirectiveNaN2008() : TS.emitDirectiveNaNLegacy();
-    }
+  if (IsNanoMips && STI.useLinkerRelax())
+    TS.emitDirectiveLinkRelax();
+
+  if (!IsNanoMips)
+    // NaN: At the moment we only support:
+    // 1. .nan legacy (default)
+    // 2. .nan 2008
+    STI.isNaN2008() ? TS.emitDirectiveNaN2008()
+                    : TS.emitDirectiveNaNLegacy();
 
     // TODO: handle O64 ABI
 
@@ -1056,7 +1057,7 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
         STI.useSoftFloat())
       TS.emitDirectiveModuleFP();
 
-   if (ABI.IsP32())
+   if (ABI.IsP32() && STI.usePCRel())
      TS.emitDirectiveModulePcRel();
 
     // We should always emit a '.module [no]oddspreg' but binutils 2.24 does not

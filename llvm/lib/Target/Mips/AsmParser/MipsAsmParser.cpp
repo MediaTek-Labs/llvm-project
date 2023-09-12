@@ -6444,10 +6444,16 @@ bool MipsAsmParser::expandLiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
 			       const MCSubtargetInfo *STI) {
   assert(Inst.getNumOperands() == 2 && "expected two operands");
   assert(Inst.getOperand(0).isReg() && "expected register operand kind");
-  assert(Inst.getOperand(1).isImm() && "expected immediate operand kind");
+  assert((Inst.getOperand(1).isImm() || Inst.getOperand(1).isExpr()) &&
+	 "expected immediate or expression");
 
   MipsTargetStreamer &TOut = getTargetStreamer();
   unsigned rt = Inst.getOperand(0).getReg();
+  if (!Inst.getOperand(1).isImm()) {
+    TOut.emitRX(Mips::LI48_NM, rt, Inst.getOperand(1), IDLoc, STI);
+    return false;
+  }
+
   int imm = Inst.getOperand(1).getImm();
   MCRegisterClass RC = getContext().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
 

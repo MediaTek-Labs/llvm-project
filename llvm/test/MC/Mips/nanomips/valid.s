@@ -274,6 +274,9 @@
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
 	li	$t5, -2147483647	# CHECK: li $t5, -2147483647	# encoding: [0x60,0x60,0x01,0x00,0x00,0x80]
 					# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
+	li	$a0, foo	# CHECK: li $a0, foo	# encoding: [0x80,0x60,A,A,A,A]
+				# CHECK-NEXT: fixup A - offset: 2, value: foo, kind: fixup_NANOMIPS_I32
+				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
 
 	movn	$a1, $s2, $t4	# CHECK: movn $a1, $s2, $t4	# encoding: [0x52,0x20,0x10,0x2e]
 				# CHECK-NEXT: # <MCInst #{{.*}} MOVN_NM

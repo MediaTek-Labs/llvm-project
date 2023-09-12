@@ -103,7 +103,7 @@ void MipsAsmPrinter::emitJumpTableInfo() {
     unsigned EntrySize = MFI->getJumpTableEntrySize(JTI);
     bool Signed = MFI->getJumpTableIsSigned(JTI);
     emitJumpTableDir(*OutStreamer, EntrySize, JTBBs.size(), Signed);
-    emitAlignment(Align(EntrySize));
+    emitAlignment(Align(std::max(2u, EntrySize)));
     OutStreamer->emitLabel(GetJTISymbol(JTI));
 
     MCSymbol *DiffLbl = MFI->getJumpTableSymbol(JTI);

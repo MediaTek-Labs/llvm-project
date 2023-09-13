@@ -128,6 +128,11 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("--relax");
   }
 
+  if (Args.hasFlag(options::OPT_mfix_nmips_hw110880,
+                   options::OPT_mno_fix_nmips_hw110880, false)) {
+    CmdArgs.push_back("--fix-nmips-hw110880");
+  }
+
   Args.AddAllArgs(CmdArgs, options::OPT_L);
   Args.AddAllArgs(CmdArgs, options::OPT_u);
 

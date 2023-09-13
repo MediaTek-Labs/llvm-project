@@ -3487,6 +3487,8 @@ def mxgot : Flag<["-"], "mxgot">, Group<m_mips_Features_Group>;
 def mno_xgot : Flag<["-"], "mno-xgot">, Group<m_mips_Features_Group>;
 def mjump_table_opt : Flag<["-"], "mjump-table-opt">, Group<m_mips_Features_Group>;
 def mno_jump_table_opt : Flag<["-"], "mno-jump-table-opt">, Group<m_mips_Features_Group>;
+def mfix_nmips_hw110880 : Flag<["-"], "mfix-nmips-hw110880">, Group<m_mips_Features_Group>;
+def mno_fix_nmips_hw110880 : Flag<["-"], "mno-fix-nmips-hw110880">, Group<m_mips_Features_Group>;
 def mldc1_sdc1 : Flag<["-"], "mldc1-sdc1">, Group<m_mips_Features_Group>;
 def mno_ldc1_sdc1 : Flag<["-"], "mno-ldc1-sdc1">, Group<m_mips_Features_Group>;
 def mcheck_zero_division : Flag<["-"], "mcheck-zero-division">,

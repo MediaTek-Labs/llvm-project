@@ -72,6 +72,11 @@ using namespace llvm;
 
 extern cl::opt<bool> EmitJalrReloc;
 
+cl::opt<bool>
+FixHw110880("nmips-fix-hw110880", cl::Hidden,
+         cl::desc("nanoMIPS: Fix problematic instructions to avoid hw110880 issue"),
+         cl::init(true));
+
 void MipsAsmPrinter::emitJumpTableInfo() {
   if (!Subtarget->hasNanoMips() || Subtarget->useAbsoluteJumpTables() ) {
     AsmPrinter::emitJumpTableInfo();
@@ -249,6 +254,56 @@ void MipsAsmPrinter::emitJumpTableDest(MCStreamer &OutStreamer,
   EmitToStreamer(OutStreamer, LoadI);
 }
 
+bool MipsAsmPrinter::tryEmitHw110880Fix(MCStreamer &OutStreamer,
+                                     const MachineInstr *MI) {
+  if (!FixHw110880)
+    return false;
+
+  if (!Subtarget->hasFixHw110880())
+    return false;
+
+  if (MI->getOpcode() != Mips::Li_NM &&
+      MI->getOpcode() != Mips::ADDIU48_NM)
+    return false;
+
+  int LastOp = MI->getNumOperands() - 1;
+  auto Last = MI->getOperand(LastOp);
+
+  if (!Last.isImm())
+    return false;
+
+  int64_t Value = Last.getImm();
+
+  auto ImmValueNeedsHw110880Fix = [MI](int64_t Value) -> bool {
+    // Check if we are dealing with 48-bit LI
+    if ((MI->getOpcode() == Mips::Li_NM) &&
+        (isUInt<16>(Value) || isInt<9>(Value) || ((Value & 0xfffu) == 0u)))
+      return false;
+
+    return (((Value & 0x50016400) == 0x50012400) &&
+            (((Value >> 24) & 0x7) == 0x1 || ((Value >> 24) & 0x2) == 0x2));
+  };
+
+  if (!ImmValueNeedsHw110880Fix(Value))
+    return false;
+
+  MCSymbol *AbsZero = OutContext.getOrCreateSymbol(
+                              Twine(getDataLayout().getPrivateGlobalPrefix()) +
+                              Twine("zero"));
+
+  const MCExpr *ZeroRef = MCSymbolRefExpr::create(AbsZero, OutContext);
+  const MCExpr *ValueExpr = MCBinaryExpr::createAdd(
+      ZeroRef, MCConstantExpr::create(Value, OutContext, true, 4u), OutContext);
+
+  MCInst Load;
+  Load.setOpcode(MI->getOpcode());
+  for (int i = 0; i < LastOp; i++)
+    Load.addOperand(MCOperand::createReg(MI->getOperand(i).getReg()));
+  Load.addOperand(MCOperand::createExpr(ValueExpr));
+  EmitToStreamer(OutStreamer, Load);
+  return true;
+}
+
 // Each table starts with the following directive:
 //
 // .jumptable esize, nsize [, unsigned]
@@ -416,6 +471,12 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
       emitPseudoIndirectBranch(*OutStreamer, &*I);
       continue;
     }
+
+    if (Subtarget->hasNanoMips() &&
+        tryEmitHw110880Fix(*OutStreamer, &*I)) {
+      continue;
+    }
+
 
     if (Subtarget->hasNanoMips() &&
         (I->getOpcode() == Mips::LoadJumpTableOffset)) {
@@ -1294,6 +1355,20 @@ void MipsAsmPrinter::EmitFPCallStub(
 }
 
 void MipsAsmPrinter::emitEndOfAsmFile(Module &M) {
+  if (Subtarget->hasNanoMips() && FixHw110880) {
+    SmallString<8> Name;
+    auto Symbols = OutContext.getSymbols();
+    MCSymbol *AbsZero = Symbols.lookup(
+        (Twine(getDataLayout().getPrivateGlobalPrefix()) + Twine("zero"))
+            .toStringRef(Name));
+
+    if (AbsZero) {
+      assert(!AbsZero->isDefined());
+      // Force assembler to use relocations via weak symbol
+      OutStreamer->emitSymbolAttribute(AbsZero, MCSymbolAttr::MCSA_Weak);
+      OutStreamer->emitAssignment(AbsZero, MCConstantExpr::create(0u, OutContext));
+    }
+  }
   // Emit needed stubs
   //
   for (std::map<

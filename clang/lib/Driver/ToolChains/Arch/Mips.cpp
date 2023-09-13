@@ -300,6 +300,14 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       Features.push_back("-disable-jump-table-opt");
   }
 
+  if (Arg *A = Args.getLastArg(options::OPT_mfix_nmips_hw110880,
+                               options::OPT_mno_fix_nmips_hw110880)) {
+    if (A->getOption().matches(options::OPT_mfix_nmips_hw110880))
+      Features.push_back("+fix-hw110880");
+    else
+      Features.push_back("-fix-hw110880");
+  }
+
   mips::FloatABI FloatABI = mips::getMipsFloatABI(D, Args, Triple);
   if (FloatABI == mips::FloatABI::Soft) {
     // FIXME: Note, this is a hack. We need to pass the selected float

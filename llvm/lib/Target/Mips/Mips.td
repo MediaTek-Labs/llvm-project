@@ -226,6 +226,8 @@ def FeatureUseIndirectJumpsHazard : SubtargetFeature<"use-indirect-jump-hazard",
                                                     "true", "Use indirect jump"
                         " guards to prevent certain speculation based attacks">;
 
+def FeatureFixImm48 : SubtargetFeature<"fix-hw110880", "HasFixHw110880", "true", "Avoid problematic instructions for hw110880 issue">;
+
 //===----------------------------------------------------------------------===//
 // Register File, Calling Conv, Instruction Descriptions
 //===----------------------------------------------------------------------===//

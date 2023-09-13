@@ -1,10 +1,11 @@
-; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | FileCheck %s
+; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | FileCheck --check-prefix=CHECK-ALL --check-prefix=CHECK %s
+; RUN: llc -mtriple=nanomips -asm-show-inst -mattr=+fix-hw110880 -verify-machineinstrs < %s | FileCheck --check-prefix=CHECK-ALL --check-prefix=CHECK-FIX %s
 
 define i32 @foo0() nounwind readnone {
 ; CHECK-LABEL: foo0
 entry:
-; CHECK: li $a0, 12345
-; CHECK: ADDIU_NM
+; CHECK-ALL: li $a0, 12345
+; CHECK-ALL: ADDIU_NM
   ret i32 12345
 }
 
@@ -27,16 +28,16 @@ entry:
 define i32 @foo4() nounwind readnone {
 ; CHECK-LABEL: foo4
 entry:
-; CHECK: li $a0, -1
-; CHECK: LI16_NM
+; CHECK-ALL: li $a0, -1
+; CHECK-ALL: LI16_NM
   ret i32 -1
 }
 
 define i32 @foo5() nounwind readnone {
 ; CHECK-LABEL: foo5
 entry:
-; CHECK: li $a0, -4095
-; CHECK: ADDIUNEG_NM
+; CHECK-ALL: li $a0, -4095
+; CHECK-ALL: ADDIUNEG_NM
   ret i32 -4095
 }
 

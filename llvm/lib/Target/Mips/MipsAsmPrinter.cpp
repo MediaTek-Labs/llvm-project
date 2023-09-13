@@ -73,6 +73,11 @@ using namespace llvm;
 
 extern cl::opt<bool> EmitJalrReloc;
 
+cl::opt<bool>
+XformHw110880("nmips-fix-hw110880", cl::Hidden,
+         cl::desc("nanoMIPS: Transform specific 48-bit instruction pattenrs [hw110880]"),
+         cl::init(true));
+
 void MipsAsmPrinter::emitJumpTableInfo() {
   if (!Subtarget->hasNanoMips() || Subtarget->useAbsoluteJumpTables() ) {
     AsmPrinter::emitJumpTableInfo();
@@ -240,6 +245,63 @@ void MipsAsmPrinter::emitJumpTableDest(MCStreamer &OutStreamer,
   LoadI.addOperand(MCOperand::createReg(TableReg));
   LoadI.addOperand(MCOperand::createReg(EntryReg));
   EmitToStreamer(OutStreamer, LoadI);
+}
+
+bool MipsAsmPrinter::tryEmitHw110880Xform(MCStreamer &OutStreamer,
+                                     const MachineInstr *MI) {
+  if (!XformHw110880)
+    return false;
+
+  if (!Subtarget->hasXformHw110880())
+    return false;
+
+  if (MI->getOpcode() != Mips::PseudoLI_NM &&
+      MI->getOpcode() != Mips::ADDIU48_NM)
+    return false;
+
+  int LastOp = MI->getNumOperands() - 1;
+  auto Last = MI->getOperand(LastOp);
+
+  if (!Last.isImm())
+    return false;
+
+  int64_t Value = Last.getImm();
+
+  auto ImmValueNeedsHw110880Xform = [&MI](int64_t Value) -> bool {
+    // Check if we are dealing with 48-bit LI
+    if ((MI->getOpcode() == Mips::PseudoLI_NM) &&
+        (isUInt<16>(Value) || isInt<9>(Value) || ((Value & 0xfffu) == 0u)))
+      return false;
+    return (((Value & 0x50016400) == 0x50012400) &&
+            (((Value >> 24) & 0x7) == 0x1 || ((Value >> 24) & 0x2) == 0x2));
+  };
+
+  if (!ImmValueNeedsHw110880Xform(Value))
+    return false;
+
+  MCSymbol *OffsetLabel = OutContext.createTempSymbol();
+  const MCExpr *OffsetExpr = MCBinaryExpr::createAdd(
+       MCSymbolRefExpr::create(OffsetLabel, OutContext),
+       MCConstantExpr::create(2u, OutContext), OutContext);
+  const MCExpr *ValueExpr = MCConstantExpr::create(Value, OutContext);
+  OutStreamer.emitLabel(OffsetLabel);
+
+  MCInst Load;
+  Load.setOpcode(MI->getOpcode() == Mips::PseudoLI_NM
+                 ? Mips::LI48_NM
+                 : MI->getOpcode());
+  for (int i = 0; i < LastOp; i++)
+    Load.addOperand(MCOperand::createReg(MI->getOperand(i).getReg()));
+  //TODO Just emit instruction as is
+  Load.addOperand(MCOperand::createImm(0xdeaddead));
+  EmitToStreamer(OutStreamer, Load);
+  // Emit .reloc directive last to avoid the issue with forward declared labels
+  OutStreamer.emitRelocDirective(*OffsetExpr, "R_NANOMIPS_I32",
+                                 ValueExpr, SMLoc(),
+                                 *TM.getMCSubtargetInfo());
+
+
+  return true;
 }
 
 // Each table starts with the following directive:
@@ -500,6 +562,12 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
       emitPseudoIndirectBranch(*OutStreamer, &*I);
       continue;
     }
+
+    if (Subtarget->hasNanoMips() &&
+        tryEmitHw110880Xform(*OutStreamer, &*I)) {
+      continue;
+    }
+
 
     if (Subtarget->hasNanoMips() &&
         (I->getOpcode() == Mips::LoadJumpTableOffset)) {

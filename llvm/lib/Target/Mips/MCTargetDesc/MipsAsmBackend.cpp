@@ -448,6 +448,7 @@ std::optional<MCFixupKind> MipsAsmBackend::getFixupKind(StringRef Name) const {
       .Case("R_NANOMIPS_JALR32", (MCFixupKind)Mips::fixup_NANOMIPS_JALR32)
       .Case("R_NANOMIPS_NOTRAMP", (MCFixupKind)Mips::fixup_NANOMIPS_NOTRAMP)
       .Case("R_NANOMIPS_JUMPTABLE_LOAD", (MCFixupKind)Mips::fixup_NANOMIPS_JUMPTABLE_LOAD)
+      .Case("R_NANOMIPS_I32", (MCFixupKind)Mips::fixup_NANOMIPS_I32)
       .Default(MCAsmBackend::getFixupKind(Name));
 }
 
@@ -804,6 +805,7 @@ bool MipsAsmBackend::shouldForceRelocation(const MCAssembler &Asm,
   case Mips::fixup_NANOMIPS_UNSIGNED_8:
   case Mips::fixup_NANOMIPS_SIGNED_16:
   case Mips::fixup_NANOMIPS_SIGNED_8:
+  case Mips::fixup_NANOMIPS_I32:
     return true;
   }
 }

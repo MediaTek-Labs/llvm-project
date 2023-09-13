@@ -79,6 +79,8 @@ private:
 
   void emitJumpTableDest(MCStreamer &OutStreamer, const MachineInstr *MI);
 
+  bool tryEmitHw110880Xform(MCStreamer &OutStreamer, const MachineInstr *MI);
+
   // Emit brsc instruction followed by a label that will be used while creating
   // offset expressions in jump table entries.
   void emitBrsc(MCStreamer &OutStreamer, const MachineInstr *MI);

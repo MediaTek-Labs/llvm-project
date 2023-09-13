@@ -236,6 +236,8 @@ def FeatureStrictAlign
 
 def FeaturePCRel : SubtargetFeature<"pcrel", "UsePCRel", "true",
                                     "Use PC-relative addressing mode for address calculations">;
+def FeatureXformHw110880 : SubtargetFeature<"fix-hw110880", "HasXformHw110880", "true",
+					"Avoid specific 48-bit instruction patterns [hw110880]">;
 
 //===----------------------------------------------------------------------===//
 // Register File, Calling Conv, Instruction Descriptions

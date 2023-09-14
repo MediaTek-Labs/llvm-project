@@ -1005,9 +1005,12 @@
 	balrsc  $sp, $gp	# CHECK: balrsc $sp, $gp	# encoding: [0xbc,0x4b,0x00,0x80]
 				# CHECK-NEXT: # <MCInst #{{.*}} BALRSC_NM
 
-	balc	test	# CHECK: balc test # encoding: [A,0b001110AA]
+	balc[16] test	# CHECK: balc[16] test # encoding: [A,0b001110AA]
 			# CHECK-NEXT: fixup A - offset: 0, value: test+0, kind: fixup_NANOMIPS_PC10_S1
 			# CHECK-NEXT: <MCInst #{{.*}} BALC16_NM
+	balc	test	# CHECK: balc test # encoding: [A,0b0010101A,A,A]
+			# CHECK-NEXT: fixup A - offset: 0, value: test+0, kind: fixup_NANOMIPS_PC25_S1
+			# CHECK-NEXT: <MCInst #{{.*}} BALC_NM
 
 	bc	1b	# CHECK: bc .Ltmp0 # encoding: [A,0b000110AA]
 			# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp0+0, kind: fixup_NANOMIPS_PC10_S1

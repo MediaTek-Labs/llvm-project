@@ -492,18 +492,18 @@ def calltarget21_nm : Operand<iPTR> {
   let DecoderMethod = "DecodeBranchTargetNM<21>";
 }
 
-def calltarget25_nm : Operand<iPTR> {
-  let EncoderMethod = "getBranchTargetOpValueNM<25>";
-  let DecoderMethod = "DecodeBranchTargetNM<25>";
-  let ParserMatchClass = NMJumpTargetAsmOperandClass<25, [NMJumpTargetAsmOperand]>;
-}
-
 def calltarget10_nm : Operand<iPTR> {
   let EncoderMethod = "getBranchTargetOpValueNM<10>";
   let DecoderMethod = "DecodeBranchTargetNM<10>";
-  // Prefer BALC[32] over BALC[16] and let the linker relax it where possible.
-  let ParserMatchClass = NMJumpTargetAsmOperandClass<10, [calltarget25_nm.ParserMatchClass]>;
+  let ParserMatchClass = NMJumpTargetAsmOperandClass<10, [NMJumpTargetAsmOperand]>;
 }
+
+def calltarget25_nm : Operand<iPTR> {
+  let EncoderMethod = "getBranchTargetOpValueNM<25>";
+  let DecoderMethod = "DecodeBranchTargetNM<25>";
+  let ParserMatchClass = NMJumpTargetAsmOperandClass<25, [calltarget10_nm.ParserMatchClass]>;
+}
+
 def jmptarget_nm   : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValueNM<25>";
   let ParserMatchClass = NMJumpTargetAsmOperand;
@@ -2159,7 +2159,7 @@ class BBit_Enc<bits<3> isel> : _Pool_P_BRI<isel>
 def BC_NM : BCBase<brtarget25_nm>, BC32_Enc<0b0>;
 def BALC_NM : CallNM<"balc", MipsJmpLink, calltarget25_nm>, BC32_Enc<0b1>;
 def BC16_NM : BCBase<brtarget10_nm>, BC16_Enc<0b00010>;
-def BALC16_NM : CallNM<"balc", MipsJmpLink, calltarget10_nm>, BC16_Enc<0b00110>;
+def BALC16_NM : CallNM<"balc[16]", MipsJmpLink, calltarget10_nm>, BC16_Enc<0b00110>;
 
 def : NMPat<(MipsJmpLink (i32 texternalsym:$dst)), (BALC_NM texternalsym:$dst)>;
 

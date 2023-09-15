@@ -70,7 +70,7 @@ static cl::opt<bool>
 	       cl::cat(ReportOptionsCategory));
 
 
-std::string FunctionSectionName(Function &F) {
+static std::string FunctionSectionName(Function &F) {
   if (F.hasSection()) {
     return F.getSection().str();
   } else {
@@ -82,7 +82,7 @@ std::string FunctionSectionName(Function &F) {
   }
 }
 
-std::string GlobalSectionName(GlobalVariable &G) {
+static std::string GlobalSectionName(GlobalVariable &G) {
   if (G.hasSection()) {
     return G.getSection().str();
   } else {
@@ -108,11 +108,11 @@ std::string GlobalSectionName(GlobalVariable &G) {
   }
 }
 
-std::map<std::string, std::string> SymbolsToSectionsMap;
-std::set<std::string> SectionNames;
-std::set<std::string> SymbolNames;
+static std::map<std::string, std::string> SymbolsToSectionsMap;
+static std::set<std::string> SectionNames;
+static std::set<std::string> SymbolNames;
 
-bool ShouldReport(GlobalObject &G) {
+static bool ShouldReport(GlobalObject &G) {
   if (ExternOnly && !G.hasExternalLinkage())
     return false;
   else if (DefsOnly && G.isDeclaration())

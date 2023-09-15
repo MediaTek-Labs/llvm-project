@@ -501,15 +501,15 @@ getBranchTargetOpValueNM(const MCInst &MI, unsigned OpNo,
                          SmallVectorImpl<MCFixup> &Fixups,
                          const MCSubtargetInfo &STI) const {
   const MCOperand &MO = MI.getOperand(OpNo);
-
-  // If the destination is an immediate, divide by 2.
-  if (MO.isImm()) return MO.getImm() >> 1;
-
-  assert(MO.isExpr() &&
-         "getBranchTargetOpValue expects only expressions or immediates");
-
-  const MCExpr *FixupExpression = MCBinaryExpr::createAdd(
+  const MCExpr *FixupExpression;
+  if (MO.isImm())
+    FixupExpression = MCConstantExpr::create(MO.getImm(), Ctx);
+  else if (MO.isExpr())
+    FixupExpression = MCBinaryExpr::createAdd(
       MO.getExpr(), MCConstantExpr::create(0, Ctx), Ctx);
+  else
+    assert("getBranchTargetOpValue expects only expressions or immediates");
+
   Fixups.push_back(MCFixup::create(0, FixupExpression,
                                    MCFixupKind(getNMRelocForSize(Bits))));
   return 0;

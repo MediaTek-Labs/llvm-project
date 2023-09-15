@@ -1011,6 +1011,10 @@
 	balc	test	# CHECK: balc test # encoding: [A,0b0010101A,A,A]
 			# CHECK-NEXT: fixup A - offset: 0, value: test+0, kind: fixup_NANOMIPS_PC25_S1
 			# CHECK-NEXT: <MCInst #{{.*}} BALC_NM
+	balc	0x1ff0001	# CHECK: balc 33488897 # encoding: [A,0b0010101A,A,A]
+			# CHECK-NEXT: fixup A - offset: 0, value: 33488897, kind: fixup_NANOMIPS_PC25_S1
+			# CHECK-NEXT: <MCInst #{{.*}} BALC_NM
+
 
 	bc	1b	# CHECK: bc .Ltmp0 # encoding: [A,0b000110AA]
 			# CHECK-NEXT: fixup A - offset: 0, value: .Ltmp0+0, kind: fixup_NANOMIPS_PC10_S1

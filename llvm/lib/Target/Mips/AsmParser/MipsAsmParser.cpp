@@ -477,6 +477,14 @@ class MipsAsmParser : public MCTargetAsmParser {
   // Example: INSERT.B $w0[n], $1 => 16 > n >= 0
   bool validateMSAIndex(int Val, int RegKind);
 
+  // Helper function to check whether immediate value needs 48-bit encoding
+  // transform
+  bool needsHw110880Xform(unsigned Imm) {
+    return (getSTI().hasFeature(Mips::FeatureXformHw110880) &&
+	    (Imm & 0x50016400) == 0x50012400 &&
+	    (((Imm >> 24) & 0x7) == 0x1 || ((Imm >> 24) & 0x2) == 0x2));
+  }
+
   // Selects a new architecture by updating the FeatureBits with the necessary
   // info including implied dependencies.
   // Internally, it clears all the feature bits related to *any* architecture
@@ -556,6 +564,7 @@ public:
     Match_RequiresBaseGP,
     Match_RequiresBaseSP,
     Match_RequiresRegRA,
+    Match_Requires48bXform,
 #define GET_OPERAND_DIAGNOSTIC_TYPES
 #include "MipsGenAsmMatcher.inc"
 #undef GET_OPERAND_DIAGNOSTIC_TYPES
@@ -6535,6 +6544,8 @@ bool MipsAsmParser::expandLiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     TOut.emitRRX(Mips::ADDIUNEG_NM, rt, Mips::ZERO_NM, MCOperand::createImm(imm), IDLoc, STI);
   else if (imm % 0x1000 == 0)
     TOut.emitRI(Mips::LUI_NM, rt, imm >> 12, IDLoc, STI);
+  else if (needsHw110880Xform(imm))
+    return Error(IDLoc, "immediate value in 48-bit instruction requires transform for hw110880");
   else
     TOut.emitRI(Mips::LI48_NM, rt, imm, IDLoc, STI);
   return false;
@@ -6606,6 +6617,8 @@ bool MipsAsmParser::expandAddiuNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
 	TOut.emitRRX(Mips::ADDIUGPB_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
       else if (isUInt<21>(imm) && imm % 4 == 0)
 	TOut.emitRRX(Mips::ADDIUGPW_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+      else if (needsHw110880Xform(imm))
+	return Error(IDLoc, "immediate value in 48-bit instruction requires transform for hw110880");
       else
 	TOut.emitRRX(Mips::ADDIUGP48_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
     }
@@ -6613,6 +6626,8 @@ bool MipsAsmParser::expandAddiuNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
       TOut.emitRRX(Mips::ADDIUNEG_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
     else if (imm >= 0 && imm <= 65535)
       TOut.emitRRX(Mips::ADDIU_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
+    else if (needsHw110880Xform(imm))
+      return Error(IDLoc, "immediate value in 48-bit instruction requires transform for hw110880");
     else if (rt == rs)
       TOut.emitRRX(Mips::ADDIU48_NM, rt, rs, MCOperand::createImm(imm), IDLoc, STI);
     else {
@@ -6830,9 +6845,12 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
     if (Inst.getOperand(1).getReg() != Mips::SP_NM)
       return Match_RequiresBaseSP;
     return Match_Success;
+  case Mips::ADDIUGP48_NM:
+    if (needsHw110880Xform(Inst.getOperand(2).getImm()))
+	return Match_Requires48bXform;
+    LLVM_FALLTHROUGH;
   case Mips::ADDIUGPB_NM:
   case Mips::ADDIUGPW_NM:
-  case Mips::ADDIUGP48_NM:
     if (Inst.getOperand(1).getReg() != Mips::GP_NM)
       return Match_RequiresBaseGP;
     return Match_Success;
@@ -6840,6 +6858,10 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
     if (Inst.getOperand(0).getReg() != Mips::RA_NM)
       return Match_RequiresRegRA;
     return Match_Success;
+  case Mips::LI48_NM:
+  case Mips::ADDIU48_NM:
+    if (needsHw110880Xform(Inst.getOperand(Inst.getNumOperands() - 1).getImm()))
+	return Match_Requires48bXform;
   }
 
   uint64_t TSFlags = MII.get(Inst.getOpcode()).TSFlags;
@@ -7080,6 +7102,8 @@ bool MipsAsmParser::matchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
                  "expected symbol");
   case Match_RequiresRegRA:
     return Error(IDLoc, "expected $ra as first operand");
+  case Match_Requires48bXform:
+    return Error(IDLoc, "immediate value in 48-bit instruction requires transform for hw110880");
   }
 
   llvm_unreachable("Implement any new match types added!");

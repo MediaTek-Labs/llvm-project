@@ -26,38 +26,51 @@
 
 using namespace llvm;
 
-static cl::OptionCategory OptionsCategory("Section Options");
+static cl::OptionCategory ReportOptionsCategory("Report Options");
+static cl::OptionCategory CompileOptionsCategory("Compile-style Options");
 
 static cl::opt<std::string> InputFilename(cl::Positional,
                                           cl::desc("<input bitcode file>"),
                                           cl::init("-"),
                                           cl::value_desc("filename"),
-                                          cl::cat(OptionsCategory));
+                                          cl::cat(ReportOptionsCategory)
+					  );
 
 static cl::opt<bool>
     FFunctionSections("ffunction-sections", cl::Prefix, cl::init(false),
                       cl::desc("Place each function in its own section"),
-                      cl::cat(OptionsCategory));
+                      cl::cat(CompileOptionsCategory));
 
 static cl::opt<bool>
     FDataSections("fdata-sections", cl::Prefix, cl::init(false),
                   cl::desc("Place each data object in its own section"),
-                  cl::cat(OptionsCategory));
+                  cl::cat(CompileOptionsCategory));
 
 static cl::opt<bool> SymbolsReport("symbols", cl::Prefix, cl::init(false),
                                    cl::desc("Report symbol names"),
-                                   cl::cat(OptionsCategory));
+                                   cl::cat(ReportOptionsCategory));
 
 static cl::opt<bool> SectionsReport("sections", cl::Prefix, cl::init(false),
                                     cl::desc("Report section names"),
-                                    cl::cat(OptionsCategory));
+                                    cl::cat(ReportOptionsCategory));
 
 static cl::opt<bool>
     MapReport("map", cl::Prefix, cl::init(false),
               cl::desc("Report mapping of symbols to sections"),
-              cl::cat(OptionsCategory));
+              cl::cat(ReportOptionsCategory));
 
-std::string FunctionSectionName(Function &F) {
+static cl::opt<bool>
+    DefsOnly("defs-only", cl::Prefix, cl::init(false),
+	     cl::desc("Only report defined symbols, not declarations"),
+	     cl::cat(ReportOptionsCategory));
+
+static cl::opt<bool>
+    ExternOnly("externally-visible", cl::Prefix, cl::init(false),
+	       cl::desc("Only report externally visible symbols"),
+	       cl::cat(ReportOptionsCategory));
+
+
+static std::string FunctionSectionName(Function &F) {
   if (F.hasSection()) {
     return F.getSection().str();
   } else {
@@ -69,7 +82,7 @@ std::string FunctionSectionName(Function &F) {
   }
 }
 
-std::string GlobalSectionName(GlobalVariable &G) {
+static std::string GlobalSectionName(GlobalVariable &G) {
   if (G.hasSection()) {
     return G.getSection().str();
   } else {
@@ -95,14 +108,22 @@ std::string GlobalSectionName(GlobalVariable &G) {
   }
 }
 
-std::map<std::string, std::string> SymbolsToSectionsMap;
-std::set<std::string> SectionNames;
-std::set<std::string> SymbolNames;
+static std::map<std::string, std::string> SymbolsToSectionsMap;
+static std::set<std::string> SectionNames;
+static std::set<std::string> SymbolNames;
+
+static bool ShouldReport(GlobalObject &G) {
+  if (ExternOnly && !G.hasExternalLinkage())
+    return false;
+  else if (DefsOnly && G.isDeclaration())
+    return false;
+  return true;
+}
 
 int main(int argc, char **argv) {
   LLVMContext Context;
   SMDiagnostic Err;
-  cl::HideUnrelatedOptions({&OptionsCategory});
+  cl::HideUnrelatedOptions({&ReportOptionsCategory, &CompileOptionsCategory});
   cl::ParseCommandLineOptions(argc, argv, "LLVM LTO section tool\n");
 
   std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context);
@@ -125,11 +146,13 @@ int main(int argc, char **argv) {
   };
 
   for (GlobalVariable &G : M->globals()) {
-    RecordSymbol(G.getName().str(), GlobalSectionName(G));
+    if (ShouldReport(G))
+      RecordSymbol(G.getName().str(), GlobalSectionName(G));
   }
 
   for (Function &F : M->functions()) {
-    RecordSymbol(F.getName().str(), FunctionSectionName(F));
+    if (ShouldReport(F))
+      RecordSymbol(F.getName().str(), FunctionSectionName(F));
   }
 
   if (SectionsReport) {

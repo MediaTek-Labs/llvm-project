@@ -21,6 +21,7 @@
 #include "llvm/Analysis/BlockFrequencyInfo.h"
 #include "llvm/Analysis/BranchProbabilityInfo.h"
 #include "llvm/IR/ValueHandle.h"
+#include "llvm/Transforms/Utils/JumpThreadingUtils.h"
 #include <utility>
 
 namespace llvm {
@@ -48,10 +49,6 @@ class Value;
 /// JumpThreading.
 /// These are implementation details and should not be used by clients.
 namespace jumpthreading {
-
-// These are at global scope so static functions can use them too.
-using PredValueInfo = SmallVectorImpl<std::pair<Constant *, BasicBlock *>>;
-using PredValueInfoTy = SmallVector<std::pair<Constant *, BasicBlock *>, 8>;
 
 // This is used to keep track of what kind of constant we're currently hoping
 // to find.

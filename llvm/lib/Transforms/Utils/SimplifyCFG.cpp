@@ -72,6 +72,7 @@
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Transforms/Utils/JumpThreadingUtils.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include <algorithm>
@@ -3147,6 +3148,7 @@ FoldCondBranchOnValueKnownInPredecessorImpl(BranchInst *BI, DomTreeUpdater *DTU,
                                             const DataLayout &DL,
                                             AssumptionCache *AC) {
   SmallMapVector<ConstantInt *, SmallSetVector<BasicBlock *, 2>, 2> KnownValues;
+  llvm::jumpthreading::PredValueInfoTy PredValues;
   BasicBlock *BB = BI->getParent();
   Value *Cond = BI->getCondition();
   PHINode *PN = dyn_cast<PHINode>(Cond);
@@ -3157,18 +3159,25 @@ FoldCondBranchOnValueKnownInPredecessorImpl(BranchInst *BI, DomTreeUpdater *DTU,
       return true;
     }
 
-    for (Use &U : PN->incoming_values())
-      if (auto *CB = dyn_cast<ConstantInt>(U))
+    for (Use &U : PN->incoming_values()) {
+      if (auto *CB = dyn_cast<ConstantInt>(U)) {
         KnownValues[CB].insert(PN->getIncomingBlock(U));
+        PredValues.emplace_back(CB, PN->getIncomingBlock(U));
+      }
+    }
   } else {
     for (BasicBlock *Pred : predecessors(BB)) {
-      if (ConstantInt *CB = getKnownValueOnEdge(Cond, Pred, BB))
+      if (ConstantInt *CB = getKnownValueOnEdge(Cond, Pred, BB)) {
         KnownValues[CB].insert(Pred);
+        PredValues.emplace_back(CB, Pred);
+      }
     }
   }
 
   if (KnownValues.empty())
     return false;
+
+  llvm::updatePredecessorProfileMetadata(PredValues, BB);
 
   // Now we know that this block has multiple preds and two succs.
   // Check that the block is small enough and values defined in the block are

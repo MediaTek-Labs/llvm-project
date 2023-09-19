@@ -1,4 +1,5 @@
 ; RUN: opt -passes=jump-threading -S < %s | FileCheck %s
+; RUN: opt -passes=simplifycfg -S < %s | FileCheck %s
 define void @test() {
 bb:
   %tmp = call i32 @a()

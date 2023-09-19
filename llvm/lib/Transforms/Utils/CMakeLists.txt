@@ -33,6 +33,7 @@ add_llvm_component_library(LLVMTransformUtils
   InjectTLIMappings.cpp
   InstructionNamer.cpp
   IntegerDivision.cpp
+  JumpThreadingUtils.cpp
   LCSSA.cpp
   LibCallsShrinkWrap.cpp
   Local.cpp

@@ -38,6 +38,12 @@ using namespace llvm;
 
 #define DEBUG_TYPE "dwarfdebug"
 
+
+static cl::opt<bool> ShareDebugAcrossCUs(
+    "share-debug-across-cus", cl::Hidden,
+    cl::desc("Share DWARF debug entries across CUs in output DWARF"), cl::init(true));
+
+
 DIEDwarfExpression::DIEDwarfExpression(const AsmPrinter &AP,
                                        DwarfCompileUnit &CU, DIELoc &DIE)
     : DwarfExpression(AP.getDwarfVersion(), CU), AP(AP), OutDIE(DIE) {}
@@ -178,6 +184,8 @@ int64_t DwarfUnit::getDefaultLowerBound() const {
 
 /// Check whether the DIE for this MDNode can be shared across CUs.
 bool DwarfUnit::isShareableAcrossCUs(const DINode *D) const {
+  if (!ShareDebugAcrossCUs)
+    return false;
   // When the MDNode can be part of the type system, the DIE can be shared
   // across CUs.
   // Combining type units and cross-CU DIE sharing is lower value (since

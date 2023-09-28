@@ -20,10 +20,17 @@
 #include "Mips.h"
 #include "MipsMachineFunction.h"
 #include "MipsSubtarget.h"
+#include "llvm/Analysis/ProfileSummaryInfo.h"
+#include "llvm/CodeGen/BranchFolding.h"
+#include "llvm/CodeGen/MBFIWrapper.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
+#include "llvm/CodeGen/MachineBlockFrequencyInfo.h"
+#include "llvm/CodeGen/MachineBranchProbabilityInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineJumpTableInfo.h"
+#include "llvm/CodeGen/MachineLoopInfo.h"
+#include "llvm/CodeGen/MachineRegisterInfo.h"
 
 #include <cmath>
 
@@ -48,12 +55,21 @@ struct NMOptimizeJumpTables : public MachineFunctionPass {
   int computeBlockSize(MachineBasicBlock &MBB);
   void scanFunction();
   bool compressJumpTable(MachineInstr &MI, int Offset);
+  bool optimizeRedundantEntries(MachineBasicBlock::iterator &I);
 
   NMOptimizeJumpTables() : MachineFunctionPass(ID) {}
   StringRef getPassName() const override {
     return NM_OPTIMIZE_JUMP_TABLES_OPT_NAME;
   }
   bool runOnMachineFunction(MachineFunction &Fn) override;
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.addRequired<MachineBlockFrequencyInfo>();
+    AU.addRequired<MachineBranchProbabilityInfo>();
+    AU.addRequired<ProfileSummaryInfoWrapperPass>();
+    AU.addRequired<MachineLoopInfo>();
+    MachineFunctionPass::getAnalysisUsage(AU);
+  }
 };
 } // namespace
 
@@ -92,10 +108,68 @@ void NMOptimizeJumpTables::scanFunction() {
   }
 }
 
-bool NMOptimizeJumpTables::compressJumpTable(MachineInstr &MI, int Offset) {
-  if (MI.getOpcode() != Mips::LoadJumpTableOffset)
-    return false;
+bool NMOptimizeJumpTables::optimizeRedundantEntries(
+    MachineBasicBlock::iterator &I) {
+  MachineInstr &MI = *I;
+  int JTIdx = MI.getOperand(3).getIndex();
+  auto &JTInfo = *MF->getJumpTableInfo();
+  const MachineJumpTableEntry &JT = JTInfo.getJumpTables()[JTIdx];
+  llvm::SmallPtrSet<MachineBasicBlock *, 16> JTMBBS;
 
+  // Collect all different JT MBBs.
+  for (auto MBB : JT.MBBs)
+    JTMBBS.insert(MBB);
+
+  bool NonEmptyBlock = false;
+  for (auto *MBB : JTMBBS) {
+    auto I = MBB->getFirstNonDebugInstr();
+    // Check if the block is empty, is only reachable through the jump table,
+    // and its successor is already in JT MBBs. If so, remove it from JT MBBs
+    // set.
+    if ((I == MBB->end() || I->isUnconditionalBranch()) &&
+        (MBB->pred_size() == 1 && MBB->succ_size() == 1) &&
+        (JTMBBS.contains(*MBB->successors().begin()))) {
+      JTMBBS.erase(MBB);
+    } else {
+      // Nonempty block. If this is the second nonempty, we can't optimize JT.
+      if (NonEmptyBlock)
+        break;
+      NonEmptyBlock = true;
+    }
+  }
+  if (JTMBBS.size() != 1)
+    return false;
+  // Optimize JT and corresponding instructions. First, we want to replace
+  // LoadJumpTableOffset and BRSC_NM with an unconditional jump to MBBToJumpTo.
+  // MBBToJumpTo would be either the only nonempty block or the only possible
+  // target if all JT MBBs were equal.
+  auto MBBToJumpTo = (*(JTMBBS.begin()));
+  MachineBasicBlock *CurrBB = MI.getParent();
+
+  // Insert new BC_NM instruction after LoadJumpTableOffset.
+  MachineInstrBuilder MIB =
+      BuildMI(*CurrBB, I, MI.getDebugLoc(), TII->get(Mips::BC_NM));
+  MIB.add(MachineOperand::CreateMBB(MBBToJumpTo));
+  --I;
+  SmallVector<MachineInstr *, 3> InstrsToDelete;
+
+  // We want to delete all unnecessary instructions after removing
+  // LoadJumpTableOffset.
+  for (auto &I : *CurrBB) {
+    for (llvm::MachineInstr::mop_iterator OpI = I.operands_begin(),
+                                          OpEnd = I.operands_end();
+         OpI != OpEnd; ++OpI) {
+      llvm::MachineOperand &Operand = *OpI;
+      if (Operand.isIdenticalTo(MI.getOperand(3)))
+        InstrsToDelete.push_back(&I);
+    }
+  }
+  for (size_t i = 0; i < InstrsToDelete.size(); i++)
+    InstrsToDelete[i]->removeFromParent();
+  return true;
+}
+
+bool NMOptimizeJumpTables::compressJumpTable(MachineInstr &MI, int Offset) {
   int JTIdx = MI.getOperand(3).getIndex();
   auto &JTInfo = *MF->getJumpTableInfo();
   const MachineJumpTableEntry &JT = JTInfo.getJumpTables()[JTIdx];
@@ -147,12 +221,35 @@ bool NMOptimizeJumpTables::runOnMachineFunction(MachineFunction &Fn) {
 
   scanFunction();
 
+  bool CleanUpNeeded = false;
   for (MachineBasicBlock &MBB : *MF) {
     int Offset = BlockInfo[MBB.getNumber()];
-    for (MachineInstr &MI : MBB) {
-      Modified |= compressJumpTable(MI, Offset);
+    for (MachineBasicBlock::iterator I = MBB.begin(), E = MBB.end(); I != E;
+         ++I) {
+      MachineInstr &MI = *I;
+      if (MI.getOpcode() != Mips::LoadJumpTableOffset)
+        continue;
+      bool OptimizedJT = optimizeRedundantEntries(I);
+      CleanUpNeeded |= OptimizedJT;
+      Modified |= OptimizedJT;
+      if (!OptimizedJT)
+        Modified |= compressJumpTable(MI, Offset);
       Offset += TII->getInstSizeInBytes(MI);
     }
+  }
+  if (CleanUpNeeded) {
+    MBFIWrapper MBFI(getAnalysis<MachineBlockFrequencyInfo>());
+    const MachineBranchProbabilityInfo *MBPI =
+        &getAnalysis<MachineBranchProbabilityInfo>();
+    ProfileSummaryInfo *PSI =
+        &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
+    auto MLI = &getAnalysis<MachineLoopInfo>();
+
+    BranchFolder BF(true, false, MBFI, *MBPI, PSI);
+    // We need a cleanup here, even though the pass runs after
+    // MachineBlockPlacement.
+    BF.OptimizeFunction(*MF, TII, MF->getSubtarget().getRegisterInfo(), MLI,
+                        /*AfterPlacement=*/false);
   }
   return Modified;
 }

@@ -1,4 +1,4 @@
-//===- NanoMipsCompressJumpTables.cpp - nanoMIPS compress JTs  --------===//
+//===- NanoMipsOptimizeJumpTables.cpp - nanoMIPS optimize JTs  --------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,13 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 //
-/// \file This file contains a pass that compresses Jump Table entries, whenever
-/// possible. Jump table entries used to be fixed size(4B). They used to
-/// represent absolute addresses. We want to compress those entries by filling
-/// them with specific offsets. Having offsets instead of absolute addresses
-/// saves at least 2B per entry. This pass checks if one or two bytes are
-/// sufficient for the offset value.
-//
+/// \file This file contains an optimization pass related to jump tables. Some
+/// jump tables may not have any effect on the address of the following branch,
+/// making them redundant. This optimization pass identifies such tables and
+/// removes any associated code. It also compresses the Jump Table entries,
+/// whenever possible. In the past, jump table entries used to be fixed size
+/// (4B) and represented absolute addresses. However, we can now compress those
+/// entries by filling them with specific offsets. This helps save at least 2B
+/// per entry. The optimization pass checks if one or two bytes are sufficient
+/// for the offset value.
 //===----------------------------------------------------------------------===//
 
 #include "Mips.h"
@@ -27,15 +29,15 @@
 
 using namespace llvm;
 
-#define NM_COMPRESS_JUMP_TABLES_OPT_NAME                                       \
-  "nanoMIPS compress jump tables optimization pass"
+#define NM_OPTIMIZE_JUMP_TABLES_OPT_NAME                                       \
+  "nanoMIPS jump table optimization pass"
 
 static cl::opt<bool> NMForce16BitJumpTables(
     "nmips-force-16-bit-jump-table", cl::Hidden, cl::init(true),
     cl::desc("Force all jump tables to have 16bit wide entries"));
 
 namespace {
-struct NMCompressJumpTables : public MachineFunctionPass {
+struct NMOptimizeJumpTables : public MachineFunctionPass {
   static char ID;
   const MipsSubtarget *STI;
   const TargetInstrInfo *TII;
@@ -47,27 +49,27 @@ struct NMCompressJumpTables : public MachineFunctionPass {
   void scanFunction();
   bool compressJumpTable(MachineInstr &MI, int Offset);
 
-  NMCompressJumpTables() : MachineFunctionPass(ID) {}
+  NMOptimizeJumpTables() : MachineFunctionPass(ID) {}
   StringRef getPassName() const override {
-    return NM_COMPRESS_JUMP_TABLES_OPT_NAME;
+    return NM_OPTIMIZE_JUMP_TABLES_OPT_NAME;
   }
   bool runOnMachineFunction(MachineFunction &Fn) override;
 };
 } // namespace
 
-char NMCompressJumpTables::ID = 0;
+char NMOptimizeJumpTables::ID = 0;
 
 // TODO: Currently, there is no existing LLVM interface which we can use to tell the
 // maximum potential size of a MachineInstr. Once we have it, this should be
 // enhanced.
-int NMCompressJumpTables::computeBlockSize(MachineBasicBlock &MBB) {
+int NMOptimizeJumpTables::computeBlockSize(MachineBasicBlock &MBB) {
   int Size = 0;
   for (const MachineInstr &MI : MBB)
     Size += TII->getInstSizeInBytes(MI);
   return Size;
 }
 
-void NMCompressJumpTables::scanFunction() {
+void NMOptimizeJumpTables::scanFunction() {
   BlockInfo.clear();
   BlockInfo.resize(MF->getNumBlockIDs());
   BrOffsets.clear();
@@ -90,7 +92,7 @@ void NMCompressJumpTables::scanFunction() {
   }
 }
 
-bool NMCompressJumpTables::compressJumpTable(MachineInstr &MI, int Offset) {
+bool NMOptimizeJumpTables::compressJumpTable(MachineInstr &MI, int Offset) {
   if (MI.getOpcode() != Mips::LoadJumpTableOffset)
     return false;
 
@@ -137,7 +139,7 @@ bool NMCompressJumpTables::compressJumpTable(MachineInstr &MI, int Offset) {
   return false;
 }
 
-bool NMCompressJumpTables::runOnMachineFunction(MachineFunction &Fn) {
+bool NMOptimizeJumpTables::runOnMachineFunction(MachineFunction &Fn) {
   STI = &static_cast<const MipsSubtarget &>(Fn.getSubtarget());
   TII = STI->getInstrInfo();
   bool Modified = false;
@@ -156,7 +158,7 @@ bool NMCompressJumpTables::runOnMachineFunction(MachineFunction &Fn) {
 }
 
 namespace llvm {
-FunctionPass *createNanoMipsCompressJumpTablesPass() {
-  return new NMCompressJumpTables();
+FunctionPass *createNanoMipsOptimizeJumpTablesPass() {
+  return new NMOptimizeJumpTables();
 }
 } // namespace llvm

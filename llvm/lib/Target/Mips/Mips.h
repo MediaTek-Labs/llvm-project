@@ -51,7 +51,7 @@ FunctionPass *createMipsExpandPseudoPass();
 FunctionPass *createMipsPreLegalizeCombiner();
 FunctionPass *createMipsPostLegalizeCombiner(bool IsOptNone);
 FunctionPass *createMipsMulMulBugPass();
- FunctionPass *createNanoMipsCompressJumpTablesPass();
+FunctionPass *createNanoMipsOptimizeJumpTablesPass();
 FunctionPass *createNanoMipsLoadStoreOptimizerPass();
 FunctionPass *createNanoMipsMoveOptimizerPass();
 FunctionPass *createNanoMipsRegisterReAllocationPass();

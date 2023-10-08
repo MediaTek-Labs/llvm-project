@@ -552,10 +552,18 @@ void MipsELFObjectWriter::sortRelocs(const MCAssembler &Asm,
 bool MipsELFObjectWriter::needsRelocateWithSymbol(const MCValue &Val,
                                                   const MCSymbol &Sym,
                                                   unsigned Type) const {
-  // Conservative assumption for NanoMips, let the linker handle it!
-  if (getEMachine() == ELF::EM_NANOMIPS)
+  // FIXME: needs further refinement but this takes care of slow links due to
+  // many section-relative references to .rodata
+  if (getEMachine() == ELF::EM_NANOMIPS) {
+    switch (Type) {
+    case ELF::R_NANOMIPS_PC_I32:
+    case ELF::R_NANOMIPS_PCHI20:
+      return true;
+    default:
     return (!Sym.isInSection() ||
 	    !Sym.getSection().getName().starts_with(".rodata"));
+    }
+  }
 
   // If it's a compound relocation for N64 then we need the relocation if any
   // sub-relocation needs it.

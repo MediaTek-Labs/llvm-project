@@ -41,9 +41,10 @@ NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
   const std::string MultiarchTriple = Triple.getTriple();
 
   Generic_GCC::AddMultilibPaths(D, SysRoot, OSLibDir, MultiarchTriple, Paths);
-
-  addPathIfExists(D, SysRoot + "/lib/" + MultiarchTriple, Paths);
-  addPathIfExists(D, SysRoot + "/lib/../" + OSLibDir, Paths);
+  if (!SysRoot.empty()) {
+    addPathIfExists(D, SysRoot + "/lib/" + MultiarchTriple, Paths);
+    addPathIfExists(D, SysRoot + "/lib/../" + OSLibDir, Paths);
+  }
 
   // NanoMips multilibs installation has the objects nested under an extra 'lib' dir
   if (GCCInstallation.isValid()) {
@@ -54,6 +55,13 @@ NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
                     LibPath + "/../" + GCCTriple.str() + "/" + OSLibDir +
                     SelectedMultilib.osSuffix() + "/" + OSLibDir,
                     Paths);
+    ToolChain::path_list &PPaths = getProgramPaths();
+    // Multilib cross-compiler GCC installations put ld in a triple-prefixed
+    // directory off of the parent of the GCC installation.
+    PPaths.push_back(Twine(GCCInstallation.getParentLibPath() + "/../" +
+                           GCCInstallation.getTriple().str() + "/bin")
+                         .str());
+    PPaths.push_back((GCCInstallation.getParentLibPath() + "/../bin").str());
   }
 
 }
@@ -264,21 +272,15 @@ void NanoMips::AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
   if (DriverArgs.hasArg(options::OPT_nostdinc))
     return;
 
-  AddMultilibIncludeArgs(DriverArgs, CC1Args);
-
   // Add the obvious include dir from the GCC install.
   if (GCCInstallation.isValid()) {
     // Standard libs includes in, eg. <install>/nanomips-elf/include
     llvm::Triple Triple = GCCInstallation.getTriple();
-    std::string Install = getDriver().getInstalledDir();
-    addSystemInclude(DriverArgs, CC1Args, Install + "/../" + Triple.str() + "/include");
-
-    // GCC's 'fixed' includes directory
-    addSystemInclude(DriverArgs, CC1Args, (GCCInstallation.getInstallPath()
-                                           + "/include-fixed"));
-
-    // GCC's includes dir for multilibs
-    addSystemInclude(DriverArgs, CC1Args, GCCInstallation.getInstallPath() + "/include");
+    std::string LibDir = GCCInstallation.getParentLibPath().str();
+    std::string Install = GCCInstallation.getInstallPath().str();
+    addSystemInclude(DriverArgs, CC1Args, Install + "/include");
+    addSystemInclude(DriverArgs, CC1Args, Install + "/include-fixed");
+    addSystemInclude(DriverArgs, CC1Args, LibDir + "/../" + Triple.str() + "/include");
+    CC1Args.push_back("-nostdsysteminc");
   }
-
 }

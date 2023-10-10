@@ -2599,7 +2599,6 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
   case llvm::Triple::nanomips:
     LibDirs.append(begin(MIPSP32ELLibDirs), end(MIPSP32ELLibDirs));
     TripleAliases.append(begin(MIPSP32ELTriples), end(MIPSP32ELTriples));
-    TripleAliases.append(begin(MIPSTriples), end(MIPSTriples));
     break;
   case llvm::Triple::msp430:
     LibDirs.append(begin(MSP430LibDirs), end(MSP430LibDirs));

@@ -7,6 +7,8 @@
 # RUN:   | FileCheck %s --check-prefix=WHITESPACE --strict-whitespace
 # RUN: llvm-objdump -h %t-whitespace.o \
 # RUN:   | FileCheck %s --check-prefix=WHITESPACE-NO-LMA --strict-whitespace
+# RUN: llvm-objdump -h --show-gnu-compat %t-whitespace.o \
+# RUN:   | FileCheck %s --check-prefix=WHITESPACE-GNUCOMPAT --strict-whitespace
 
 # WHITESPACE:      {{^}}Sections:{{$}}
 # WHITESPACE-NEXT: {{^}}Idx Name          Size     VMA              LMA              Type{{$}}
@@ -33,6 +35,16 @@
 # WHITESPACE-NO-LMA-NEXT: {{^}}  7 .mydata       00000000 0000000000000000 DATA{{$}}
 # WHITESPACE-NO-LMA-NEXT: {{^}}  8 .bss1         00000000 0000000000000000 BSS{{$}}
 # WHITESPACE-NO-LMA-NEXT: {{^}}  9 .nonalloc.bss 00000000 0000000000000000 {{$}}
+
+# WHITESPACE-GNUCOMPAT:      {{^}}Sections:{{$}}
+# WHITESPACE-GNUCOMPAT-NEXT: {{^}}Idx Name          Size     VMA              LMA              File off         Algn Type{{$}}
+# WHITESPACE-GNUCOMPAT-NEXT: {{^}}  0               00000000 0000000000000000 0000000000000000 0000000000000000 2**0
+# WHITESPACE-GNUCOMPAT-NEXT: {{^}}  1 .text         00000000 0000000000000000 0000000000000000 0000000000000040 2**0 TEXT{{$}}
+# WHITESPACE-GNUCOMPAT-NEXT: {{^}}  2 .data         00000000 0000000000000000 0000000000000000 0000000000000040 2**0 DATA{{$}}
+# WHITESPACE-GNUCOMPAT-NEXT: {{^}}  3 .bss          00000000 0000000000000000 0000000000000000 0000000000000040 2**0 BSS{{$}}
+# WHITESPACE-GNUCOMPAT-NEXT: {{^}}  4 .other        00000000 0000000000000000 0000000000000000 0000000000000040 2**0 {{$}}
+# WHITESPACE-GNUCOMPAT-NEXT: {{^}}  5 .debug_abbrev 00000000 0000000000000000 0000000000000000 0000000000000040 2**0 DEBUG{{$}}
+# WHITESPACE-GNUCOMPAT-NEXT: {{^}}  6 .debug_info   00000000 0000000000000000 0000000000000000 0000000000000040 2**0 DATA, DEBUG{{$}}
 
 --- !ELF
 FileHeader:

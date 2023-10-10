@@ -386,6 +386,9 @@ def no_symbolic_operands : Flag<["--"], "no-symbolic-operands">,
 def arch_EQ : Joined<["--"], "arch=">,
   HelpText<"architecture(s) from a Mach-O file to dump">,
   Group<grp_mach_o>;
+def show_gnu_compat : Flag<["--"], "show-gnu-compat">,
+  HelpText<"Display ELF section headers in format compatible with GNU objdump."
+  "This includes file-offset, alignment and LMA for each section.">;
 def : Separate<["--"], "arch">,
   Alias<arch_EQ>,
   Group<grp_mach_o>;

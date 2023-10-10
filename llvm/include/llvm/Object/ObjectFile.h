@@ -422,6 +422,12 @@ public:
     return Iterator != Other.Iterator;
   }
 
+struct ToolFilterOptions {
+  // Start at -1 so that it's 0 the first time we increment & return it.
+  int Idx = -1;
+  bool SkipSpecialELFSections = false;
+};  
+
 private:
   void scanPredicate() {
     while (Iterator != End && !Predicate(*Iterator)) {

@@ -48,8 +48,9 @@
 #define XSTR(a) STR(a)
 #define SYMBOL_NAME(name) XSTR(__USER_LABEL_PREFIX__) #name
 
+// TODO(nanomips): Check why are we not defining __ELF__
 #if defined(__ELF__) || defined(__MINGW32__) || defined(__wasm__) ||           \
-    defined(_AIX)
+    defined(_AIX) || defined(__nanomips__)
 #define COMPILER_RT_ALIAS(name, aliasname) \
   COMPILER_RT_ABI __typeof(name) aliasname __attribute__((__alias__(#name)));
 #elif defined(__APPLE__)

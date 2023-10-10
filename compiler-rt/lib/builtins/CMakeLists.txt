@@ -598,7 +598,7 @@ set(hexagon_SOURCES
   ${GENERIC_TF_SOURCES}
 )
 
-
+set(nanomips_SOURCES ${GENERIC_SOURCES})
 set(mips_SOURCES ${GENERIC_SOURCES})
 set(mipsel_SOURCES ${mips_SOURCES})
 set(mips64_SOURCES ${GENERIC_TF_SOURCES}

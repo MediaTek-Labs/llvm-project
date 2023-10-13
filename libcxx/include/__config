@@ -21,6 +21,12 @@
 #  pragma GCC system_header
 #endif
 
+// libcxx build depends on interfaces which are only available with
+// this set, at least for nanoMIPS/newlib embedded configuration.
+#if defined(__nanomips__)
+#define _GNU_SOURCE 1
+#endif
+
 #ifdef __cplusplus
 
 // The attributes supported by clang are documented at https://clang.llvm.org/docs/AttributeReference.html

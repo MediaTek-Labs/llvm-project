@@ -737,8 +737,11 @@ calcUniqueIDUpdateFlagsAndSize(const GlobalObject *GO, StringRef SectionName,
   // the same name. Doing so relies on the ",unique ," assembly feature. This
   // feature is not available until binutils version 2.35
   // (https://sourceware.org/bugzilla/show_bug.cgi?id=25380).
-  const bool SupportsUnique = Ctx.getAsmInfo()->useIntegratedAssembler() ||
-                              Ctx.getAsmInfo()->binutilsIsAtLeast(2, 35);
+  // Not supported for nanoMIPS due to current limitations of the
+  // GNU assembler and GOLD linker ports.
+  const bool SupportsUnique = (!TM.getTargetTriple().isNanoMips() &&
+			       (Ctx.getAsmInfo()->useIntegratedAssembler() ||
+				Ctx.getAsmInfo()->binutilsIsAtLeast(2, 35)));
   if (!SupportsUnique) {
     Flags &= ~ELF::SHF_MERGE;
     EntrySize = 0;

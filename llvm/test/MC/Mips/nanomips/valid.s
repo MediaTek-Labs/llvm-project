@@ -504,6 +504,9 @@
 	sigrie 0x7ffff	# CHECK: sigrie	0x7ffff # encoding: [0x07,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SIGRIE_NM
 			# DISAS: {{.*}}  07 00 ff ff  	sigrie	0x7ffff
+	sdbbp		# CHECK: sdbbp	0x0 # encoding: [0x18,0x10]
+			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP16_NM
+			# DISAS: {{.*}}  18 10        	sdbbp 0x0
 	sdbbp 0		# CHECK: sdbbp	0x0 # encoding: [0x18,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP16_NM
 			# DISAS: {{.*}}  18 10        	sdbbp 0x0
@@ -516,6 +519,9 @@
 	sdbbp 0x7ffff	# CHECK: sdbbp	0x7ffff # encoding: [0x1f,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP_NM
 			# DISAS: {{.*}}  1f 00 ff ff  	sdbbp	0x7ffff
+	break		# CHECK: break	0x0 # encoding: [0x10,0x10]
+			# CHECK-NEXT: # <MCInst #{{.*}} BREAK16_NM
+			# DISAS: {{.*}}  10 10        	break	0x0
 	break 0		# CHECK: break	0x0 # encoding: [0x10,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK16_NM
 			# DISAS: {{.*}}  10 10        	break	0x0
@@ -528,7 +534,10 @@
 	break 0x7ffff	# CHECK: break	0x7ffff # encoding: [0x17,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK_NM
 			# DISAS: {{.*}}  17 00 ff ff  	break	0x7ffff
-	syscall 0	# CHECK: syscall 0x0 # encoding: [0x08,0x10]
+	syscall 	# CHECK: syscall 0x0 # encoding: [0x08,0x10]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL16_NM
+			# DISAS: {{.*}}  08 10        	syscall	0x0
+	syscall	0	# CHECK: syscall 0x0 # encoding: [0x08,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL16_NM
 			# DISAS: {{.*}}  08 10        	syscall	0x0
 	syscall 3	# CHECK: syscall 0x3 # encoding: [0x0b,0x10]

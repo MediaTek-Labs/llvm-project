@@ -2866,14 +2866,18 @@ def SYSCALL_NM : InstNM<(outs), (ins uimm18_nm:$imm),
 
 def BREAK16_NM : InstNM<(outs), (ins uimm3_nm:$imm),
                       "break\t$imm", []>, IntExcpFlow16_Enc<0b10>;
+def : NanoMipsInstAlias<"break", (BREAK16_NM 0), 0>;
 
 def SDBBP16_NM : InstNM<(outs), (ins uimm3_nm:$imm),
                       "sdbbp\t$imm", []>, IntExcpFlow16_Enc<0b11>;
+def : NanoMipsInstAlias<"sdbbp", (SDBBP16_NM 0), 0>;
 
 def SYSCALL16_NM : InstNM<(outs), (ins uimm2_nm:$imm),
                        "syscall\t$imm", []>, IntExcpFlow16_Enc<0b01> {
   let Inst{2} = 0b0;
 }
+def : NanoMipsInstAlias<"syscall", (SYSCALL16_NM 0), 0>;
+
 
 class ShadowRW_Enc<bits<5> isel>: _Pool_POOL32Axf_5_group3<isel> {
   bits<5> rs;

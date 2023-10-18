@@ -1,0 +1,43 @@
+# RUN: llc -mtriple=nanomips -O2 -run-pass=nm-optimize-jt \
+# RUN:  -verify-machineinstrs %s -o - | FileCheck %s
+
+---
+name:            jumptab
+jumpTable:
+  kind:            block-address
+  entries:
+    - id:              0
+      blocks:          [ '%bb.2', '%bb.3', '%bb.3', '%bb.3' ]
+# CHECK: jumpTable:
+# CHECK-NEXT:  kind:            block-address
+# CHECK-NEXT:  entries:
+# CHECK-NEXT:    - id:              0
+# CHECK-NEXT:       blocks:          [  ]
+# CHECK-NOT:  LA_NM
+# CHECK-NOT:  LoadJumpTableOffset
+# CHECK-NOT:  BRSC_NM
+# CHECK:        bb.1:
+# CHECK:         renamable $a0_nm = Li_NM 2
+# CHECK:        bb.2:
+# CHECK-NEXT:    renamable $a0_nm = LWs9_NM $sp_nm, 2
+# CHECK-NEXT:    RetRA implicit $a0_nm
+body:             |
+  bb.0:
+    successors: %bb.4(0x19999998), %bb.1(0x66666668)
+    BGEIUC_NM renamable $a0_nm, 4, %bb.4
+  bb.1:
+    successors: %bb.2(0x40000000), %bb.3(0x40000000)
+    renamable $a1_nm = LA_NM %jump-table.0
+    renamable $a0_nm = LoadJumpTableOffset killed renamable $a1_nm, renamable $a0_nm, %jump-table.0
+    BRSC_NM renamable $a0_nm, %jump-table.0
+  bb.2:
+    successors: %bb.3(0x80000000)
+    BC_NM %bb.3
+  bb.3:
+    successors: %bb.4(0x80000000)
+    renamable $a0_nm = Li_NM 2
+    BC_NM %bb.4
+  bb.4:
+    renamable $a0_nm = LWs9_NM $sp_nm, 2
+    RetRA implicit $a0_nm
+...

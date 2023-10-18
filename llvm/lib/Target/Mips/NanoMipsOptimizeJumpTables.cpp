@@ -31,6 +31,7 @@
 #include "llvm/CodeGen/MachineJumpTableInfo.h"
 #include "llvm/CodeGen/MachineLoopInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/InitializePasses.h"
 
 #include <cmath>
 
@@ -57,21 +58,32 @@ struct NMOptimizeJumpTables : public MachineFunctionPass {
   bool compressJumpTable(MachineInstr &MI, int Offset);
   bool optimizeRedundantEntries(MachineBasicBlock::iterator &I);
 
-  NMOptimizeJumpTables() : MachineFunctionPass(ID) {}
+  NMOptimizeJumpTables() : MachineFunctionPass(ID) {
+    initializeNMOptimizeJumpTablesPass(*PassRegistry::getPassRegistry());
+  }
   StringRef getPassName() const override {
     return NM_OPTIMIZE_JUMP_TABLES_OPT_NAME;
   }
   bool runOnMachineFunction(MachineFunction &Fn) override;
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<MachineBlockFrequencyInfo>();
-    AU.addRequired<MachineBranchProbabilityInfo>();
+    AU.addRequired<MachineBlockFrequencyInfoWrapperPass>();
+    AU.addRequired<MachineBranchProbabilityInfoWrapperPass>();
     AU.addRequired<ProfileSummaryInfoWrapperPass>();
-    AU.addRequired<MachineLoopInfo>();
+    AU.addRequired<MachineLoopInfoWrapperPass>();
     MachineFunctionPass::getAnalysisUsage(AU);
   }
 };
 } // namespace
+
+INITIALIZE_PASS_BEGIN(NMOptimizeJumpTables, "nm-optimize-jt", NM_OPTIMIZE_JUMP_TABLES_OPT_NAME,
+                      false, false)
+INITIALIZE_PASS_DEPENDENCY(MachineBlockFrequencyInfoWrapperPass)
+INITIALIZE_PASS_DEPENDENCY(MachineBranchProbabilityInfoWrapperPass)
+INITIALIZE_PASS_DEPENDENCY(ProfileSummaryInfoWrapperPass)
+INITIALIZE_PASS_DEPENDENCY(MachineLoopInfoWrapperPass)
+INITIALIZE_PASS_END(NMOptimizeJumpTables, "nm-optimize-jt", NM_OPTIMIZE_JUMP_TABLES_OPT_NAME,
+                    false, false)
 
 char NMOptimizeJumpTables::ID = 0;
 
@@ -238,12 +250,15 @@ bool NMOptimizeJumpTables::runOnMachineFunction(MachineFunction &Fn) {
     }
   }
   if (CleanUpNeeded) {
-    MBFIWrapper MBFI(getAnalysis<MachineBlockFrequencyInfo>());
+    MBFIWrapper MBFI(getAnalysis<MachineBlockFrequencyInfoWrapperPass>().getMBFI());
+
     const MachineBranchProbabilityInfo *MBPI =
-        &getAnalysis<MachineBranchProbabilityInfo>();
+        &getAnalysis<MachineBranchProbabilityInfoWrapperPass>().getMBPI();
+
     ProfileSummaryInfo *PSI =
         &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
-    auto MLI = &getAnalysis<MachineLoopInfo>();
+
+    auto MLI = &getAnalysis<MachineLoopInfoWrapperPass>().getLI();
 
     BranchFolder BF(true, false, MBFI, *MBPI, PSI);
     // We need a cleanup here, even though the pass runs after

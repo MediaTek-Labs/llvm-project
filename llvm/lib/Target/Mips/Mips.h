@@ -69,6 +69,7 @@ void initializeMipsDelaySlotFillerPass(PassRegistry &);
 void initializeMipsMulMulBugFixPass(PassRegistry &);
 void initializeMipsPostLegalizerCombinerPass(PassRegistry &);
 void initializeMipsPreLegalizerCombinerPass(PassRegistry &);
+void initializeNMOptimizeJumpTablesPass (PassRegistry&);
 void initializeNanoMipsRegisterReAllocPass(PassRegistry &);
 void initializeRedundantCopyEliminationPass(PassRegistry&);
 void initializeNanoMipsCodeGenPreparePass(PassRegistry &);

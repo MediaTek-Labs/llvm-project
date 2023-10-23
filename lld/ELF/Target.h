@@ -180,6 +180,7 @@ TargetInfo *getSPARCV9TargetInfo();
 TargetInfo *getX86TargetInfo();
 TargetInfo *getX86_64TargetInfo();
 template <class ELFT> TargetInfo *getMipsTargetInfo();
+TargetInfo *getNanoMipsTargetInfo();
 
 struct ErrorPlace {
   InputSectionBase *isec;
@@ -217,6 +218,7 @@ uint64_t getPPC64TocBase();
 uint64_t getAArch64Page(uint64_t expr);
 void riscvFinalizeRelax(int passes);
 void mergeRISCVAttributesSections();
+uint64_t getNanoMipsPage(uint64_t expr);
 
 LLVM_LIBRARY_VISIBILITY extern const TargetInfo *target;
 TargetInfo *getTarget();
@@ -271,6 +273,9 @@ inline uint64_t read64(const void *p) {
   return llvm::support::endian::read64(p, config->endianness);
 }
 
+inline void write8(void *p, uint8_t v) {
+  llvm::support::endian::write8(p, v, config->endianness);
+}
 inline void write16(void *p, uint16_t v) {
   llvm::support::endian::write16(p, v, config->endianness);
 }

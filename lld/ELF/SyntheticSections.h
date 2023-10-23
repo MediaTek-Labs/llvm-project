@@ -172,7 +172,6 @@ public:
   static bool classof(const SectionBase *s) { return s->bss; }
   uint64_t size;
 };
-
 class MipsGotSection final : public SyntheticSection {
 public:
   MipsGotSection();

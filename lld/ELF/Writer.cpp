@@ -189,6 +189,8 @@ void elf::addReservedSymbols() {
     addOptionalRegular("_SDA_BASE_", nullptr, 0, STV_HIDDEN);
   } else if (config->emachine == EM_PPC64) {
     addPPC64SaveRestore();
+  } else if (config->emachine == EM_NANOMIPS){
+    ElfSym::mipsGp = addAbsolute("_gp");
   }
 
   // The Power Architecture 64-bit v2 ABI defines a TableOfContents (TOC) which

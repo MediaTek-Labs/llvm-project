@@ -28,6 +28,7 @@ add_lld_library(lldELF
   Arch/Mips.cpp
   Arch/MipsArchTree.cpp
   Arch/MSP430.cpp
+  Arch/NanoMips.cpp
   Arch/PPC.cpp
   Arch/PPC64.cpp
   Arch/RISCV.cpp

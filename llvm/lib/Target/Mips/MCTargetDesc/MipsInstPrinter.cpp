@@ -120,7 +120,6 @@ void MipsInstPrinter::printInst(const MCInst *MI, uint64_t Address,
   case Mips::RESTOREJRC_NM:
     O << "\trestore.jrc\t";
     printSaveRestore(MI, STI, O);
-    O << "\n";
     return;
   }
 

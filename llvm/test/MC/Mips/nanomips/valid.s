@@ -447,38 +447,27 @@
 	save	128, $fp, $ra, $s0-$k1, $gp	# CHECK: save 128, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp # encoding: [0x8f,0x1c]
 					# CHECK-NEXT: # <MCInst #{{.*}} SAVE16_NM
 
-	restore.jrc	16	# CHECK: restore.jrc 16, 0
-				# CHECK-NEXT: # encoding: [0x10,0x1d]
+	restore.jrc	16	# CHECK: restore.jrc 16, 0	# encoding: [0x10,0x1d]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	128	# CHECK: restore.jrc 128, 0
-				# CHECK-NEXT: # encoding: [0x80,0x1d]
+	restore.jrc	128	# CHECK: restore.jrc 128, 0	# encoding: [0x80,0x1d]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	240	# CHECK: restore.jrc 240, 0
-				# CHECK-NEXT: # encoding: [0xf0,0x1d]
+	restore.jrc	240	# CHECK: restore.jrc 240, 0	# encoding: [0xf0,0x1d]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	32, $ra	# CHECK: restore.jrc 32, $ra
-				# CHECK-NEXT: # encoding: [0x21,0x1f]
+	restore.jrc	32, $ra	# CHECK: restore.jrc 32, $ra	# encoding: [0x21,0x1f]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	32, $fp, $ra	# CHECK: restore.jrc 32, $fp, $ra
-				# CHECK-NEXT: # encoding: [0x22,0x1d]
+	restore.jrc	32, $fp, $ra	# CHECK: restore.jrc 32, $fp, $ra	# encoding: [0x22,0x1d]
 					# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	32, $ra, $s0	# CHECK: restore.jrc 32, $ra, $s0
-					# CHECK-NEXT: # encoding: [0x22,0x1f]
+	restore.jrc	32, $ra, $s0	# CHECK: restore.jrc 32, $ra, $s0	# encoding: [0x22,0x1f]
 					# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	32, $ra, $s0-$s3	# CHECK: restore.jrc 32, $ra, $s0, $s1, $s2, $s3
-						# CHECK-NEXT: # encoding: [0x25,0x1f]
+	restore.jrc	32, $ra, $s0-$s3	# CHECK: restore.jrc 32, $ra, $s0, $s1, $s2, $s3 # encoding: [0x25,0x1f]
 						# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	64, $fp, $ra, $s0-$s7	# CHECK: restore.jrc 64, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
-						# CHECK-NEXT: # encoding: [0x4a,0x1d]
+	restore.jrc	64, $fp, $ra, $s0-$s7	# CHECK: restore.jrc 64, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7 # encoding: [0x4a,0x1d]
 						# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	192, $ra, $s0-$gp	# CHECK: restore.jrc 192, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp
-						# CHECK-NEXT: # encoding: [0xce,0x1f]
+	restore.jrc	192, $ra, $s0-$gp	# CHECK: restore.jrc 192, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp # encoding: [0xce,0x1f]
 						# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	192, $fp, $ra, $s0-$gp	# CHECK: restore.jrc 192, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp
-						# CHECK-NEXT: # encoding: [0xcf,0x1d]
+	restore.jrc	192, $fp, $ra, $s0-$gp	# CHECK: restore.jrc 192, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp # encoding: [0xcf,0x1d]
 						# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-	restore.jrc	128, $fp, $ra, $s0-$k1, $gp	# CHECK: restore.jrc 128, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp
-						# CHECK-NEXT: # encoding: [0x8f,0x1d]
+	restore.jrc	128, $fp, $ra, $s0-$k1, $gp	# CHECK: restore.jrc 128, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp # encoding: [0x8f,0x1d]
 						# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
 
 	# 32-bit SAVE/RESTORE[.JRC]
@@ -515,29 +504,21 @@
 	restore	120, $fp, $ra, $s0-$k1, $gp	# CHECK: restore 120, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp # encoding: [0xcf,0x83,0x7e,0x30]
 						# CHECK-NEXT: # <MCInst #{{.*}} RESTORE_NM
 
-	restore.jrc	56, $ra	# CHECK: restore.jrc 56, $ra
-				# CHECK-NEXT: # encoding: [0xe1,0x83,0x3b,0x30]
+	restore.jrc	56, $ra	# CHECK: restore.jrc 56, $ra	# encoding: [0xe1,0x83,0x3b,0x30]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
-	restore.jrc	256, $fp, $ra	# CHECK: restore.jrc 256, $fp, $ra
-					# CHECK-NEXT: # encoding: [0xc2,0x83,0x03,0x31]
+	restore.jrc	256, $fp, $ra	# CHECK: restore.jrc 256, $fp, $ra	# encoding: [0xc2,0x83,0x03,0x31]
 					# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
-	restore.jrc	1024, $ra, $s0	# CHECK: restore.jrc 1024, $ra, $s0
-					# CHECK-NEXT: # encoding: [0xe2,0x83,0x03,0x34]
+	restore.jrc	1024, $ra, $s0	# CHECK: restore.jrc 1024, $ra, $s0	# encoding: [0xe2,0x83,0x03,0x34]
 					# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
-	restore.jrc	160, $zero, $gp	# CHECK: restore.jrc 160, $zero, $gp
-					# CHECK-NEXT: # encoding: [0x02,0x80,0xa7,0x30]
+	restore.jrc	160, $zero, $gp	# CHECK: restore.jrc 160, $zero, $gp	# encoding: [0x02,0x80,0xa7,0x30]
 					# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
-	restore.jrc	64, $s0, $s1, $s2, $s3, $gp	# CHECK: restore.jrc 64, $s0, $s1, $s2, $s3, $gp
-					# CHECK-NEXT: # encoding: [0x05,0x82,0x47,0x30]
+	restore.jrc	64, $s0, $s1, $s2, $s3, $gp	# CHECK: restore.jrc 64, $s0, $s1, $s2, $s3, $gp # encoding: [0x05,0x82,0x47,0x30]
 					# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
-	restore.jrc	64, $t4, $t5, $gp	# CHECK: restore.jrc 64, $t4, $t5, $gp
-					# CHECK-NEXT: # encoding: [0x43,0x80,0x47,0x30]
+	restore.jrc	64, $t4, $t5, $gp	# CHECK: restore.jrc 64, $t4, $t5, $gp # encoding: [0x43,0x80,0x47,0x30]
 					# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
-	restore.jrc	128, $fp, $ra, $s0, $s1, $gp	# CHECK: restore.jrc 128, $fp, $ra, $s0, $s1, $gp
-					# CHECK-NEXT: # encoding: [0xc5,0x83,0x87,0x30]
+	restore.jrc	128, $fp, $ra, $s0, $s1, $gp	# CHECK: restore.jrc 128, $fp, $ra, $s0, $s1, $gp # encoding: [0xc5,0x83,0x87,0x30]
 					# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
-	restore.jrc	120, $fp, $ra, $s0-$k1, $gp	# CHECK: restore.jrc 120, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp
-					# CHECK-NEXT: # encoding: [0xcf,0x83,0x7f,0x30]
+	restore.jrc	120, $fp, $ra, $s0-$k1, $gp	# CHECK: restore.jrc 120, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp # encoding: [0xcf,0x83,0x7f,0x30]
 					# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
 
 	addiu	$a1,$a1,8	# CHECK: addiu	$a1, $a1, 8 # encoding: [0xd2,0x92]

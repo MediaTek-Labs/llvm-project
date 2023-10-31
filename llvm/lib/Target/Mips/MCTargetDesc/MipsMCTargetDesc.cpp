@@ -235,7 +235,7 @@ public:
   bool evaluateBranch(const MCInst &Inst, uint64_t Addr, uint64_t Size,
                       uint64_t &Target) const override {
     unsigned NumOps = Inst.getNumOperands();
-    if (NumOps == 0)
+    if (NumOps == 0 || !Inst.getOperand(NumOps - 1).isImm())
       return false;
     switch (Info->get(Inst.getOpcode()).operands()[NumOps - 1].OperandType) {
     case MCOI::OPERAND_UNKNOWN:
@@ -250,7 +250,6 @@ public:
       // b, beq ...
       Target = Addr + Inst.getOperand(NumOps - 1).getImm();
       return true;
-    case NanoMips::OPERAND_NM_SAVE_REGLIST:
     default:
       return false;
     }

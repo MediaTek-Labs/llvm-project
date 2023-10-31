@@ -972,11 +972,11 @@
 	aluipc $a0, %pcrel_hi(test)	# CHECK: aluipc $a0, %pcrel_hi(test) # encoding: [0b1000AAAA,0xe0,0x02'A',A]
 				# CHECK-NEXT: fixup A - offset: 0, value: %pcrel_hi(test), kind: fixup_NANOMIPS_PCHI20
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
-	aluipc $a1, %hi(0x87654321)	# CHECK: aluipc $a1, %pcrel_hi(-0x789ac) # encoding: [0xa5,0xe0,0xef,0x40]
+	aluipc $a1, %hi(0x87654321)	# CHECK: aluipc $a1, %pcrel_hi(0x87654) # encoding: [0xa5,0xe0,0xef,0x40]
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
-	aluipc $a2, 0x80000	# CHECK: aluipc $a2, %pcrel_hi(-0x80000) # encoding: [0xc0,0xe0,0x03,0x00]
+	aluipc $a2, 0x80000	# CHECK: aluipc $a2, %pcrel_hi(0x80000) # encoding: [0xc0,0xe0,0x03,0x00]
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
-	aluipc $a3, 0xfffff	# CHECK: aluipc $a3, %pcrel_hi(-0x1) # encoding: [0xff,0xe0,0xff,0xff]
+	aluipc $a3, 0xfffff	# CHECK: aluipc $a3, %pcrel_hi(0xfffff) # encoding: [0xff,0xe0,0xff,0xff]
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
 	lui $s0, %hi(test)	# CHECK: lui $s0, %hi(test) # encoding: [0b0000AAAA,0xe2,A,A]
 				# CHECK-NEXT: fixup A - offset: 0, value: %hi(test), kind: fixup_NANOMIPS_HI20
@@ -1011,7 +1011,7 @@
 	balc	test	# CHECK: balc test # encoding: [A,0b0010101A,A,A]
 			# CHECK-NEXT: fixup A - offset: 0, value: test+0, kind: fixup_NANOMIPS_PC25_S1
 			# CHECK-NEXT: <MCInst #{{.*}} BALC_NM
-	balc	0x1ff0001	# CHECK: balc 33488897 # encoding: [A,0b0010101A,A,A]
+	balc	0x1ff0001	# CHECK: balc 0x1ff0001 # encoding: [A,0b0010101A,A,A]
 			# CHECK-NEXT: fixup A - offset: 0, value: 33488897, kind: fixup_NANOMIPS_PC25_S1
 			# CHECK-NEXT: <MCInst #{{.*}} BALC_NM
 

@@ -482,12 +482,23 @@ void MipsInstPrinter::printHi20(const MCInst *MI, int OpNum,
     printOperand(MI, OpNum, STI, O);
 }
 
-void MipsInstPrinter::printHi20PCRel(const MCInst *MI, int OpNum,
-                                     const MCSubtargetInfo &STI,
-                                     raw_ostream &O) {
+void MipsInstPrinter::printHi20PCRel(const MCInst *MI, uint64_t Address,
+                                    int OpNum, const MCSubtargetInfo &STI,
+                                    raw_ostream &O) {
   const MCOperand& MO = MI->getOperand(OpNum);
   if (MO.isImm())
-    O << "%pcrel_hi(" << formatHex(MO.getImm()) << ")";
+    O << "%pcrel_hi(" << formatHex(MO.getImm() + Address) << ")";
+  else
+    printOperand(MI, OpNum, STI, O);
+}
+
+
+void MipsInstPrinter::printPCRel(const MCInst *MI, uint64_t Address,
+                                    int OpNum, const MCSubtargetInfo &STI,
+                                    raw_ostream &O) {
+  const MCOperand& MO = MI->getOperand(OpNum);
+  if (MO.isImm())
+     O << formatHex(MO.getImm() + Address);
   else
     printOperand(MI, OpNum, STI, O);
 }

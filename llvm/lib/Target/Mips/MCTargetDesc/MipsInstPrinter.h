@@ -131,7 +131,9 @@ private:
   void printNanoMipsRegisterList(const MCInst *MI, int opNum,const MCSubtargetInfo &STI, raw_ostream &O);
   void printHi20(const MCInst *MI, int OpNum, const MCSubtargetInfo &STI,
                  raw_ostream &O);
-  void printHi20PCRel(const MCInst *MI, int OpNum, const MCSubtargetInfo &STI,
+  void printHi20PCRel(const MCInst *MI,  uint64_t Address, int OpNum, const MCSubtargetInfo &STI,
+                      raw_ostream &O);
+  void printPCRel(const MCInst *MI,  uint64_t Address, int OpNum, const MCSubtargetInfo &STI,
                       raw_ostream &O);
 };
 } // end namespace llvm

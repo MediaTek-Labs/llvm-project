@@ -609,6 +609,10 @@ static DecodeStatus DecodeUImmWithReg(MCInst &Inst, unsigned Value,
 static DecodeStatus DecodeSImm32s12(MCInst &Inst, unsigned Insn,
 				    uint64_t Address, const void *Decoder);
 
+template <unsigned Bits>
+static DecodeStatus DecodeAddressPCRelNM(MCInst &Inst, unsigned Insn,
+					 uint64_t Address, const MCDisassembler *Decoder);
+
 static MCDisassembler *createMipsDisassembler(
                        const Target &T,
                        const MCSubtargetInfo &STI,
@@ -2577,7 +2581,10 @@ static DecodeStatus DecodeBranchTargetNM(MCInst &Inst,
   unsigned Offset,
   uint64_t Address,
   const MCDisassembler *Decoder) {
-  int32_t BranchOffset = SignExtend32<Bits+1>(Offset);
+  // Predict instruction size from branch offset bits.
+  // All 16-bit branches have fewer than 11 bits of offset.
+  unsigned InsnSize = (Bits <= 10) ? 2 : 4;
+  int32_t BranchOffset = SignExtend32<Bits+1>(Offset) + InsnSize;
 
   Inst.addOperand(MCOperand::createImm(BranchOffset));
   return MCDisassembler::Success;
@@ -3036,5 +3043,17 @@ static DecodeStatus DecodeSImm32s12(MCInst &Inst,
 				   const void *Decoder) {
   int32_t Imm = SignExtend32<20>(Insn) << 12;
   Inst.addOperand(MCOperand::createImm(Imm));
+  return MCDisassembler::Success;
+}
+
+template <unsigned Bits = 32>
+static DecodeStatus DecodeAddressPCRelNM(MCInst &Inst,
+  unsigned Offset,
+  uint64_t Address,
+  const MCDisassembler *Decoder) {
+  unsigned InsnSize = Bits == 32 ? 6 : 4;
+  int32_t BranchOffset = SignExtend32<Bits>(Offset) + InsnSize;
+
+  Inst.addOperand(MCOperand::createImm(BranchOffset));
   return MCDisassembler::Success;
 }

@@ -234,7 +234,7 @@ def Hi20AsmOperand : AsmOperandClass {
 
 def Hi20PCRelAsmOperand : AsmOperandClass {
   let Name = "Hi20OffsetPCRel";
-  let RenderMethod = "addSImmOperands<20>";
+  let RenderMethod = "addUImmOperands<20>";
 }
 
 class SymAsmOperandClass<string Type = "", string Suffix = "",
@@ -468,18 +468,18 @@ def mem_nm0 : mem_generic {
   let ParserMatchClass = MemNM0Parser;
 }
 
+let OperandType = "OPERAND_PCREL", PrintMethod = "printPCRel" in {
+
 foreach I = {7, 10, 11, 14, 25} in
   def brtarget # I # _nm : Operand<OtherVT> {
     let EncoderMethod = "getBranchTargetOpValueNM<" # I # ">";
-     let OperandType   = "OPERAND_PCREL";
-     let DecoderMethod = "DecodeBranchTargetNM<" # I # ">";
-     let ParserMatchClass = NMJumpTargetAsmOperand;
-     let PrintMethod = "printBranchOperand";
+    let PrintMethod = "printBranchOperand";
+    let DecoderMethod = "DecodeBranchTargetNM<" # I # ">";
+    let ParserMatchClass = NMJumpTargetAsmOperand;
   }
 
 def brtarget4s1_nm : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValueNM<4>";
-  let OperandType   = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranchTargetNM<4>";
   // BEQC[16]/BNEC[16] has match priority over BEQC[32]/BNEC[32]
   let ParserMatchClass = NMJumpTargetAsmOperandClass<4, [NMJumpTargetAsmOperand]>;
@@ -508,6 +508,7 @@ def jmptarget_nm   : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValueNM<25>";
   let ParserMatchClass = NMJumpTargetAsmOperand;
 }
+} // let OperandType = "OPERAND_PCREL", ...
 
 def simm32_nm : Operand<i32> {
   let ParserMatchClass = NMSImmAsmOperandClass<32>;
@@ -529,11 +530,23 @@ def simm32s12_pcrel_nm : Operand<i32> {
   let ParserMatchClass = Hi20PCRelAsmOperand;
   let PrintMethod = "printHi20PCRel";
   let DecoderMethod = "DecodeSImm32s12";
+  let OperandType   = "OPERAND_PCREL";
 }
 
 def sym32_pc_nm : Operand<pAny> {
   let EncoderMethod = "getSymPCRel";
   let ParserMatchClass = SymAsmOperand;
+  let OperandType   = "OPERAND_PCREL";
+  let DecoderMethod = "DecodeAddressPCRelNM<32>";
+  let PrintMethod = "printPCRel";
+}
+
+def sym32_pc22_nm : Operand<pAny> {
+  let EncoderMethod = "getSymPCRel";
+  let ParserMatchClass = SymAsmOperand;
+  let OperandType   = "OPERAND_PCREL";
+  let DecoderMethod = "DecodeAddressPCRelNM<22>";
+  let PrintMethod = "printPCRel";
 }
 
 def sym32_gp_nm : Operand<pAny> {
@@ -1778,7 +1791,7 @@ def : MipsInstAlias<"addiu.w $rt, $rs, $offset",
 			ISA_NANOMIPS;
 
 let isReMaterializable = 1 in {
-  def LAPC32_NM : LoadAddressPCRelNM<"lapc.h", GPRNM32Opnd, sym32_pc_nm,
+  def LAPC32_NM : LoadAddressPCRelNM<"lapc.h", GPRNM32Opnd, sym32_pc22_nm,
 				     addrsym>, Op32_Addr_Enc<0b00001>;
   def LAPC48_NM : LoadAddressPCRelNM<"lapc.b", GPRNM48Opnd, sym32_pc_nm,
 				     addrsym>, Op48_Addr_Enc<0b00011>;

@@ -2192,7 +2192,7 @@ class B4_Enc : _Pool_P16<0b11010> {
 def BEQC_NM : CBranchNM<"beqc", brtarget14_nm, seteq, GPRNM32Opnd>,
 	      B14_Enc<0b000>;
 def BEQC16_NM : CBranchAsmNM<"beqc", brtarget4s1_nm, seteq, GPRNM16R3Opnd, GPRNM16R3Opnd>,
-	        B4_Enc;
+	        B4_Enc, DecodeDisambiguates<"BranchConflictNM">;
 def BGEC_NM : CBranchNM<"bgec", brtarget14_nm, setge, GPRNM32Opnd>,
 	      B14_Enc<0b010>;
 def BGEUC_NM : CBranchNM<"bgeuc", brtarget14_nm, setuge, GPRNM32Opnd>,
@@ -2201,7 +2201,9 @@ def BGEUC_NM : CBranchNM<"bgeuc", brtarget14_nm, setuge, GPRNM32Opnd>,
 def BNEC_NM : CBranchNM<"bnec", brtarget14_nm, setne, GPRNM32Opnd>,
 	      B14_Enc<0b100>;
 def BNEC16_NM : CBranchAsmNM<"bnec", brtarget4s1_nm, setne, GPRNM16R3Opnd, GPRNM16R3Opnd>,
-	        B4_Enc;
+	        B4_Enc, DecodeDisambiguates<"BranchConflictNM"> {
+  let DecoderNamespace = "NanoMips_Conflict_Space";
+}
 def BLTC_NM : CBranchNM<"bltc", brtarget14_nm, setlt, GPRNM32Opnd>,
 	      B14_Enc<0b110>;
 def BLTUC_NM : CBranchNM<"bltuc", brtarget14_nm, setult, GPRNM32Opnd>,

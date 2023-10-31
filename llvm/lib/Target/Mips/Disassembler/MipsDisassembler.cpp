@@ -613,6 +613,9 @@ template <unsigned Bits>
 static DecodeStatus DecodeAddressPCRelNM(MCInst &Inst, unsigned Insn,
 					 uint64_t Address, const MCDisassembler *Decoder);
 
+static DecodeStatus DecodeBranchConflictNM(MCInst &Inst, unsigned Insn,
+					   uint64_t Address, const MCDisassembler *Decoder);
+
 static MCDisassembler *createMipsDisassembler(
                        const Target &T,
                        const MCSubtargetInfo &STI,
@@ -3056,4 +3059,20 @@ static DecodeStatus DecodeAddressPCRelNM(MCInst &Inst,
 
   Inst.addOperand(MCOperand::createImm(BranchOffset));
   return MCDisassembler::Success;
+}
+
+static DecodeStatus DecodeBranchConflictNM(
+  MCInst &Inst, unsigned Insn, uint64_t Address, const MCDisassembler *Decoder) {
+  unsigned Rt = fieldFromInstruction(Insn, 7, 3);
+  unsigned Rs = fieldFromInstruction(Insn, 4, 3);
+  unsigned Offset = fieldFromInstruction(Insn, 0, 4) << 1;
+  if (Rs < Rt)
+    Inst.setOpcode(Mips::BEQC16_NM);
+  else
+    Inst.setOpcode(Mips::BNEC16_NM);
+  if (DecodeGPRNM3RegisterClass(Inst, Rt, Address, Decoder) == MCDisassembler::Success &&
+      DecodeGPRNM3RegisterClass(Inst, Rs, Address, Decoder)  == MCDisassembler::Success)
+    return DecodeBranchTargetNM<5>(Inst, Offset, Address, Decoder);
+  else
+    return MCDisassembler::Fail;
 }

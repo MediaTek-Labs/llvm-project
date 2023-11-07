@@ -66,6 +66,13 @@ using namespace llvm;
 
 STATISTIC(NumCSParams, "Number of dbg call site params created");
 
+namespace llvm::DwarfDebugOpts {
+cl::opt<bool> ShareDebugAcrossCUs(
+    "share-debug-across-cus", cl::Hidden,
+    cl::desc("Share DWARF debug entries across CUs in output DWARF"), cl::init(true));
+}
+
+
 static cl::opt<bool> UseDwarfRangesBaseAddressSpecifier(
     "use-dwarf-ranges-base-address-specifier", cl::Hidden,
     cl::desc("Use base address specifiers in debug_ranges"), cl::init(false));
@@ -549,7 +556,8 @@ void DwarfDebug::constructAbstractSubprogramScopeDIE(DwarfCompileUnit &SrcCU,
 
   // Find the subprogram's DwarfCompileUnit in the SPMap in case the subprogram
   // was inlined from another compile unit.
-  if (useSplitDwarf() && !shareAcrossDWOCUs() && !SP->getUnit()->getSplitDebugInlining())
+  if ((useSplitDwarf() && !shareAcrossDWOCUs() && !SP->getUnit()->getSplitDebugInlining())
+      || !DwarfDebugOpts::ShareDebugAcrossCUs)
     // Avoid building the original CU if it won't be used
     SrcCU.constructAbstractSubprogramScopeDIE(Scope);
   else {

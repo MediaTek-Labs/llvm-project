@@ -33,6 +33,7 @@
 #include "llvm/IR/DebugLoc.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/MC/MCDwarf.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Allocator.h"
 #include "llvm/Target/TargetOptions.h"
 #include <cassert>
@@ -57,6 +58,10 @@ class MachineFunction;
 class MCSection;
 class MCSymbol;
 class Module;
+
+namespace DwarfDebugOpts {
+extern cl::opt<bool> ShareDebugAcrossCUs;
+}
 
 //===----------------------------------------------------------------------===//
 /// This class is defined as the common parent of DbgVariable and DbgLabel

@@ -122,13 +122,15 @@ class DwarfCompileUnit final : public DwarfUnit {
   bool isDwoUnit() const override;
 
   DenseMap<const DILocalScope *, DIE *> &getAbstractScopeDIEs() {
-    if (isDwoUnit() && !DD->shareAcrossDWOCUs())
+    if ((isDwoUnit() && !DD->shareAcrossDWOCUs())
+    || !DwarfDebugOpts::ShareDebugAcrossCUs)
       return AbstractLocalScopeDIEs;
     return DU->getAbstractScopeDIEs();
   }
 
   DenseMap<const DINode *, std::unique_ptr<DbgEntity>> &getAbstractEntities() {
-    if (isDwoUnit() && !DD->shareAcrossDWOCUs())
+    if ((isDwoUnit() && !DD->shareAcrossDWOCUs())
+	|| !DwarfDebugOpts::ShareDebugAcrossCUs)
       return AbstractEntities;
     return DU->getAbstractEntities();
   }

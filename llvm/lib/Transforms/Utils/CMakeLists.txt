@@ -9,6 +9,7 @@ add_llvm_component_library(LLVMTransformUtils
   BypassSlowDivision.cpp
   CallPromotionUtils.cpp
   CallGraphUpdater.cpp
+  CancelCrossCUDebugInfo.cpp
   CanonicalizeAliases.cpp
   CanonicalizeFreezeInLoops.cpp
   CloneFunction.cpp

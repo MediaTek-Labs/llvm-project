@@ -46,6 +46,7 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Scalar/LoopPassManager.h"
+#include "llvm/Transforms/Utils/CancelCrossCUDebugInfo.h"
 #include "llvm/Transforms/Utils/FunctionImportUtils.h"
 #include "llvm/Transforms/Utils/SplitModule.h"
 
@@ -82,7 +83,12 @@ static cl::opt<std::string> LtoExternalAsm("lto-external-asm",
 static cl::list<std::string> LtoExternalAsmArgs("lto-external-asm-arg",
                                                 cl::desc("Args to pass to "
                                                          "external assembler in LTO backend"));
-  
+
+static cl::opt<bool>
+    EnableCancelCrossCUDebugInfo("enable-cancel-cross-cu-debug-info",
+                                 cl::init(false), cl::Hidden, cl::ZeroOrMore,
+                                 cl::desc("Enable cross cu canceling"));
+
 LLVM_ATTRIBUTE_NORETURN static void reportOpenError(StringRef Path, Twine Msg) {
   errs() << "failed to open " << Path << ": " << Msg << '\n';
   errs().flush();
@@ -343,6 +349,10 @@ static void runNewPMPasses(const Config &Conf, Module &Mod, TargetMachine *TM,
     MPM.addPass(PB.buildThinLTODefaultPipeline(OL, ImportSummary));
   } else {
     MPM.addPass(PB.buildLTODefaultPipeline(OL, ExportSummary));
+  }
+
+  if (EnableCancelCrossCUDebugInfo) {
+    MPM.addPass(CancelCrossCUDebugInfo());
   }
 
   if (!Conf.DisableVerify)

@@ -20,6 +20,8 @@ class ModulePass;
 class FunctionPass;
 class Pass;
 
+ModulePass *createCancelCrossCUDebugInfoLegacyPass();
+
 //===----------------------------------------------------------------------===//
 // createMetaRenamerPass - Rename everything with metasyntatic names.
 //

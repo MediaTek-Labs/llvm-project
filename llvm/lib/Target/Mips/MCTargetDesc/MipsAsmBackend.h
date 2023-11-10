@@ -17,6 +17,7 @@
 #include "MCTargetDesc/MipsFixupKinds.h"
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/TargetParser/Triple.h"
+#include "llvm/MC/MCSubtargetInfo.h"
 
 namespace llvm {
 
@@ -70,6 +71,12 @@ public:
                            const MCValue &Target,
                            const MCSubtargetInfo *STI, uint64_t &Value,
                            bool &WasForced) override;
+
+  bool relaxDwarfLineAddr(const MCAssembler &Asm, MCDwarfLineAddrFragment &DF,
+			  bool &WasRelaxed) const override;
+
+  bool relaxDwarfCFA(const MCAssembler &Asm, MCDwarfCallFrameFragment &DF,
+		    bool &WasRelaxed) const override;
 }; // class MipsAsmBackend
 
 } // namespace

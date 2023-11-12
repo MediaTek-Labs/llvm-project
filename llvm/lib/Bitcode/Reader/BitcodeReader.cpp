@@ -936,7 +936,72 @@ private:
       DenseMap<Function *, uint64_t>::iterator DeferredFunctionInfoIterator);
 
   SyncScope::ID getDecodedSyncScopeID(unsigned Val);
+
+  protected:
+  Error error(const Twine &Message);
+  Error error(Function *F, const Twine &Message) {
+    std::string FullMsg = Message.str();
+    FullMsg += "\nIn " + describeValue(F) + ": " + Message.str();
+    return error(FullMsg);
+  }
+
+  // Try and describe a value in a useful way that helps the user identify
+  // the cause
+  std::string describeValue(Value *V) {
+    auto GV = dyn_cast<GlobalValue>(V);
+    if (auto F = dyn_cast<Function>(V)) {
+      std::string Result = "function: " + F->getName().str();
+      for (auto &MBB : *F) {
+        for (auto &I : MBB)  {
+          const DebugLoc &DL = I.getDebugLoc();
+          if (DL) {
+            raw_string_ostream S(Result);
+            S << "\n at: ";
+            DL.print(S);
+            return Result;
+          }
+        }
+      }
+      return Result;
+    } else if (GV && GV->hasName()) {
+      return "global: " + GV->getName().str() + " of type " + describeType(GV->getType());
+    } else if (auto I = dyn_cast<Instruction>(V)) {
+      std::string Result = "instruction: ";
+      raw_string_ostream S(Result);
+      I->print(S);
+      const DebugLoc &DL = I->getDebugLoc();
+      if (DL) {
+        S << "\n at: ";
+        DL.print(S);
+      } else {
+        I->print(S);
+      }
+      return Result;
+    } else {
+      std::string Result = "value: ";
+      raw_string_ostream S(Result);
+      V->print(S, false);
+      return Result;
+    }
+  }
+
+  std::string describeType(Type *Ty) {
+    std::string Result;
+    raw_string_ostream S(Result);
+    Ty->print(S, false, true);
+    return Result;
+  }
 };
+
+
+Error BitcodeReader::error(const Twine &Message) {
+  std::string AnnotatedMessage = Message.str();
+  if (TheModule != nullptr)
+    AnnotatedMessage += ("\nIn module " + TheModule->getName().str() + " ("
+                         + TheModule->getModuleIdentifier() + "):\n");
+  return ::error(AnnotatedMessage);
+}
+
 
 /// Class to manage reading and parsing function summary index bitcode
 /// files/sections.
@@ -4896,6 +4961,11 @@ Error BitcodeReader::propagateAttributeTypes(CallBase *CB,
 
 /// Lazily parse the specified function body block.
 Error BitcodeReader::parseFunctionBody(Function *F) {
+
+  auto error = [&](const Twine &Message) -> Error {
+    return this->error(F, Message);
+  };
+
   if (Error Err = Stream.EnterSubBlock(bitc::FUNCTION_BLOCK_ID))
     return Err;
 
@@ -6735,15 +6805,18 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
 
       PointerType *OpTy = dyn_cast<PointerType>(Callee->getType());
       if (!OpTy)
-        return error("Callee is not a pointer type");
+        return error("Callee is not a pointer type: " + describeValue(Callee) 
+                     + " of type " + describeType(OpTy));
       if (!FTy) {
         FTyID = getContainedTypeID(CalleeTypeID);
         FTy = dyn_cast_or_null<FunctionType>(getTypeByID(FTyID));
         if (!FTy)
-          return error("Callee is not of pointer to function type");
+          return error("Callee is not of pointer to function type: "
+                       + describeValue(Callee) + " of type "
+                       + describeType(FTy));
       }
       if (Record.size() < FTy->getNumParams() + OpNum)
-        return error("Insufficient operands to call");
+        return error("Insufficient operands to call of " + describeValue(Callee));
 
       SmallVector<Value*, 16> Args;
       SmallVector<unsigned, 16> ArgTyIDs;

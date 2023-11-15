@@ -512,6 +512,33 @@ static uint64_t resolveRISCV(uint64_t Type, uint64_t Offset, uint64_t S,
   }
 }
 
+static bool supportsNanoMips(uint64_t Type) {
+  switch (Type) {
+  case ELF::R_NANOMIPS_NEG:
+  case ELF::R_NANOMIPS_32:
+  case ELF::R_NANOMIPS_SIGNED_16:
+  case ELF::R_NANOMIPS_UNSIGNED_16:
+  case ELF::R_NANOMIPS_SIGNED_8:
+  case ELF::R_NANOMIPS_UNSIGNED_8:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static uint64_t resolveNanoMips(uint64_t Type, uint64_t Offset, uint64_t S,
+                               uint64_t LocData, int64_t Addend) {
+  if (Type == ELF::R_NANOMIPS_32)
+    return (S + LocData) & 0xFFFFFFFF;
+  if (Type == ELF::R_NANOMIPS_SIGNED_16 || Type == ELF::R_NANOMIPS_UNSIGNED_16)
+    return (S + LocData) & 0xFFFF;
+  if (Type == ELF::R_NANOMIPS_SIGNED_8 || Type == ELF::R_NANOMIPS_UNSIGNED_8)
+    return (S + LocData) & 0xFF;
+  if (Type == ELF::R_NANOMIPS_NEG)
+    return (-S + LocData) & 0xFFFFFFFF;
+  llvm_unreachable("Invalid relocation type");
+}
+
 static bool supportsCSKY(uint64_t Type) {
   switch (Type) {
   case ELF::R_CKCORE_NONE:
@@ -850,6 +877,8 @@ getRelocationResolver(const ObjectFile &Obj) {
       return {supportsAmdgpu, resolveAmdgpu};
     case Triple::riscv32:
       return {supportsRISCV, resolveRISCV};
+    case Triple::nanomips:
+      return {supportsNanoMips, resolveNanoMips};
     case Triple::csky:
       return {supportsCSKY, resolveCSKY};
     default:
@@ -894,7 +923,8 @@ uint64_t resolveRelocation(RelocationResolver Resolver, const RelocationRef &R,
         if (Obj->getArch() != Triple::loongarch32 &&
             Obj->getArch() != Triple::loongarch64 &&
             Obj->getArch() != Triple::riscv32 &&
-            Obj->getArch() != Triple::riscv64)
+            Obj->getArch() != Triple::riscv64 &&
+            Obj->getArch() != Triple::nanomips)
           LocData = 0;
       }
     }

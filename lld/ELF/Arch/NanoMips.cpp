@@ -149,7 +149,7 @@ RelExpr NanoMips::getRelExpr(RelType type, const Symbol &s,
     return R_NONE;
   default:
     error(getErrorLocation(loc) + "unknown relocation (" + Twine(type) +
-          ") against symbol " + toString(s) + "loc :" + utohexstr(uint64_t(loc)) + "file name:" + toString(s.file->getName()) );
+          ") against symbol " + toString(s) + " loc: " + utohexstr(uint64_t(loc)) + " file name: " + toString(s.file->getName()) );
     return R_NONE;
   }                   
 }

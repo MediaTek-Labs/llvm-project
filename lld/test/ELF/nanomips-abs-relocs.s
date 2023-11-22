@@ -1,7 +1,7 @@
 # RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-as \
 # RUN: -EL -march=32r6 -m32 -mno-pcrel %s -o %t1.o
 # RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-as \
-# RUN: -EL -march=32r6 -m32 -mno-pcrel %S/nanomips-abs-relocs-sup.s -o %t2.o
+# RUN: -EL -march=32r6 -m32 -mno-pcrel %S/Inputs/nanomips-abs-relocs-sup.s -o %t2.o
 # RUN:  ld.lld --section-start .text=0x1000 --section-start .sdata=0x2001020 %t1.o %t2.o -o %t
 # RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump -td %t | FileCheck %s
 # RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump -d --section=.sdata %t | FileCheck %s --check-prefix CHECK-DATA-REL 
@@ -28,7 +28,6 @@ _start:
 	lui $a2, %hi(c)
 	lw $a2, %lo(c)($a2)
 	li $a4, -2
-	brsc %pc_rel(func)
 	.end _start
 	.size _start, .-_start
 

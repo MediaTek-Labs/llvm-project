@@ -317,6 +317,12 @@ template <class ELFT> void elf::createSyntheticSections() {
       add(*in.mipsReginfo);
   }
 
+  // Add nanoMIPS-specific sections.
+  if(config->emachine == EM_NANOMIPS) {
+    if(auto *sec = NanoMipsAbiFlagsSection<ELFT>::create())
+      add(sec);
+  }
+
   StringRef relaDynName = config->isRela ? ".rela.dyn" : ".rel.dyn";
 
   const unsigned threadCount = config->threadCount;
@@ -2038,6 +2044,10 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
         addPhdrForSection(part, SHT_MIPS_REGINFO, PT_MIPS_REGINFO, PF_R);
         addPhdrForSection(part, SHT_MIPS_OPTIONS, PT_MIPS_OPTIONS, PF_R);
         addPhdrForSection(part, SHT_MIPS_ABIFLAGS, PT_MIPS_ABIFLAGS, PF_R);
+      }
+
+      if(config->emachine == EM_NANOMIPS) {
+        addPhdrForSection(part, SHT_NANOMIPS_ABIFLAGS, PT_NANOMIPS_ABIFLAGS, PF_R);
       }
     }
     Out::programHeaders->size = sizeof(Elf_Phdr) * mainPart->phdrs.size();

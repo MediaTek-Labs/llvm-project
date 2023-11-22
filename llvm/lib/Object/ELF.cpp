@@ -278,6 +278,9 @@ StringRef llvm::object::getELFSectionTypeName(uint32_t Machine, unsigned Type) {
   case ELF::EM_RISCV:
     switch (Type) { STRINGIFY_ENUM_CASE(ELF, SHT_RISCV_ATTRIBUTES); }
     break;
+  case ELF::EM_NANOMIPS:
+    switch (Type) { STRINGIFY_ENUM_CASE(ELF, SHT_NANOMIPS_ABIFLAGS);}
+    break;
   default:
     break;
   }

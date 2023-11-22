@@ -794,6 +794,23 @@ template <class ELFT> struct Elf_Mips_ABIFlags {
   Elf_Word flags2;   // General flags
 };
 
+//  .nanoMIPS.abiflags section content
+
+template <class ELFT> struct Elf_NanoMips_ABIFlags {
+  LLVM_ELF_IMPORT_TYPES_ELFT(ELFT)
+  Elf_Half version; // Version of flags structure
+  uint8_t isa_level; // Level of the ISA: 32, 64
+  uint8_t isa_rev; // Revision of the ISA: 6-n
+  uint8_t gpr_size; // Size of general purpose register
+  uint8_t cpr1_size; // Size of co-processor 1 registers
+  uint8_t cpr2_size; // Size of co-processor 2 registers
+  uint8_t fp_abi; // Floating-point ABI
+  Elf_Word isa_ext; // Processor specific extension
+  Elf_Word ases; // Mask of ASEs used
+  Elf_Word flags1; // Mask of general flags
+  Elf_Word flags2; // Mask of general flags
+};
+
 // Struct representing the BBAddrMap for one function.
 struct BBAddrMap {
   uint64_t Addr; // Function address

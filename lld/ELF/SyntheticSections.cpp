@@ -41,6 +41,8 @@
 #include "llvm/Support/TimeProfiler.h"
 #include <cstdlib>
 
+#include "llvm/Support/NanoMipsABIFlags.h"
+
 using namespace llvm;
 using namespace llvm::dwarf;
 using namespace llvm::ELF;
@@ -147,6 +149,103 @@ std::unique_ptr<MipsAbiFlagsSection<ELFT>> MipsAbiFlagsSection<ELFT>::create() {
 
   if (create)
     return std::make_unique<MipsAbiFlagsSection<ELFT>>(flags);
+  return nullptr;
+}
+
+// .nanoMIPS.abiflags section.
+//  TODO: check if alignment is right
+template <class ELFT>
+NanoMipsAbiFlagsSection<ELFT>::NanoMipsAbiFlagsSection(Elf_NanoMips_ABIFlags flags)
+    : SyntheticSection(SHF_ALLOC, SHT_NANOMIPS_ABIFLAGS, 8, ".nanoMIPS.abiflags"), flags(flags)
+{
+  this->entsize = sizeof(Elf_NanoMips_ABIFlags);
+}
+
+template <class ELFT> void NanoMipsAbiFlagsSection<ELFT>::writeTo(uint8_t *buf) {
+  memcpy(buf, &flags, sizeof(flags));
+}
+
+// TODO: Add these three functions to the right section, later
+template<class ELFT>
+std::string NanoMipsAbiFlagsSection<ELFT>::fp_abi_string(uint32_t fp)
+{
+  switch(fp)
+  {
+    case llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_DOUBLE:
+      return "-mdouble-float";
+    case llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_SINGLE:
+      return "-msingle-float";
+    case llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_SOFT:
+      return "-msoft-float";
+    default:
+      return "unknown";
+  }
+}
+
+template<class ELFT>
+uint32_t NanoMipsAbiFlagsSection<ELFT>::select_fp_abi(const StringRef filename, uint32_t in_fp, uint32_t out_fp)
+{
+  if(out_fp == llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_ANY || in_fp == out_fp) return in_fp;
+
+  if(in_fp != llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_ANY)
+    warn(filename + ": FP ABI " +  fp_abi_string(in_fp) + " is incompatible with " + fp_abi_string(out_fp));
+
+  return out_fp;
+} 
+
+template<class ELFT>
+uint32_t NanoMipsAbiFlagsSection<ELFT>::select_isa_ext(const StringRef filename, uint32_t isa_ext_in, uint32_t isa_ext_out)
+{
+  if(isa_ext_out == llvm::NanoMips::AFL_EXT_NONE || isa_ext_in == isa_ext_out) return isa_ext_in;
+
+  if(isa_ext_in != llvm::NanoMips::AFL_EXT_NONE)
+    warn(filename + ": processor specific extension " + Twine(isa_ext_in) + " is incompatible with " + Twine(isa_ext_out));
+
+  return isa_ext_out;
+}
+
+template <class ELFT>
+NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
+  Elf_NanoMips_ABIFlags flags = {};
+  bool create = false;
+
+  for(InputSectionBase *sec: inputSections)
+  {
+    if(sec->type != SHT_NANOMIPS_ABIFLAGS) continue;
+
+    sec->markDead();
+    create = true;
+    std::string filename = toString(sec->file);
+    const size_t size = sec->data().size();
+    if (size < sizeof(Elf_NanoMips_ABIFlags)) {
+      error(filename + ": invalid size of .nanoMIPS.abiflags section: got " +
+            Twine(size) + " instead of " + Twine(sizeof(Elf_NanoMips_ABIFlags)));
+      return nullptr;
+    }
+
+    auto *s = reinterpret_cast<const Elf_NanoMips_ABIFlags *>(sec->data().data());
+    if(s->version != 0)
+    {
+      error(filename + ": unexpected .nanoMIPS.abiflags version " + Twine(s->version));
+      return nullptr;
+    }
+
+    flags.isa_level = std::max(flags.isa_level, s->isa_level);
+    flags.isa_rev = std::max(flags.isa_rev, s->isa_rev);
+    flags.gpr_size = std::max(flags.gpr_size, s->gpr_size);
+    flags.cpr1_size = std::max(flags.cpr1_size, s->cpr1_size);
+    flags.cpr2_size = std::max(flags.cpr1_size, s->cpr2_size);
+    flags.fp_abi = select_fp_abi(filename, s->fp_abi, flags.fp_abi);
+    flags.isa_ext = select_isa_ext(filename, s->isa_ext, flags.isa_ext);
+    flags.ases |= s->ases;
+    flags.flags1 |= s->flags1;
+    flags.flags2 |= s->flags2;
+
+
+  }
+
+  if(create)
+    return make<NanoMipsAbiFlagsSection<ELFT>>(flags);
   return nullptr;
 }
 
@@ -3896,6 +3995,11 @@ template class elf::MipsAbiFlagsSection<ELF32LE>;
 template class elf::MipsAbiFlagsSection<ELF32BE>;
 template class elf::MipsAbiFlagsSection<ELF64LE>;
 template class elf::MipsAbiFlagsSection<ELF64BE>;
+
+template class elf::NanoMipsAbiFlagsSection<ELF32LE>;
+template class elf::NanoMipsAbiFlagsSection<ELF32BE>;
+template class elf::NanoMipsAbiFlagsSection<ELF64LE>;
+template class elf::NanoMipsAbiFlagsSection<ELF64BE>;
 
 template class elf::MipsOptionsSection<ELF32LE>;
 template class elf::MipsOptionsSection<ELF32BE>;

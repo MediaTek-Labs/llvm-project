@@ -1458,6 +1458,8 @@ enum {
 
   // RISCV program header types.
   PT_RISCV_ATTRIBUTES = 0x70000003,
+  // nanoMIPS program header types
+  PT_NANOMIPS_ABIFLAGS = 0x70000000 // Abiflags segment;
 };
 
 // Segment flag bits.

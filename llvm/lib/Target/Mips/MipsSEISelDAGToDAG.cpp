@@ -1465,6 +1465,17 @@ SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
     llvm_unreachable("Unexpected asm memory constraint");
   // All memory constraints can at least accept raw pointers.
   case InlineAsm::Constraint_m:
+    if (Subtarget->hasNanoMips()) {
+      // On NanoMips, they can only handle 9-bit offsets. Also, 2
+      // least-significant bits need to be cleared as required by LL and SC
+      // instructions.
+      if (selectAddrRegImm9(Op, Base, Offset)) {
+        OutOps.push_back(Op);
+        OutOps.push_back(CurDAG->getTargetConstant(0, SDLoc(Op), MVT::i32));
+        return false;
+      }
+    }
+    [[fallthrough]];
   case InlineAsm::Constraint_o:
     if (selectAddrRegImm16(Op, Base, Offset)) {
       OutOps.push_back(Base);
@@ -1503,6 +1514,15 @@ SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
       if (selectAddrRegImm9(Op, Base, Offset)) {
         OutOps.push_back(Base);
         OutOps.push_back(Offset);
+        return false;
+      }
+    } else if (Subtarget->hasNanoMips()) {
+      // On NanoMips, they can only handle 9-bit offsets. Also, 2
+      // least-significant bits need to be cleared as required by LL and SC
+      // instructions.
+      if (selectAddrRegImm9(Op, Base, Offset)) {
+        OutOps.push_back(Op);
+        OutOps.push_back(CurDAG->getTargetConstant(0, SDLoc(Op), MVT::i32));
         return false;
       }
     } else if (selectAddrRegImm16(Op, Base, Offset)) {

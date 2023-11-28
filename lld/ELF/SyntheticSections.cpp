@@ -234,7 +234,7 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
     flags.isa_rev = std::max(flags.isa_rev, s->isa_rev);
     flags.gpr_size = std::max(flags.gpr_size, s->gpr_size);
     flags.cpr1_size = std::max(flags.cpr1_size, s->cpr1_size);
-    flags.cpr2_size = std::max(flags.cpr1_size, s->cpr2_size);
+    flags.cpr2_size = std::max(flags.cpr2_size, s->cpr2_size);
     flags.fp_abi = select_fp_abi(filename, s->fp_abi, flags.fp_abi);
     flags.isa_ext = select_isa_ext(filename, s->isa_ext, flags.isa_ext);
     flags.ases |= s->ases;

@@ -8,14 +8,14 @@ define i32 @test_xor(i32 %a, i32 %b) {
 }
 
 define i32 @test_ori0(i32 %a) {
-; CHECK: xori $a0, $a0, 1
+; CHECK: xori $a0, $a0, 0x1
 ; CHECK: XORI_NM
   %xorred = xor i32 %a, 1
   ret i32 %xorred
 }
 
 define i32 @test_ori1(i32 %a) {
-; CHECK: xori $a0, $a0, 4095
+; CHECK: xori $a0, $a0, 0xfff
 ; CHECK: XORI_NM
   %xorred = xor i32 %a, 4095
   ret i32 %xorred

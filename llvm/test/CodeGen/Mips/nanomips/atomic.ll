@@ -175,7 +175,7 @@ define signext i8 @AtomicLoadAdd8(i8 signext %incr) nounwind {
 ; CHECK-NEXT:    lapc.b $a1, y
 ; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
-; CHECK-NEXT:    andi $a1, $a1, 3
+; CHECK-NEXT:    andi $a1, $a1, 0x3
 ; CHECK-NEXT:    sll $a7, $a1, 3
 ; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
@@ -207,7 +207,7 @@ define signext i8 @AtomicLoadSub8(i8 signext %incr) nounwind {
 ; CHECK-NEXT:    lapc.b $a1, y
 ; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
-; CHECK-NEXT:    andi $a1, $a1, 3
+; CHECK-NEXT:    andi $a1, $a1, 0x3
 ; CHECK-NEXT:    sll $a7, $a1, 3
 ; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
@@ -240,7 +240,7 @@ define signext i8 @AtomicLoadNand8(i8 signext %incr) nounwind {
 ; CHECK-NEXT:    lapc.b $a1, y
 ; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
-; CHECK-NEXT:    andi $a1, $a1, 3
+; CHECK-NEXT:    andi $a1, $a1, 0x3
 ; CHECK-NEXT:    sll $a7, $a1, 3
 ; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
@@ -274,7 +274,7 @@ define signext i8 @AtomicSwap8(i8 signext %newval) nounwind {
 ; CHECK-NEXT:    lapc.b $a1, y
 ; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
-; CHECK-NEXT:    andi $a1, $a1, 3
+; CHECK-NEXT:    andi $a1, $a1, 0x3
 ; CHECK-NEXT:    sll $a7, $a1, 3
 ; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
@@ -305,14 +305,14 @@ define signext i8 @AtomicCmpSwap8(i8 signext %oldval, i8 signext %newval) nounwi
 ; CHECK-NEXT:    lapc.b $a2, y
 ; CHECK-NEXT:    li $a3, -4
 ; CHECK-NEXT:    and $a4, $a2, $a3
-; CHECK-NEXT:    andi $a2, $a2, 3
+; CHECK-NEXT:    andi $a2, $a2, 0x3
 ; CHECK-NEXT:    sll $t0, $a2, 3
 ; CHECK-NEXT:    li $a3, 255
 ; CHECK-NEXT:    sllv $a7, $a3, $t0
 ; CHECK-NEXT:    nor $a5, $zero, $a7
-; CHECK-NEXT:    andi $a0, $a0, 255
+; CHECK-NEXT:    andi $a0, $a0, 0xff
 ; CHECK-NEXT:    sllv $a6, $a0, $t0
-; CHECK-NEXT:    andi $a0, $a1, 255
+; CHECK-NEXT:    andi $a0, $a1, 0xff
 ; CHECK-NEXT:    sllv $a1, $a0, $t0
 ; CHECK-NEXT:  .LBB12_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
@@ -341,14 +341,14 @@ define i1 @AtomicCmpSwapRes8(i8* %ptr, i8 signext %oldval, i8 signext %newval) n
 ; CHECK:       # %bb.0: # %entry
 ; CHECK-NEXT:    li $a3, -4
 ; CHECK-NEXT:    and $a4, $a0, $a3
-; CHECK-NEXT:    andi $a0, $a0, 3
+; CHECK-NEXT:    andi $a0, $a0, 0x3
 ; CHECK-NEXT:    sll $t0, $a0, 3
 ; CHECK-NEXT:    li $a0, 255
 ; CHECK-NEXT:    sllv $a5, $a0, $t0
 ; CHECK-NEXT:    nor $a6, $zero, $a5
-; CHECK-NEXT:    andi $a0, $a1, 255
+; CHECK-NEXT:    andi $a0, $a1, 0xff
 ; CHECK-NEXT:    sllv $a7, $a0, $t0
-; CHECK-NEXT:    andi $a0, $a2, 255
+; CHECK-NEXT:    andi $a0, $a2, 0xff
 ; CHECK-NEXT:    sllv $a2, $a0, $t0
 ; CHECK-NEXT:  .LBB13_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
@@ -383,7 +383,7 @@ define signext i16 @AtomicLoadAdd16(i16 signext %incr) nounwind {
 ; CHECK-NEXT:    lapc.b $a1, z
 ; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a1, $a2
-; CHECK-NEXT:    andi $a1, $a1, 3
+; CHECK-NEXT:    andi $a1, $a1, 0x3
 ; CHECK-NEXT:    sll $a7, $a1, 3
 ; CHECK-NEXT:    li $a3, 65535
 ; CHECK-NEXT:    sllv $a6, $a3, $a7
@@ -420,7 +420,7 @@ define {i16, i1} @foo(i16* %addr, i16 %l, i16 %r, i16 %new) {
 ; CHECK-NEXT:    sync
 ; CHECK-NEXT:    li $a2, -4
 ; CHECK-NEXT:    and $a4, $a0, $a2
-; CHECK-NEXT:    andi $a0, $a0, 3
+; CHECK-NEXT:    andi $a0, $a0, 0x3
 ; CHECK-NEXT:    sll $t1, $a0, 3
 ; CHECK-NEXT:    li $a0, 65535
 ; CHECK-NEXT:    sllv $t0, $a0, $t1

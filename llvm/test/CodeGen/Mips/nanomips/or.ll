@@ -8,14 +8,14 @@ define i32 @test_or(i32 %a, i32 %b) {
 }
 
 define i32 @test_ori0(i32 %a) {
-; CHECK: ori $a0, $a0, 1
+; CHECK: ori $a0, $a0, 0x1
 ; CHECK: ORI_NM
   %orred = or i32 %a, 1
   ret i32 %orred
 }
 
 define i32 @test_ori1(i32 %a) {
-; CHECK: ori $a0, $a0, 4095
+; CHECK: ori $a0, $a0, 0xfff
 ; CHECK: ORI_NM
   %orred = or i32 %a, 4095
   ret i32 %orred

@@ -3044,7 +3044,7 @@ static DecodeStatus DecodeSImm32s12(MCInst &Inst,
 				   unsigned Insn,
 				   uint64_t Address,
 				   const void *Decoder) {
-  int32_t Imm = SignExtend32<20>(Insn) << 12;
+  uint64_t Imm = (Insn) << 12;
   Inst.addOperand(MCOperand::createImm(Imm));
   return MCDisassembler::Success;
 }

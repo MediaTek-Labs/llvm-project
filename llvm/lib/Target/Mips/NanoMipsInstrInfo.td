@@ -281,7 +281,6 @@ def uimm2_nm : Operand<i32> {
 }
 
 def uimm12_nm : Operand<i32> {
-  let PrintMethod = "printUImm<12>";
   let ParserMatchClass = NMUImmAsmOperandClass<12>;
 }
 
@@ -322,6 +321,7 @@ def uimm8s2_nm : Operand<i32> {
 def nimm7_nm : Operand<i32> {
   let ParserMatchClass = !cast<AsmOperandClass>("Imm7AsmOperand");
   let DecoderMethod = "DecodeImmM1To126";
+  let PrintMethod = "printUImm<7,0,16>";
 }
 def uimm4mask_nm : Operand<i32> {
   let EncoderMethod = "getUImm4MaskEncoding";
@@ -570,6 +570,7 @@ def sym32_gp19s2_nm : Operand<pAny> {
 def sym32_nm : Operand<pAny> {
   let EncoderMethod = "getSymAbs";
   let ParserMatchClass = SymAsmOperand;
+  let PrintMethod = "printUImm<32, 0, 16>";
 }
 
 def simm32power2 : IntImmLeaf<i32, [{ return isPowerOf2_32(Imm.getSExtValue()); }]>;

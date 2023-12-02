@@ -1,7 +1,7 @@
 ; RUN: llc -mtriple=nanomips -verify-machineinstrs < %s | FileCheck %s
 
 define i8 @cttz8(i8 %n) {
-; CHECK: ori $a0, $a0, 256
+; CHECK: ori $a0, $a0, 0x100
 ; CHECK: bitrevw $a0, $a0
 ; CHECK: clz $a0, $a0
   %count = call i8 @llvm.cttz.i8(i8 %n)
@@ -9,7 +9,7 @@ define i8 @cttz8(i8 %n) {
 }
 
 define i16 @cttz16(i16 %n) {
-; CHECK: li $a1, 65536
+; CHECK: li $a1, 0x10000
 ; CHECK: or $a0, $a0, $a1
 ; CHECK: bitrevw $a0, $a0
 ; CHECK: clz $a0, $a0

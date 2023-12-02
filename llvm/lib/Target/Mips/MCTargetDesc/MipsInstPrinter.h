@@ -102,7 +102,7 @@ private:
                         const MCSubtargetInfo &STI, raw_ostream &O);
   void printBranchOperand(const MCInst *MI, uint64_t Address, unsigned OpNo,
                           const MCSubtargetInfo &STI, raw_ostream &O);
-  template <unsigned Bits, unsigned Offset = 0>
+  template <unsigned Bits, unsigned Offset = 0, unsigned Base = 10>
   void printUImm(const MCInst *MI, int opNum, const MCSubtargetInfo &STI,
                  raw_ostream &O);
   void printMemOperand(const MCInst *MI, int opNum, const MCSubtargetInfo &STI,
@@ -120,6 +120,9 @@ private:
   bool printAlias(const char *Str, const MCInst &MI, uint64_t Address,
                   unsigned OpNo0, unsigned OpNo1, const MCSubtargetInfo &STI,
                   raw_ostream &OS, bool IsBranch = false);
+  bool printAliasHex(const char *Str, const MCInst &MI, uint64_t Address,
+                  unsigned OpNo0, unsigned OpNo1, const MCSubtargetInfo &STI,
+                  raw_ostream &OS);
   bool printAlias(const MCInst &MI, uint64_t Address,
                   const MCSubtargetInfo &STI, raw_ostream &OS);
   bool printAlias(const char *Str, const MCInst &MI,uint64_t Address, unsigned OpNo0,

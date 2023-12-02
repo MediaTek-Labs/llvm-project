@@ -163,7 +163,26 @@ void MipsInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
   }
 
   if (Op.isImm()) {
-    markup(O, Markup::Immediate) << formatImm(Op.getImm());
+    switch (MI->getOpcode()) {
+    case Mips::LI48_NM:
+    case Mips::ANDI16_NM:
+    case Mips::ANDI_NM:
+    case Mips::ORI_NM:
+    case Mips::XORI_NM:
+    case Mips::TEQ_NM:
+    case Mips::TNE_NM:
+    case Mips::SIGRIE_NM:
+    case Mips::SDBBP_NM:
+    case Mips::SDBBP16_NM:
+    case Mips::BREAK_NM:
+    case Mips::BREAK16_NM:
+    case Mips::SYSCALL_NM:
+    case Mips::SYSCALL16_NM:
+    case Mips::WAIT_NM:
+      printUImm<32,0,16>(MI, OpNo, STI, O); break;
+    default:
+    markup(O, Markup::Immediate) << formatImm(Op.getImm()); break;
+    }
     return;
   }
 
@@ -204,16 +223,24 @@ void MipsInstPrinter::printBranchOperand(const MCInst *MI, uint64_t Address,
   }
 }
 
-template <unsigned Bits, unsigned Offset>
+template <unsigned Bits, unsigned Offset, unsigned Base>
 void MipsInstPrinter::printUImm(const MCInst *MI, int opNum,
                                 const MCSubtargetInfo &STI, raw_ostream &O) {
   const MCOperand &MO = MI->getOperand(opNum);
   if (MO.isImm()) {
     uint64_t Imm = MO.getImm();
     Imm -= Offset;
-    Imm &= (1 << Bits) - 1;
+    Imm &= (1ull << Bits) - 1;
     Imm += Offset;
-    markup(O, Markup::Immediate) << formatImm(Imm);
+
+    switch (Base) {
+    case 10:
+      markup(O, Markup::Immediate) << formatImm(Imm); break;
+    case 16:
+      markup(O, Markup::Immediate) << formatImm(Imm); break;
+    default:
+      llvm_unreachable("Unhandled base for output format!");
+    }
     return;
   }
 
@@ -246,6 +273,7 @@ void MipsInstPrinter::printMemOperand(const MCInst *MI, int opNum,
   
   // Index register is encoded as immediate value
   // in case of nanoMIPS indexed instructions
+
   switch (MI->getOpcode()) {
     // No offset needed for paired LL/SC
     case Mips::LLWP_NM:
@@ -333,6 +361,16 @@ bool MipsInstPrinter::printAlias(const char *Str, const MCInst &MI,
     printBranchOperand(&MI, Address, OpNo1, STI, OS);
   else
     printOperand(&MI, OpNo1, STI, OS);
+  return true;
+}
+
+bool MipsInstPrinter::printAliasHex(const char *Str, const MCInst &MI,uint64_t Address,
+                                 unsigned OpNo0, unsigned OpNo1,
+                                 const MCSubtargetInfo &STI ,raw_ostream &OS) {
+
+  printAlias(Str, MI, Address, OpNo0, STI, OS);
+  OS << ", ";
+  printUImm<32, 0, 16>(&MI, OpNo1, STI, OS);
   return true;
 }
 

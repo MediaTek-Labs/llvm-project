@@ -8,14 +8,14 @@ define i32 @test_and(i32 %a, i32 %b) {
 }
 
 define i32 @test_andi0(i32 %a) {
-; CHECK: andi $a0, $a0, 1
+; CHECK: andi $a0, $a0, 0x1
 ; CHECK: ANDI16_NM
   %anded = and i32 %a, 1
   ret i32 %anded
 }
 
 define i32 @test_andi1(i32 %a) {
-; CHECK: andi $a0, $a0, 4095
+; CHECK: andi $a0, $a0, 0xfff
 ; CHECK: ANDI_NM
   %anded = and i32 %a, 4095
   ret i32 %anded
@@ -31,7 +31,7 @@ define i32 @test_andi2(i32 %a) {
 }
 
 define i32 @test_andi3(i32 %a) {
-; CHECK: andi $a0, $a0, 65535
+; CHECK: andi $a0, $a0, 0xffff
 ; CHECK: ANDI16_NM
   %anded = and i32 %a, 65535
   ret i32 %anded

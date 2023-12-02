@@ -49,7 +49,7 @@ define i1 @test_setult(i32 %a, i32 %b) {
 define i1 @test_setle(i32 %a, i32 %b) {
 ; CHECK: slt $a0, $a1, $a0
 ; CHECK: SLT_NM
-; CHECK: xori $a0, $a0, 1
+; CHECK: xori $a0, $a0, 0x1
 ; CHECK: XORI_NM
   %cmp = icmp sle i32 %a, %b
   ret i1 %cmp
@@ -58,7 +58,7 @@ define i1 @test_setle(i32 %a, i32 %b) {
 define i1 @test_setule(i32 %a, i32 %b) {
 ; CHECK: sltu $a0, $a1, $a0
 ; CHECK: SLTU_NM
-; CHECK: xori $a0, $a0, 1
+; CHECK: xori $a0, $a0, 0x1
 ; CHECK: XORI_NM
   %cmp = icmp ule i32 %a, %b
   ret i1 %cmp
@@ -81,7 +81,7 @@ define i1 @test_setugt(i32 %a, i32 %b) {
 define i1 @test_setge(i32 %a, i32 %b) {
 ; CHECK: slt $a0, $a0, $a1
 ; CHECK: SLT_NM
-; CHECK: xori $a0, $a0, 1
+; CHECK: xori $a0, $a0, 0x1
 ; CHECK: XORI_NM
   %cmp = icmp sge i32 %a, %b
   ret i1 %cmp

@@ -110,45 +110,45 @@
 				# CHECK-NEXT: # <MCInst #{{.*}} SLL16_NM
 	srl	$s1, $a3, 8	# CHECK: srl $s1, $a3, 8	# encoding: [0xf8,0x30]
 				# CHECK-NEXT: # <MCInst #{{.*}} SRL16_NM
-	andi	$a0, $a1, 0	# CHECK: andi $a0, $a1, 0	# encoding: [0x50,0xf2]
+	andi	$a0, $a1, 0	# CHECK: andi $a0, $a1, 0x0	# encoding: [0x50,0xf2]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-	andi	$a1, $a2, 1	# CHECK: andi $a1, $a2, 1	# encoding: [0xe1,0xf2]
+	andi	$a1, $a2, 1	# CHECK: andi $a1, $a2, 0x1	# encoding: [0xe1,0xf2]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-	andi	$a2, $a3, 6	# CHECK: andi $a2, $a3, 6	# encoding: [0x76,0xf3]
+	andi	$a2, $a3, 6	# CHECK: andi $a2, $a3, 0x6	# encoding: [0x76,0xf3]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-	andi	$a3, $s0, 0xff	# CHECK: andi $a3, $s0, 255	# encoding: [0x8c,0xf3]
+	andi	$a3, $s0, 0xff	# CHECK: andi $a3, $s0, 0xff	# encoding: [0x8c,0xf3]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-	andi	$s1, $s3, 0xffff	# CHECK: andi $s1, $s3, 65535	# encoding: [0xbd,0xf0]
+	andi	$s1, $s3, 0xffff	# CHECK: andi $s1, $s3, 0xffff	# encoding: [0xbd,0xf0]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-	andi	$s3, $a3, 0xe	# CHECK: andi $s3, $a3, 14	# encoding: [0xfe,0xf1]
+	andi	$s3, $a3, 0xe	# CHECK: andi $s3, $a3, 0xe	# encoding: [0xfe,0xf1]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-	andi	$s2, $a1, 0xf	# CHECK: andi $s2, $a1, 15	# encoding: [0x5f,0xf1]
+	andi	$s2, $a1, 0xf	# CHECK: andi $s2, $a1, 0xf	# encoding: [0x5f,0xf1]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
 
 	# reg-imm logic, 32-bit
-	andi	$a4, $a1, 0	# CHECK: andi $a4, $a1, 0	# encoding: [0x05,0x81,0x00,0x20]
+	andi	$a4, $a1, 0	# CHECK: andi $a4, $a1, 0x0	# encoding: [0x05,0x81,0x00,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	andi	$a1, $t2, 1	# CHECK: andi $a1, $t2, 1	# encoding: [0xae,0x80,0x01,0x20]
+	andi	$a1, $t2, 1	# CHECK: andi $a1, $t2, 0x1	# encoding: [0xae,0x80,0x01,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	andi	$a2, $t3, 6	# CHECK: andi $a2, $t3, 6	# encoding: [0xcf,0x80,0x06,0x20]
+	andi	$a2, $t3, 6	# CHECK: andi $a2, $t3, 0x6	# encoding: [0xcf,0x80,0x06,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	andi	$a6, $s0, 0xff	# CHECK: andi $a6, $s0, 255	# encoding: [0x50,0x81,0xff,0x20]
+	andi	$a6, $s0, 0xff	# CHECK: andi $a6, $s0, 0xff	# encoding: [0x50,0x81,0xff,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	andi	$s1, $s4, 0xfff	# CHECK: andi $s1, $s4, 4095	# encoding: [0x34,0x82,0xff,0x2f]
+	andi	$s1, $s4, 0xfff	# CHECK: andi $s1, $s4, 0xfff	# encoding: [0x34,0x82,0xff,0x2f]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	andi	$s3, $a4, 0xe	# CHECK: andi $s3, $a4, 14	# encoding: [0x68,0x82,0x0e,0x20]
+	andi	$s3, $a4, 0xe	# CHECK: andi $s3, $a4, 0xe	# encoding: [0x68,0x82,0x0e,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	andi	$s2, $t0, 0xf	# CHECK: andi $s2, $t0, 15	# encoding: [0x4c,0x82,0x0f,0x20]
+	andi	$s2, $t0, 0xf	# CHECK: andi $s2, $t0, 0xf	# encoding: [0x4c,0x82,0x0f,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	andi	$a3, $s3, 12	# CHECK: andi $a3, $s3, 12	# encoding: [0xf3,0x80,0x0c,0x20]
+	andi	$a3, $s3, 12	# CHECK: andi $a3, $s3, 0xc	# encoding: [0xf3,0x80,0x0c,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	andi	$a1, $s2, 13	# CHECK: andi $a1, $s2, 13	# encoding: [0xb2,0x80,0x0d,0x20]
+	andi	$a1, $s2, 13	# CHECK: andi $a1, $s2, 0xd	# encoding: [0xb2,0x80,0x0d,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	andi	$a2, $s1, 16	# CHECK: andi $a2, $s1, 16	# encoding: [0xd1,0x80,0x10,0x20]
+	andi	$a2, $s1, 16	# CHECK: andi $a2, $s1, 0x10	# encoding: [0xd1,0x80,0x10,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-	ori	$a1, $s5, 0x1	# CHECK: ori $a1, $s5, 1	# encoding: [0xb5,0x80,0x01,0x00]
+	ori	$a1, $s5, 0x1	# CHECK: ori $a1, $s5, 0x1	# encoding: [0xb5,0x80,0x01,0x00]
 				# CHECK-NEXT: # <MCInst #{{.*}} ORI_NM
-	xori	$t1, $s2, 0xfff # CHECK: xori $t1, $s2, 4095	# encoding: [0xb2,0x81,0xff,0x1f]
+	xori	$t1, $s2, 0xfff # CHECK: xori $t1, $s2, 0xfff	# encoding: [0xb2,0x81,0xff,0x1f]
 				# CHECK-NEXT: # <MCInst #{{.*}} XORI_NM
 
 	# reg-imm bit-wise, 32-bit
@@ -266,14 +266,14 @@
 				# CHECK-NEXT: # <MCInst #{{.*}} ADDIUNEG_NM
 	li	$s7, -4095	# CHECK: li $s7, -4095	# encoding: [0xe0,0x82,0xff,0x8f]
 				# CHECK-NEXT: # <MCInst #{{.*}} ADDIUNEG_NM
-	li	$t0, 65537	# CHECK: li $t0, 65537	# encoding: [0x80,0x61,0x01,0x00,0x01,0x00]
+	li	$t0, 65537	# CHECK: li $t0, 0x10001	# encoding: [0x80,0x61,0x01,0x00,0x01,0x00]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
-	li	$t1, 2147483647	# CHECK: li $t1, 2147483647	# encoding: [0xa0,0x61,0xff,0xff,0xff,0x7f]
+	li	$t1, 2147483647	# CHECK: li $t1,  0x7fffffff	# encoding: [0xa0,0x61,0xff,0xff,0xff,0x7f]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
-	li	$t4, -4097	# CHECK: li $t4, -4097	# encoding: [0x40,0x60,0xff,0xef,0xff,0xff]
+	li	$t4, -4097	# CHECK: li $t4, 0xffffefff	# encoding: [0x40,0x60,0xff,0xef,0xff,0xff]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
-	li	$t5, -2147483647	# CHECK: li $t5, -2147483647	# encoding: [0x60,0x60,0x01,0x00,0x00,0x80]
-					# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
+	li	$t5, -2147483647 # CHECK: li $t5, 0x80000001	# encoding: [0x60,0x60,0x01,0x00,0x00,0x80]
+				 # CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
 	li	$a0, foo	# CHECK: li $a0, foo	# encoding: [0x80,0x60,A,A,A,A]
 				# CHECK-NEXT: fixup A - offset: 2, value: foo, kind: fixup_NANOMIPS_I32
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
@@ -343,35 +343,35 @@
 	ehb		# CHECK: ehb	# encoding: [0x00,0x80,0x03,0xc0]
 			# CHECK-NEXT: # <MCInst #{{.*}} EHB_NM
 
-	sigrie 0	# CHECK: sigrie	0 # encoding: [0x00,0x00,0x00,0x00]
+	sigrie 0	# CHECK: sigrie	0x0 # encoding: [0x00,0x00,0x00,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} SIGRIE_NM
-	sigrie 0xffff	# CHECK: sigrie	65535 # encoding: [0x00,0x00,0xff,0xff]
+	sigrie 0xffff	# CHECK: sigrie	0xffff # encoding: [0x00,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SIGRIE_NM
-	sigrie 0x7ffff	# CHECK: sigrie	524287 # encoding: [0x07,0x00,0xff,0xff]
+	sigrie 0x7ffff	# CHECK: sigrie	0x7ffff # encoding: [0x07,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SIGRIE_NM
 	sdbbp 0		# CHECK: sdbbp	0 # encoding: [0x18,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP16_NM
-	sdbbp 7		# CHECK: sdbbp	7 # encoding: [0x1f,0x10]
+	sdbbp 7		# CHECK: sdbbp	0x7 # encoding: [0x1f,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP16_NM
-	sdbbp 8		# CHECK: sdbbp	8 # encoding: [0x18,0x00,0x08,0x00]
+	sdbbp 8		# CHECK: sdbbp	0x8 # encoding: [0x18,0x00,0x08,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP_NM
-	sdbbp 0x7ffff	# CHECK: sdbbp	524287 # encoding: [0x1f,0x00,0xff,0xff]
+	sdbbp 0x7ffff	# CHECK: sdbbp	0x7ffff # encoding: [0x1f,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP_NM
 	break 0		# CHECK: break	0 # encoding: [0x10,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK16_NM
-	break 7		# CHECK: break	7 # encoding: [0x17,0x10]
+	break 7		# CHECK: break	0x7 # encoding: [0x17,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK16_NM
-	break 8		# CHECK: break	8 # encoding: [0x10,0x00,0x08,0x00]
+	break 8		# CHECK: break	0x8 # encoding: [0x10,0x00,0x08,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK_NM
-	break 0x7ffff	# CHECK: break	524287 # encoding: [0x17,0x00,0xff,0xff]
+	break 0x7ffff	# CHECK: break	0x7ffff # encoding: [0x17,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK_NM
 	syscall 0	# CHECK: syscall 0 # encoding: [0x08,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL16_NM
-	syscall 3	# CHECK: syscall 3 # encoding: [0x0b,0x10]
+	syscall 3	# CHECK: syscall 0x3 # encoding: [0x0b,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL16_NM
-	syscall 4	# CHECK: syscall 4 # encoding: [0x08,0x00,0x04,0x00]
+	syscall 4	# CHECK: syscall 0x4 # encoding: [0x08,0x00,0x04,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL_NM
-	syscall 0x3ffff	# CHECK: syscall 262143 # encoding: [0x0b,0x00,0xff,0xff]
+	syscall 0x3ffff	# CHECK: syscall 0x3ffff # encoding: [0x0b,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL_NM
 
 	rdpgpr $a3, $s7	# CHECK: rdpgpr $a3, $s7 # encoding: [0xf7,0x20,0x7f,0xe1]
@@ -590,6 +590,7 @@
 					# CHECK-NEXT: fixup A - offset: 0, value: test+0, kind: fixup_NANOMIPS_PC21_S1
 					# <MCInst #{{.*}} MOVEBALC_NM
 	move.balc $a0, $s7, test	# CHECK: move.balc $a0, $s7, test # encoding: [0b111AAAAA,0x0a,A,A]
+					# CHECK-NEXT: fixup A - offset: 0, value: test+0, kind: fixup_NANOMIPS_PC21_S1
 					# <MCInst #{{.*}} MOVEBALC_NM
 
 	lw	$a0, 0($s3)	# CHECK: lw $a0, 0($s3) # encoding: [0x30,0x16]

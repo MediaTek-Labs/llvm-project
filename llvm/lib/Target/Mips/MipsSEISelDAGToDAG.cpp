@@ -1499,18 +1499,32 @@ bool MipsSEDAGToDAGISel::SelectInlineAsmMemoryOperand(
     llvm_unreachable("Unexpected asm memory constraint");
   // All memory constraints can at least accept raw pointers.
   case InlineAsm::ConstraintCode::m:
-      if (Subtarget->hasNanoMips()) {
-      // On NanoMips, they can only handle 9-bit offsets. Also, 2
-      // least-significant bits need to be cleared as required by LL and SC
-      // instructions.
-      if (selectAddrRegImm9(Op, Base, Offset)) {
-        OutOps.push_back(Op);
-        OutOps.push_back(CurDAG->getTargetConstant(0, SDLoc(Op), MVT::i32));
+    if (Subtarget->hasNanoMips()) {
+      // On NanoMips, constraint 'm' doesn't allow any offsets.
+      OutOps.push_back(Op);
+      OutOps.push_back(CurDAG->getTargetConstant(0, SDLoc(Op), MVT::i32));
+      return false;
+    }
+    if (selectAddrRegImm16(Op, Base, Offset)) {
+      OutOps.push_back(Base);
+      OutOps.push_back(Offset);
+      return false;
+    }
+    OutOps.push_back(Op);
+    OutOps.push_back(CurDAG->getTargetConstant(0, SDLoc(Op), MVT::i32));
+    return false;
+  case InlineAsm::ConstraintCode::o:
+    if (Subtarget->hasNanoMips()) {
+      // On NanoMips, 13-bit offsets can be handled.
+      if (selectAddrFrameIndexOffset(Op, Base, Offset, 13)) {
+        OutOps.push_back(Base);
+        OutOps.push_back(Offset);
         return false;
       }
+      OutOps.push_back(Op);
+      OutOps.push_back(CurDAG->getTargetConstant(0, SDLoc(Op), MVT::i32));
+      return false;
     }
-    [[fallthrough]];
-  case InlineAsm::ConstraintCode::o:
     if (selectAddrRegImm16(Op, Base, Offset)) {
       OutOps.push_back(Base);
       OutOps.push_back(Offset);
@@ -1554,11 +1568,14 @@ bool MipsSEDAGToDAGISel::SelectInlineAsmMemoryOperand(
       // On NanoMips, they can only handle 9-bit offsets. Also, 2
       // least-significant bits need to be cleared as required by LL and SC
       // instructions.
-      if (selectAddrRegImm9(Op, Base, Offset)) {
-        OutOps.push_back(Op);
-        OutOps.push_back(CurDAG->getTargetConstant(0, SDLoc(Op), MVT::i32));
+      if (selectAddrFrameIndexOffset(Op, Base, Offset, 7, 2)) {
+        OutOps.push_back(Base);
+        OutOps.push_back(Offset);
         return false;
       }
+      OutOps.push_back(Op);
+      OutOps.push_back(CurDAG->getTargetConstant(0, SDLoc(Op), MVT::i32));
+      return false;
     } else if (selectAddrRegImm16(Op, Base, Offset)) {
       // Prior to MIPS32r6/MIPS64r6, they can handle 16-bit offsets.
       OutOps.push_back(Base);

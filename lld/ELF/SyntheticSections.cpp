@@ -209,21 +209,21 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
   Elf_NanoMips_ABIFlags flags = {};
   bool create = false;
 
-  for(InputSectionBase *sec: inputSections)
+  for(InputSectionBase *sec: ctx.inputSections)
   {
     if(sec->type != SHT_NANOMIPS_ABIFLAGS) continue;
 
     sec->markDead();
     create = true;
     std::string filename = toString(sec->file);
-    const size_t size = sec->data().size();
+    const size_t size = sec->content().size();
     if (size < sizeof(Elf_NanoMips_ABIFlags)) {
       error(filename + ": invalid size of .nanoMIPS.abiflags section: got " +
             Twine(size) + " instead of " + Twine(sizeof(Elf_NanoMips_ABIFlags)));
       return nullptr;
     }
 
-    auto *s = reinterpret_cast<const Elf_NanoMips_ABIFlags *>(sec->data().data());
+    auto *s = reinterpret_cast<const Elf_NanoMips_ABIFlags *>(sec->content().data());
     if(s->version != 0)
     {
       error(filename + ": unexpected .nanoMIPS.abiflags version " + Twine(s->version));

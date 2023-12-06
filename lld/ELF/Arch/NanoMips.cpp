@@ -6,6 +6,7 @@
 #include "Thunks.h"
 #include "lld/Common/ErrorHandler.h"
 #include "llvm/Object/ELF.h"
+#include "InputSection.h"
 
 using namespace llvm;
 using namespace llvm::object;
@@ -260,5 +261,140 @@ void NanoMips::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const
 TargetInfo *elf::getNanoMipsTargetInfo() {
     static NanoMips t;
     return &t;
-  
 }
+
+
+
+uint64_t elf::getNanoMipsNegCompositeRelDataAlloc(Relocation *&it, Relocation *&end, uint8_t *bufLoc, uint8_t *buf, InputSectionBase *sec, const InputFile *file, uint64_t addrLoc)
+{
+  const Relocation &rel = *it++;
+  const unsigned bits = config->wordsize * 8;
+  RelType type = rel.type;
+  Symbol &sym = *rel.sym;
+  assert(type == R_NANOMIPS_NEG && "First relocation type for R_NANOMIPS_NEG_COMPOSITE must be R_NANOMIPS_NEG");
+  assert(it != end && "R_NANOMIPS_NEG_COMPOSITE is composed of more than one relocation");
+  
+  const uint64_t targetVA = SignExtend64(sec->getRelocTargetVA(
+    file, type, rel.addend, addrLoc, sym, rel.expr
+    ), 
+    bits);
+  const Relocation &next1 = *it;
+  uint64_t offset1 = next1.offset;
+  uint8_t *bufLoc1 = buf + offset1;
+  RelType type1 = next1.type;
+  Symbol &sym1 = *next1.sym;
+  if(bufLoc != bufLoc1)
+  {
+      message("Incorrect logic for negative and shift");
+      exit(6);
+  }
+  const uint64_t targetVA1 = SignExtend64(sec->getRelocTargetVA(
+    file, type1, next1.addend, addrLoc, sym1, next1.expr
+    ), 
+    bits);
+  if(type1 == R_NANOMIPS_ASHIFTR_1)
+  {
+    it++;
+    assert(it != end && "R_NANOMIPS_NEG_COMPOSITE with R_NANOMIPS_ASHIFTR_1 consists of one more relocation");
+    const Relocation &next2 = *it;
+    uint64_t offset2 = next2.offset;
+    uint8_t *bufLoc2 = buf + offset2;
+    RelType type2 = next2.type;
+    Symbol &sym2 = *next2.sym;
+    if(bufLoc != bufLoc2)
+    {
+      message("Incorrect logic for negative and shift");
+      exit(6);
+    }
+
+    const uint64_t targetVA2 = SignExtend64(sec->getRelocTargetVA(
+      file, type2, next2.addend, addrLoc, sym2, next2.expr
+      ), bits);
+    uint64_t data = (targetVA1 + targetVA) >> 1; 
+    if(type2 == R_NANOMIPS_SIGNED_16 || type2 == R_NANOMIPS_SIGNED_8)
+      data = SignExtend64(data, bits);
+    data += targetVA2;
+    return data;
+  }
+  else
+  {
+    uint64_t data = targetVA1 + targetVA;
+    if(type1 == R_NANOMIPS_SIGNED_16 || type1 == R_NANOMIPS_SIGNED_8)
+      data = SignExtend64(data, bits);
+    return data;
+  }
+
+
+}
+
+template<class ELFT, class RelTy> 
+uint64_t elf::getNanoMipsNegCompositeRelDataNonAlloc(typename ArrayRef<RelTy>::iterator &it, typename ArrayRef<RelTy>::iterator &end, uint8_t *bufLoc, uint8_t *buf, InputSectionBase *sec, const InputFile *file, uint64_t addrLoc, const TargetInfo *target)
+{
+  const RelTy &rel = *it++;
+  const unsigned bits = config->wordsize * 8;
+  RelType type = rel.getType(config->isMips64EL);
+  Symbol &sym = sec->getFile<ELFT>()->getRelocTargetSym(rel);
+  assert(type == llvm::ELF::R_NANOMIPS_NEG && "First relocation type for R_NANOMIPS_NEG_COMPOSITE must be R_NANOMIPS_NEG");
+  assert(it != end && "R_NANOMIPS_NEG_COMPOSITE is composed of more than one relocation");
+  
+  const uint64_t targetVA = llvm::SignExtend64(sec->getRelocTargetVA(
+    file, type, getAddend<ELFT>(rel), addrLoc, sym, target->getRelExpr(type, sym, bufLoc)
+    ), 
+    bits);
+  const RelTy &next1 = *it;
+  uint64_t offset1 = next1.r_offset;
+  uint8_t *bufLoc1 = buf + offset1;
+  RelType type1 = next1.getType(config->isMips64EL);
+  Symbol &sym1 = sec->getFile<ELFT>()->getRelocTargetSym(next1);
+  if(bufLoc != bufLoc1)
+  {
+      message("Incorrect logic for negative and shift");
+      exit(6);
+  }
+  const uint64_t targetVA1 = llvm::SignExtend64(sec->getRelocTargetVA(
+    file, type1, getAddend<ELFT>(next1), addrLoc, sym1, target->getRelExpr(type1, sym1, bufLoc1)
+    ), 
+    bits);
+  if(type1 == llvm::ELF::R_NANOMIPS_ASHIFTR_1)
+  {
+    it++;
+    assert(it != end && "R_NANOMIPS_NEG_COMPOSITE with R_NANOMIPS_ASHIFTR_1 consists of one more relocation");
+    const RelTy &next2 = *it;
+    uint64_t offset2 = next2.r_offset;
+    uint8_t *bufLoc2 = buf + offset2;
+    RelType type2 = next2.getType(config->isMips64EL);
+    Symbol &sym2 = sec->getFile<ELFT>()->getRelocTargetSym(next2);
+    if(bufLoc != bufLoc2)
+    {
+      message("Incorrect logic for negative and shift");
+      exit(6);
+    }
+
+    const uint64_t targetVA2 = llvm::SignExtend64(sec->getRelocTargetVA(
+      file, type2, getAddend<ELFT>(next2), addrLoc, sym2, target->getRelExpr(type2, sym2, bufLoc2)
+      ), bits);
+    uint64_t data = (targetVA1 + targetVA) >> 1; 
+    if(type2 == llvm::ELF::R_NANOMIPS_SIGNED_16 || type2 == llvm::ELF::R_NANOMIPS_SIGNED_8)
+      data = llvm::SignExtend64(data, bits);
+    data += targetVA2;
+    return data;
+  }
+  else
+  {
+    uint64_t data = targetVA1 + targetVA;
+    if(type1 == llvm::ELF::R_NANOMIPS_SIGNED_16 || type1 == llvm::ELF::R_NANOMIPS_SIGNED_8)
+      data = llvm::SignExtend64(data, bits);
+    return data;
+  }
+
+
+}
+
+template uint64_t elf::getNanoMipsNegCompositeRelDataNonAlloc<ELF32LE, ELF32LE::Rel>(ArrayRef<ELF32LE::Rel>::iterator &, ArrayRef<ELF32LE::Rel>::iterator &, uint8_t *, uint8_t *, InputSectionBase *, const InputFile *, uint64_t, const TargetInfo *);
+template uint64_t elf::getNanoMipsNegCompositeRelDataNonAlloc<ELF32LE, ELF32LE::Rela>(ArrayRef<ELF32LE::Rela>::iterator &, ArrayRef<ELF32LE::Rela>::iterator &, uint8_t *, uint8_t *, InputSectionBase *, const InputFile *, uint64_t, const TargetInfo *);
+template uint64_t elf::getNanoMipsNegCompositeRelDataNonAlloc<ELF32BE, ELF32BE::Rel>(ArrayRef<ELF32BE::Rel>::iterator &, ArrayRef<ELF32BE::Rel>::iterator &, uint8_t *, uint8_t *, InputSectionBase *, const InputFile *, uint64_t, const TargetInfo *);
+template uint64_t elf::getNanoMipsNegCompositeRelDataNonAlloc<ELF32BE, ELF32BE::Rela>(ArrayRef<ELF32BE::Rela>::iterator &, ArrayRef<ELF32BE::Rela>::iterator &, uint8_t *, uint8_t *, InputSectionBase *, const InputFile *, uint64_t, const TargetInfo *);
+template uint64_t elf::getNanoMipsNegCompositeRelDataNonAlloc<ELF64LE, ELF64LE::Rel>(ArrayRef<ELF64LE::Rel>::iterator &, ArrayRef<ELF64LE::Rel>::iterator &, uint8_t *, uint8_t *, InputSectionBase *, const InputFile *, uint64_t, const TargetInfo *);
+template uint64_t elf::getNanoMipsNegCompositeRelDataNonAlloc<ELF64LE, ELF64LE::Rela>(ArrayRef<ELF64LE::Rela>::iterator &, ArrayRef<ELF64LE::Rela>::iterator &, uint8_t *, uint8_t *, InputSectionBase *, const InputFile *, uint64_t, const TargetInfo *);
+template uint64_t elf::getNanoMipsNegCompositeRelDataNonAlloc<ELF64BE, ELF64BE::Rel>(ArrayRef<ELF64BE::Rel>::iterator &, ArrayRef<ELF64BE::Rel>::iterator &, uint8_t *, uint8_t *, InputSectionBase *, const InputFile *, uint64_t, const TargetInfo *);
+template uint64_t elf::getNanoMipsNegCompositeRelDataNonAlloc<ELF64BE, ELF64BE::Rela>(ArrayRef<ELF64BE::Rela>::iterator &, ArrayRef<ELF64BE::Rela>::iterator &, uint8_t *, uint8_t *, InputSectionBase *, const InputFile *, uint64_t, const TargetInfo *);

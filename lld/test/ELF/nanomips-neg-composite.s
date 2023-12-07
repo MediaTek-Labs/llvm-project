@@ -7,11 +7,14 @@
 # RUN: -s --section=.rodata %t | FileCheck %s --check-prefix=CHECK-JUMP
 # RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump \
 # RUN: -s --section=.eh_frame %t | FileCheck %s --check-prefix=CHECK-EH
+# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump \
+# RUN: -s --section=.debug_info_dummy %t | FileCheck %s --check-prefix=CHECK-NONALLOC
 
 # CHECK: 80020004 <_start>
 # CHECK: 8002000e: 4806 8000 brsc a2
 # CHECK-JUMP: 80021000 f9
 # CHECK-EH: 80022020 0e000000
+# CHECK-NONALLOC: 0000 0e000000 0700
 
     .linkrelax
     .module pcrel
@@ -24,7 +27,7 @@
     .ent _start
 
 _start:
-
+_start_begin:
     li $a3, 0
     lapc $a2, jump_table
     .reloc 1f, R_NANOMIPS_JUMPTABLE_LOAD, jump_table
@@ -35,6 +38,7 @@ brsc_ins:
 
     .end _start
     .cfi_endproc
+_start_end:
     .size _start, .-_start
 
     .section .rodata
@@ -42,3 +46,7 @@ brsc_ins:
     .jumptable 1, 1, 0
 jump_table:
     .sbyte (_start - (brsc_ins + 4)) >> 1
+
+    .section .debug_info_dummy, "", @progbits
+    .4byte _start_end-_start_begin
+    .2byte (_start_end - (_start_begin)) >> 1

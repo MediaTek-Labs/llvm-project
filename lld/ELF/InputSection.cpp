@@ -846,7 +846,6 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
       break;
     }
 
-  // for(size_t i = 0, size = rels.size(); i != size; ++i) {
   for(auto it = rels.begin(), end = rels.end(); it != end; it++) {  
     const RelTy &rel = *it;
     RelType type = rel.getType(config->isMips64EL);

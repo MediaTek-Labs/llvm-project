@@ -55,7 +55,7 @@ struct NMOptimizeJumpTables : public MachineFunctionPass {
 
   int computeBlockSize(MachineBasicBlock &MBB);
   void scanFunction();
-  bool compressJumpTable(MachineInstr &MI, int Offset);
+  bool compressJumpTable(MachineInstr &MI);
   bool optimizeRedundantEntries(MachineBasicBlock::iterator &I);
 
   NMOptimizeJumpTables() : MachineFunctionPass(ID) {
@@ -122,8 +122,8 @@ void NMOptimizeJumpTables::scanFunction() {
 
 bool NMOptimizeJumpTables::optimizeRedundantEntries(
     MachineBasicBlock::iterator &I) {
-  MachineInstr &MI = *I;
-  int JTIdx = MI.getOperand(3).getIndex();
+  auto JTOp = (*I).getOperand(3);
+  int JTIdx = JTOp.getIndex();
   auto &JTInfo = *MF->getJumpTableInfo();
   const MachineJumpTableEntry &JT = JTInfo.getJumpTables()[JTIdx];
   llvm::SmallPtrSet<MachineBasicBlock *, 16> JTMBBS;
@@ -132,36 +132,32 @@ bool NMOptimizeJumpTables::optimizeRedundantEntries(
   for (auto MBB : JT.MBBs)
     JTMBBS.insert(MBB);
 
-  bool NonEmptyBlock = false;
+  MachineBasicBlock *MBBToJumpTo = nullptr;
+  MachineBasicBlock *CurrBB = JTOp.getParent()->getParent();
+
   for (auto *MBB : JTMBBS) {
     auto I = MBB->getFirstNonDebugInstr();
-    // Check if the block is empty, is only reachable through the jump table,
-    // and its successor is already in JT MBBs. If so, remove it from JT MBBs
-    // set.
-    if ((I == MBB->end() || I->isUnconditionalBranch()) &&
-        (MBB->pred_size() == 1 && MBB->succ_size() == 1) &&
-        (JTMBBS.contains(*MBB->successors().begin()))) {
-      JTMBBS.erase(MBB);
-    } else {
-      // Nonempty block. If this is the second nonempty, we can't optimize JT.
-      if (NonEmptyBlock)
-        break;
-      NonEmptyBlock = true;
+    while (I == MBB->end() || I->isUnconditionalBranch()) {
+      // Empty block. Forward.
+      MBB = *MBB->successors().begin();
+      I = MBB->getFirstNonDebugInstr();
     }
+    if (!MBBToJumpTo)
+      MBBToJumpTo = MBB;
+    if (MBBToJumpTo != MBB)
+      return false;
   }
-  if (JTMBBS.size() != 1)
-    return false;
+
+  // If we are not able to find a block to jump to, it implies JT with empty
+  // MBBs - an error in this case.
+  assert(MBBToJumpTo && "Empty Jump Table.");
+
   // Optimize JT and corresponding instructions. First, we want to replace
   // LoadJumpTableOffset and BRSC_NM with an unconditional jump to MBBToJumpTo.
-  // MBBToJumpTo would be either the only nonempty block or the only possible
-  // target if all JT MBBs were equal.
-  auto MBBToJumpTo = (*(JTMBBS.begin()));
-  MachineBasicBlock *CurrBB = MI.getParent();
-
+  // MBBToJumpTo would be the only nonempty block.
   // Insert new BC_NM instruction after LoadJumpTableOffset.
-  MachineInstrBuilder MIB =
-      BuildMI(*CurrBB, I, MI.getDebugLoc(), TII->get(Mips::BC_NM));
-  MIB.add(MachineOperand::CreateMBB(MBBToJumpTo));
+  BuildMI(*CurrBB, I, JTOp.getParent()->getDebugLoc(), TII->get(Mips::BC_NM))
+      .addMBB(MBBToJumpTo);
   --I;
   SmallVector<MachineInstr *, 3> InstrsToDelete;
 
@@ -172,16 +168,17 @@ bool NMOptimizeJumpTables::optimizeRedundantEntries(
                                           OpEnd = I.operands_end();
          OpI != OpEnd; ++OpI) {
       llvm::MachineOperand &Operand = *OpI;
-      if (Operand.isIdenticalTo(MI.getOperand(3)))
+      if (Operand.isIdenticalTo(JTOp))
         InstrsToDelete.push_back(&I);
     }
   }
-  for (size_t i = 0; i < InstrsToDelete.size(); i++)
-    InstrsToDelete[i]->removeFromParent();
+
+  for (auto Instr : InstrsToDelete)
+    Instr->removeFromParent();
   return true;
 }
 
-bool NMOptimizeJumpTables::compressJumpTable(MachineInstr &MI, int Offset) {
+bool NMOptimizeJumpTables::compressJumpTable(MachineInstr &MI) {
   int JTIdx = MI.getOperand(3).getIndex();
   auto &JTInfo = *MF->getJumpTableInfo();
   const MachineJumpTableEntry &JT = JTInfo.getJumpTables()[JTIdx];
@@ -235,7 +232,6 @@ bool NMOptimizeJumpTables::runOnMachineFunction(MachineFunction &Fn) {
 
   bool CleanUpNeeded = false;
   for (MachineBasicBlock &MBB : *MF) {
-    int Offset = BlockInfo[MBB.getNumber()];
     for (MachineBasicBlock::iterator I = MBB.begin(), E = MBB.end(); I != E;
          ++I) {
       MachineInstr &MI = *I;
@@ -245,8 +241,7 @@ bool NMOptimizeJumpTables::runOnMachineFunction(MachineFunction &Fn) {
       CleanUpNeeded |= OptimizedJT;
       Modified |= OptimizedJT;
       if (!OptimizedJT)
-        Modified |= compressJumpTable(MI, Offset);
-      Offset += TII->getInstSizeInBytes(MI);
+        Modified |= compressJumpTable(MI);
     }
   }
   if (CleanUpNeeded) {

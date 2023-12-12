@@ -18,7 +18,7 @@
 # CHECK-EH: 12010 {{[0-9a-f]+}} {{[0-9a-f]+}} {{[0-9a-f]+}} e4effeff
 
     .section    .text, "ax", @progbits
-    .align 4
+    .align 2
     .globl _start
     .cfi_startproc
     .ent _start
@@ -51,7 +51,7 @@ label_long:
     .size _start, .-_start
 
     .section .sdata, "aw", @progbits
-    .align 4
+    .align 2
     .skip 4
     .globl a
     .type a, @object

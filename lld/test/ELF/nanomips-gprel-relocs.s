@@ -12,7 +12,7 @@
 # CHECK: 1012: 44e8 0008 lbu a3,8(gp)
 
     .section .text, "ax", @progbits
-    .align 4
+    .align 2
     .globl _start
     .ent _start
 
@@ -28,7 +28,7 @@ _start:
     .size _start, .-_start
 
     .section .sdata, "aw", @progbits
-    .align 4
+    .align 2
     .skip 4
     .globl a
     .type a, @object

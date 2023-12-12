@@ -33,7 +33,7 @@
 # CHECK-FLOAT: warning: {{.*}} is incompatible with {{.*}}
 
     .section .text, "ax", @progbits
-    .align 4
+    .align 2
     .globl _start
     .ent _start
 

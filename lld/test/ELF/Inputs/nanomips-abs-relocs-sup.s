@@ -1,8 +1,8 @@
 	.section .text, "ax", @progbits
-	.align 4
+	.align 2
 
 	.section .sdata, "aw", @progbits
-	.align 4
+	.align 2
 	.globl c
 	.type c, @object
 	.size c, 4

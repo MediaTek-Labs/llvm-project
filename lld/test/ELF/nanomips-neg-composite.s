@@ -20,7 +20,7 @@
     .module pcrel
     .module softfloat
     .section .text, "ax", @progbits
-    .align 1
+    .align 2
     .skip 4
     .globl _start
     .cfi_startproc

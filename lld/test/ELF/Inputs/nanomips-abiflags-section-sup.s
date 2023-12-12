@@ -1,5 +1,5 @@
     .section .sdata, "aw", @progbits
-    .align 4
+    .align 2
     .globl a
     .type a, @object
     .size a, 4

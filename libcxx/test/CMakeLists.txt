@@ -108,3 +108,7 @@ add_lit_testsuite(check-cxx
   ${CMAKE_CURRENT_BINARY_DIR}
   PARAMS enable_benchmarks="${_libcxx_benchmark_mode}"
   DEPENDS cxx-test-depends)
+
+if (CMAKE_C_COMPILER_TARGET STREQUAL "nanomips-elf")
+  add_library(stubs STATIC libstubs.c)
+endif()

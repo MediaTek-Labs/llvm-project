@@ -12,6 +12,7 @@
 
 #include "MCTargetDesc/MipsMCTargetDesc.h"
 #include "TargetInfo/MipsTargetInfo.h"
+#include "MipsCP0RegisterMap.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDecoderOps.h"
@@ -219,6 +220,10 @@ static DecodeStatus DecodeMSACtrlRegisterClass(MCInst &Inst, unsigned RegNo,
                                                const MCDisassembler *Decoder);
 
 static DecodeStatus DecodeCOP0RegisterClass(MCInst &Inst, unsigned RegNo,
+                                            uint64_t Address,
+                                            const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeCOP0SelRegisterClass(MCInst &Inst, unsigned RegNo,
                                             uint64_t Address,
                                             const MCDisassembler *Decoder);
 
@@ -2494,6 +2499,38 @@ static DecodeStatus DecodeCOP2RegisterClass(MCInst &Inst, unsigned RegNo,
   Inst.addOperand(MCOperand::createReg(Reg));
   return MCDisassembler::Success;
 }
+
+static DecodeStatus DecodeCOP0SelRegisterClass(MCInst &Inst, unsigned RegNo,
+                                            uint64_t Address,
+                                            const MCDisassembler *Decoder) {
+  static MipsCP0SelMap COP0Map;
+  int Reg = COP0Map.getEncIndexMap(RegNo);
+
+  if (Reg != -1) {
+    Reg = getReg(Decoder, Mips::COP0SelRegClassID, Reg);
+    Inst.addOperand(MCOperand::createReg(Reg));
+  }
+  else {
+    // Not a named register encoding - print numeric register and select value
+    switch (Inst.getOpcode()) {
+      case Mips::MFC0Sel_NM:
+        Inst.setOpcode(Mips::MFC0_NM); break;
+      case Mips::MFHC0Sel_NM:
+        Inst.setOpcode(Mips::MFHC0_NM); break;
+      case Mips::MTC0Sel_NM:
+        Inst.setOpcode(Mips::MTC0_NM); break;
+      case Mips::MTHC0Sel_NM:
+        Inst.setOpcode(Mips::MTHC0_NM); break;
+      default:
+        llvm_unreachable("Unknown instruction!");
+    }
+    Reg = getReg(Decoder, Mips::COP0RegClassID, RegNo >> 5);
+    Inst.addOperand(MCOperand::createReg(Reg));
+    Inst.addOperand(MCOperand::createImm(RegNo & 0x1f));
+  }
+  return MCDisassembler::Success;
+}
+
 
 static DecodeStatus DecodeBranchTarget(MCInst &Inst, unsigned Offset,
                                        uint64_t Address,

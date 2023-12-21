@@ -3034,15 +3034,23 @@ def : MipsInstAlias<"sync_acquire", (SYNC_NM 0x11)>, ISA_NANOMIPS;
 def : MipsInstAlias<"sync_release", (SYNC_NM 0x12)>, ISA_NANOMIPS;
 def : MipsInstAlias<"sync_rmb", (SYNC_NM 0x13)>, ISA_NANOMIPS;
 
-class WriteToCP0NM<string opstr, RegisterOperand RO, RegisterOperand CO> :
+class WriteToCP0<string opstr, RegisterOperand RO, RegisterOperand CO> :
   InstNM<(outs), (ins RO:$rt, CO:$c0s, uimm5:$sel),
   !strconcat(opstr, "\t$rt, $c0s, $sel"), []>;
 
-class ReadFromCP0NM<string opstr, RegisterOperand RO, RegisterOperand CO> :
+class WriteToCP0Sel<string opstr, RegisterOperand RO, RegisterOperand CO> :
+  InstNM<(outs), (ins RO:$rt, CO:$c0s),
+  !strconcat(opstr, "\t$rt, $c0s"), []>;
+
+class ReadFromCP0<string opstr, RegisterOperand RO, RegisterOperand CO> :
   InstNM<(outs RO:$rt), (ins CO:$c0s, uimm5:$sel),
   !strconcat(opstr, "\t$rt, $c0s, $sel"), []>;
 
-class ReadWriteCP0NM_Enc<bits<6> isel> : _Pool_POOL32A0_1<isel> {
+class ReadFromCP0Sel<string opstr, RegisterOperand RO, RegisterOperand CO> :
+  InstNM<(outs RO:$rt), (ins CO:$c0s),
+  !strconcat(opstr, "\t$rt, $c0s"), []>;
+
+class ReadWriteCP0_Enc<bits<6> isel> : _Pool_POOL32A0_1<isel> {
   bits<5> rt;
   bits<5> c0s;
   bits<5> sel;
@@ -3051,10 +3059,24 @@ class ReadWriteCP0NM_Enc<bits<6> isel> : _Pool_POOL32A0_1<isel> {
   let Inst{15...11} = sel;
 }
 
-def MFC0_NM : ReadFromCP0NM<"mfc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0NM_Enc<0b000010>;
-def MFHC0_NM : ReadFromCP0NM<"mfhc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0NM_Enc<0b000011>;
-def MTC0_NM : WriteToCP0NM<"mtc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0NM_Enc<0b000110>;
-def MTHC0_NM : WriteToCP0NM<"mthc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0NM_Enc<0b000111>;
+class ReadWriteCP0Sel_Enc<bits<6> isel> : _Pool_POOL32A0_1<isel> {
+  bits<5> rt;
+  bits<10> c0s;
+  let Inst{25...21} = rt;
+  let Inst{20...11} = c0s;
+}
+
+def MFC0Sel_NM  : ReadFromCP0Sel<"mfc0", GPRNM32Opnd, COP0SelOpnd>, ReadWriteCP0Sel_Enc<0b000010>;
+def MFHC0Sel_NM : ReadFromCP0Sel<"mfhc0", GPRNM32Opnd, COP0SelOpnd>, ReadWriteCP0Sel_Enc<0b000011>;
+def MTC0Sel_NM  : WriteToCP0Sel<"mtc0", GPRNM32Opnd, COP0SelOpnd>, ReadWriteCP0Sel_Enc<0b000110>;
+def MTHC0Sel_NM : WriteToCP0Sel<"mthc0", GPRNM32Opnd, COP0SelOpnd>, ReadWriteCP0Sel_Enc<0b000111>;
+
+let isAsmParserOnly = 1 in {
+  def MFC0_NM  : ReadFromCP0<"mfc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0_Enc<0b000010>;
+  def MFHC0_NM : ReadFromCP0<"mfhc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0_Enc<0b000011>;
+  def MTC0_NM  : WriteToCP0<"mtc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0_Enc<0b000110>;
+  def MTHC0_NM : WriteToCP0<"mthc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0_Enc<0b000111>;
+}
 
 def : MipsInstAlias<"mfc0 $rt, $c0s", (MFC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
 def : MipsInstAlias<"mfhc0 $rt, $c0s", (MFHC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;

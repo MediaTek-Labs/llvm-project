@@ -12,6 +12,7 @@
 #include "MCTargetDesc/MipsMCExpr.h"
 #include "MCTargetDesc/MipsMCTargetDesc.h"
 #include "MipsTargetStreamer.h"
+#include "MipsCP0RegisterMap.h"
 #include "TargetInfo/MipsTargetInfo.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/SmallVector.h"
@@ -457,6 +458,8 @@ class MipsAsmParser : public MCTargetAsmParser {
 
   int matchMSA128CtrlRegisterName(StringRef Name);
 
+  int matchCOP0SelRegisterName(StringRef Symbol);
+
   unsigned getReg(int RC, int RegNo);
 
   /// Returns the internal register number for the current AT. Also checks if
@@ -885,6 +888,7 @@ public:
     RegKind_HWRegs = 256, /// HWRegs
     RegKind_COP3 = 512,   /// COP3
     RegKind_COP0 = 1024,  /// COP0
+    RegKind_COP0Sel = 2048,   /// Named COP0
     /// Potentially any (e.g. $1)
     RegKind_Numeric = RegKind_GPR | RegKind_FGR | RegKind_FCC | RegKind_MSA128 |
                       RegKind_MSACtrl | RegKind_COP2 | RegKind_ACC |
@@ -1150,6 +1154,15 @@ private:
     return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
   }
 
+  /// Coerce the register to COP0Sel and return the real register for the
+  /// current target.
+  unsigned getCOP0SelReg() const {
+    assert(isRegIdx() && (RegIdx.Kind & RegKind_COP0Sel) && "Invalid access!");
+    unsigned ClassID = Mips::COP0SelRegClassID;
+    unsigned Idx = RegIdx.Index;
+    return RegIdx.RegInfo->getRegClass(ClassID).getRegister(Idx);
+  }
+
 public:
   void addExpr(MCInst &Inst, const MCExpr *Expr) const {
     // Add as immediate when possible.  Null MCExpr = 0.
@@ -1320,6 +1333,11 @@ public:
   void addHWRegsAsmRegOperands(MCInst &Inst, unsigned N) const {
     assert(N == 1 && "Invalid number of operands!");
     Inst.addOperand(MCOperand::createReg(getHWRegsReg()));
+  }
+
+  void addCOP0SelAsmRegOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(getCOP0SelReg()));
   }
 
   template <unsigned Bits, int Offset = 0, int AdjustOffset = 0>
@@ -1889,6 +1907,12 @@ public:
     return CreateReg(Index, Str, RegKind_HWRegs, RegInfo, S, E, Parser);
   }
 
+  static std::unique_ptr<MipsOperand>
+  createCOP0SelReg(unsigned Index, StringRef Str, const MCRegisterInfo *RegInfo,
+                  SMLoc S, SMLoc E, MipsAsmParser &Parser) {
+    return CreateReg(Index, Str, RegKind_COP0Sel, RegInfo, S, E, Parser);
+  }
+
   /// Create a register that is definitely an FCC.
   /// This is typically only used for named registers such as $fcc0.
   static std::unique_ptr<MipsOperand>
@@ -2091,6 +2115,13 @@ public:
     return ((RegIdx.Index >= 4 && RegIdx.Index <= 11)
             || (RegIdx.Index >= 16 && RegIdx.Index <= 23));
 
+  }
+
+  bool isCOP0SelAsmReg() const {
+    if (!(isRegIdx() && RegIdx.Kind))
+      return false;
+    // FIXME: find better way than hard-coding the max index
+    return  (RegIdx.Index <= 160);
   }
 
   bool isNM4ZeroAsmReg() const {
@@ -7215,6 +7246,13 @@ int MipsAsmParser::matchHWRegsRegisterName(StringRef Name) {
   return CC;
 }
 
+int MipsAsmParser::matchCOP0SelRegisterName(StringRef Name) {
+  // Mapping of COP0 register names to indices
+  static MipsCP0SelMap C0P0Map;
+  int CC = C0P0Map.getNameIndexMap(Name);
+  return CC;
+}
+
 int MipsAsmParser::matchFPURegisterName(StringRef Name) {
   if (Name[0] == 'f') {
     StringRef NumString = Name.substr(1);
@@ -7704,6 +7742,22 @@ ParseStatus MipsAsmParser::matchAnyRegisterNameWithoutDollar(
   Index = matchMSA128CtrlRegisterName(Identifier);
   if (Index != -1) {
     Operands.push_back(MipsOperand::createMSACtrlReg(
+        Index, Identifier, getContext().getRegisterInfo(), S,
+        getLexer().getLoc(), *this));
+    return ParseStatus::Success;
+  }
+
+  Index = matchCOP0SelRegisterName(Identifier);
+  if (Index != -1) {
+    Operands.push_back(MipsOperand::createCOP0SelReg(
+        Index, Identifier, getContext().getRegisterInfo(), S,
+        getLexer().getLoc(), *this));
+    return ParseStatus::Success;
+  }
+
+  Index = matchCOP0SelRegisterName(Identifier);
+  if (Index != -1) {
+    Operands.push_back(MipsOperand::createCOP0SelReg(
         Index, Identifier, getContext().getRegisterInfo(), S,
         getLexer().getLoc(), *this));
     return ParseStatus::Success;

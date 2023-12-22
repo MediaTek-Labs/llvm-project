@@ -199,6 +199,10 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
 	CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
 	CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+soft-float");
       }
+      if (Args.hasFlag(options::OPT_mfix_nmips_hw110880, options::OPT_mno_fix_nmips_hw110880, false)) {
+        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
+        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+nmips-fix-hw110880");
+      }
     }
   }
 

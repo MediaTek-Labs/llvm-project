@@ -156,6 +156,18 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
       Arg = "--plugin-opt=-lto-external-asm-arg=";
       Arg += CPUName.data();
       CmdArgs.push_back(Args.MakeArgString(Arg));
+      if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true)) {
+        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
+        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+relax");
+      }
+      if (Args.hasFlag(options::OPT_mpcrel, options::OPT_mno_pcrel, true)) {
+        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
+        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+pcrel");
+      }
+      if (Args.hasFlag(options::OPT_msoft_float, options::OPT_mno_soft_float, true)) {
+        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
+        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+soft-float");
+      }
     }
     else {
       CmdArgs.push_back(Args.MakeArgString("--plugin-opt=-lto-external-asm="

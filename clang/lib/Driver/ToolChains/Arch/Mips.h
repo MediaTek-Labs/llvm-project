@@ -36,7 +36,8 @@ void getMipsCPUAndABI(const llvm::opt::ArgList &Args,
                       StringRef &ABIName);
 void getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
                            const llvm::opt::ArgList &Args,
-                           std::vector<StringRef> &Features);
+                           std::vector<StringRef> &Features,
+			   bool ForAS);
 StringRef getGnuCompatibleMipsABIName(StringRef ABI);
 mips::FloatABI getMipsFloatABI(const Driver &D, const llvm::opt::ArgList &Args,
                                const llvm::Triple &Triple);

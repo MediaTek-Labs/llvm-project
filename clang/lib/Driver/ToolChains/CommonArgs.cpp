@@ -738,7 +738,7 @@ void tools::getTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   case llvm::Triple::mips64:
   case llvm::Triple::mips64el:
   case llvm::Triple::nanomips:
-    mips::getMIPSTargetFeatures(D, Triple, Args, Features);
+    mips::getMIPSTargetFeatures(D, Triple, Args, Features, ForAS);
     break;
   case llvm::Triple::arm:
   case llvm::Triple::armeb:

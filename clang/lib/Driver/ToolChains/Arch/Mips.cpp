@@ -196,7 +196,8 @@ mips::FloatABI mips::getMipsFloatABI(const Driver &D, const ArgList &Args,
 
 void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
                                  const ArgList &Args,
-                                 std::vector<StringRef> &Features) {
+                                 std::vector<StringRef> &Features,
+				 bool ForAS) {
   StringRef CPUName;
   StringRef ABIName;
   getMipsCPUAndABI(Args, Triple, CPUName, ABIName);
@@ -425,15 +426,15 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       D.Diag(diag::err_drv_unknown_indirect_jump_opt) << Val;
   }
 
-  if (Triple.isNanoMips()) {
+  if (Triple.isNanoMips() && !ForAS) {
     if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
       Features.push_back("+relax");
     else
       Features.push_back("-relax");
-    if (Args.hasFlag(options::OPT_mpcrel, options::OPT_mno_pcrel, true))
-      Features.push_back("+pcrel");
-    else
-      Features.push_back("-pcrel");
+      if (Args.hasFlag(options::OPT_mpcrel, options::OPT_mno_pcrel, true))
+	Features.push_back("+pcrel");
+      else
+	Features.push_back("-pcrel");
   }
 
 }

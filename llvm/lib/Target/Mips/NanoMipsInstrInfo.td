@@ -1115,13 +1115,13 @@ class LSMem_S9_Mult_Enc<bits<4> isel> : _Pool_P_LS_S9<isel{2...0}>
   bits<14> addr;
   bits<5> base = addr{13...9};
   bits<9> offset = addr{8...0};
-  bits<3> count;
+  bits<3> rcount;
   let Inst{25...21} = rt;
   let Inst{20...16} = base;
   let Inst{11} = isel{3};
   let Inst{15} = offset{8};
   let Inst{7...0} = offset{7...0};
-  let Inst{14...12} = count;
+  let Inst{14...12} = rcount;
 }
 
 class LSMem_U12_Enc<bits<4> isel> : _Pool_P_LS_U12<isel>
@@ -1426,13 +1426,13 @@ def RESTOREJRC_NOREG_NM : MipsInstAlias<"restore.jrc $adj",
 
 class LoadMultipleNM<string opstr> :
     InstNM<(outs GPRNM32Opnd:$rt),
-	   (ins mem_nms9:$addr, uimm3plus1_nm:$count),
-           !strconcat(opstr, "\t$rt, $addr, $count"), []> {
+	   (ins mem_nms9:$addr, uimm3plus1_nm:$rcount),
+           !strconcat(opstr, "\t$rt, $addr, $rcount"), []> {
   let mayLoad = 1;
 }
 class StoreMultipleNM<string opstr> :
-    InstNM<(outs), (ins GPRNM32Opnd:$rt, mem_nms9:$addr, uimm3plus1_nm:$count),
-           !strconcat(opstr, "\t$rt, $addr, $count"), []> {
+    InstNM<(outs), (ins GPRNM32Opnd:$rt, mem_nms9:$addr, uimm3plus1_nm:$rcount),
+           !strconcat(opstr, "\t$rt, $addr, $rcount"), []> {
   let mayStore = 1;
 }
 

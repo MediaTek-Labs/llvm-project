@@ -396,6 +396,15 @@ def mem_nm_gp7s2 : mem_generic {
   let ParserMatchClass = MemNMGP7S2Parser;
 }
 
+def MemNM7S2Parser : NMMemSimmAsmOperand<9,2,
+    "Mips::GPRNM32RegClassID">;
+
+def mem_nm7s2 : mem_generic {
+  let EncoderMethod = "getMemEncodingNMImm<9,2>";
+  let DecoderMethod = "DecodeMemNM<9,true,Mips::GPRNM32RegClassID>";
+  let ParserMatchClass = MemNM7S2Parser;
+}
+
 def MemNMSP5S2Parser :
     NMMemUimmAsmOperand<5,2,"Mips::GPRNMSPRegClassID",[MemNMGP7S2Parser]>;
 
@@ -2685,7 +2694,7 @@ class LLSC_Enc<bits<4> psel, bits<2> isel> : _Pool_P_LS_S1<psel> {
   let Inst{25...21} = rt;
   let Inst{20...16} = base;
   let Inst{15} = offset{8};
-  let Inst{7...0} = offset{7...0};
+  let Inst{7...2} = offset{7...2};
   let Inst{1...0} = isel;
 }
 
@@ -2699,12 +2708,12 @@ class LLSCWP_Enc<bits<4> psel, bits<2> isel> : _Pool_P_LS_S1<psel> {
   let Inst{1...0} = isel;
 }
 
-def LL_NM : LoadMemoryNM<"ll", GPRNM32Opnd, mem_nms9, load, addrsimm9, II_LL>,
+def LL_NM : LoadMemoryNM<"ll", GPRNM32Opnd, mem_nm7s2, load, addrsimm9, II_LL>,
 		LLSC_Enc<0b1010, 0b00> {
   let hasNoSchedulingInfo = 1;
 }
 
-def SC_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, mem_nms9:$addr),
+def SC_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, mem_nm7s2:$addr),
 		"sc\t$rt, $addr", []>, RegConstraint<"$rt = $dst">,
 		LLSC_Enc<0b1011, 0b00> {
   let mayStore = 1;

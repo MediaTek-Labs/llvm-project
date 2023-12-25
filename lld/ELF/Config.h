@@ -208,6 +208,7 @@ struct Config {
   bool emitRelocs;
   bool enableNewDtags;
   bool executeOnly;
+  bool expand;
   bool exportDynamic;
   bool fixCortexA53Errata843419;
   bool fixCortexA8;

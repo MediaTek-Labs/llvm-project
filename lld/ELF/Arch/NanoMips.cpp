@@ -1,3 +1,11 @@
+//===- Nanomips.cpp -------------------------------------------------*- C++ -*-===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
 #include "InputFiles.h"
 #include "OutputSections.h"
 #include "Symbols.h"
@@ -7,6 +15,7 @@
 #include "lld/Common/ErrorHandler.h"
 #include "llvm/Object/ELF.h"
 #include "InputSection.h"
+#include "llvm/Support/Endian.h"
 
 using namespace llvm;
 using namespace llvm::object;
@@ -26,6 +35,8 @@ uint64_t elf::getNanoMipsPage(uint64_t expr) {
 }
 
 namespace {
+
+// TO DO: Support for other endianess, and bit size, now it is Little Endian 32 bit
 class NanoMips final : public TargetInfo {
 public:
     NanoMips();
@@ -36,6 +47,13 @@ public:
     void relocate(uint8_t *loc, const Relocation &rel,
                 uint64_t val) const override;
 
+    bool mayRelax() const override;
+    bool relaxOnce(int pass) const override;
+    // TODO:
+    // uint32_t calcEFlags() const override;
+private:
+    bool safeToModify(InputSection *sec) const;
+    bool relax(InputSection *sec) const;
 };
 } // namespace
 
@@ -263,7 +281,155 @@ TargetInfo *elf::getNanoMipsTargetInfo() {
     return &t;
 }
 
+bool NanoMips::mayRelax() const
+{
+  // TODO: When the finalize-relocs option is added, change this expression
+  // also goes for sort-by-reference option
+  return (!config->relocatable && (config->relax || config->expand));
+}
 
+bool NanoMips::safeToModify(InputSection *sec) const
+{
+  bool modifiable = false;
+  if(auto *obj = sec->getFile<ELF32LE>())
+  {
+    modifiable = (obj->getObj().getHeader().e_flags & EF_NANOMIPS_LINKRELAX) != 0;
+  }
+  return modifiable;
+}
+
+bool NanoMips::relaxOnce(int pass) const
+{
+  bool changed = false;
+  if(this->mayRelax())
+  {
+    for(OutputSection *osec : outputSections)
+    {
+      if((osec->flags & (SHF_EXECINSTR | SHF_ALLOC)) != (SHF_EXECINSTR | SHF_ALLOC) ||
+          !(osec->type & SHT_PROGBITS))
+          continue;
+      for(InputSection *sec : getInputSections(osec))
+      {
+        if(!this->safeToModify(sec)) continue;
+
+        if(config->relax && sec->numRelocations)
+          changed = this->relax(sec) || changed;
+      }
+    }
+  }
+  return changed;
+}
+
+
+bool NanoMips::relax(InputSection *sec) const {
+
+  auto &relocations = sec->relocations;
+  bool changed = false;
+  const uint32_t bits = config->wordsize * 8;
+  uint64_t secAddr = sec->getOutputSection()->addr + sec->outSecOff;
+  for(auto &reloc : relocations)
+  {
+    // TODO: Check if section should be compressed when returning value
+    ArrayRef<uint8_t> oldContent = sec->data();
+    uint64_t oldSize = sec->getSize();
+    uint64_t addrLoc = secAddr + reloc.offset;
+    uint64_t valueToRelocate = SignExtend64(sec->getRelocTargetVA(sec->file, reloc.type, reloc.addend, addrLoc, *reloc.sym, reloc.expr), bits);
+    switch(reloc.type)
+    {
+      case R_NANOMIPS_PC14_S1:
+      {
+        uint64_t insn = support::endian::read32le(&oldContent[reloc.offset]);
+        // For more natural working with instruction
+        insn = bswap(insn);
+        // Check if it is a beqc instruction
+        // TODO: Make this prettier
+        if((insn >> 26) != 0x22 || ((insn >> 14) & 0x3) != 0x00) break; 
+        // If we would decrease the ins size it would be 2 not 4
+        valueToRelocate -= 2;
+        // TODO: Make extract bits function
+        uint32_t srcReg =  (insn >> 16) & 0x1f;
+        uint32_t dstReg = (insn >> 21) & 0x1f;
+        if(valueToRelocate != 0 && srcReg != 0 && srcReg <= 7 && dstReg <= 7 && srcReg != dstReg && isUInt<5>(valueToRelocate))
+        {
+          // TODO: Used make_unique here, as I know how to use it, should change to some sort of allocator
+          // like the BumpPointerAllocator that is being used in InputSection, this is also very inefficient 
+          // as there is a lot of unecessary copying but it is used to check if this will work
+          auto newContentUnique = std::make_unique<uint8_t>((oldSize - 2) * sizeof(uint8_t));
+          uint8_t *newContent = newContentUnique.get();
+          uint64_t newSize = oldSize - 2;
+          // Swap src and dest if they don't conform to the abi (rs3<rt3)
+          if(srcReg > dstReg)
+          {
+            uint32_t tmp = srcReg;
+            srcReg = dstReg;
+            dstReg = tmp;
+          }
+          uint32_t newIns = 0x36 << 10 | (dstReg & 7) << 7 | (srcReg & 7) << 4 | 0;
+          uint32_t oldI = 0;
+          uint32_t newI = 0;
+          while(oldI != oldSize)
+          {
+            if(oldI != reloc.offset)
+            {
+              newContent[newI] = oldContent[oldI];
+              newI++;
+              oldI++;
+            }
+            else{
+              support::endian::write16le(newContent + newI, newIns);
+              newI += 2;
+              oldI += 4;
+            }
+          }
+          newI = 0;
+          while(newI != newSize)
+          {
+            const_cast<uint8_t *>(oldContent.data())[newI] = newContent[newI];
+            newI++;
+          }
+          // Inefficient as well, change relocs to have good offset
+          for(auto &reloc2 : relocations)
+          {
+            if(reloc2.offset > reloc.offset)
+              reloc2.offset -= 2;
+          }
+
+          // Inefficient as well, adjust symbols
+          if(sec->file)
+          {
+            for(auto *sym: sec->file->symbols)
+            {
+              if(isa<Defined>(sym))
+              {
+                auto dSym = cast<Defined>(sym);
+                if(sym->getOutputSection() && sym->getOutputSection()->sectionIndex == sec->getOutputSection()->sectionIndex)
+                {
+                  if(dSym->value > reloc.offset)
+                  {
+                    dSym->value -= 2;
+                  }
+                }
+              }
+
+            }
+          }
+          reloc.type = R_NANOMIPS_PC4_S1;
+          sec->drop_back(oldSize - newSize);
+          changed = true;
+        }
+        else if(srcReg == 0 && isInt<8>(valueToRelocate))
+        {
+          // TODO
+          llvm::outs() << "Can relocate to beqz version, but not implemented yet!\n";
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  return changed;
+}
 
 uint64_t elf::getNanoMipsNegCompositeRelDataAlloc(Relocation *&it, Relocation *&end, uint8_t *bufLoc, uint8_t *buf, InputSectionBase *sec, const InputFile *file, uint64_t addrLoc)
 {

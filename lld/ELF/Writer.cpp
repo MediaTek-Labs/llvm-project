@@ -1646,6 +1646,13 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
       break;
     }
 
+    // If relaxation doesn't converge within 30 iterations, break it
+    if (changed && pass >= 30)
+    {
+      error("relaxation not converged");
+      break;
+    }
+
     if (config->fixCortexA53Errata843419) {
       if (changed)
         script->assignAddresses();

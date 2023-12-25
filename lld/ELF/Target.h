@@ -109,6 +109,18 @@ public:
     return false;
   }
 
+  // Relaxations only available for nanoMIPS architecture
+  virtual bool mayRelax() const
+  {
+    return false;
+  }
+
+  // Used to relax and/or expand nanoMIPS code for now
+  virtual bool relaxOnce(int pass) const
+  {
+    return false;
+  }
+
   unsigned defaultCommonPageSize = 4096;
   unsigned defaultMaxPageSize = 4096;
 

@@ -716,6 +716,14 @@ def: F<"warn-once">;
 def: F<"warn-shared-textrel">;
 def: JoinedOrSeparate<["-"], "G">;
 
+defm relax: BB<"relax", 
+    "(nanoMIPS only for now) Perform code relaxation", 
+    "(nanoMIPS only for now) Do not perform code relaxation (default)">;
+
+defm expand: BB<"expand",
+    "(nanoMIPS only) Perform code expansion (default)",
+    "(nanoMIPS only) Do not perform code expansion">;
+
 // Hidden option used for testing MIPS multi-GOT implementation.
 defm mips_got_size:
   Eq<"mips-got-size", "Max size of a single MIPS GOT. 0x10000 by default.">,

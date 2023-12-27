@@ -1818,10 +1818,18 @@ disassembleObject(ObjectFile &Obj, const ObjectFile &DbgObj,
 
   // Sort all the symbols, this allows us to use a simple binary search to find
   // Multiple symbols can have the same address. Use a stable sort to stabilize
-  // the output.
+  // the output but rank-down STT_FUNC symbols so that they are preferred
+  // over other symbols in disassembly.
+  auto SymCmp = [](struct llvm::SymbolInfoTy A, struct llvm::SymbolInfoTy B) {
+    return (A.Addr != B.Addr ? A.Addr < B.Addr :
+            A.Type == ELF::STT_FUNC ? false :
+            B.Type == ELF::STT_FUNC ? true :
+            A.Name < B.Name);
+  };
+
   StringSet<> FoundDisasmSymbolSet;
   for (std::pair<const SectionRef, SectionSymbolsTy> &SecSyms : AllSymbols)
-    llvm::stable_sort(SecSyms.second);
+    llvm::stable_sort(SecSyms.second, SymCmp);
   llvm::stable_sort(AbsoluteSymbols);
 
   std::unique_ptr<DWARFContext> DICtx;

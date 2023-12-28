@@ -18,13 +18,14 @@
     .ent _start
 
 _start:
-    bgec $a1, $a7, fun
-    beqc $a2, $a3, fun
+    lapc $a3, fun
+#    bgec $a1, $a7, fun
+#    beqc $a2, $a3, fun
 a:
-    beqc $a3, $a2, fun
-    bgec $a1, $a4, fun
-    add $a1, $a1, $a1
-    add $a2, $a3, $a1
+#    beqc $a3, $a2, fun
+#    bgec $a1, $a4, fun
+#    add $a1, $a1, $a1
+#    add $a2, $a3, $a1
     .end _start
     .size _start, .-_start
 
@@ -34,7 +35,7 @@ a:
     .ent fun
 fun:
     add $a3, $a2, $a1
-    beqc $zero, $a2, a
+#    beqc $zero, $a2, a
 
     .end fun
     .size fun, .-fun

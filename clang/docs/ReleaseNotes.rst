@@ -665,6 +665,15 @@ Attribute Changes in Clang
 
 Improvements to Clang's diagnostics
 -----------------------------------
+- Clang now implements ``-Wstrict-aliasing=$level``, ``$level=[0-3]``
+  with ``-Wstrict-aliasing`` defaulting to level 3.  This warns about
+  any potentially type-based aliasing-unsafe reinterpret_casts. Lower
+  levels warn about more case but with more false positives, higher
+  levels have fewer false positives at the risk of more false
+  negatives.  The warning requires optimization to be
+  enabled. Previously these were accepted, but ignored, for GCC
+  compatibility (the preciese semantics are similar-to, but not
+  identical with, GCC).
 
 - Some template related diagnostics have been improved.
 

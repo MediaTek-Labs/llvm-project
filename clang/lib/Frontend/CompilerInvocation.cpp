@@ -2577,6 +2577,9 @@ void CompilerInvocationBase::GenerateDiagnosticArgs(
     // This option is automatically generated from CheckConstexprFunctionBodies.
     if (Warning == "invalid-constexpr" || Warning == "no-invalid-constexpr")
       continue;
+    // This option is automatically generated from StrictAliasing.
+    if (Warning == "strict-aliasing")
+      continue;  
     Consumer(StringRef("-W") + Warning);
   }
 

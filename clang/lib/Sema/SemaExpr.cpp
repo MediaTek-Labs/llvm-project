@@ -733,7 +733,12 @@ ExprResult Sema::DefaultLvalueConversion(Expr *E) {
 
   // C++ [conv.lval]p3:
   //   If T is cv std::nullptr_t, the result is a null pointer constant.
-  CastKind CK = T->isNullPtrType() ? CK_NullToPointer : CK_LValueToRValue;
+  CastKind CK = CK_NullToPointer;
+  if (!T->isNullPtrType()) {
+    // We're going to deref, check aliasing.
+    CheckStrictAliasingDeref(E, true);
+    CK = CK_LValueToRValue;
+  }
   Res = ImplicitCastExpr::Create(Context, T, CK, E, nullptr, VK_PRValue,
                                  CurFPFeatureOverrides());
 
@@ -4990,8 +4995,10 @@ ExprResult Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base,
   ExprResult Res =
       CreateBuiltinArraySubscriptExpr(base, lbLoc, ArgExprs.front(), rbLoc);
 
-  if (!Res.isInvalid() && isa<ArraySubscriptExpr>(Res.get()))
+  if (!Res.isInvalid() && isa<ArraySubscriptExpr>(Res.get())) {
+    CheckStrictAliasingDeref(base, !base->getType()->isAnyPointerType());
     CheckSubscriptAccessOfNoDeref(cast<ArraySubscriptExpr>(Res.get()));
+  }
 
   return Res;
 }
@@ -13838,6 +13845,7 @@ QualType Sema::CheckAssignmentOperands(Expr *LHSExpr, ExprResult &RHS,
                                AssignmentAction::Assigning))
     return QualType();
 
+  CheckStrictAliasingDeref(LHSExpr, true);
   CheckForNullPointerDereference(*this, LHSExpr);
 
   AssignedEntity AE{LHSExpr};
@@ -14046,6 +14054,9 @@ static QualType CheckIncrementDecrementOperand(Sema &S, Expr *Op,
     S.Diag(OpLoc, diag::warn_deprecated_increment_decrement_volatile)
         << IsInc << ResType;
   }
+
+  S.CheckStrictAliasingDeref(Op, true);
+
   // In C++, a prefix increment is the same type as the operand. Otherwise
   // (in C or with postfix), the increment is the unqualified type of the
   // operand.
@@ -14490,6 +14501,8 @@ static QualType CheckIndirectionOperand(Sema &S, Expr *Op, ExprValueKind &VK,
       S.Diag(OpLoc, diag::ext_typecheck_indirection_through_void_pointer)
           << OpTy << Op->getSourceRange();
   }
+
+  S.CheckStrictAliasingDeref(Op, false);
 
   // Dereferences are usually l-values...
   VK = VK_LValue;

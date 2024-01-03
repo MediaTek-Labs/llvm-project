@@ -94,6 +94,7 @@ public:
   void CompleteExternalDeclaration(DeclaratorDecl *D) override;
   void AssignInheritanceModel(CXXRecordDecl *RD) override;
   void HandleVTable(CXXRecordDecl *RD) override;
+  TypeAliasing* getTypeAliasing() override;
 
   // Links each entry in LinkModules into our module.  Returns true on error.
   bool LinkInModules(llvm::Module *M);

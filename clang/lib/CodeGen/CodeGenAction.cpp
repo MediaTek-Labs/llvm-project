@@ -139,6 +139,10 @@ CodeGenerator* BackendConsumer::getCodeGenerator() {
   return Gen.get();
 }
 
+ASTConsumer::TypeAliasing* BackendConsumer::getTypeAliasing() {
+  return Gen->getTypeAliasing();
+}
+
 void BackendConsumer::HandleCXXStaticMemberVarInstantiation(VarDecl *VD) {
   Gen->HandleCXXStaticMemberVarInstantiation(VD);
 }

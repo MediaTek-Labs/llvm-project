@@ -1,5 +1,9 @@
 set(LLVM_TARGET_DEFINITIONS Options.td)
 tablegen(LLVM Options.inc -gen-opt-parser-defs)
+
+set(LLVM_TARGET_DEFINITIONS Arch/NanoMipsRelocProperty.td)
+tablegen(LLVM NanoMipsRelocInsProperty.inc -gen-reloc-ins-property)
+
 add_public_tablegen_target(ELFOptionsTableGen)
 
 if(LLVM_ENABLE_ZLIB)
@@ -29,6 +33,7 @@ add_lld_library(lldELF
   Arch/MipsArchTree.cpp
   Arch/MSP430.cpp
   Arch/NanoMips.cpp
+  Arch/NanoMipsProperties.cpp
   Arch/PPC.cpp
   Arch/PPC64.cpp
   Arch/RISCV.cpp

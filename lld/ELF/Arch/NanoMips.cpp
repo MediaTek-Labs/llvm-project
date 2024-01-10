@@ -19,15 +19,16 @@
 #include "Arch/NanoMipsProperties.h"
 #include "SyntheticSections.h"
 
-
-// Can't use it bc of ambigouty
-// using namespace llvm;
 using namespace llvm::object;
 using namespace llvm::ELF;
 using namespace lld;
 using namespace lld::elf;
 using namespace llvm::support::endian;
 using namespace llvm;
+
+// use --mllvm with --debug or --debug-only=<name>
+#define DEBUG_TYPE "lld-nanomips"
+
 
 uint32_t bswap(uint32_t data){
   uint32_t lo = ((data & 0xffff) << 16) & ~0xffff;
@@ -95,10 +96,13 @@ NanoMips::NanoMips(){
   // noneRel = R_NANOMIPS_NONE;
   defaultMaxPageSize = 65536;
   pltEntrySize = 0;
-  // llvm::outs() << relocPropertyTable.toString() << "\n\n\n";
-  // llvm::outs() << insPropertyTable.toString() << "\n\n\n";
-  llvm::outs() << "relax_lo12: " << config->nanoMipsRelaxLo12 << "\n";
-  llvm::outs() << "insn32: " << config->nanoMipsInsn32 << "\n";
+
+  LLVM_DEBUG(
+  llvm::dbgs() << "Current reloc properties:\n" << relocPropertyTable.toString() << "\n\n\n";
+  llvm::dbgs() << "Current instruction properties:\n" << insPropertyTable.toString() << "\n\n\n";
+  llvm::dbgs() << "relax_lo12: " << config->nanoMipsRelaxLo12 << "\n";
+  llvm::dbgs() << "insn32: " << config->nanoMipsInsn32 << "\n";
+  );
 }
 
 //used for: R_NANOMIPS_HI20, R_NANOMIPS_PC_HI20 and R_NANOMIPS_GPREL_HI20

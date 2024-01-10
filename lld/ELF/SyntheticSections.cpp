@@ -204,6 +204,7 @@ uint32_t NanoMipsAbiFlagsSection<ELFT>::select_isa_ext(const StringRef filename,
   return isa_ext_out;
 }
 
+
 template <class ELFT>
 NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
   Elf_NanoMips_ABIFlags flags = {};
@@ -244,10 +245,30 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
 
   }
 
+  // Will stay new, until I see what other options I have
   if(create)
-    return make<NanoMipsAbiFlagsSection<ELFT>>(flags);
+    return new NanoMipsAbiFlagsSection<ELFT>(flags);
   return nullptr;
 }
+
+template<class ELFT>
+NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::get()
+{
+  if(abiFlagsUnique == nullptr)
+    abiFlagsUnique = create();
+  
+  if(abiFlagsUnique == nullptr)
+    warn("Couldn't create .nanoMIPS.abiflags section");
+  
+  return abiFlagsUnique;
+}
+
+template<class ELFT>
+bool NanoMipsAbiFlagsSection<ELFT>::isFullNanoMipsISA() const
+{
+  return (flags.ases & llvm::NanoMips::AFL_ASE_xNMS) != 0;
+}
+
 
 // .MIPS.options section.
 template <class ELFT>

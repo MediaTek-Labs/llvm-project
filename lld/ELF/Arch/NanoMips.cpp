@@ -17,12 +17,19 @@
 #include "InputSection.h"
 #include "llvm/Support/Endian.h"
 #include "Arch/NanoMipsProperties.h"
+#include "SyntheticSections.h"
 
-using namespace llvm;
+// string stream only used for debugging, will remove later
+#include <sstream>
+
+// Can't use it bc of ambigouty
+// using namespace llvm;
 using namespace llvm::object;
 using namespace llvm::ELF;
 using namespace lld;
 using namespace lld::elf;
+using namespace llvm::support::endian;
+using namespace llvm;
 
 uint32_t bswap(uint32_t data){
   uint32_t lo = ((data & 0xffff) << 16) & ~0xffff;
@@ -30,6 +37,7 @@ uint32_t bswap(uint32_t data){
   return lo | hi;
 }
 
+// No need for this anymore we are using only the first 16bit of 48bit instruction
 // Swap for 48bit instructions
 uint64_t bswap48(uint64_t data){
   uint64_t lo = ((data & 0xffff) << 32);
@@ -58,6 +66,7 @@ public:
 
     bool mayRelax() const override;
     bool relaxOnce(int pass) const override;
+
     // TODO:
     // uint32_t calcEFlags() const override;
 private:
@@ -69,10 +78,13 @@ private:
     mutable TransformationState transformationState = NANOMIPS_NONE_STATE;
     NanoMipsRelocPropertyTable relocPropertyTable;
     NanoMipsInsPropertyTable insPropertyTable;
+
     bool safeToModify(InputSection *sec) const;
+    void setAbiFlags() const;
 
     // relax + expand
     bool transform(InputSection *sec) const;
+
 
     // bool relax(InputSection *sec) const;
     // bool expand(InputSection *sec) const;
@@ -85,8 +97,10 @@ NanoMips::NanoMips(){
   // noneRel = R_NANOMIPS_NONE;
   defaultMaxPageSize = 65536;
   pltEntrySize = 0;
-  llvm::outs() << relocPropertyTable.toString() << "\n\n\n";
+  // llvm::outs() << relocPropertyTable.toString() << "\n\n\n";
   // llvm::outs() << insPropertyTable.toString() << "\n\n\n";
+  llvm::outs() << "relax_lo12: " << config->nanoMipsRelaxLo12 << "\n";
+  llvm::outs() << "insn32: " << config->nanoMipsInsn32 << "\n";
 }
 
 //used for: R_NANOMIPS_HI20, R_NANOMIPS_PC_HI20 and R_NANOMIPS_GPREL_HI20
@@ -142,7 +156,7 @@ static void writeValue32be(uint8_t *loc, uint64_t val, uint8_t bitsSize,
 
 void checkIntPcRel(uint8_t *loc, int64_t v, int n, const Relocation &rel, const Symbol &sym) {
   if ((v & 1) != 0)
-    error(getErrorLocation(loc) + "\tvalue: \t" + utohexstr(v) + "\tlast bit has to be zero in all PC_REL \n");
+    error(getErrorLocation(loc) + "\tvalue: \t" + llvm::utohexstr(v) + "\tlast bit has to be zero in all PC_REL \n");
   if(sym.isUndefWeak()) //if symbol is weak, then we don't have to check it's range
     return;
   else if (rel.type == R_NANOMIPS_PC4_S1)
@@ -192,7 +206,7 @@ RelExpr NanoMips::getRelExpr(RelType type, const Symbol &s,
     return R_NONE;
   default:
     error(getErrorLocation(loc) + "unknown relocation (" + Twine(type) +
-          ") against symbol " + toString(s) + " loc: " + utohexstr(uint64_t(loc)) + " file name: " + toString(s.file->getName()) );
+          ") against symbol " + toString(s) + " loc: " + llvm::utohexstr(uint64_t(loc)) + " file name: " + toString(s.file->getName()) );
     return R_NONE;
   }                   
 }
@@ -324,6 +338,7 @@ bool NanoMips::safeToModify(InputSection *sec) const
 
 bool NanoMips::relaxOnce(int pass) const
 {
+  llvm::outs() << "is full nanoMIPS ISA: "  << NanoMipsAbiFlagsSection<ELF32LE>::get()->isFullNanoMipsISA() << "\n";
   bool changed = false;
   if(this->mayRelax())
   {
@@ -355,7 +370,8 @@ bool NanoMips::relaxOnce(int pass) const
   return changed;
 }
 
-bool NanoMips::transform(InputSection *sec) const {
+bool NanoMips::transform(InputSection *sec) const 
+{
 
   auto &relocs = sec->relocations;
   bool changed = false;
@@ -367,12 +383,37 @@ bool NanoMips::transform(InputSection *sec) const {
     ArrayRef<uint8_t> oldContent = sec->data();
     uint64_t oldSize = sec->getSize();
     uint64_t addrLoc = secAddr + reloc.offset;
-    uint64_t valueToRelocate = SignExtend64(sec->getRelocTargetVA(sec->file, reloc.type, reloc.addend, addrLoc, *reloc.sym, reloc.expr), bits);
+    uint64_t valueToRelocate = llvm::SignExtend64(sec->getRelocTargetVA(sec->file, reloc.type, reloc.addend, addrLoc, *reloc.sym, reloc.expr), bits);
     const NanoMipsRelocProperty *relocProp =  relocPropertyTable.getRelocProperty(reloc.type);
-    if(relocProp)
+    if(!relocProp) continue;
+
+    uint64_t insn = 0;
+    uint32_t instSize = relocProp->getInstSize();
+    if(instSize == 4)
     {
-      llvm::outs() << relocProp->getName() << "\n";
+      insn = read32le(&oldContent[reloc.offset]);
+      insn = bswap(insn);
+    } 
+    else if(instSize == 6)
+      insn = read16le(&oldContent[reloc.offset - 2]);
+    else if(instSize == 2)
+      insn = read16le(&oldContent[reloc.offset]);
+    else continue;
+
+    uint64_t insMask = relocProp->getMask();
+
+    std::stringstream SS;
+    SS << "Mask: " << std::hex << insMask << "\n"
+    << "Ins: " << std::hex << insn << "\n";
+    llvm::outs() << SS.str();
+
+
+    if((insn & insMask) == insMask)
+    {
+      llvm::outs() << "Got reloc prop for reloc " << relocProp->getName() << "\n";
     }
+    // relocProp->getMask();
+
   }
   return changed;
 }
@@ -610,7 +651,7 @@ uint64_t elf::getNanoMipsNegCompositeRelDataAlloc(Relocation *&it, Relocation *&
   assert(type == R_NANOMIPS_NEG && "First relocation type for R_NANOMIPS_NEG_COMPOSITE must be R_NANOMIPS_NEG");
   assert(it != end && "R_NANOMIPS_NEG_COMPOSITE is composed of more than one relocation");
   
-  const uint64_t targetVA = SignExtend64(sec->getRelocTargetVA(
+  const uint64_t targetVA = llvm::SignExtend64(sec->getRelocTargetVA(
     file, type, rel.addend, addrLoc, sym, rel.expr
     ), 
     bits);
@@ -624,7 +665,7 @@ uint64_t elf::getNanoMipsNegCompositeRelDataAlloc(Relocation *&it, Relocation *&
       message("Incorrect logic for negative and shift");
       exit(6);
   }
-  const uint64_t targetVA1 = SignExtend64(sec->getRelocTargetVA(
+  const uint64_t targetVA1 = llvm::SignExtend64(sec->getRelocTargetVA(
     file, type1, next1.addend, addrLoc, sym1, next1.expr
     ), 
     bits);
@@ -643,12 +684,12 @@ uint64_t elf::getNanoMipsNegCompositeRelDataAlloc(Relocation *&it, Relocation *&
       exit(6);
     }
 
-    const uint64_t targetVA2 = SignExtend64(sec->getRelocTargetVA(
+    const uint64_t targetVA2 = llvm::SignExtend64(sec->getRelocTargetVA(
       file, type2, next2.addend, addrLoc, sym2, next2.expr
       ), bits);
     uint64_t data = (targetVA1 + targetVA) >> 1; 
     if(type2 == R_NANOMIPS_SIGNED_16 || type2 == R_NANOMIPS_SIGNED_8)
-      data = SignExtend64(data, bits);
+      data = llvm::SignExtend64(data, bits);
     data += targetVA2;
     return data;
   }
@@ -656,7 +697,7 @@ uint64_t elf::getNanoMipsNegCompositeRelDataAlloc(Relocation *&it, Relocation *&
   {
     uint64_t data = targetVA1 + targetVA;
     if(type1 == R_NANOMIPS_SIGNED_16 || type1 == R_NANOMIPS_SIGNED_8)
-      data = SignExtend64(data, bits);
+      data = llvm::SignExtend64(data, bits);
     return data;
   }
 

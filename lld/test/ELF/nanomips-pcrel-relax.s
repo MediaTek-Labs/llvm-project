@@ -1,5 +1,6 @@
 # RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-as \
 # RUN: -m32 -EL -march=32r6 %s -o %t.o
+# march=nms1 for non full nanoMIPS ISA
 # RUN: ld.lld --relax %t.o -o %t
 # RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump \
 # RUN: -d %t | FileCheck %s
@@ -34,7 +35,7 @@ a:
     .globl fun
     .ent fun
 fun:
-    add $a3, $a2, $a1
+    addiu $a3, $a2, 1
 #    beqc $zero, $a2, a
 
     .end fun

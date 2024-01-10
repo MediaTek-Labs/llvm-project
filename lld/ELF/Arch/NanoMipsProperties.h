@@ -20,10 +20,12 @@
 
 #undef TRANSFORM_ENUM
 
-using namespace llvm;
-using namespace lld;
-using namespace lld::elf;
+// using namespace llvm;
+// using namespace lld;
 // Used for relaxation purposes
+
+namespace lld {
+namespace elf{
   class NanoMipsRelocProperty;
   // Should be used only by NanoMips target, contains NanoMips reloc properties
     class NanoMipsRelocPropertyTable final {
@@ -56,13 +58,14 @@ using namespace lld::elf;
       uint64_t getMask() const { return mask; }
 
     private:
-      friend class ::NanoMipsRelocPropertyTable;
+      friend class NanoMipsRelocPropertyTable;
       NanoMipsRelocProperty(NanoMipsRelocProperty &p) = delete;
       void operator=(const NanoMipsRelocProperty &p) = delete;
-      NanoMipsRelocProperty(std::string Name, uint32_t BitsToRelocate, uint32_t InstSize, uint64_t Mask) 
+      NanoMipsRelocProperty(std::string Name, uint32_t InstSize, uint32_t BitsToRelocate, uint64_t Mask) 
       : name(Name), bitsToRelocate(BitsToRelocate), instSize(InstSize), mask(Mask) {}
       std::string name;
       uint32_t bitsToRelocate;
+      // Size is in bytes
       uint32_t instSize;
       uint64_t mask;
   };
@@ -159,9 +162,9 @@ using namespace lld::elf;
       // Checkout llvm's datatypes to change this
       // I think 17 is max num of transform templates, but most of ins props have less or equal to 8
       // NanoMipsTransformType is the key, but SmallDenseMap has implementation for uint32_t keys
-      SmallDenseMap<uint32_t, const NanoMipsTransformTemplate *, 8> transformationMap;
+      llvm::SmallDenseMap<uint32_t, const NanoMipsTransformTemplate *, 8> transformationMap;
       // std::map<NanoMipsTransformType, const NanoMipsTransformTemplate *> transformationMap;
-      SmallSet<RelType, 8> relocs;
+      llvm::SmallSet<RelType, 8> relocs;
 
       ExtractRegFun extractTReg;
       ConvertRegFun convertTReg;
@@ -185,10 +188,12 @@ using namespace lld::elf;
       NanoMipsInsPropertyTable(const NanoMipsInsPropertyTable &) = delete;
       void operator=(const NanoMipsInsPropertyTable &) = delete;
 
-      DenseMap<uint32_t, NanoMipsInsProperty *> insMap;
+      llvm::DenseMap<uint32_t, NanoMipsInsProperty *> insMap;
 
   };
 
+}
+}
 
 
 

@@ -80,7 +80,7 @@ NanoMipsRelocPropertyTable::NanoMipsRelocPropertyTable()
   { \
    RelType type = R_NANOMIPS_##relocName; \
    assert(type < RelocPropertyTableSize && "Relocations mustn't be larger than 256"); \
-   this->table[type] = new NanoMipsRelocProperty("R_NANOMIPS_"#relocName, instSize, bitsToRelocate, mask); \
+   this->table[type] = new NanoMipsRelocProperty("R_NANOMIPS_"#relocName, instSize / 8, bitsToRelocate, mask); \
   }
   #include "NanoMipsRelocInsProperty.inc"
   #undef RELOC_PROPERTY

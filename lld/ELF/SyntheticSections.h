@@ -999,25 +999,34 @@ private:
 
 // .nanoMIPS.abiflags section.
 
+// This is a singleton as only one .nanoMIPS.abiflags section is needed
+// Singleton is not freed until the end of the program as it is a class member not an object one; 
 template <class ELFT>
 class NanoMipsAbiFlagsSection final: public SyntheticSection {
 using Elf_NanoMips_ABIFlags = llvm::object::Elf_NanoMips_ABIFlags<ELFT>;
 
 public:
-  static NanoMipsAbiFlagsSection *create();
-
-  NanoMipsAbiFlagsSection(Elf_NanoMips_ABIFlags flags);
+  static NanoMipsAbiFlagsSection *get();
+  
   size_t getSize() const override { return sizeof(Elf_NanoMips_ABIFlags); }
+  const Elf_NanoMips_ABIFlags *getFlags() const { return &flags; };
   void writeTo(uint8_t *buf) override;
+  bool isFullNanoMipsISA() const;
 
 private:
+  static NanoMipsAbiFlagsSection *create();
+  NanoMipsAbiFlagsSection(Elf_NanoMips_ABIFlags flags);
   // gold's way of selecing isa_ext, fp_abi
   static uint32_t select_isa_ext(const StringRef filename, uint32_t in_isa_ext, uint32_t out_isa_ext);
   static uint32_t select_fp_abi(const StringRef filename, uint32_t in_fp, uint32_t out_fp);
   static std::string fp_abi_string(uint32_t fp);
   Elf_NanoMips_ABIFlags flags;
+  static NanoMipsAbiFlagsSection *abiFlagsUnique;
 
 };
+
+template <class ELFT>
+NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::abiFlagsUnique = nullptr;
 
 // .MIPS.options section.
 template <class ELFT> class MipsOptionsSection final : public SyntheticSection {

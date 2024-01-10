@@ -319,8 +319,8 @@ template <class ELFT> void elf::createSyntheticSections() {
 
   // Add nanoMIPS-specific sections.
   if(config->emachine == EM_NANOMIPS) {
-    if(auto *sec = NanoMipsAbiFlagsSection<ELFT>::create())
-      add(*sec);
+    if(auto *sec = NanoMipsAbiFlagsSection<ELFT>::get())
+      add(sec);
   }
 
   StringRef relaDynName = config->isRela ? ".rela.dyn" : ".rel.dyn";

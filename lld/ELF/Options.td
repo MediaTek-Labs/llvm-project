@@ -724,6 +724,16 @@ defm expand: BB<"expand",
     "(nanoMIPS only) Perform code expansion (default)",
     "(nanoMIPS only) Do not perform code expansion">;
 
+defm insn32: BB<"insn32",
+    "(nanoMIPS only) Only generate 32-bit nanoMIPS instructions",
+    "(nanoMIPS only) Generate all nanoMIPS instructions (default)"
+>;
+
+defm relax_lo12: BB<"relax-lo12",
+    "(nanoMIPS only) Relax R_NANOMIPS_LO12 relocation",
+    "(nanoMIPS only) Do not relax R_NANOMIPS_LO12 relocation (default)"
+>;
+
 // Hidden option used for testing MIPS multi-GOT implementation.
 defm mips_got_size:
   Eq<"mips-got-size", "Max size of a single MIPS GOT. 0x10000 by default.">,

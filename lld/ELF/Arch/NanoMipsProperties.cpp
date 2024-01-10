@@ -8,7 +8,8 @@
 
 #include "NanoMipsProperties.h"
 #include "llvm/BinaryFormat/ELF.h"
-#include <sstream>
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/ADT/StringExtras.h"
 
 using namespace lld;
 using namespace lld::elf;
@@ -95,7 +96,7 @@ const NanoMipsRelocProperty *NanoMipsRelocPropertyTable::getRelocProperty(RelTyp
 NanoMipsRelocPropertyTable::~NanoMipsRelocPropertyTable()
 {
   // C++ 14
-  std::for_each(table, table + RelocPropertyTableSize, [](auto& elem){delete elem; elem = nullptr;});
+  llvm::for_each(table, [](auto& elem){delete elem; elem = nullptr;});
   // for(uint32_t i = 0; i < RelocPropertyTableSize; i++){
   //   if(table[i] != nullptr)
   //   {
@@ -107,7 +108,8 @@ NanoMipsRelocPropertyTable::~NanoMipsRelocPropertyTable()
 
 std::string NanoMipsRelocPropertyTable::toString() const
 {
-  std::stringstream SS;
+  std::string tmp;
+  raw_string_ostream SS(tmp);
   for(uint32_t i = 0; i < RelocPropertyTableSize; i++)
   {
     if(table[i])
@@ -124,11 +126,11 @@ std::string NanoMipsRelocPropertyTable::toString() const
 // NanoMipsInsTemplate
 
 std::string NanoMipsInsTemplate::toString() const {
-  std::stringstream SS;
+  std::string tmp;
+  raw_string_ostream SS(tmp);
   SS << name 
-  << ", "
-  << std::hex << data
-  << std::dec << ", " << reloc
+  << ", " <<  utohexstr(data)
+  << ", " << reloc
   << ", " << size
   << ", " << (insertTReg != nullptr ? 1 : 0)
   << ", " << (insertSReg != nullptr ? 1 : 0);
@@ -149,7 +151,8 @@ uint64_t NanoMipsInsTemplate::getInstruction(uint32_t treg, uint32_t sreg) const
 
 std::string NanoMipsTransformTemplate::toString() const
 {
-  std::stringstream SS;
+  std::string tmp;
+  raw_string_ostream SS(tmp);
   SS << "\t\t\tIns count: " << insCount << "\n";
   for(uint32_t i = 0; i < insCount; i++)
   {
@@ -170,14 +173,15 @@ std::string NanoMipsTransformTemplate::toString() const
 
 std::string NanoMipsRelocProperty::toString() const
 {
-  std::stringstream SS;
+  std::string tmp;
+  raw_string_ostream SS(tmp);
   SS << name
   << "\t"
   << bitsToRelocate
   << "\t"
   << instSize
   << "\t"
-  << std::hex << mask;
+  << utohexstr(mask);
   return SS.str();
 }
 
@@ -194,7 +198,8 @@ void NanoMipsInsProperty::addTransform(const NanoMipsTransformTemplate *transfor
 
 std::string NanoMipsInsProperty::toString() const 
 {
-  std::stringstream SS;
+  std::string tmp;
+  raw_string_ostream SS(tmp);
   SS << name
   << ", extractTReg: "
   << (extractTReg != nullptr ? 1 : 0)
@@ -228,7 +233,7 @@ std::string NanoMipsInsProperty::toString() const
 NanoMipsInsProperty::~NanoMipsInsProperty()
 {
   // C++ 14
-  std::for_each(transformationMap.begin(), transformationMap.end(), [](auto &pair){delete pair.second; pair.second = nullptr;});
+  llvm::for_each(transformationMap, [](auto &pair){delete pair.second; pair.second = nullptr;});
   // for(auto it = transformationMap.begin(); it != transformationMap.end(); it++)
   // {
   //   delete it->second;
@@ -279,13 +284,14 @@ NanoMipsInsPropertyTable::NanoMipsInsPropertyTable()
 
 std::string NanoMipsInsPropertyTable::toString() const
 {
-  std::stringstream SS;
+  std::string tmp;
+  raw_string_ostream SS(tmp);
   for(auto it = insMap.begin(); it != insMap.end(); it++)
   {
     uint32_t opcode = it->first;
     const NanoMipsInsProperty *insProp = it->second;
     SS << "Opcode: " 
-    << std::hex << opcode
+    << utohexstr(opcode)
     << ":\n\t"
     << insProp->toString()
     << "\n";
@@ -296,7 +302,7 @@ std::string NanoMipsInsPropertyTable::toString() const
 NanoMipsInsPropertyTable::~NanoMipsInsPropertyTable()
 {
   // C++ 14
-  std::for_each(insMap.begin(), insMap.end(), [](auto& pair){delete pair.second; pair.second = nullptr;});
+  llvm::for_each(insMap, [](auto& pair){delete pair.second; pair.second = nullptr;});
   // for(auto it = insMap.begin(); it != insMap.end(); it++)
   // {
   //   delete it->second;

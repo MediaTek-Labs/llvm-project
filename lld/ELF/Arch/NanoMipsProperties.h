@@ -9,7 +9,6 @@
 #ifndef LLD_ELF_NANOMIPS_PROPERTIES_H
 #define LLD_ELF_NANOMIPS_PROPERTIES_H
 
-#include <string>
 #include "Relocations.h"
 #include "llvm/ADT/SmallSet.h"
 

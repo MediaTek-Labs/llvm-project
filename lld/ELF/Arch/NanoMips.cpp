@@ -19,8 +19,6 @@
 #include "Arch/NanoMipsProperties.h"
 #include "SyntheticSections.h"
 
-// string stream only used for debugging, will remove later
-#include <sstream>
 
 // Can't use it bc of ambigouty
 // using namespace llvm;
@@ -402,17 +400,8 @@ bool NanoMips::transform(InputSection *sec) const
 
     uint64_t insMask = relocProp->getMask();
 
-    std::stringstream SS;
-    SS << "Mask: " << std::hex << insMask << "\n"
-    << "Ins: " << std::hex << insn << "\n";
-    llvm::outs() << SS.str();
-
-
-    if((insn & insMask) == insMask)
-    {
-      llvm::outs() << "Got reloc prop for reloc " << relocProp->getName() << "\n";
-    }
-    // relocProp->getMask();
+    llvm::outs() << "Mask: " << utohexstr(insMask) << "\n"
+    << "Ins: " << utohexstr(insn) << "\n";
 
   }
   return changed;

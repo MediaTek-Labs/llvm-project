@@ -9,7 +9,6 @@
 #include "llvm/TableGen/Record.h"
 #include "llvm/TableGen/TableGenBackend.h"
 #include "llvm/TableGen/Error.h"
-#include <sstream>
 
 using namespace llvm;
 // RelocInsPropertyEmitter - This tablegen backend takse an input .td file
@@ -76,9 +75,6 @@ namespace llvm {
 
     void emitRelocProperty(const Record *relocProperty, raw_ostream &OS)
     {
-        std::stringstream SS;
-        SS << "0x" << std::hex << dyn_cast<IntInit>(relocProperty->getValue("InsMask")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue();
-        const std::string hexMask(SS.str()); 
 
         OS << RELOC_MACRO_BEGIN
         << relocProperty->getName()
@@ -87,7 +83,7 @@ namespace llvm {
         << COMMA_SPACE
         << relocProperty->getValue("BitsToRelocate")->getValue()->getAsString()
         << COMMA_SPACE
-        << hexMask
+        << "0x" << utohexstr(dyn_cast<IntInit>(relocProperty->getValue("InsMask")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue())
         << MACRO_END;
 
     }
@@ -142,19 +138,22 @@ namespace llvm {
         return true;
     }   
 
+    // Could be changed to write directly to ostream
     std::string getInsertRegEmission(const Record *rec, const std::string field)
     {
         std::string retValue = NULLPTR;
         const DefInit *init = dyn_cast<DefInit>(rec->getValue(field)->getValue());
         if(init)
         {
-            std::stringstream SS;
+            std::string tmp;
+            raw_string_ostream SS(tmp);
+            SS.reserveExtraSpace(50);
             const IntInit *pos = dyn_cast<IntInit>(init->getDef()->getValue("Pos")->getValue());
             const IntInit *size = dyn_cast<IntInit>(init->getDef()->getValue("Size")->getValue());
             const DefInit *reg = dyn_cast<DefInit>(init->getDef()->getValue("Reg")->getValue());
             if(!init->getDef()->isAnonymous())
             {
-                SS << init->getDef()->getName().str();
+                SS << init->getDef()->getName();
                 if(pos || size || reg) SS << "<";
                 if(pos) SS << pos->getAsString();
                 if(pos && (size || reg)) SS << COMMA_SPACE;
@@ -183,7 +182,9 @@ namespace llvm {
         const DefInit *init = dyn_cast<DefInit>(rec->getValue(field)->getValue());
         if(init)
         {
-            std::stringstream SS;
+            std::string tmp;
+            raw_string_ostream SS(tmp);
+            SS.reserveExtraSpace(128);
             const IntInit *pos = dyn_cast<IntInit>(init->getDef()->getValue("Pos")->getValue());
             const IntInit *size = dyn_cast<IntInit>(init->getDef()->getValue("Size")->getValue());
             if(!init->getDef()->isAnonymous())
@@ -228,16 +229,14 @@ namespace llvm {
 
     void emitInsProperty(const Record *insProperty, raw_ostream &OS)
     {
-        std::stringstream SS;
+
         Record *insId = dyn_cast<DefInit>(insProperty->getValue("InsId")->getValue())->getDef();
         std::string insName = insId->getValue("Name")->getValue()->getAsString();
-        SS << "0x" << std::hex << dyn_cast<IntInit>(insId->getValue("Opcode")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue();
-        std::string opcode = SS.str();
         // UnsetInit, for everything unset
         OS << INS_MACRO_BEGIN
         << insName
         << COMMA_SPACE
-        << opcode
+        << "0x" << utohexstr(dyn_cast<IntInit>(insId->getValue("Opcode")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue())
         << COMMA_SPACE
         << getExtractRegEmission(insProperty, "ExtractTReg")
         << COMMA_SPACE
@@ -255,9 +254,8 @@ namespace llvm {
 
     void emitTransformEnumStart(raw_ostream &OS, const Record *arch)
     {
-        std::string archName = arch->getName().str();
         OS << "#ifdef TRANSFORM_ENUM\n\n\n enum "
-        << archName
+        << arch->getName()
         << "TransformType{\n";
     }
     
@@ -268,9 +266,11 @@ namespace llvm {
 
     std::string transformTypeFullName(const Record *transformType, const Record *arch)
     {
-        std::stringstream SS;
+        std::string tmp;
+        raw_string_ostream SS(tmp);
+        SS.reserveExtraSpace(64);
         std::string archUpper = arch->getName().upper();
-        std::string type = transformType->getName().str();
+        StringRef type = transformType->getName();
         size_t underScoreIndex = type.find("_");
         SS << type.substr(0, underScoreIndex)
         << "_"
@@ -329,7 +329,9 @@ namespace llvm {
 
     std::string getRelocListEmission(const Record *rec, const Record *arch, const std::string field)
     {
-        std::stringstream SS;
+        std::string tmp;
+        raw_string_ostream SS(tmp);
+        SS.reserveExtraSpace(128);
         const DagInit *relocListInit = dyn_cast<DagInit>(rec->getValue(field)->getValue());
         if(!relocListInit) return "RELOCS()";
         if(!isa<DefInit>(relocListInit->getOperator()) || 
@@ -350,7 +352,9 @@ namespace llvm {
 
     std::string getInsTemplateEmission(const Record *rec, const std::string field)
     {
-        std::stringstream SS;
+        std::string tmp;
+        raw_string_ostream SS(tmp);
+        SS.reserveExtraSpace(512);
         const DagInit *insnListInit = dyn_cast<DagInit>(rec->getValue(field)->getValue());
         if(!insnListInit) return "INS_TEMPLATES()";
         if(!isa<DefInit>(insnListInit->getOperator()) ||
@@ -363,10 +367,12 @@ namespace llvm {
             const DefInit *argInit = dyn_cast<DefInit>(*it);
             if(!argInit || !argInit->getDef()->isSubClassOf("InstructionTemplate"))
                 PrintFatalNote("InsnList arg should be og type InstructionTemplate");
-            std::stringstream SS2;
+            std::string tmp2;
+            raw_string_ostream SS2(tmp2);
+            SS2.reserveExtraSpace(128);
             const Record *insId = dyn_cast<DefInit>(argInit->getDef()->getValue("InsId")->getValue())->getDef();
             std::string insName = insId->getValue("Name")->getValue()->getAsString();
-            SS2 << "0x" << std::hex << dyn_cast<IntInit>(insId->getValue("Opcode")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue();
+            SS2 << "0x" << utohexstr(dyn_cast<IntInit>(insId->getValue("Opcode")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue());
             std::string opcode = SS2.str();
             const Record *relocation = dyn_cast<DefInit>(argInit->getDef()->getValue("Relocation")->getValue())->getDef();
             std::string relocName = relocation->getName().str();
@@ -394,17 +400,14 @@ namespace llvm {
 
     void emitTransformTemplate(const Record *transformTemplate, const Record *arch, raw_ostream &OS)
     {
-        std::stringstream SS;
         const DefInit *typeInit = dyn_cast<DefInit>(transformTemplate->getValue("Type")->getValue());
         std::string typeName = transformTypeFullName(typeInit->getDef(), arch);
         const DefInit *insPropInit = dyn_cast<DefInit>(transformTemplate->getValue("InsProp")->getValue());
         const DefInit *insIdInit = dyn_cast<DefInit>(insPropInit->getDef()->getValue("InsId")->getValue());
-        SS << "0x" << std::hex << dyn_cast<IntInit>(insIdInit->getDef()->getValue("Opcode")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue();
-        std::string insOpCode = SS.str();
         OS << TRANSFORM_TEMPLATE_MACRO_BEGIN
         << typeName
         << COMMA_SPACE
-        << insOpCode
+        << "0x" << utohexstr(dyn_cast<IntInit>(insIdInit->getDef()->getValue("Opcode")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue())
         << COMMA_SPACE
         << getRelocListEmission(transformTemplate, arch, "RelocList")
         << COMMA_SPACE

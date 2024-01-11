@@ -88,7 +88,6 @@ NanoMipsRelocPropertyTable::NanoMipsRelocPropertyTable()
 }
 
 const NanoMipsRelocProperty *NanoMipsRelocPropertyTable::getRelocProperty(RelType rel) const {
-  // Rel can't be larger than the table size for now, but just in case
   assert(rel < RelocPropertyTableSize);
   return table[rel];
 }
@@ -251,7 +250,8 @@ NanoMipsInsPropertyTable::NanoMipsInsPropertyTable()
   #define INS_PROPERTY(name, opcode, extractTReg, convertTReg, isValidTReg, extractSReg, convertSReg, isValidSReg) \
   {\
    NanoMipsInsProperty *insProp = new NanoMipsInsProperty(name, extractTReg, convertTReg, isValidTReg, extractSReg, convertSReg, isValidSReg); \
-   insMap[opcode] = insProp;\
+   insMap[opcode] = insProp; \
+   assert(insMap.count(opcode)); \
   }
 
   #include "NanoMipsRelocInsProperty.inc"
@@ -272,6 +272,7 @@ NanoMipsInsPropertyTable::NanoMipsInsPropertyTable()
     uint32_t insCount = sizeof(insTemplateArray) / sizeof(NanoMipsInsTemplate);\
     uint32_t relocCount = sizeof(relocArray) / sizeof(RelType);\
     NanoMipsTransformTemplate *transformTemplate = new NanoMipsTransformTemplate(insTemplateArray, insCount, relocArray, relocCount); \
+    assert(insMap.count(opcode)); \
     insMap[opcode]->addTransform(transformTemplate, type, relocArray, relocCount);\
   }
 

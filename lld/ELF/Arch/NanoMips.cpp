@@ -340,6 +340,8 @@ bool NanoMips::safeToModify(InputSection *sec) const
 
 bool NanoMips::relaxOnce(int pass) const
 {
+  // TODO: isFullNanoMipsISA is not compatible with gold's checking of nmf, as it is checked
+  // per obj file, here we check the output one.
   llvm::outs() << "is full nanoMIPS ISA: "  << NanoMipsAbiFlagsSection<ELF32LE>::get()->isFullNanoMipsISA() << "\n";
   bool changed = false;
   if(this->mayRelax())
@@ -358,7 +360,7 @@ bool NanoMips::relaxOnce(int pass) const
       {
         if(!this->safeToModify(sec)) continue;
 
-        if((transformationState == NANOMIPS_RELAX_STATE || transformationState == NANOMIPS_EXPAND_STATE)  && sec->numRelocations)
+        if((this->transformationState == NANOMIPS_RELAX_STATE || this->transformationState == NANOMIPS_EXPAND_STATE)  && sec->numRelocations)
          changed = this->transform(sec) || changed;
 
       }
@@ -403,10 +405,10 @@ bool NanoMips::transform(InputSection *sec) const
     else continue;
 
     uint64_t insMask = relocProp->getMask();
-
-    llvm::outs() << "Mask: " << utohexstr(insMask) << "\n"
-    << "Ins: " << utohexstr(insn) << "\n";
-
+    LLVM_DEBUG(
+      llvm::dbgs() << "Reloc property: " << relocProp->getName() << "\n";
+      llvm::dbgs() << "\tInsMask: " << utohexstr(insMask) << "\n";
+    );
   }
   return changed;
 }

@@ -263,6 +263,9 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::get()
   return abiFlagsUnique;
 }
 
+// TODO: Using this in relaxation and expansion, in gold
+// they use each objfile's abiflags, so need to check if
+// using just the output abiflag is good 
 template<class ELFT>
 bool NanoMipsAbiFlagsSection<ELFT>::isFullNanoMipsISA() const
 {

@@ -12,6 +12,7 @@
 
 # Starting testcase of nanomips relaxations, needs to convert
 # 32bit beqc to 16 bit beqc
+# And for expansions 32 bit lapc to 48 bit lapc
     .linkrelax
     .section .text, "ax", @progbits
     .align 1

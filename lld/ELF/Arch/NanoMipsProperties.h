@@ -11,6 +11,9 @@
 
 #include "Relocations.h"
 #include "llvm/ADT/SmallSet.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/BinaryFormat/ELF.h"
+#include "InputFiles.h"
 
 #undef TRANSFORM_ENUM
 #define TRANSFORM_ENUM
@@ -23,8 +26,16 @@
 // using namespace lld;
 // Used for relaxation purposes
 
+
 namespace lld {
 namespace elf{
+
+  template<class ELFT>
+  bool isNanoMipsPcRel(const ObjFile<ELFT> *obj)
+  {
+    return obj->getObj().getHeader().e_flags & llvm::ELF::EF_NANOMIPS_PCREL;
+  }
+  
   class NanoMipsRelocProperty;
   // Should be used only by NanoMips target, contains NanoMips reloc properties
     class NanoMipsRelocPropertyTable final {
@@ -77,13 +88,15 @@ namespace elf{
       // function pointer for inserting registers in Instruction Templates
       using InsertRegFun = uint64_t (*)(uint32_t, uint32_t, uint64_t);
 
-      uint64_t getInstruction(uint32_t treg, uint32_t sreg) const;
+      uint64_t getInstruction(uint32_t tReg, uint32_t sReg) const;
+      RelType getReloc() const { return reloc; }
+      StringRef getName() const { return name; }
 
     private:
       friend class NanoMipsInsPropertyTable;
       // private may only be used by NanoMipsPropertyTable, to create them with transform templates and ins properties
       NanoMipsInsTemplate(const char *name, uint64_t data, RelType reloc, uint32_t size, InsertRegFun insertTReg, InsertRegFun insertSReg)
-      : name(name), data(data), reloc(reloc), size(size), insertTReg(insertTReg), insertSReg(insertSReg) {}
+      : name(name), data(data), reloc(reloc), size(size / 8), insertTReg(insertTReg), insertSReg(insertSReg) {}
 
       // ins name
       std::string name;
@@ -108,20 +121,29 @@ namespace elf{
     // Relocs will be statically allocated so no need for deleter 
     // Debug only
     std::string toString() const;
+    // TODO: Check if this is good
+    bool hasReloc(RelType reloc) const
+    { return llvm::find(llvm::ArrayRef<const RelType>(relocs, relocCount), reloc); }
+    uint32_t getSizeOfTransform() const { return totalSizeOfTransform; }
+    NanoMipsTransformType getType() const { return type; }
+    const NanoMipsInsTemplate *getInsns() const { return insns; }
+    uint32_t getInsCount() const { return insCount; }
     private:
     friend class NanoMipsInsPropertyTable;
     // Only ins property table can build this this
-    NanoMipsTransformTemplate(const NanoMipsInsTemplate *insns, uint32_t insCount, const RelType *relocs, uint32_t relocCount)
-      : insns(insns), insCount(insCount), relocs(relocs), relocCount(relocCount) 
+    NanoMipsTransformTemplate(NanoMipsTransformType type, const NanoMipsInsTemplate *insns, uint32_t insCount, const RelType *relocs, uint32_t relocCount)
+      : type(type), insns(insns), insCount(insCount), relocs(relocs), relocCount(relocCount), totalSizeOfTransform(0)
       {
-        totalSizeOfTransform = 0;
-        for(uint32_t i = 0; i < insCount; i++) totalSizeOfTransform += insns[i].getSize();
+        // TODO: See which one of these two to keep
+        llvm::for_each(llvm::ArrayRef<const NanoMipsInsTemplate>(insns, insCount), [&](auto& elem){this->totalSizeOfTransform += elem.getSize();});
+        // for(uint32_t i = 0; i < insCount; i++) totalSizeOfTransform += insns[i].getSize();
       }
     
     // Copying not allowed
     NanoMipsTransformTemplate(const NanoMipsTransformTemplate &) = delete;
     void operator=(const NanoMipsTransformTemplate &) = delete;
 
+    NanoMipsTransformType type;
     // Instructions that compose this transformation
     const NanoMipsInsTemplate *insns;
     // Num of instructions that compose this transformation
@@ -145,6 +167,32 @@ namespace elf{
       std::string toString() const;
       // We will probably need a destructor for NanoMipsTransformTemplates
       ~NanoMipsInsProperty();
+      bool hasReloc(RelType reloc) const { return relocs.contains(reloc); };
+      bool hasTransform(NanoMipsTransformType type, RelType reloc) const 
+      { auto *t = this->transformationMap.lookup(type); return t ? t->hasReloc(reloc) : false; };
+      
+      const NanoMipsTransformTemplate *getTransformTemplate(NanoMipsTransformType type, RelType reloc) const
+      { auto *t = this->transformationMap.lookup(type); return t && t->hasReloc(reloc) ? t : nullptr; }
+
+      // Shouldn't be called for instructions that don't have extract sReg
+      uint32_t getSReg(uint64_t insn) const
+      { assert(this->extractSReg && "No extractSReg"); return extractSReg(insn);}
+
+      // Shouldn't be called for instructions that don't have extract tReg
+      uint32_t getTReg(uint64_t insn) const
+      { assert(this->extractTReg && "No extractTReg"); return extractTReg(insn); }
+
+      bool isSRegValid(uint64_t insn) const 
+      { assert(this->isValidSReg && "No isValidSReg"); return isValidSReg(extractSReg(insn)); }
+
+      bool isTRegValid(uint64_t insn) const
+      { assert(this->isValidTReg && "No isValidTReg"); return isValidTReg(extractTReg(insn)); }
+
+      bool areRegsValid(uint64_t insn) const
+      { return isTRegValid(insn) && isSRegValid(insn); }
+
+      StringRef getName() const { return name; }
+
     private:
       friend class NanoMipsInsPropertyTable;
       // Only accessible by NanoMipsInsPropertyTable, used to initialize transformations in property
@@ -167,6 +215,7 @@ namespace elf{
 
       ExtractRegFun extractTReg;
       ConvertRegFun convertTReg;
+      // TODO: Change names of these valids, maybe a little ambigous
       IsValidRegFun isValidTReg;
 
       ExtractRegFun extractSReg;
@@ -178,6 +227,7 @@ namespace elf{
     public:
       NanoMipsInsPropertyTable();
       ~NanoMipsInsPropertyTable();
+      NanoMipsInsProperty *findInsProperty(uint64_t insn, uint64_t mask, RelType reloc) const;
       // For debugging only
       std::string toString() const;
       // We will need a destructor as well
@@ -187,7 +237,113 @@ namespace elf{
       NanoMipsInsPropertyTable(const NanoMipsInsPropertyTable &) = delete;
       void operator=(const NanoMipsInsPropertyTable &) = delete;
 
-      llvm::DenseMap<uint32_t, NanoMipsInsProperty *> insMap;
+      llvm::DenseMap<uint64_t, NanoMipsInsProperty *> insMap;
+
+  };
+
+  
+
+  enum NanoMipsTransformationEnum {
+    NANOMIPS_NONE_STATE,
+    NANOMIPS_RELAX_STATE,
+    NANOMIPS_EXPAND_STATE
+  };
+  class NanoMipsTransform {
+    public:
+      enum TransformKind {
+        TransformNone = 0,
+        TransformRelax = 1,
+        TransformExpand = 2
+      };
+      virtual TransformKind getType() const = 0;
+      NanoMipsTransform(const NanoMipsInsPropertyTable *tbl): insPropertyTable(tbl) {}
+      virtual ~NanoMipsTransform() {};
+      virtual const NanoMipsInsProperty *getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const;
+      virtual const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const;
+      virtual void updateSectionContent(InputSection *isec, uint64_t location, int32_t delta);
+      bool getChanged() { return changed; }
+      bool getChangedThisIteration() { return changedThisIteration; }
+      void resetChanged() { changed = false; }
+      void resetChangedThisIteration() { changedThisIteration = false; }
+      // Relnum is changed in transform as it is passed by reference
+      virtual void transform(Relocation &reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const;
+      // const NanoMipsInsProperty *
+      // Debugging purposes only
+      std::string getTypeAsString() const;
+      static uint64_t readInsn(ArrayRef<uint8_t> data, uint64_t offset, uint32_t instSize);
+      static void writeInsn(uint64_t insn, ArrayRef<uint8_t> data, uint64_t offset, uint32_t instSize);
+    protected:
+      const NanoMipsInsPropertyTable *insPropertyTable;
+      // if the code size has been changed in this state
+      bool changedThisIteration;
+      // if the code size has been changed during this iteration
+      bool changed;
+
+    private:
+      void addBytesToSection(InputSection *isec, uint64_t location, uint32_t delta);
+      void reduceBytesFromSection(InputSection *isec, uint64_t location, uint32_t delta);
+  };
+
+
+  class NanoMipsTransformExpand: public NanoMipsTransform 
+  {
+    public:
+      NanoMipsTransformExpand(const NanoMipsInsPropertyTable *tbl): NanoMipsTransform(tbl) { assert(insPropertyTable); }
+      TransformKind getType() const override { return TransformExpand; }
+      const NanoMipsInsProperty *getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const override;
+      const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const override;
+    private:
+    const NanoMipsTransformTemplate *getExpandTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t insn, const InputSection *isec) const;
+  };
+
+  class NanoMipsTransformRelax: public NanoMipsTransform {
+    public:
+      NanoMipsTransformRelax(const NanoMipsInsPropertyTable *tbl): NanoMipsTransform(tbl) 
+      { 
+        assert(insPropertyTable);
+        // This is done so that after first relaxation pass, we do expansion
+        // regardless of the pass changing or not changing code size
+        this->changed = true;   
+      }
+      TransformKind getType() const override { return TransformRelax; }
+      const NanoMipsInsProperty *getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const override;
+      const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const override;
+  };
+
+  class NanoMipsTransformNone: public NanoMipsTransform {
+    public:
+      // NanoMipsTransformNone won't use the table so it doesn't need it
+      NanoMipsTransformNone(const NanoMipsInsPropertyTable *): NanoMipsTransform(nullptr) {}
+      TransformKind getType() const override { return TransformNone; }
+      const NanoMipsInsProperty *getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const override { return nullptr; }
+      const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const override { return nullptr; }
+
+  };
+
+  class NanoMipsTransformController {
+    public:
+      NanoMipsTransformController(const NanoMipsInsPropertyTable *tbl): transformRelax(tbl), transformExpand(tbl), transformNone(tbl), currentState(&transformNone){}
+
+      void initState();
+      void changeState();
+      NanoMipsTransform::TransformKind getType() const { return this->currentState->getType(); }
+      // should be called before change state
+      bool shouldRunAgain() const { return this->currentState->getChanged(); }
+      const NanoMipsInsProperty *getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const 
+      { return this->currentState->getInsProperty(insn, insnMask, reloc, isec); }
+      const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const
+      { return this->currentState->getTransformTemplate(insProperty, reloc, valueToRelocate, insn, isec);}
+
+      void updateSectionContent(InputSection *isec, uint64_t location, int32_t delta) const { this->currentState->updateSectionContent(isec, location, delta);}
+      void transform(Relocation &reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const
+      { this->currentState->transform(reloc, transformTemplate, insProperty, isec, insn, relNum); }
+    private:
+      NanoMipsTransformRelax transformRelax;
+      NanoMipsTransformExpand transformExpand;
+      NanoMipsTransformNone transformNone;
+      // This should be declared after transforms
+      NanoMipsTransform *currentState;
+
 
   };
 

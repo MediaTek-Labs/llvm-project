@@ -121,6 +121,12 @@ public:
   // its static type.
   InputFile *file;
 
+  // Note: used for nanoMIPS expansions
+  void addBytes(uint64_t location, uint32_t count);
+
+  // Note: used for nanoMIPS relaxations
+  void deleteBytes(uint64_t location, uint32_t count);
+
   // Input sections are part of an output section. Special sections
   // like .eh_frame and merge sections are first combined into a
   // synthetic section that is then added to an output section. In all

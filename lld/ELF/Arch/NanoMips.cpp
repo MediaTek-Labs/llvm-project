@@ -23,7 +23,6 @@ using namespace llvm::object;
 using namespace llvm::ELF;
 using namespace lld;
 using namespace lld::elf;
-using namespace llvm::support::endian;
 using namespace llvm;
 
 // use --mllvm with --debug or --debug-only=<name>
@@ -69,28 +68,22 @@ public:
     // TODO:
     // uint32_t calcEFlags() const override;
 private:
-    enum TransformationState {
-      NANOMIPS_NONE_STATE,
-      NANOMIPS_RELAX_STATE,
-      NANOMIPS_EXPAND_STATE
-    };
-    mutable TransformationState transformationState = NANOMIPS_NONE_STATE;
     NanoMipsRelocPropertyTable relocPropertyTable;
     NanoMipsInsPropertyTable insPropertyTable;
+    // Needs to be declared after insPropertyTable
+    NanoMipsTransformController currentTransformation;
 
     bool safeToModify(InputSection *sec) const;
-    void setAbiFlags() const;
 
     // relax + expand
-    bool transform(InputSection *sec) const;
-
+    void transform(InputSection *sec) const;
 
     // bool relax(InputSection *sec) const;
     // bool expand(InputSection *sec) const;
 };
 } // namespace
 
-NanoMips::NanoMips(){
+NanoMips::NanoMips(): currentTransformation(&insPropertyTable) {
   copyRel = R_NANOMIPS_COPY;
   // noneRel Already zero, and is now static constexpr
   // noneRel = R_NANOMIPS_NONE;
@@ -103,6 +96,8 @@ NanoMips::NanoMips(){
   llvm::dbgs() << "relax_lo12: " << config->nanoMipsRelaxLo12 << "\n";
   llvm::dbgs() << "insn32: " << config->nanoMipsInsn32 << "\n";
   );
+
+  this->currentTransformation.initState();
 }
 
 //used for: R_NANOMIPS_HI20, R_NANOMIPS_PC_HI20 and R_NANOMIPS_GPREL_HI20
@@ -205,6 +200,8 @@ RelExpr NanoMips::getRelExpr(RelType type, const Symbol &s,
   case R_NANOMIPS_NONE:
   case R_NANOMIPS_FIXED:
   case R_NANOMIPS_ALIGN:
+  case R_NANOMIPS_INSN32:
+  case R_NANOMIPS_INSN16:
     return R_NONE;
   default:
     error(getErrorLocation(loc) + "unknown relocation (" + Twine(type) +
@@ -233,6 +230,8 @@ void NanoMips::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const
   case R_NANOMIPS_NONE:
   case R_NANOMIPS_FIXED:
   case R_NANOMIPS_ALIGN:
+  case R_NANOMIPS_INSN16:
+  case R_NANOMIPS_INSN32:
     break;
   case R_NANOMIPS_UNSIGNED_16:
     checkUInt(loc, val, 16, rel);
@@ -338,51 +337,55 @@ bool NanoMips::safeToModify(InputSection *sec) const
   return modifiable;
 }
 
+// TODO: Emit reloc option, somewhat different transformations
 bool NanoMips::relaxOnce(int pass) const
 {
+  LLVM_DEBUG(llvm::dbgs() << "Transformation Pass num: " << pass << "\n";);
   // TODO: isFullNanoMipsISA is not compatible with gold's checking of nmf, as it is checked
   // per obj file, here we check the output one.
-  llvm::outs() << "is full nanoMIPS ISA: "  << NanoMipsAbiFlagsSection<ELF32LE>::get()->isFullNanoMipsISA() << "\n";
+  LLVM_DEBUG(
+  llvm::dbgs() << "is full nanoMIPS ISA: "  << NanoMipsAbiFlagsSection<ELF32LE>::get()->isFullNanoMipsISA() << "\n";
+  );
   bool changed = false;
   if(this->mayRelax())
   {
-    if(pass == 0)
-    {
-      if(config->relax) this->transformationState = NANOMIPS_RELAX_STATE;
-      else if(config->expand) this->transformationState = NANOMIPS_EXPAND_STATE;
-    }
     for(OutputSection *osec : outputSections)
     {
       if((osec->flags & (SHF_EXECINSTR | SHF_ALLOC)) != (SHF_EXECINSTR | SHF_ALLOC) ||
           !(osec->type & SHT_PROGBITS))
           continue;
+      // TODO: There are null input sections, sections in gold, see what's up with that later
       for(InputSection *sec : getInputSections(osec))
       {
         if(!this->safeToModify(sec)) continue;
 
-        if((this->transformationState == NANOMIPS_RELAX_STATE || this->transformationState == NANOMIPS_EXPAND_STATE)  && sec->numRelocations)
-         changed = this->transform(sec) || changed;
+        llvm::outs() << isNanoMipsPcRel<ELF32LE>(sec->getFile<ELF32LE>()) << "\n";
+        if(sec->numRelocations) this->transform(sec);
 
       }
     }
-    if(!changed && config->expand && this->transformationState == NANOMIPS_RELAX_STATE)
-    {
-      changed = true;
-      this->transformationState = NANOMIPS_EXPAND_STATE;
-    }
+
+    changed = this->currentTransformation.shouldRunAgain();
+    const_cast<NanoMipsTransformController &>(this->currentTransformation).changeState();
+    // if(!changed && config->expand && this->currentTransformState->getType() == NanoMipsTransform::TransformRelax)
+    // {
+    //   // Set changed to true to initiate a round of expansion transformations
+    //   changed = true;
+    //   this->currentTransformState = &expandTransform;
+    // }
   }
   return changed;
 }
 
-bool NanoMips::transform(InputSection *sec) const 
+void NanoMips::transform(InputSection *sec) const 
 {
 
-  auto &relocs = sec->relocations;
-  bool changed = false;
   const uint32_t bits = config->wordsize * 8;
   uint64_t secAddr = sec->getOutputSection()->addr + sec->outSecOff;
-  for(auto &reloc: relocs)
+  // Need to do it like this bc at transform we may invalidate the iterator
+  for(uint32_t relNum = 0; relNum < sec->relocations.size(); relNum++)
   {
+    Relocation &reloc = sec->relocations[relNum];
     // TODO: Check if section should be compressed when returning value
     ArrayRef<uint8_t> oldContent = sec->data();
     uint64_t oldSize = sec->getSize();
@@ -391,27 +394,57 @@ bool NanoMips::transform(InputSection *sec) const
     const NanoMipsRelocProperty *relocProp =  relocPropertyTable.getRelocProperty(reloc.type);
     if(!relocProp) continue;
 
-    uint64_t insn = 0;
     uint32_t instSize = relocProp->getInstSize();
-    if(instSize == 4)
-    {
-      insn = read32le(&oldContent[reloc.offset]);
-      insn = bswap(insn);
-    } 
-    else if(instSize == 6)
-      insn = read16le(&oldContent[reloc.offset - 2]);
-    else if(instSize == 2)
-      insn = read16le(&oldContent[reloc.offset]);
-    else continue;
+    uint64_t insn = NanoMipsTransform::readInsn(sec->data(), reloc.offset, instSize);
 
     uint64_t insMask = relocProp->getMask();
     LLVM_DEBUG(
       llvm::dbgs() << "Reloc property: " << relocProp->getName() << "\n";
-      llvm::dbgs() << "\tInsMask: " << utohexstr(insMask) << "\n";
+      llvm::dbgs() << "\tInsMask: 0x" << utohexstr(insMask) << "\n";
+      llvm::dbgs() << "Instruction Read: 0x" << utohexstr(insn) << "\n";
     );
+
+    const NanoMipsInsProperty *insProperty = this->currentTransformation.getInsProperty(insn, insMask, reloc.type, sec);
+    if(!insProperty) continue;
+
+    LLVM_DEBUG(
+      llvm::dbgs() << "InsProperty: " << insProperty->toString() << "\n";
+    );
+
+    // if is forced length
+    // TODO: Should check if R_NANOMIPS_INSN32 should allow expansion, or INSN16
+    // Note: Will skip this step, don't know how to generate FIXED,INSN32 or INSN16 relocs
+    // TODO: Find out how to generate these relocations
+
+    // Note: Will skip symbol calculation as well, we calculate them through getRelocTargetVA 
+    // TODO: Return to this later, and see if somethings need to be fixed
+
+    // TODO: Undef weak symbols
+    const NanoMipsTransformTemplate *transformTemplate = this->currentTransformation.getTransformTemplate(insProperty, reloc, valueToRelocate, insn, sec);
+
+    if(!transformTemplate) continue;
+
+    LLVM_DEBUG( 
+      llvm::dbgs() << "TransformTemplate: " << transformTemplate->toString() << "\n";
+    );
+
+    // TODO: gold creates a new input section, check if it is needed?
+
+    // Bytes to remove/add
+    int32_t delta = transformTemplate->getSizeOfTransform() - instSize;
+    uint32_t relocOffset = reloc.offset - (instSize == 6 ? 2 : 0);
+    if(delta != 0)
+      this->currentTransformation.updateSectionContent(sec, relocOffset + instSize, delta);
+
+    // Transform
+
+    this->currentTransformation.transform(reloc, transformTemplate, insProperty, sec, insn, relNum);
+
+    // Finalize content?
   }
-  return changed;
+  return;
 }
+
 
 // bool NanoMips::relax(InputSection *sec) const {
 

@@ -245,9 +245,13 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
 
   }
 
-  // Will stay new, until I see what other options I have
+  // Will stay new instead of make, until I see what other options I have
   if(create)
-    return new NanoMipsAbiFlagsSection<ELFT>(flags);
+  {
+    auto *abiFlagsSec = new NanoMipsAbiFlagsSection<ELFT>(flags);
+    abiFlagsSec->mapOfAbiFlags = std::move(tmpMap);
+    return abiFlagsSec;
+  }
   return nullptr;
 }
 
@@ -271,7 +275,19 @@ bool NanoMipsAbiFlagsSection<ELFT>::isFullNanoMipsISA() const
 {
   return (flags.ases & llvm::NanoMips::AFL_ASE_xNMS) != 0;
 }
-
+template<class ELFT>
+bool NanoMipsAbiFlagsSection<ELFT>::isFullNanoMipsISA(const InputSectionBase *isec) const
+{
+  bool retVal = isFullNanoMipsISA();
+  if(auto *obj = isec->getFile<ELFT>())
+  {
+    if(mapOfAbiFlags.count(obj))
+    {
+      retVal = (mapOfAbiFlags.lookup(obj)->ases & llvm::NanoMips::AFL_ASE_xNMS) != 0;
+    }
+  }
+  return retVal;
+}
 
 // .MIPS.options section.
 template <class ELFT>

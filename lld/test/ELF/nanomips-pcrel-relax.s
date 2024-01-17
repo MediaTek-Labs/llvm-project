@@ -21,13 +21,13 @@
 
 _start:
     lapc $a3, fun
-#    bgec $a1, $a7, fun
-#    beqc $a2, $a3, fun
+    bgec $a1, $a7, fun
+    beqc $a2, $a3, fun
 a:
-#    beqc $a3, $a2, fun
-#    bgec $a1, $a4, fun
-#    add $a1, $a1, $a1
-#    add $a2, $a3, $a1
+    bnec $a1, $a2, fun
+    bgec $a1, $a4, fun
+    add $a1, $a1, $a1
+    add $a2, $a3, $a1
     .end _start
     .size _start, .-_start
 
@@ -37,7 +37,24 @@ a:
     .ent fun
 fun:
     addiu $a3, $a2, 1
-#    beqc $zero, $a2, a
+    beqc $zero, $a2, a
+    bnec $t0, $a2, x
+    bnec $zero, $t0, x
+    beqc $a2, $a2, x
+    bnec $a2, $a2, x 
 
     .end fun
     .size fun, .-fun
+
+    .globl x
+    .ent x
+x:
+    addiu $a2, $a2, 2
+    bnec $zero, $a3, x2
+    beqc $a2, $a3, x1
+    .skip 0x20
+x1:
+    .skip 0x5c
+x2:
+    .end x
+    .size x, .-x

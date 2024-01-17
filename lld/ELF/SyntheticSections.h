@@ -1012,6 +1012,9 @@ public:
   const Elf_NanoMips_ABIFlags *getFlags() const { return &flags; };
   void writeTo(uint8_t *buf) override;
   bool isFullNanoMipsISA() const;
+  // by section checking if full nanoMIPS ISA
+  // TODO: Check this!
+  bool isFullNanoMipsISA(const InputSectionBase *isec) const;
 
 private:
   static NanoMipsAbiFlagsSection *create();
@@ -1022,6 +1025,10 @@ private:
   static std::string fp_abi_string(uint32_t fp);
   Elf_NanoMips_ABIFlags flags;
   static NanoMipsAbiFlagsSection *abiFlagsUnique;
+
+  // TODO: Check what is the usual num of obj files when linking nanoMIPS arch programs
+  // so we can set the default num of space
+  llvm::DenseMap<ObjFile<ELFT> *, const Elf_NanoMips_ABIFlags *> mapOfAbiFlags;
 
 };
 

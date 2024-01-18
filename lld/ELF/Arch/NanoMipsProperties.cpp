@@ -39,11 +39,11 @@ uint64_t insertReg(uint32_t treg, uint32_t sreg, uint64_t data)
 {
   uint32_t reg;
   // C++ 17
-  if constexpr(REG == RM_NANOMIPS_TREG) reg = treg;
-  else reg = sreg;
+  // if constexpr(REG == RM_NANOMIPS_TREG) reg = treg;
+  // else reg = sreg;
 
-  // if(REG == RM_NANOMIPS_TREG) reg = treg;
-  // else sreg;
+  if(REG == RM_NANOMIPS_TREG) reg = treg;
+  else reg = sreg;
 
   return data | ((reg & ((1U << Size) - 1)) << Pos);
 
@@ -424,6 +424,23 @@ void NanoMipsTransform::transform(Relocation &reloc, const NanoMipsTransformTemp
       }
       break;
     }
+    case R_NANOMIPS_PC21_S1:
+    {
+      tReg = insProperty->getTReg(insn);
+      if(insProperty->getName() == "move.balc")
+        sReg = insProperty->getSReg(insn);
+      else
+        sReg = tReg;
+      break;
+    }
+
+    case R_NANOMIPS_PC4_S1:
+    {
+      tReg = insProperty->convTReg(insn);
+      sReg = insProperty->convSReg(insn);
+      break;
+    }
+
     default:
     // Should be unreachable, but for now just break and return
       LLVM_DEBUG(llvm::dbgs() << "Transform for relocation: " << reloc.type << " not supported yet!\n");
@@ -447,7 +464,7 @@ void NanoMipsTransform::transform(Relocation &reloc, const NanoMipsTransformTemp
     {
       assert(transformTemplate->getType() != TT_NANOMIPS_DISCARD && "There is a reloc for a DISCARD relaxation!");
 
-      uint32_t newROffset = (insTemplate.getSize() == 6 ? offset -2 : offset);
+      uint32_t newROffset = (insTemplate.getSize() == 6 ? offset + 2 : offset);
       if(!newReloc)
       {
         reloc.offset = newROffset;
@@ -489,8 +506,7 @@ uint32_t swap16BitWords(uint32_t val)
 
 uint64_t NanoMipsTransform::readInsn(ArrayRef<uint8_t> data, uint64_t off, uint32_t insnSize)
 {
-  assert(off + insnSize < data.size() && "Overflow on buffer in readInsn");
-  // 48 bit instruction reloc offsets point to 32 bit imm/off not to the beginning of ins
+  assert(off + insnSize <= data.size() && "Overflow on buffer in readInsn");
   if(insnSize == 6) return read16le(&data[off - 2]);
   // bswap is for more natural instruction layout
   else if(insnSize == 4) return swap16BitWords(read32le(&data[off]));
@@ -500,10 +516,9 @@ uint64_t NanoMipsTransform::readInsn(ArrayRef<uint8_t> data, uint64_t off, uint3
 
 void NanoMipsTransform::writeInsn(uint64_t insn, ArrayRef<uint8_t>data, uint64_t off, uint32_t insnSize)
 {
-    assert(off + insnSize < data.size() && "Overflow on buffer in writeInsn");
+    assert(off + insnSize <= data.size() && "Overflow on buffer in writeInsn");
     uint8_t *dataPtr = const_cast<uint8_t *>(data.begin());
-    // 48 bit instruction reloc offsets point to 32 bit imm/off not to the beginning of ins
-    if (insnSize == 6) write16le(dataPtr + off - 2, (uint16_t)insn);
+    if (insnSize == 6) write16le(dataPtr + off, (uint16_t)insn);
     else if(insnSize == 4) write32le(dataPtr + off, swap16BitWords((uint32_t)insn));
     else if(insnSize == 2) write16le(dataPtr + off, (uint16_t)insn);
     else llvm_unreachable("Unknown byte size of nanoMIPS instruction (only 2, 4, and 6 known)");
@@ -592,6 +607,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
   switch(reloc)
   {
     case R_NANOMIPS_PC21_S1:
+    case R_NANOMIPS_PC4_S1:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -607,7 +623,14 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
     case R_NANOMIPS_PC21_S1:
     {
       uint64_t val = valueToRelocate - 4;
-      if(((val & 0x1) == 0) && !isInt<22>(val))
+      if(((val & 0x1) == 0) && isInt<22>(val))
+        return nullptr;
+      break;
+    }
+    case R_NANOMIPS_PC4_S1:
+    {
+      uint64_t val = valueToRelocate - 2;
+      if(isUInt<5>(val))
         return nullptr;
       break;
     }
@@ -615,7 +638,6 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
     // TODO: Should be unreachable when all relocs are processed
     LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);
     return nullptr;
-    break;
   }
   return getExpandTransformTemplate(insProperty, reloc, insn, isec);
 }
@@ -632,15 +654,22 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
       if(insProperty->getName() == "move.balc")
         return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type);
       else if(nanoMipsFullAbi)
-      // Here!
-        return nullptr;
-      return nullptr;
-      break;
+        return pcrel ? 
+          insProperty->getTransformTemplate(TT_NANOMIPS_PCREL_NMF, reloc.type) :
+          insProperty->getTransformTemplate(TT_NANOMIPS_ABS_NMF, reloc.type);
+      else
+        return pcrel ?
+          insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type) :
+          insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type);
+    case R_NANOMIPS_PC4_S1:
+      // Equality should be impossible but just in case
+      return insProperty->getSReg(insn) >= insProperty->getTReg(insn) ?
+        insProperty->getTransformTemplate(TT_NANOMIPS_BNEC32, reloc.type) :
+        insProperty->getTransformTemplate(TT_NANOMIPS_BEQC32, reloc.type);
     default:
       // Should be unreachable when all relocs are processed
       LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expandsions\n";);
       return nullptr;
-      break;
   }
 }
 

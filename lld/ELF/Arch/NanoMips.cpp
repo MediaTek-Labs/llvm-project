@@ -341,11 +341,7 @@ bool NanoMips::safeToModify(InputSection *sec) const
 bool NanoMips::relaxOnce(int pass) const
 {
   LLVM_DEBUG(llvm::dbgs() << "Transformation Pass num: " << pass << "\n";);
-  // TODO: isFullNanoMipsISA is not compatible with gold's checking of nmf, as it is checked
-  // per obj file, here we check the output one.
-  LLVM_DEBUG(
-  llvm::dbgs() << "is full nanoMIPS ISA: "  << NanoMipsAbiFlagsSection<ELF32LE>::get()->isFullNanoMipsISA() << "\n";
-  );
+  // TODO: Should full nanoMips ISA be checked as full or per obj, as it is checked
   bool changed = false;
   if(this->mayRelax())
   {
@@ -359,7 +355,6 @@ bool NanoMips::relaxOnce(int pass) const
       {
         if(!this->safeToModify(sec)) continue;
 
-        llvm::outs() << isNanoMipsPcRel<ELF32LE>(sec->getFile<ELF32LE>()) << "\n";
         if(sec->numRelocations) this->transform(sec);
 
       }
@@ -383,18 +378,19 @@ void NanoMips::transform(InputSection *sec) const
   const uint32_t bits = config->wordsize * 8;
   uint64_t secAddr = sec->getOutputSection()->addr + sec->outSecOff;
   // Need to do it like this bc at transform we may invalidate the iterator
+  // TODO: Relocs are not sorted by offset, check if they should be?
   for(uint32_t relNum = 0; relNum < sec->relocations.size(); relNum++)
   {
     Relocation &reloc = sec->relocations[relNum];
     // TODO: Check if section should be compressed when returning value
-    ArrayRef<uint8_t> oldContent = sec->data();
-    uint64_t oldSize = sec->getSize();
     uint64_t addrLoc = secAddr + reloc.offset;
     uint64_t valueToRelocate = llvm::SignExtend64(sec->getRelocTargetVA(sec->file, reloc.type, reloc.addend, addrLoc, *reloc.sym, reloc.expr), bits);
     const NanoMipsRelocProperty *relocProp =  relocPropertyTable.getRelocProperty(reloc.type);
     if(!relocProp) continue;
 
     uint32_t instSize = relocProp->getInstSize();
+    // 48 bit instruction reloc offsets point to 32 bit imm/off not to the beginning of ins~
+    uint32_t relocOffset = reloc.offset - (instSize == 6 ? 2 : 0);
     uint64_t insn = NanoMipsTransform::readInsn(sec->data(), reloc.offset, instSize);
 
     uint64_t insMask = relocProp->getMask();
@@ -432,7 +428,6 @@ void NanoMips::transform(InputSection *sec) const
 
     // Bytes to remove/add
     int32_t delta = transformTemplate->getSizeOfTransform() - instSize;
-    uint32_t relocOffset = reloc.offset - (instSize == 6 ? 2 : 0);
     if(delta != 0)
       this->currentTransformation.updateSectionContent(sec, relocOffset + instSize, delta);
 

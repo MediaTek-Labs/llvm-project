@@ -175,7 +175,7 @@ template <class ELFT> RelsOrRelas<ELFT> InputSectionBase::relsOrRelas() const {
 
 void InputSectionBase::addBytes(uint64_t location, uint32_t count)
 {
-  assert(location < rawData.size() - bytesDropped && "Location mustn't be larger than size of section");
+  assert(location <= rawData.size() - bytesDropped && "Location mustn't be larger than size of section");
   assert(count > 0 && "Number of new bytes must be larger than 0");
   if(count > bytesDropped)
   {
@@ -209,11 +209,26 @@ void InputSectionBase::addBytes(uint64_t location, uint32_t count)
 
 void InputSectionBase::deleteBytes(uint64_t location, uint32_t count)
 {
-  assert(location < rawData.size() - bytesDropped && "Location mustn't be larger than size of section");
-  assert(count < rawData.size() - bytesDropped && count > 0 && "Number of deleted bytes must be larger than 0 and less than size of section");
-
-  bytesDropped += count;
+  // FIXME: Too big sections seem to mess the allocator and invalidate other locs 
+  assert(location <= rawData.size() - bytesDropped && "Location mustn't be larger than size of section");
+  assert(count > 0 && count <= location && "Number of deleted bytes must be larger than 0 and less than location");
+  // llvm::outs() << "Count: " << count << "\t Location: " << location << "\n"
+  // << "Size: " << rawData.size() << "\t" << "Dropped: " << bytesDropped << "\n";
+  // uint8_t *ptr = const_cast<uint8_t *>(rawData.data());
+  // llvm::outs() << ptr << ":" << (uint32_t)*ptr << "\n";
+  // *ptr = 1;
+  // llvm::outs() << ptr << ":" << (uint32_t)*ptr << "\n";
+  // for(uint64_t i = location; i < rawData.size() - bytesDropped; i++)
+  // {
+  //   llvm::outs() << "I: " << i << "\n";
+  //   llvm::outs() << (uint32_t)rawData[i - count] << "|" << (uint32_t)rawData[i] << "\n";
+  //   uint8_t *ptr = const_cast<uint8_t *>(rawData.data()) + i - count;
+  //   llvm::outs() << ptr << "\n";
+  //   llvm::outs() << (uint32_t)(*ptr) << "\n";
+  //   *ptr = rawData[i];
+  // }
   memmove(const_cast<uint8_t *>(rawData.begin()) + location - count, rawData.begin() + location, rawData.size() - bytesDropped - location);
+  bytesDropped += count;
 }
 
 uint64_t InputSectionBase::getOffsetInFile() const {

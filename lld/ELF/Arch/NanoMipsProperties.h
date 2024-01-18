@@ -33,7 +33,7 @@ namespace elf{
   template<class ELFT>
   bool isNanoMipsPcRel(const ObjFile<ELFT> *obj)
   {
-    return obj->getObj().getHeader().e_flags & llvm::ELF::EF_NANOMIPS_PCREL;
+    return (obj->getObj().getHeader().e_flags & llvm::ELF::EF_NANOMIPS_PCREL) != 0;
   }
   
   class NanoMipsRelocProperty;
@@ -183,13 +183,19 @@ namespace elf{
       { assert(this->extractTReg && "No extractTReg"); return extractTReg(insn); }
 
       bool isSRegValid(uint64_t insn) const 
-      { assert(this->isValidSReg && "No isValidSReg"); return isValidSReg(extractSReg(insn)); }
+      { assert(this->isValidSReg && "No isValidSReg"); return isValidSReg(getSReg(insn)); }
 
       bool isTRegValid(uint64_t insn) const
-      { assert(this->isValidTReg && "No isValidTReg"); return isValidTReg(extractTReg(insn)); }
+      { assert(this->isValidTReg && "No isValidTReg"); return isValidTReg(getTReg(insn)); }
 
       bool areRegsValid(uint64_t insn) const
       { return isTRegValid(insn) && isSRegValid(insn); }
+
+      uint32_t convTReg(uint64_t insn) const
+      { assert(this->convertTReg && "No convertTReg"); return this->convertTReg(getTReg(insn)); }
+
+      uint32_t convSReg(uint64_t insn) const
+      { assert(this->convertSReg && "No convertSReg"); return this->convertSReg(getSReg(insn)); }
 
       StringRef getName() const { return name; }
 

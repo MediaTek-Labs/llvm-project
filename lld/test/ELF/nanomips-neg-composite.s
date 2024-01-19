@@ -1,14 +1,11 @@
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-as \
-# RUN: -m32 -EL -march=32r6 %s -o %t.o
+# REQUIRES: nanomips
+
+# RUN: %nanomips-elf-as -m32 -EL -march=32r6 %s -o %t.o
 # RUN: ld.lld --section-start .text=0x80020000 --section-start .rodata=0x80021000 --section-start .eh_frame=0x80022000 %t.o -o %t
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump \
-# RUN: -d %t | FileCheck %s
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump \
-# RUN: -s --section=.rodata %t | FileCheck %s --check-prefix=CHECK-JUMP
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump \
-# RUN: -s --section=.eh_frame %t | FileCheck %s --check-prefix=CHECK-EH
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump \
-# RUN: -s --section=.debug_info_dummy %t | FileCheck %s --check-prefix=CHECK-NONALLOC
+# RUN: %nanomips-elf-objdump -d %t | FileCheck %s
+# RUN: %nanomips-elf-objdump -s --section=.rodata %t | FileCheck %s --check-prefix=CHECK-JUMP
+# RUN: %nanomips-elf-objdump -s --section=.eh_frame %t | FileCheck %s --check-prefix=CHECK-EH
+# RUN: %nanomips-elf-objdump -s --section=.debug_info_dummy %t | FileCheck %s --check-prefix=CHECK-NONALLOC
 
 # CHECK: 80020004 <_start>
 # CHECK: 8002000e: 4806 8000 brsc a2

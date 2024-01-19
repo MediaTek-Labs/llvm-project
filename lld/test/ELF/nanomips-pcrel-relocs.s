@@ -1,8 +1,9 @@
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-as \
-# RUN: -EL -march=32r6 -m32 %s -o %t.o
+# REQUIRES: nanomips
+
+# RUN: %nanomips-elf-as -EL -march=32r6 -m32 %s -o %t.o
 # RUN: ld.lld --section-start .text=0x1000 --section-start .eh_frame=0x12000 --section-start .sdata=0x13000 %t.o -o %t
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump -d %t | FileCheck %s
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump -s --section=.eh_frame %t | FileCheck %s --check-prefix=CHECK-EH
+# RUN: %nanomips-elf-objdump -d %t | FileCheck %s
+# RUN: %nanomips-elf-objdump -s --section=.eh_frame %t | FileCheck %s --check-prefix=CHECK-EH
 
 # CHECK: 1000: 380a balc{{.*}}
 # CHECK: 1002: dbe4 beqc{{.*}}

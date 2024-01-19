@@ -1,8 +1,8 @@
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-as \
-# RUN: -EL -march=32r6 -m32 %s -o %t.o
+# REQUIRES: nanomips
+
+# RUN: %nanomips-elf-as -EL -march=32r6 -m32 %s -o %t.o
 # RUN: ld.lld --script=%S/Inputs/nanomips-gprel-relocs.ld %t.o -o %t
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump \
-# RUN: -d %t | FileCheck %s 
+# RUN: %nanomips-elf-objdump -d %t | FileCheck %s 
 
 # CHECK: 1000: 4080 0006 lw a0,4(gp)
 # CHECK: 1004: 44b0 0004 lh a1,4(gp)

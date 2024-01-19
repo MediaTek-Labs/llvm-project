@@ -70,6 +70,7 @@ llvm_config.feature_config(
                           'Hexagon': 'hexagon',
                           'Mips': 'mips',
                           'MSP430': 'msp430',
+                          'NanoMips':'nanomips',
                           'PowerPC': 'ppc',
                           'RISCV': 'riscv',
                           'Sparc': 'sparc',
@@ -153,3 +154,7 @@ if tar_executable:
 # ELF tests expect the default target for ld.lld to be ELF.
 if config.ld_lld_default_mingw:
     config.excludes.append('ELF')
+
+# Should put your own objdump and as as paths if you want lld for nanomips tests to pass
+config.substitutions.append(('%nanomips-elf-objdump', '/home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump'))
+config.substitutions.append(('%nanomips-elf-as', '/home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-as'))

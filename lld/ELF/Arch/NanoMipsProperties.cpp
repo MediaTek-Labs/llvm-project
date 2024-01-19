@@ -359,6 +359,8 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
               << ":" << isec->name
               << " by " << delta << " on location 0x" << utohexstr(location) << "\n";);
 
+  // TODO: This is not efficient maybe sort relocs by offset, and just traverse  over the ones
+  // which have offset larger or equal than the processed one 
   for(auto &reloc: isec->relocations)
   {
     // TODO: Need to make this different for align, fill and max reloc
@@ -371,7 +373,6 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
   // Adjust symbols
   // TODO: This is not that efficient, change it to be more efficient
 
-  // TODO: Change size of function
   if(isec->file)
   {
     for(auto *sym: isec->file->symbols)
@@ -566,7 +567,7 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
       return nullptr;
     }
     default:
-      // Should be just break, but after all relocs are processed
+      // TODO: Should be just break, but after all relocs are processed
       // I will change this 
       return nullptr;
       break;
@@ -652,6 +653,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
   {
     case R_NANOMIPS_PC21_S1:
       if(insProperty->getName() == "move.balc")
+        // See how this goes with insn32 option, as this transformation generates 16bit move with balc
         return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type);
       else if(nanoMipsFullAbi)
         return pcrel ? 

@@ -1,10 +1,10 @@
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-as \
-# RUN: -EL -march=32r6 -m32 -mno-pcrel %s -o %t1.o
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-as \
-# RUN: -EL -march=32r6 -m32 -mno-pcrel %S/Inputs/nanomips-abs-relocs-sup.s -o %t2.o
+# REQUIRES: nanomips
+
+# RUN: %nanomips-elf-as -EL -march=32r6 -m32 -mno-pcrel %s -o %t1.o
+# RUN: %nanomips-elf-as -EL -march=32r6 -m32 -mno-pcrel %S/Inputs/nanomips-abs-relocs-sup.s -o %t2.o
 # RUN:  ld.lld --section-start .text=0x1000 --section-start .sdata=0x2001020 %t1.o %t2.o -o %t
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump -td %t | FileCheck %s
-# RUN: /home/syrmia/Desktop/nanomips-gnu/nanomips-elf/2021.07-01/bin/nanomips-elf-objdump -d --section=.sdata %t | FileCheck %s --check-prefix CHECK-DATA-REL 
+# RUN: %nanomips-elf-objdump -td %t | FileCheck %s
+# RUN: %nanomips-elf-objdump -d --section=.sdata %t | FileCheck %s --check-prefix CHECK-DATA-REL 
 
 # CHECK: 0200102c {{.*}} c
 # CHECK: 00000004 {{.*}} e_sup

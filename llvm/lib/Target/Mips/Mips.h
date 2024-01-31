@@ -55,6 +55,8 @@ namespace llvm {
   void initializeNMOptimizeJumpTablesPass (PassRegistry&);
   void initializeNanoMipsRegisterReAllocPass(PassRegistry &);
   void initializeRedundantCopyEliminationPass(PassRegistry&);
+  void initializeNMLoadStoreOptPass(PassRegistry&);
+  void initializeNMMoveOptPass(PassRegistry&);
 } // end namespace llvm;
 
 #endif

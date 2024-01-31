@@ -62,6 +62,8 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTarget() {
   initializeMipsPreLegalizerCombinerPass(*PR);
   initializeNMOptimizeJumpTablesPass(*PR);
   initializeRedundantCopyEliminationPass(*PR);
+  initializeNMLoadStoreOptPass(*PR);
+  initializeNMMoveOptPass(*PR);
 }
 
 static std::string computeDataLayout(const Triple &TT, StringRef CPU,

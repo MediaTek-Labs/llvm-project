@@ -68,6 +68,7 @@ struct NMLoadStoreOpt : public MachineFunctionPass {
   bool isCalleeSavedLoadStore(MachineInstr &MI, bool IsRestore);
   void sortCalleeSavedLoadStoreList(InstrList &LoadStoreList);
   bool isSequenceValid(InstrList &StoreSequence);
+  bool isExtensible(MachineInstr &MI, InstrList &LoadStoreList);
   bool isValidSaveRestore16Offset(int64_t Offset);
   bool generateSaveOrRestore(MachineBasicBlock &MBB, bool IsRestore);
   unsigned getRegNo(unsigned Reg);
@@ -170,22 +171,21 @@ void NMLoadStoreOpt::sortCalleeSavedLoadStoreList(InstrList &LoadStoreList) {
   std::sort(LoadStoreList.begin(), LoadStoreList.end(), CompareInstructions);
 }
 
-bool NMLoadStoreOpt::isSequenceValid(InstrList &LoadStoreList) {
-  int InsNo = 1;
-  for (auto *MII = LoadStoreList.begin(); MII != LoadStoreList.end() - 1;
-       MII++, InsNo++) {
-    // Make sure that all offsets are 4 bytes apart.
-    int64_t CurrOffset = (*MII)->getOperand(2).getImm();
-    int64_t NextOffset = (*std::next(MII))->getOperand(2).getImm();
-    if (CurrOffset != NextOffset + 4)
-      return false;
+bool NMLoadStoreOpt::isExtensible(MachineInstr &MI, InstrList &LoadStoreList) {
+  if (LoadStoreList.empty())
+   return true;
+  MachineInstr *LastMI = LoadStoreList.back();
+  // Make sure that offsets are 4 bytes apart.
+  int64_t CurrOffset = LastMI->getOperand(2).getImm();
+  int64_t NextOffset = MI.getOperand(2).getImm();
+  if (CurrOffset != NextOffset + 4)
+    return false;
 
-    // Make sure that there is no gaps between registers.
-    int64_t CurrReg = (*MII)->getOperand(0).getReg();
-    int64_t NextReg = (*std::next(MII))->getOperand(0).getReg();
-    if (CalleeSaves.at(CurrReg) != CalleeSaves.at(NextReg) - 1)
-      return false;
-  }
+  // Make sure that there is no gap between registers.
+  int64_t CurrReg = LastMI->getOperand(0).getReg();
+  int64_t NextReg = MI.getOperand(0).getReg();
+  if (CalleeSaves.at(CurrReg) != CalleeSaves.at(NextReg) - 1)
+    return false;
   return true;
 }
 
@@ -244,7 +244,8 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
       // more loads once the end of the list has been reached. Both return and
       // stack adjustment should be found by now, since we're iterating from the
       // end.
-      if (isCalleeSavedLoadStore(MI, IsRestore)) {
+      if (   isCalleeSavedLoadStore(MI, IsRestore)
+          && isExtensible(MI, LoadStoreList)) {
         LoadStoreList.emplace_back(&MI);
         continue;
       }
@@ -271,7 +272,8 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
 
       // Since we are looking for a contguous list, we should stop searching for
       // more stores once the end of the list has been reached.
-      if (isCalleeSavedLoadStore(MI, IsRestore)) {
+      if (   isCalleeSavedLoadStore(MI, IsRestore)
+          && isExtensible(MI, LoadStoreList)) {
         LoadStoreList.emplace_back(&MI);
         continue;
       }
@@ -296,8 +298,6 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
 
     sortCalleeSavedLoadStoreList(LoadStoreList);
 
-    bool IsValidList = !LoadStoreList.empty() && isSequenceValid(LoadStoreList);
-
     // Save/restore instructions operate on the beginning of SP, but sometimes
     // that is allocated for function arguments. In that case, it is
     // neccessary to emit additional addiu (or save/restore) which adjusts stack
@@ -310,7 +310,7 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
     // sw $s3, 0($sp)       ->
     //
     int64_t NewStackOffset = 0;
-    if (IsValidList) {
+    if (!LoadStoreList.empty()) {
       auto LastOffset = LoadStoreList.front()->getOperand(2).getImm();
       assert(StackOffset >= LastOffset + 4);
       if (StackOffset > LastOffset + 4) {
@@ -329,8 +329,7 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
           LoadStoreList.erase(LoadStoreList.begin());
           // Since an element has been removed, it is neccessary to check
           // validity again.
-          IsValidList = !LoadStoreList.empty();
-          if (IsValidList) {
+          if (!LoadStoreList.empty()) {
             LastOffset = LoadStoreList.front()->getOperand(2).getImm();
             assert(!((LastOffset + 4) & 0x7));
             NewStackOffset = StackOffset - LastOffset - 4;
@@ -343,7 +342,7 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
       }
     }
 
-    if (!IsValidList) {
+    if (LoadStoreList.empty()) {
       // Generate 16-bit save/restore if there are no register arguments or
       // register arguments are invalid. They have 8-bit offset with quadword
       // alignment.
@@ -351,7 +350,6 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
       // without registers, since it's an invalid instruction for GNU as.
       if (!isValidSaveRestore16Offset(StackOffset) || (IsRestore && !Return))
         return false;
-      LoadStoreList.clear();
     }
 
     // If NewStackOffset is set, restore.jrc cannot be generated with Offset,

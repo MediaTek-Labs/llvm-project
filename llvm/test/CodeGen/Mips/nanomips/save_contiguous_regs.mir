@@ -1,0 +1,25 @@
+# RUN: llc -mtriple=nanomips-unknown=elf -run-pass=nmloadstoreopt %s -o - | FileCheck %s
+
+# Test that we create a 'save' instruction
+# from a contiguous prefix of store
+
+# CHECK: SAVE_NM
+# CHECK-NOT: ADDIUNEG_NM
+# CHECK-NOT: SW_NM $ra_nm, sp_nm, 572
+
+--- |
+
+  define void @foo() {
+    ret void
+  }
+...
+---
+name: foo
+body:  |
+  bb.0:
+    $sp_nm = ADDIUNEG_NM $sp_nm, -576
+    SW_NM $ra_nm, $sp_nm, 572
+    SW_NM $ra_nm, $sp_nm, 40
+    SW_NM $a2_nm, $sp_nm, 52
+    PseudoReturnNM undef $ra_nm
+...

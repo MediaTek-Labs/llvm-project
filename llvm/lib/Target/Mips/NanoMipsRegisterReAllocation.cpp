@@ -27,7 +27,7 @@
 
 using namespace llvm;
 
-#define NM_MOVE_OPT_NAME "nanoMIPS move optimization pass"
+#define PASS_NAME "nanoMIPS Register Re-allocation pass"
 
 namespace {
 struct NanoMipsRegisterReAlloc : public MachineFunctionPass {
@@ -60,7 +60,7 @@ struct NanoMipsRegisterReAlloc : public MachineFunctionPass {
     MachineFunctionPass::getAnalysisUsage(AU);
   }
 
-  StringRef getPassName() const override { return NM_MOVE_OPT_NAME; }
+  StringRef getPassName() const override { return PASS_NAME; }
 
   bool runOnMachineFunction(MachineFunction &) override;
   bool hintRegister(MachineBasicBlock &);
@@ -74,12 +74,12 @@ struct NanoMipsRegisterReAlloc : public MachineFunctionPass {
 
 char NanoMipsRegisterReAlloc::ID = 0;
 
-INITIALIZE_PASS_BEGIN(NanoMipsRegisterReAlloc, "nmregrealloc", "nanoMIPS Register Re-allocation", false,
+INITIALIZE_PASS_BEGIN(NanoMipsRegisterReAlloc, "nmregrealloc", PASS_NAME, false,
                       false)
 INITIALIZE_PASS_DEPENDENCY(LiveIntervals)
 INITIALIZE_PASS_DEPENDENCY(VirtRegMap)
 INITIALIZE_PASS_DEPENDENCY(LiveRegMatrix)
-INITIALIZE_PASS_END(NanoMipsRegisterReAlloc, "nmregrealloc", "nanoMIPS Register Re-allocation", false,
+INITIALIZE_PASS_END(NanoMipsRegisterReAlloc, "nmregrealloc", PASS_NAME, false,
                     false)
 
 bool NanoMipsRegisterReAlloc::runOnMachineFunction(MachineFunction &Fn) {

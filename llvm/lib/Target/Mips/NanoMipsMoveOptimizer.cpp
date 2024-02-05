@@ -24,7 +24,8 @@
 
 using namespace llvm;
 
-#define NM_MOVE_OPT_NAME "nanoMIPS move optimization pass"
+#define PASS_NAME "nanoMIPS move optimization pass"
+#define DEBUG_TYPE "nmmoveopt"
 
 static cl::opt<bool>
 DisableNMMoveOpt("disable-nm-move-opt", cl::Hidden, cl::init(false),
@@ -56,7 +57,7 @@ struct NMMoveOpt : public MachineFunctionPass {
   const MipsSubtarget *STI;
   const TargetInstrInfo *TII;
   NMMoveOpt() : MachineFunctionPass(ID) {}
-  StringRef getPassName() const override { return NM_MOVE_OPT_NAME; }
+  StringRef getPassName() const override { return PASS_NAME; }
   bool runOnMachineFunction(MachineFunction &) override;
   bool generateMoveP(MachineBasicBlock &);
   bool generateMoveBalc(MachineBasicBlock &);
@@ -358,6 +359,8 @@ bool NMMoveOpt::generateMoveBalc(MachineBasicBlock &MBB) {
 
   return MoveBalcPairs.size() > 0;
 }
+
+INITIALIZE_PASS(NMMoveOpt, DEBUG_TYPE, PASS_NAME, false, false)
 
 namespace llvm {
 FunctionPass *createNanoMipsMoveOptimizerPass() { return new NMMoveOpt(); }

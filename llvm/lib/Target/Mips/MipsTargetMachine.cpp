@@ -89,6 +89,8 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTarget() {
   initializeMipsMulMulBugFixPass(*PR);
   initializeMipsDAGToDAGISelLegacyPass(*PR);
   initializeRedundantCopyEliminationPass(*PR);
+  initializeNMLoadStoreOptPass(*PR);
+  initializeNMMoveOptPass(*PR);
 }
 
 static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {

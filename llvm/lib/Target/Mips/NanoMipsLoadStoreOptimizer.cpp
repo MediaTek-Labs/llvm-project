@@ -20,7 +20,8 @@
 
 using namespace llvm;
 
-#define NM_LOAD_STORE_OPT_NAME "nanoMIPS load/store optimization pass"
+#define PASS_NAME "nanoMIPS load/store optimization pass"
+#define DEBUG_TYPE "nmloadstoreopt"
 
 static cl::opt<bool>
 DisableNMSaveRestore("disable-nm-save-restore", cl::Hidden, cl::init(false),
@@ -60,7 +61,7 @@ struct NMLoadStoreOpt : public MachineFunctionPass {
   MCRegisterClass RC = MipsMCRegisterClasses[Mips::GPRNM32RegClassID];
 
   NMLoadStoreOpt() : MachineFunctionPass(ID) {}
-  StringRef getPassName() const override { return NM_LOAD_STORE_OPT_NAME; }
+  StringRef getPassName() const override { return PASS_NAME; }
   bool runOnMachineFunction(MachineFunction &Fn) override;
   bool isReturn(MachineInstr &MI);
   bool isTailCall(MachineInstr &MI);
@@ -827,6 +828,8 @@ bool NMLoadStoreOpt::generatePCRelative(MachineBasicBlock &MBB) {
 
   return Candidates.size() > 0;
 }
+
+INITIALIZE_PASS(NMLoadStoreOpt, DEBUG_TYPE, PASS_NAME, false, false)
 
 namespace llvm {
 FunctionPass *createNanoMipsLoadStoreOptimizerPass() {

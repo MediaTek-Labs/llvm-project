@@ -155,8 +155,8 @@ def FeatureRelax       : SubtargetFeature<"relax", "UseLinkerRelax",
 
 def FeatureNanoMips    : SubtargetFeature<"nanomips", "MipsArchVersion",
                                 "NanoMips",
-                                          "NanoMips ISA Support [experimental]",
-                                          [FeatureRelax]>;
+                                "NanoMips ISA Support [experimental]">;
+
 def FeatureNMS1        : SubtargetFeature<"nms1", "MipsArchVersion",
                                 "NanoMips",
                                 "NanoMips ISA Support [experimental]">;
@@ -186,6 +186,9 @@ def FeatureCRC : SubtargetFeature<"crc", "HasCRC", "true", "Mips R6 CRC ASE">;
 
 def FeatureVirt : SubtargetFeature<"virt", "HasVirt", "true",
                                    "Mips Virtualization ASE">;
+
+def FeatureTLB : SubtargetFeature<"tlb", "HasTLB", "true",
+                                   "Mips TLB support">;
 
 def FeatureGINV : SubtargetFeature<"ginv", "HasGINV", "true",
                                    "Mips Global Invalidate ASE">;
@@ -225,6 +228,9 @@ def FeatureUseIndirectJumpsHazard : SubtargetFeature<"use-indirect-jump-hazard",
                                                     "UseIndirectJumpsHazard",
                                                     "true", "Use indirect jump"
                         " guards to prevent certain speculation based attacks">;
+
+def FeaturePCRel : SubtargetFeature<"pcrel", "UsePCRel", "true",
+                                    "Use PC-relative addressing mode for address calculations">;
 
 //===----------------------------------------------------------------------===//
 // Register File, Calling Conv, Instruction Descriptions
@@ -283,17 +289,25 @@ def MipsAsmParser : AsmParser {
 
 def MipsAsmParserVariant : AsmParserVariant {
   int Variant = 0;
-
+  string Name = "mips";
   // Recognize hard coded registers.
+  string RegisterPrefix = "$";
+}
+
+def NanoMipsAsmParserVariant : AsmParserVariant {
+  int Variant = 1;
+  string Name = "nanomips";
+  string TokenizingCharacters = "*!";
   string RegisterPrefix = "$";
 }
 
 def Mips : Target {
   let InstructionSet = MipsInstrInfo;
   let AssemblyParsers = [MipsAsmParser];
-  let AssemblyParserVariants = [MipsAsmParserVariant];
+  let AssemblyParserVariants = [MipsAsmParserVariant, NanoMipsAsmParserVariant];
   let AllowRegisterRenaming = 1;
 }
+
 
 //===----------------------------------------------------------------------===//
 // Pfm Counters

@@ -4,7 +4,7 @@ define void @bgec_zero(i32 signext %arg) {
 entry:
 ; CHECK: name:            bgec_zero
 ; CHECK: bb.0.entry:
-; CHECK-NOT: %1:gpr32nm = Li_NM -1
+; CHECK-NOT: %1:gpr32nm = LI16_NM -1
 ; CHECK-NOT: BLTC_NM killed %1, %0, %bb.2
 ; CHECK: BGEC_NM %0, $zero_nm, %bb.2
 ; CHECK: BC_NM %bb.1

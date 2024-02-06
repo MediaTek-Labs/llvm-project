@@ -65,10 +65,17 @@ public:
                                 SmallVectorImpl<MCFixup> &Fixups,
                                 const MCSubtargetInfo &STI) const;
 
-  // getBranchJumpOpValueMM - Return binary encoding of the microMIPS jump
+  // getBranchJumpOpValueMM - Return binary encoding of the nanoMIPS jump
   // target operand. If the machine operand requires relocation,
   // record the relocation and return zero.
   unsigned getJumpTargetOpValueMM(const MCInst &MI, unsigned OpNo,
+                                  SmallVectorImpl<MCFixup> &Fixups,
+                                  const MCSubtargetInfo &STI) const;
+
+  // getBranchJumpOpValueNM - Return binary encoding of the microMIPS jump
+  // target operand. If the machine operand requires relocation,
+  // record the relocation and return zero.
+  unsigned getJumpTargetOpValueNM(const MCInst &MI, unsigned OpNo,
                                   SmallVectorImpl<MCFixup> &Fixups,
                                   const MCSubtargetInfo &STI) const;
 
@@ -85,6 +92,10 @@ public:
   unsigned getUImm6Lsl2Encoding(const MCInst &MI, unsigned OpNo,
                                 SmallVectorImpl<MCFixup> &Fixups,
                                 const MCSubtargetInfo &STI) const;
+
+  unsigned getSImm20Lsl12Encoding(const MCInst &MI, unsigned OpNo,
+				  SmallVectorImpl<MCFixup> &Fixups,
+				  const MCSubtargetInfo &STI) const;
 
   // getSImm9AddiuspValue - Return binary encoding of the microMIPS addiusp
   // instruction immediate operand.
@@ -169,6 +180,11 @@ public:
                                       SmallVectorImpl<MCFixup> &Fixups,
                                       const MCSubtargetInfo &STI) const;
 
+  template <unsigned Bits>
+  unsigned getBranchTargetOpValueNM(const MCInst &MI, unsigned OpNo,
+				    SmallVectorImpl<MCFixup> &Fixups,
+				    const MCSubtargetInfo &STI) const;
+
   // getJumpOffset16OpValue - Return binary encoding of the jump
   // offset operand. If the machine operand requires relocation,
   // record the relocation and return zero.
@@ -224,6 +240,20 @@ public:
                               SmallVectorImpl<MCFixup> &Fixups,
                               const MCSubtargetInfo &STI) const;
 
+  template <unsigned Bits, unsigned ShiftAmount=0>
+  unsigned getMemEncodingNMImm(const MCInst &MI, unsigned OpNo,
+                                 SmallVectorImpl<MCFixup> &Fixups,
+                                 const MCSubtargetInfo &STI) const;
+  unsigned getMemEncodingNMGP(const MCInst &MI, unsigned OpNo,
+			      SmallVectorImpl<MCFixup> &Fixups,
+			      const MCSubtargetInfo &STI) const;
+  unsigned getMemEncodingNMSP(const MCInst &MI, unsigned OpNo,
+			      SmallVectorImpl<MCFixup> &Fixups,
+			      const MCSubtargetInfo &STI) const;
+  unsigned getMemEncodingNMRX(const MCInst &MI, unsigned OpNo,
+                                 SmallVectorImpl<MCFixup> &Fixups,
+                                 const MCSubtargetInfo &STI) const;
+
   /// Subtract Offset then encode as a N-bit unsigned integer.
   template <unsigned Bits, int Offset>
   unsigned getUImmWithOffsetEncoding(const MCInst &MI, unsigned OpNo,
@@ -245,6 +275,10 @@ public:
                             SmallVectorImpl<MCFixup> &Fixups,
                             const MCSubtargetInfo &STI) const;
 
+  unsigned getUImm4MaskEncoding(const MCInst &MI, unsigned OpNo,
+				SmallVectorImpl<MCFixup> &Fixups,
+				const MCSubtargetInfo &STI) const;
+
   unsigned getMovePRegPairOpValue(const MCInst &MI, unsigned OpNo,
                                   SmallVectorImpl<MCFixup> &Fixups,
                                   const MCSubtargetInfo &STI) const;
@@ -256,6 +290,18 @@ public:
                                  SmallVectorImpl<MCFixup> &Fixups,
                                  const MCSubtargetInfo &STI) const;
 
+  unsigned getSymPCRel(const MCInst &MI, unsigned OpNo,
+		       SmallVectorImpl<MCFixup> &Fixups,
+		       const MCSubtargetInfo &STI) const;
+
+  unsigned getSymGPRel(const MCInst &MI, unsigned OpNo,
+		       SmallVectorImpl<MCFixup> &Fixups,
+		       const MCSubtargetInfo &STI) const;
+
+  unsigned getSymAbs(const MCInst &MI, unsigned OpNo,
+		       SmallVectorImpl<MCFixup> &Fixups,
+		       const MCSubtargetInfo &STI) const;
+
   unsigned getExprOpValue(const MCExpr *Expr, SmallVectorImpl<MCFixup> &Fixups,
                           const MCSubtargetInfo &STI) const;
 
@@ -266,6 +312,32 @@ public:
   unsigned getRegisterListOpValue16(const MCInst &MI, unsigned OpNo,
                                     SmallVectorImpl<MCFixup> &Fixups,
                                     const MCSubtargetInfo &STI) const;
+
+  unsigned getGPRNM4x4ZeroReg(const MCInst &MI, unsigned OpNo,
+			      SmallVectorImpl<MCFixup> &Fixups,
+			      const MCSubtargetInfo &STI) const;
+
+  unsigned getGPRNM4x4Reg(const MCInst &MI, unsigned OpNo,
+			  SmallVectorImpl<MCFixup> &Fixups,
+			  const MCSubtargetInfo &STI) const;
+
+  unsigned getUImm3ShiftEncoding(const MCInst &MI, unsigned OpNo,
+				 SmallVectorImpl<MCFixup> &Fixups,
+				 const MCSubtargetInfo &STI) const;
+
+  unsigned getNMRegListEncoding(const MCInst &MI, unsigned OpNo,
+				SmallVectorImpl<MCFixup> &Fixups,
+				const MCSubtargetInfo &STI) const;
+
+  unsigned getNMRegList16Encoding(const MCInst &MI, unsigned OpNo,
+				  SmallVectorImpl<MCFixup> &Fixups,
+				  const MCSubtargetInfo &STI) const;
+  unsigned getNegImm12Encoding(const MCInst &MI, unsigned OpNo,
+			       SmallVectorImpl<MCFixup> &Fixups,
+			       const MCSubtargetInfo &STI) const;
+  unsigned getSImm32Encoding(const MCInst &MI, unsigned OpNo,
+			     SmallVectorImpl<MCFixup> &Fixups,
+			     const MCSubtargetInfo &STI) const;
 
 private:
   void LowerCompactBranch(MCInst& Inst) const;

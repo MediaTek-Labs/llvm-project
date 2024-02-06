@@ -1021,7 +1021,8 @@ outliner::OutlinedFunction MipsInstrInfo::getOutliningCandidateInfo(
   }
 
   else if (LastInstrOpcode == Mips::BALC_NM ||
-           LastInstrOpcode == Mips::JALRC_NM) {
+           LastInstrOpcode == Mips::JALRC_NM ||
+           LastInstrOpcode == Mips::JALRC16_NM) {
     FrameID = MachineOutlinerThunk;
     NumBytesToCreateFrame = 0;
     SetCandidateCallInfo(MachineOutlinerThunk, 4);
@@ -1198,7 +1199,7 @@ void llvm::MipsInstrInfo::buildOutlinedFrame(
       Et = std::prev(MBB.end());
     }
 
-    MachineInstr *SaveRAtoStack = BuildMI(MF, DebugLoc(), get(Mips::SAVE_NM))
+    MachineInstr *SaveRAtoStack = BuildMI(MF, DebugLoc(), get(Mips::SAVE16_NM))
                                       .addImm(16)
                                       .addReg(Mips::RA_NM);
 
@@ -1306,7 +1307,7 @@ MachineBasicBlock::iterator MipsInstrInfo::insertOutlinedCall(
   // Default case. Save and Restore from stack pointer :
   else {
 
-    SaveRA = BuildMI(MF, DebugLoc(), get(Mips::SAVE_NM))
+    SaveRA = BuildMI(MF, DebugLoc(), get(Mips::SAVE16_NM))
                  .addImm(16)
                  .addReg(Mips::RA_NM);
 
@@ -1335,7 +1336,7 @@ MipsInstrInfo::findRegisterToSaveRA(const outliner::Candidate &C) const {
   const MipsRegisterInfo *MRI = static_cast<const MipsRegisterInfo *>(
       MF->getSubtarget().getRegisterInfo());
 
-  for (unsigned Reg : Mips::GPR32NMRegClass) {
+  for (unsigned Reg : Mips::GPRNM32RegClass) {
 
     if (!MRI->isReservedReg(*MF, Reg) && Reg != Mips::RA_NM &&
         C.LRU.available(Reg) && C.UsedInSequence.available(Reg) &&
@@ -1455,8 +1456,8 @@ MipsInstrInfo::getOutliningType(MachineBasicBlock::iterator &MIT,
     // as a tail-call. Explicitly list the call instructions we know about so we
     // don't get unexpected results with call pseudo-instructions.
 
-    if (MI.getOpcode() == Mips::JALRC_NM || MI.getOpcode() == Mips::BALC_NM ||
-        MI.getOpcode() == Mips::BC_NM)
+    if (MI.getOpcode() == Mips::JALRC_NM || MI.getOpcode() == Mips::JALRC16_NM ||
+	MI.getOpcode() == Mips::BALC_NM || MI.getOpcode() == Mips::BC_NM)
 
       return outliner::InstrType::Legal;
   }

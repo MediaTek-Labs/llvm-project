@@ -109,7 +109,7 @@ define i1 @test_not_slti(i32 %a) {
 ; CHECK-NOT: slti $a0, $a0, 4096
 ; CHECK-NOT: SLTI_NM
 ; CHECK: li $a1, 4096
-; CHECK: Li_NM
+; CHECK: ADDIU_NM
 ; CHECK: slt $a0, $a0, $a1
 ; CHECK: SLT_NM
   %cmp = icmp slt i32 %a, 4096
@@ -129,7 +129,7 @@ define i1 @test_not_sltiu(i32 %a) {
 ; CHECK-NOT: slti $a0, $a0, 4096
 ; CHECK-NOT: SLTI_NM
 ; CHECK: li $a1, 4096
-; CHECK: Li_NM
+; CHECK: ADDIU_NM
 ; CHECK: sltu $a0, $a0, $a1
 ; CHECK: SLTU_NM
   %cmp = icmp ult i32 %a, 4096
@@ -149,7 +149,7 @@ define i1 @test_not_seqi(i32 %a) {
 ; CHECK-NOT: seqi $a0, $a0, 4096
 ; CHECK-NOT: SLTI_NM
 ; CHECK: li $a1, 4096
-; CHECK: Li_NM
+; CHECK: ADDIU_NM
 ; CHECK: xor $a0, $a0, $a1
 ; CHECK: XOR_NM
 ; CHECK: sltiu $a0, $a0, 1

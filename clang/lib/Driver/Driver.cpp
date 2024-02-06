@@ -88,6 +88,7 @@
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/VirtualFileSystem.h"
 #include "llvm/Support/raw_ostream.h"
+#include "mtk/tool_copyright.h"
 #include <map>
 #include <memory>
 #include <utility>
@@ -1779,6 +1780,7 @@ bool Driver::HandleImmediateArgs(const Compilation &C) {
   if (C.getArgs().hasArg(options::OPT__version)) {
     // Follow gcc behavior and use stdout for --version and stderr for -v.
     PrintVersion(C, llvm::outs());
+    llvm::outs() << TOOL_COPYRIGHT << "\n";
     return false;
   }
 
@@ -4325,7 +4327,8 @@ class ToolSelector final {
         return nullptr;
     }
 
-    if (!T->hasIntegratedAssembler())
+    if (!T->hasIntegratedAssembler() ||
+	(TC.getTriple().isNanoMips() && TC.useIntegratedAs()))
       return nullptr;
 
     Inputs = CJ->getInputs();
@@ -4348,7 +4351,8 @@ class ToolSelector final {
     if (!T)
       return nullptr;
 
-    if (!T->hasIntegratedAssembler())
+    if (!T->hasIntegratedAssembler() ||
+	(TC.getTriple().isNanoMips() && TC.useIntegratedAs()))
       return nullptr;
 
     Inputs = BJ->getInputs();

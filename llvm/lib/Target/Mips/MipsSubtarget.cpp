@@ -86,7 +86,7 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
       Os16(Mips_Os16), HasMSA(false), UseTCCInDIV(false), HasSym32(false),
       HasEVA(false), DisableMadd4(false), HasMT(false), HasCRC(false),
       HasVirt(false), HasGINV(false), UseIndirectJumpsHazard(false),
-      UseUnalignedLoadStore(UnalignedLS),
+      UseUnalignedLoadStore(UnalignedLS), HasNMS(false), UsePCRel(true),
       StackAlignOverride(StackAlignOverride), TM(TM), TargetTriple(TT),
       TSInfo(), InstrInfo(MipsInstrInfo::create(
                     initializeSubtargetDependencies(CPU, FS, TM))),
@@ -156,16 +156,17 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
 
   if (hasNanoMips())
     NoABICalls = true;
-  
-  if (!hasNanoMips() && UnalignedLS)
-    errs() << "warning: '-mload-store-unaligned' is supported only for nanoMIPS"
-           << "\n";
+  else {
+    if (UnalignedLS)
+      errs() << "warning: '-mload-store-unaligned' is supported only for nanoMIPS"
+	     << "\n";
 
-  if (NoABICalls && TM.isPositionIndependent() && !hasNanoMips())
-    report_fatal_error("position-independent code requires '-mabicalls'");
+    if (NoABICalls && TM.isPositionIndependent())
+      report_fatal_error("position-independent code requires '-mabicalls'");
 
-  if (isABI_N64() && !TM.isPositionIndependent() && !hasSym32())
-    NoABICalls = true;
+    if (isABI_N64() && !TM.isPositionIndependent() && !hasSym32())
+      NoABICalls = true;
+  }
 
   // Set UseSmallSection.
   UseSmallSection = GPOpt;

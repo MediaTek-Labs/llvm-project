@@ -72,6 +72,7 @@ module LLVM_BinaryFormat {
     textual header "BinaryFormat/ELFRelocs/Lanai.def"
     textual header "BinaryFormat/ELFRelocs/M68k.def"
     textual header "BinaryFormat/ELFRelocs/Mips.def"
+    textual header "BinaryFormat/ELFRelocs/NanoMips.def"
     textual header "BinaryFormat/ELFRelocs/MSP430.def"
     textual header "BinaryFormat/ELFRelocs/PowerPC64.def"
     textual header "BinaryFormat/ELFRelocs/PowerPC.def"

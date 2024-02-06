@@ -74,23 +74,23 @@ body:             |
   bb.0.entry:
     liveins: $a0_nm, $ra_nm, $s0_nm
   
-    $sp_nm = ADDiu_NM $sp_nm, -2064
+    $sp_nm = ADDIUNEG_NM $sp_nm, -2064
     CFI_INSTRUCTION def_cfa_offset 2064
-    $a1_nm = ADDiu_NM $sp_nm, 2060
+    $a1_nm = ADDIU_NM $sp_nm, 2060
     SW_NM killed $ra_nm, killed $a1_nm, 0 :: (store (s32) into %stack.2)
-    $a1_nm = ADDiu_NM $sp_nm, 2056
+    $a1_nm = ADDIU_NM $sp_nm, 2056
     SW_NM killed $s0_nm, killed $a1_nm, 0 :: (store (s32) into %stack.3)
     CFI_INSTRUCTION offset $ra_64, -4
     CFI_INSTRUCTION offset $s0_64, -8
     $s0_nm = COPY killed renamable $a0_nm
     SW_NM killed $s0_nm, $sp_nm, 2052 :: (store (s32) into %ir.arrayidx)
-    renamable $a0_nm = LEA_ADDiu_NM $sp_nm, 8
+    renamable $a0_nm = LEA_ADDIU_NM $sp_nm, 8
     BALC_NM @sink, csr_p32, implicit-def dead $ra_nm, implicit $a0_nm, implicit-def $sp_nm
-    $a0_nm = ADDiu_NM $sp_nm, 2056
+    $a0_nm = ADDIU_NM $sp_nm, 2056
     $s0_nm = LW_NM killed $a0_nm, 0 :: (load (s32) from %stack.3)
-    $a0_nm = ADDiu_NM $sp_nm, 2060
+    $a0_nm = ADDIU_NM $sp_nm, 2060
     $ra_nm = LW_NM killed $a0_nm, 0 :: (load (s32) from %stack.2)
-    $sp_nm = ADDiu_NM $sp_nm, 2064
+    $sp_nm = ADDIU_NM $sp_nm, 2064
     RetRA
 
 ...

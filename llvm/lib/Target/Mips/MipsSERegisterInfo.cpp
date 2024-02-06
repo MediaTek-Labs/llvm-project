@@ -115,11 +115,22 @@ static inline unsigned getLoadStoreOffsetSizeInBits(const unsigned Opcode,
   case Mips::SWs9_NM:
   case Mips::SHs9_NM:
   case Mips::SBs9_NM:
-  case Mips::UALW_NM:
-  case Mips::UASW_NM:
+  case Mips::UALWM_NM:
+  case Mips::UASWM_NM:
+  case Mips::LWM_NM:
+  case Mips::SWM_NM:
   case Mips::UALH_NM:
   case Mips::UASH_NM:
+  case Mips::LL_NM:
+  case Mips::SC_NM:
     return 9;
+  case Mips::LW16_NM:
+  case Mips::SW16_NM:
+    return 6;
+  case Mips::LW4x4_NM:
+  case Mips::SW4x4_NM:
+    return 4;
+
   case Mips::INLINEASM: {
     unsigned ConstraintID = InlineAsm::getMemoryConstraintID(MO.getImm());
     switch (ConstraintID) {
@@ -131,7 +142,7 @@ static inline unsigned getLoadStoreOffsetSizeInBits(const unsigned Opcode,
       if (Subtarget.inMicroMipsMode())
         return 12;
 
-      if (Subtarget.hasMips32r6())
+      if (Subtarget.hasMips32r6() || Subtarget.hasNanoMips())
         return 9;
 
       return 16;
@@ -226,7 +237,7 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
   LLVM_DEBUG(errs() << "Offset     : " << Offset << "\n"
                     << "<--------->\n");
 
-  if (MI.getOpcode() == Mips::LEA_ADDiu_NM && Offset == 0) {
+  if (MI.getOpcode() == Mips::LEA_ADDIU_NM && Offset == 0) {
     auto &MBB = *MI.getParent();
     const MipsSEInstrInfo &TII = *static_cast<const MipsSEInstrInfo *>(
         MBB.getParent()->getSubtarget().getInstrInfo());
@@ -255,13 +266,13 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
       const TargetRegisterClass *PtrRC =
           ABI.ArePtrs64bit()
               ? &Mips::GPR64RegClass
-              : ABI.IsP32() ? &Mips::GPR32NMRegClass : &Mips::GPR32RegClass;
+              : ABI.IsP32() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
       MachineRegisterInfo &RegInfo = MBB.getParent()->getRegInfo();
       Register Reg = RegInfo.createVirtualRegister(PtrRC);
       const MipsSEInstrInfo &TII =
           *static_cast<const MipsSEInstrInfo *>(
               MBB.getParent()->getSubtarget().getInstrInfo());
-      BuildMI(MBB, II, DL, TII.get(ABI.GetPtrAddiuOp()), Reg)
+      BuildMI(MBB, II, DL, TII.get(ABI.GetPtrAddiuOp(Offset)), Reg)
           .addReg(FrameReg)
           .addImm(Offset);
 

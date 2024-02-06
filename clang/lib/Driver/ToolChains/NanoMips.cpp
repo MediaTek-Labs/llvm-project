@@ -139,18 +139,37 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
                   D.getLTOMode() == LTOK_Thin);
 
     // No object emitter on NanoMips yet, use external assembler for LTO.
-    CmdArgs.push_back(Args.MakeArgString("--plugin-opt=-lto-external-asm="
-                                         + (getToolChain()
-                                            .GetProgramPath("as"))));
     StringRef CPUName;
     StringRef ABIName;
     mips::getMipsCPUAndABI(Args, getToolChain().getTriple(), CPUName, ABIName);
 
-    CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-march");
-    std::string Arg = "-plugin-opt=-lto-external-asm-arg=";
-    Arg += CPUName.data();
-    CmdArgs.push_back(Args.MakeArgString(Arg));
-    CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-EL");
+    if (ToolChain.useIntegratedAs()) {
+      CmdArgs.push_back(Args.MakeArgString("--plugin-opt=-lto-external-asm="
+					   + D.ClangExecutable));
+      CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-cc1as");
+      CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-triple");
+      std::string Arg = "-plugin-opt=-lto-external-asm-arg=";
+      Arg += "nanomips-elf";
+      CmdArgs.push_back(Args.MakeArgString(Arg));
+      CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-filetype");
+      Arg = "-plugin-opt=-lto-external-asm-arg=obj";
+      CmdArgs.push_back(Args.MakeArgString(Arg));
+      CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-cpu");
+      Arg = "--plugin-opt=-lto-external-asm-arg=";
+      Arg += CPUName.data();
+      CmdArgs.push_back(Args.MakeArgString(Arg));
+    }
+    else {
+      CmdArgs.push_back(Args.MakeArgString("--plugin-opt=-lto-external-asm="
+					   + (getToolChain()
+					      .GetProgramPath("as"))));
+      CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-march");
+      std::string Arg = "-plugin-opt=-lto-external-asm-arg=";
+      Arg += CPUName.data();
+      CmdArgs.push_back(Args.MakeArgString(Arg));
+      CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-EL");
+      CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-mlegacyregs");
+    }
   }
 
   if (Args.hasArg(options::OPT_Z_Xlinker__no_demangle))

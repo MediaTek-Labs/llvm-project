@@ -38,26 +38,26 @@ public:
     MEK_HIGHEST,
     MEK_LO,
     MEK_NEG,
-    MEK_PCREL_HI16,
+    MEK_PCREL_HI,
     MEK_PCREL_LO16,
     MEK_TLSGD,
     MEK_TLSLDM,
     MEK_TPREL_HI,
     MEK_TPREL_LO,
     MEK_Special,
-    MEK_PCREL_HI,
   };
 
 private:
   const MipsExprKind Kind;
   const MCExpr *Expr;
+  bool IsNanoMips = false;
 
-  explicit MipsMCExpr(MipsExprKind Kind, const MCExpr *Expr)
-      : Kind(Kind), Expr(Expr) {}
+  explicit MipsMCExpr(MipsExprKind Kind, const MCExpr *Expr, const bool IsNanoMips = false)
+    : Kind(Kind), Expr(Expr), IsNanoMips(IsNanoMips) {}
 
 public:
   static const MipsMCExpr *create(MipsExprKind Kind, const MCExpr *Expr,
-                                  MCContext &Ctx);
+                                  MCContext &Ctx, bool IsNanoMips = false);
   static const MipsMCExpr *createGpOff(MipsExprKind Kind, const MCExpr *Expr,
                                        MCContext &Ctx);
 

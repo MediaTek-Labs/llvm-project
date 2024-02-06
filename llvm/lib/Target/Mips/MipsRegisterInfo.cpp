@@ -53,7 +53,7 @@ MipsRegisterInfo::getPointerRegClass(const MachineFunction &MF,
   case MipsPtrClass::Default:
     return ABI.ArePtrs64bit()
                ? &Mips::GPR64RegClass
-               : ABI.IsP32() ? &Mips::GPR32NMRegClass : &Mips::GPR32RegClass;
+               : ABI.IsP32() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
   case MipsPtrClass::GPR16MM:
     return &Mips::GPRMM16RegClass;
   case MipsPtrClass::StackPointer:
@@ -61,7 +61,7 @@ MipsRegisterInfo::getPointerRegClass(const MachineFunction &MF,
   case MipsPtrClass::GlobalPointer:
     return ABI.ArePtrs64bit() ? &Mips::GP64RegClass : &Mips::GP32RegClass;
   case MipsPtrClass::GPR32_M_NM:
-    return ABI.IsP32() ? &Mips::GPR32NMRegClass : &Mips::GPR32RegClass;
+    return ABI.IsP32() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
   }
 
   llvm_unreachable("Unknown pointer kind");
@@ -171,7 +171,7 @@ getReservedRegs(const MachineFunction &MF) const {
     Mips::ZERO_64, Mips::K0_64, Mips::K1_64, Mips::SP_64
   };
 
-  static const MCPhysReg ReservedGPR32NM[] = {
+  static const MCPhysReg ReservedGPRNM32[] = {
     Mips::ZERO_NM, Mips::K0_NM, Mips::K1_NM, Mips::SP_NM, Mips::AT_NM
   };
 
@@ -191,8 +191,8 @@ getReservedRegs(const MachineFunction &MF) const {
   for (unsigned I = 0; I < array_lengthof(ReservedGPR64); ++I)
     Reserved.set(ReservedGPR64[I]);
 
-  for (unsigned I = 0; I < array_lengthof(ReservedGPR32NM); ++I)
-    Reserved.set(ReservedGPR32NM[I]);
+  for (unsigned I = 0; I < array_lengthof(ReservedGPRNM32); ++I)
+    Reserved.set(ReservedGPRNM32[I]);
 
   // For mno-abicalls, GP is a program invariant!
   if (!Subtarget.isABICalls()) {

@@ -49,6 +49,7 @@ protected: // Can only create subclasses.
   bool SkipSpace = true;
   bool AllowAtInIdentifier;
   bool AllowHashInIdentifier = false;
+  bool AllowBracInIdentifier =  false;
   bool IsAtStartOfStatement = true;
   bool LexMasmHexFloats = false;
   bool LexMasmIntegers = false;
@@ -152,6 +153,8 @@ public:
   void setAllowAtInIdentifier(bool v) { AllowAtInIdentifier = v; }
 
   void setAllowHashInIdentifier(bool V) { AllowHashInIdentifier = V; }
+
+  void setAllowBracInIdentifier(bool V) { AllowBracInIdentifier = V; }
 
   void setCommentConsumer(AsmCommentConsumer *CommentConsumer) {
     this->CommentConsumer = CommentConsumer;

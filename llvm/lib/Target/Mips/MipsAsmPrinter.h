@@ -88,6 +88,8 @@ private:
                         unsigned int EntryNum, bool Signed);
   void emitJumpTableEntry(MCStreamer &OutStreamer, unsigned int EntrySize,
                         const MCExpr *Entry, bool Signed);
+  void emitLoadAddressNM(MCStreamer &OutStreamer, const MachineInstr *MI);
+  void emitPseudoAsmNM(MCStreamer &OutStreamer, const MachineInstr *MI);
   // lowerOperand - Convert a MachineOperand into the equivalent MCOperand.
   bool lowerOperand(const MachineOperand &MO, MCOperand &MCOp);
 
@@ -95,6 +97,10 @@ private:
 
   void emitInlineAsmEnd(const MCSubtargetInfo &StartInfo,
                         const MCSubtargetInfo *EndInfo) const override;
+
+  void emitPseudoAndiNM(MCStreamer &OutStreamer, const MachineInstr *MI);
+
+  void emitLoadImmediateNM(MCStreamer &OutStreamer, const MachineInstr *MI);
 
   void EmitJal(const MCSubtargetInfo &STI, MCSymbol *Symbol);
 

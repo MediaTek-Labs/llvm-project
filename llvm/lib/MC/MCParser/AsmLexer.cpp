@@ -145,9 +145,10 @@ AsmToken AsmLexer::LexHexFloatLiteral(bool NoIntDigits) {
 }
 
 /// LexIdentifier: [a-zA-Z_$.@?][a-zA-Z0-9_$.@#?]*
-static bool isIdentifierChar(char C, bool AllowAt, bool AllowHash) {
+static bool isIdentifierChar(char C, bool AllowAt, bool AllowHash, bool AllowBrac) {
   return isAlnum(C) || C == '_' || C == '$' || C == '.' || C == '?' ||
-         (AllowAt && C == '@') || (AllowHash && C == '#');
+         (AllowAt && C == '@') || (AllowHash && C == '#') ||
+	 (AllowBrac && (C == '[' || C == ']'));
 }
 
 AsmToken AsmLexer::LexIdentifier() {
@@ -158,12 +159,13 @@ AsmToken AsmLexer::LexIdentifier() {
       ++CurPtr;
 
     if (!isIdentifierChar(*CurPtr, AllowAtInIdentifier,
-                          AllowHashInIdentifier) ||
+                          AllowHashInIdentifier, AllowBracInIdentifier) ||
         *CurPtr == 'e' || *CurPtr == 'E')
       return LexFloatLiteral();
   }
 
-  while (isIdentifierChar(*CurPtr, AllowAtInIdentifier, AllowHashInIdentifier))
+  while (isIdentifierChar(*CurPtr, AllowAtInIdentifier, AllowHashInIdentifier,
+			  AllowBracInIdentifier))
     ++CurPtr;
 
   // Handle . as a special case.
@@ -775,11 +777,16 @@ AsmToken AsmLexer::LexToken() {
   IsAtStartOfStatement = false;
   switch (CurChar) {
   default:
-    // Handle identifier: [a-zA-Z_.?][a-zA-Z0-9_$.@#?]*
+    // Handle identifier: [a-zA-Z_.?][a-zA-Z0-9_$.@#?[]]*
+    if (MAI.doesAllowBracInName())
+      setAllowBracInIdentifier(true);
     if (isalpha(CurChar) || CurChar == '_' || CurChar == '.' ||
-        (MAI.doesAllowQuestionAtStartOfIdentifier() && CurChar == '?'))
-      return LexIdentifier();
-
+        (MAI.doesAllowQuestionAtStartOfIdentifier() && CurChar == '?')) {
+      AsmToken Id = LexIdentifier();
+      if (MAI.doesAllowBracInName())
+	setAllowBracInIdentifier(false);
+      return Id;
+    }
     // Unknown character, emit an error.
     return ReturnError(TokStart, "invalid character in input");
   case EOF:

@@ -105,11 +105,12 @@ public:
         ISARevision = 2;
       else
         ISARevision = 1;
+    } else if(P.hasNanoMips()) {
+        ISALevel = 32;
+	ISARevision = 6;
     } else {
       ISARevision = 0;
-      if(P.hasNanoMips())
-        ISALevel = 6;
-      else if (P.hasMips5())
+      if (P.hasMips5())
         ISALevel = 5;
       else if (P.hasMips4())
         ISALevel = 4;
@@ -152,7 +153,7 @@ public:
   template <class PredicateLibrary>
   void setASESetFromPredicates(const PredicateLibrary &P) {
     ASESet = 0;
-    if (P.hasDSP())
+    if (P.hasDSP() && !P.hasNanoMips())
       ASESet |= Mips::AFL_ASE_DSP;
     if (P.hasDSPR2())
       ASESet |= Mips::AFL_ASE_DSPR2;
@@ -170,6 +171,11 @@ public:
       ASESet |= Mips::AFL_ASE_VIRT;
     if (P.hasGINV())
       ASESet |= Mips::AFL_ASE_GINV;
+    if (P.hasNanoMips()) {
+      ASESet |= Mips::AFL_ASE_xNMS; // always enabled, NMS unsupported!
+      if (P.hasTLB())
+        ASESet |= Mips::AFL_ASE_TLB;
+    }
   }
 
   template <class PredicateLibrary>

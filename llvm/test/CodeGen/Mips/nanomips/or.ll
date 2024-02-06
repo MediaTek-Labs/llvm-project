@@ -23,7 +23,7 @@ define i32 @test_ori1(i32 %a) {
 
 define i32 @test_ori2(i32 %a) {
 ; CHECK: li $a1, 4096
-; CHECK: Li_NM
+; CHECK: ADDIU_NM
 ; CHECK: or $a0, $a0, $a1
 ; CHECK: OR_NM
   %orred = or i32 %a, 4096

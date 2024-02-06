@@ -5,21 +5,21 @@ declare i32 @ints9(i32, i32, i32, i32, i32, i32, i32, i32, i32)
 
 define i32 @test_ints9(i32 %a, i32 %b) {
 ; CHECK: li ${{[ats][0-9]}}, 7
-; CHECK: Li_NM
+; CHECK: LI16_NM
 ; CHECK: sw ${{[ats][0-9]}}, 0($sp)
 ; CHECK: SW_NM
 ; CHECK: li $a2, 1
-; CHECK: Li_NM
+; CHECK: LI16_NM
 ; CHECK: li $a3, 2
-; CHECK: Li_NM
+; CHECK: LI16_NM
 ; CHECK: li $a4, 3
-; CHECK: Li_NM
+; CHECK: ADDIU_NM
 ; CHECK: li $a5, 4
-; CHECK: Li_NM
+; CHECK: ADDIU_NM
 ; CHECK: li $a6, 5
-; CHECK: Li_NM
+; CHECK: ADDIU_NM
 ; CHECK: li $a7, 6
-; CHECK: Li_NM
+; CHECK: ADDIU_NM
 ; CHECK: balc ints9
 ; CHECK: BALC_NM
 ; ADJSTACK: ADJCALLSTACKDOWN_NM 16

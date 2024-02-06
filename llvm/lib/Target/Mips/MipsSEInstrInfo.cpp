@@ -170,8 +170,8 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
     if (Mips::MSA128BRegClass.contains(SrcReg))
       Opc = Mips::MOVE_V;
   }
-  else if (Mips::GPR32NMRegClass.contains(SrcReg)) {
-    if (Mips::GPR32NMRegClass.contains(DestReg))
+  else if (Mips::GPRNM32RegClass.contains(SrcReg)) {
+    if (Mips::GPRNM32NZRegClass.contains(DestReg))
       Opc = Mips::MOVE_NM;
   }
 
@@ -296,7 +296,7 @@ storeRegToStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
     Opc = Mips::SD;
   else if (Mips::DSPRRegClass.hasSubClassEq(RC))
     Opc = Mips::SWDSP;
-  else if (Mips::GPR32NMRegClass.hasSubClassEq(RC))
+  else if (Mips::GPRNM32RegClass.hasSubClassEq(RC))
     Opc = Mips::SW_NM;
 
   // Hi, Lo are normally caller save but they are callee save
@@ -376,7 +376,7 @@ loadRegFromStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
     Opc = Mips::LD;
   else if (Mips::DSPRRegClass.hasSubClassEq(RC))
     Opc = Mips::LWDSP;
-  else if (Mips::GPR32NMRegClass.hasSubClassEq(RC))
+  else if (Mips::GPRNM32RegClass.hasSubClassEq(RC))
     Opc = Mips::LW_NM;
 
   assert(Opc && "Register class not handled!");
@@ -628,12 +628,12 @@ void MipsSEInstrInfo::adjustStackPtr(unsigned SP, int64_t Amount,
   bool IsNanoMips = Subtarget.hasNanoMips();
   if ((I != MBB.end()) && IsNanoMips)
     DL = I->getDebugLoc();
-  unsigned ADDiu = ABI.GetPtrAddiuOp();
+  unsigned ADDiu = ABI.GetPtrAddiuOp(Amount);
 
   if (Amount == 0)
     return;
 
-  if ((isInt<16>(Amount) && !IsNanoMips) || (isInt<32>(Amount) && IsNanoMips)) {
+  if (ABI.IsPtrAddiuOffset(Amount)) {
     // addi sp, sp, amount
     BuildMI(MBB, I, DL, get(ADDiu), SP).addReg(SP).addImm(Amount);
   } else {
@@ -658,9 +658,9 @@ unsigned MipsSEInstrInfo::loadImmediate(int64_t Imm, MachineBasicBlock &MBB,
   if (Subtarget.hasNanoMips()) {
     assert(Imm == (int32_t)Imm);
     MachineRegisterInfo &RegInfo = MBB.getParent()->getRegInfo();
-    const TargetRegisterClass *RC = &Mips::GPR32NMRegClass;
+    const TargetRegisterClass *RC = &Mips::GPRNM32RegClass;
     Register Reg = RegInfo.createVirtualRegister(RC);
-    BuildMI(MBB, II, DL, get(Mips::Li_NM), Reg).addImm((int32_t)Imm);
+    BuildMI(MBB, II, DL, get(Mips::PseudoLI_NM), Reg).addImm((int32_t)Imm);
     return Reg;
   }
 

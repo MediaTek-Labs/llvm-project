@@ -40,9 +40,28 @@
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+
 #include <string>
 
 using namespace llvm;
+
+static cl::opt<bool> EnableSplitGEP("mips-enable-split-gep",
+                                cl::desc("Enable the late split GEP pass"),
+                                cl::init(true), cl::Hidden);
+
+static cl::opt<bool> EnableSLSR("mips-enable-sls",
+                                cl::desc("Enable the SLSR pass"),
+                                cl::init(true), cl::Hidden);
+
+static cl::opt<bool> EnableReassoc("mips-enable-reassoc",
+                                cl::desc("Enable the reassociate pass"),
+                                cl::init(true), cl::Hidden);
+
+static cl::opt<bool> EnableLICM("mips-enable-licm",
+                                cl::desc("Enable the licm pass"),
+                                cl::init(false), cl::Hidden);
 
 #define DEBUG_TYPE "mips"
 
@@ -295,6 +314,26 @@ void MipsPassConfig::addIRPasses() {
     addPass(createMipsOs16Pass());
   if (getMipsSubtarget().inMips16HardFloat())
     addPass(createMips16HardFloatPass());
+
+  if (getMipsSubtarget().hasNanoMips()) {
+   addPass(createNanoMipsCodeGenPreparePass());
+
+   if (EnableSplitGEP)
+      addPass(createSeparateConstOffsetFromGEPPass(/* LowerGEP */ true));
+    // ReassociateGEPs exposes more opportunites for SLSR.
+    if (EnableSLSR)
+      addPass(createStraightLineStrengthReducePass());
+
+    addPass(createGVNHoistPass());
+    // Run NaryReassociate after EarlyCSE/GVN to be more effective.
+    if (EnableReassoc)
+      addPass(createNaryReassociatePass());
+
+    addPass(createEarlyCSEPass());
+
+    if (EnableLICM)
+      addPass(createLICMPass());
+  }
 }
 // Install an instruction selector pass using
 // the ISelDag to gen Mips code.

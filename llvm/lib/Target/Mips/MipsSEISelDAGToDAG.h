@@ -53,6 +53,10 @@ private:
   bool selectAddrDefault(SDValue Addr, SDValue &Base,
                          SDValue &Offset) const override;
 
+  bool selectAddrSym(SDValue Addr, SDValue &Base) const override;
+
+  bool selectAddrSymGPRel(SDValue Addr, SDValue &Base) const override;
+
   bool selectIntAddr(SDValue Addr, SDValue &Base,
                      SDValue &Offset) const override;
 
@@ -108,6 +112,12 @@ private:
 
   bool selectIntAddrIndexedLsl2(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
 
+  bool selectIntAddrUImm19s2(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
+
+  bool selectIntAddrUImm18(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
+
+  bool selectIntAddrUImm17s1(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
+
   /// Select constant vector splats.
   bool selectVSplat(SDNode *N, APInt &Imm,
                     unsigned MinSizeInBits) const override;
@@ -158,6 +168,10 @@ private:
 
   void PostprocessISelDAG() override;
 
+  // Select a GP-relative offset expressions
+  bool selectOffsetGP18(SDValue Addr, SDValue &Offset) const override;
+
+  bool selectOffsetGP19s2(SDValue Addr, SDValue &Offset) const override;
 };
 
 FunctionPass *createMipsSEISelDag(MipsTargetMachine &TM,

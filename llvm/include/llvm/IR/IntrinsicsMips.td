@@ -1781,4 +1781,7 @@ def int_mips_xor_v : GCCBuiltin<"__builtin_msa_xor_v">,
 
 def int_mips_xori_b : GCCBuiltin<"__builtin_msa_xori_b">,
   Intrinsic<[llvm_v16i8_ty], [llvm_v16i8_ty, llvm_i32_ty], [IntrNoMem, ImmArg<ArgIndex<1>>]>;
+
+def int_mips_hide: Intrinsic<[llvm_any_ty], [LLVMMatchType<0>], [IntrNoMem]>;
+
 }

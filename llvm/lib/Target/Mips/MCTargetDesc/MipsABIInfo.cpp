@@ -110,8 +110,23 @@ unsigned MipsABIInfo::GetPtrAdduOp() const {
   return ArePtrs64bit() ? Mips::DADDu : IsP32() ? Mips::ADDu_NM : Mips::ADDu;
 }
 
-unsigned MipsABIInfo::GetPtrAddiuOp() const {
-  return ArePtrs64bit() ? Mips::DADDiu : IsP32() ? Mips::ADDiu_NM : Mips::ADDiu;
+unsigned MipsABIInfo::GetPtrAddiuOp(int Offset) const {
+  if (ArePtrs64bit())
+    return Mips::DADDiu;
+  if (IsP32()) {
+    if (isUInt<16>(Offset))
+      return Mips::ADDIU_NM;
+    else if (isUInt<12>(-Offset))
+      return Mips::ADDIUNEG_NM;
+    else
+      return Mips::ADDIU48_NM;
+  }
+  else
+    return Mips::ADDiu;
+}
+
+bool MipsABIInfo::IsPtrAddiuOffset(int Offset) const {
+  return IsP32() ? isInt<32>(Offset) : isInt<16>(Offset);
 }
 
 unsigned MipsABIInfo::GetPtrSubuOp() const {

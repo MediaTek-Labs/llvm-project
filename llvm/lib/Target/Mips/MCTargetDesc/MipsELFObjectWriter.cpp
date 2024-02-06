@@ -56,7 +56,8 @@ raw_ostream &operator<<(raw_ostream &OS, const MipsRelocationEntry &RHS) {
 
 class MipsELFObjectWriter : public MCELFObjectTargetWriter {
 public:
-  MipsELFObjectWriter(uint8_t OSABI, bool HasRelocationAddend, bool Is64);
+  MipsELFObjectWriter(uint8_t OSABI, bool HasRelocationAddend,
+		      uint16_t EMachine, bool Is64);
 
   ~MipsELFObjectWriter() override = default;
 
@@ -211,8 +212,124 @@ static void dumpRelocs(const char *Prefix, const Container &Relocs) {
 #endif
 
 MipsELFObjectWriter::MipsELFObjectWriter(uint8_t OSABI,
-                                         bool HasRelocationAddend, bool Is64)
-    : MCELFObjectTargetWriter(Is64, OSABI, ELF::EM_MIPS, HasRelocationAddend) {}
+                                         bool HasRelocationAddend,
+					 uint16_t EMachine, bool Is64)
+    : MCELFObjectTargetWriter(Is64, OSABI, EMachine, HasRelocationAddend) {}
+
+static unsigned getNanoMipsRelocType(MCContext &Ctx,
+				     const MCValue &Target,
+				     const MCFixup &Fixup,
+				     bool IsPCRel) {
+  // Determine the type of the relocation.
+  unsigned Kind = Fixup.getTargetKind();
+
+  switch (Kind) {
+    case FK_NONE: return ELF::R_NANOMIPS_NONE;
+    case FK_Data_1: return ELF::R_NANOMIPS_UNSIGNED_8;
+    case FK_Data_2: return ELF::R_NANOMIPS_UNSIGNED_16;
+    case FK_Data_4: return ELF::R_NANOMIPS_32;
+    case FK_Data_8:
+	  Ctx.reportError(Fixup.getLoc(),
+			  "NanoMips does not support 8 byte relocations");
+	  return ELF::R_NANOMIPS_NONE;
+  }
+
+  if (IsPCRel) {
+    switch (Kind) {
+    case Mips::fixup_NANOMIPS_PC25_S1:
+      return ELF::R_NANOMIPS_PC25_S1;
+    case Mips::fixup_NANOMIPS_PC21_S1:
+      return ELF::R_NANOMIPS_PC21_S1;
+    case Mips::fixup_NANOMIPS_PC14_S1:
+      return ELF::R_NANOMIPS_PC14_S1;
+    case Mips::fixup_NANOMIPS_PC11_S1:
+      return ELF::R_NANOMIPS_PC11_S1;
+    case Mips::fixup_NANOMIPS_PC10_S1:
+      return ELF::R_NANOMIPS_PC10_S1;
+    case Mips::fixup_NANOMIPS_PC7_S1:
+      return ELF::R_NANOMIPS_PC7_S1;
+    case Mips::fixup_NANOMIPS_PC4_S1:
+      return ELF::R_NANOMIPS_PC4_S1;
+    case Mips::fixup_NANOMIPS_PCHI20:
+      return ELF::R_NANOMIPS_PCHI20;
+    case Mips::fixup_NANOMIPS_PC_I32:
+      return ELF::R_NANOMIPS_PC_I32;
+    case Mips::fixup_NANOMIPS_GOTPC_I32:
+      return ELF::R_NANOMIPS_GOTPC_I32;
+    case Mips::fixup_NANOMIPS_GOTPC_HI20:
+      return ELF::R_NANOMIPS_GOTPC_HI20;
+    }
+
+    llvm_unreachable("invalid PC-relative fixup kind!");
+  }
+
+  switch (Kind) {
+    case Mips::fixup_NANOMIPS_NONE: return ELF::R_NANOMIPS_NONE;
+    case Mips::fixup_NANOMIPS_32: return ELF::R_NANOMIPS_32;
+    case Mips::fixup_NANOMIPS_64: return ELF::R_NANOMIPS_64;
+    case Mips::fixup_NANOMIPS_NEG: return ELF::R_NANOMIPS_NEG;
+    case Mips::fixup_NANOMIPS_ASHIFTR_1: return ELF::R_NANOMIPS_ASHIFTR_1;
+    case Mips::fixup_NANOMIPS_UNSIGNED_8: return ELF::R_NANOMIPS_UNSIGNED_8;
+    case Mips::fixup_NANOMIPS_SIGNED_8: return ELF::R_NANOMIPS_SIGNED_8;
+    case Mips::fixup_NANOMIPS_UNSIGNED_16: return ELF::R_NANOMIPS_UNSIGNED_16;
+    case Mips::fixup_NANOMIPS_SIGNED_16: return ELF::R_NANOMIPS_SIGNED_16;
+    case Mips::fixup_NANOMIPS_RELATIVE: return ELF::R_NANOMIPS_RELATIVE;
+    case Mips::fixup_NANOMIPS_GLOBAL: return ELF::R_NANOMIPS_GLOBAL;
+    case Mips::fixup_NANOMIPS_JUMP_SLOT: return ELF::R_NANOMIPS_JUMP_SLOT;
+    case Mips::fixup_NANOMIPS_IRELATIVE: return ELF::R_NANOMIPS_IRELATIVE;
+    case Mips::fixup_NANOMIPS_GPREL19_S2: return ELF::R_NANOMIPS_GPREL19_S2;
+    case Mips::fixup_NANOMIPS_GPREL18_S3: return ELF::R_NANOMIPS_GPREL18_S3;
+    case Mips::fixup_NANOMIPS_GPREL18: return ELF::R_NANOMIPS_GPREL18;
+    case Mips::fixup_NANOMIPS_GPREL17_S1: return ELF::R_NANOMIPS_GPREL17_S1;
+    case Mips::fixup_NANOMIPS_GPREL16_S2: return ELF::R_NANOMIPS_GPREL16_S2;
+    case Mips::fixup_NANOMIPS_GPREL7_S2: return ELF::R_NANOMIPS_GPREL7_S2;
+    case Mips::fixup_NANOMIPS_GPREL_HI20: return ELF::R_NANOMIPS_GPREL_HI20;
+    case Mips::fixup_NANOMIPS_HI20: return ELF::R_NANOMIPS_HI20;
+    case Mips::fixup_NANOMIPS_LO12: return ELF::R_NANOMIPS_LO12;
+    case Mips::fixup_NANOMIPS_GPREL_I32: return ELF::R_NANOMIPS_GPREL_I32;
+    case Mips::fixup_NANOMIPS_I32: return ELF::R_NANOMIPS_I32;
+    case Mips::fixup_NANOMIPS_GOT_DISP: return ELF::R_NANOMIPS_GOT_DISP;
+    case Mips::fixup_NANOMIPS_GOT_LO12: return ELF::R_NANOMIPS_GOT_LO12;
+    case Mips::fixup_NANOMIPS_GOT_CALL: return ELF::R_NANOMIPS_GOT_CALL;
+    case Mips::fixup_NANOMIPS_GOT_PAGE: return ELF::R_NANOMIPS_GOT_PAGE;
+    case Mips::fixup_NANOMIPS_GOT_OFST: return ELF::R_NANOMIPS_GOT_OFST;
+    case Mips::fixup_NANOMIPS_LO4_S2: return ELF::R_NANOMIPS_LO4_S2;
+    case Mips::fixup_NANOMIPS_GPREL_LO12: return ELF::R_NANOMIPS_GPREL_LO12;
+    case Mips::fixup_NANOMIPS_COPY: return ELF::R_NANOMIPS_COPY;
+    case Mips::fixup_NANOMIPS_ALIGN: return ELF::R_NANOMIPS_ALIGN;
+    case Mips::fixup_NANOMIPS_FILL: return ELF::R_NANOMIPS_FILL;
+    case Mips::fixup_NANOMIPS_MAX: return ELF::R_NANOMIPS_MAX;
+    case Mips::fixup_NANOMIPS_INSN32: return ELF::R_NANOMIPS_INSN32;
+    case Mips::fixup_NANOMIPS_FIXED: return ELF::R_NANOMIPS_FIXED;
+    case Mips::fixup_NANOMIPS_NORELAX: return ELF::R_NANOMIPS_NORELAX;
+    case Mips::fixup_NANOMIPS_RELAX: return ELF::R_NANOMIPS_RELAX;
+    case Mips::fixup_NANOMIPS_SAVERESTORE: return ELF::R_NANOMIPS_SAVERESTORE;
+    case Mips::fixup_NANOMIPS_INSN16: return ELF::R_NANOMIPS_INSN16;
+    case Mips::fixup_NANOMIPS_JALR32: return ELF::R_NANOMIPS_JALR32;
+    case Mips::fixup_NANOMIPS_JALR16: return ELF::R_NANOMIPS_JALR16;
+    case Mips::fixup_NANOMIPS_JUMPTABLE_LOAD: return ELF::R_NANOMIPS_JUMPTABLE_LOAD;
+    case Mips::fixup_NANOMIPS_FRAME_REG: return ELF::R_NANOMIPS_FRAME_REG;
+    case Mips::fixup_NANOMIPS_NOTRAMP: return ELF::R_NANOMIPS_NOTRAMP;
+    // TLS relocations.
+    case Mips::fixup_NANOMIPS_TLS_DTPMOD: return ELF::R_NANOMIPS_TLS_DTPMOD;
+    case Mips::fixup_NANOMIPS_TLS_DTPREL: return ELF::R_NANOMIPS_TLS_DTPREL;
+    case Mips::fixup_NANOMIPS_TLS_TPREL: return ELF::R_NANOMIPS_TLS_TPREL;
+    case Mips::fixup_NANOMIPS_TLS_GD: return ELF::R_NANOMIPS_TLS_GD;
+    case Mips::fixup_NANOMIPS_TLS_GD_I32: return ELF::R_NANOMIPS_TLS_GD_I32;
+    case Mips::fixup_NANOMIPS_TLS_LD: return ELF::R_NANOMIPS_TLS_LD;
+    case Mips::fixup_NANOMIPS_TLS_LD_I32: return ELF::R_NANOMIPS_TLS_LD_I32;
+    case Mips::fixup_NANOMIPS_TLS_DTPREL12: return ELF::R_NANOMIPS_TLS_DTPREL12;
+    case Mips::fixup_NANOMIPS_TLS_DTPREL16: return ELF::R_NANOMIPS_TLS_DTPREL16;
+    case Mips::fixup_NANOMIPS_TLS_DTPREL_I32: return ELF::R_NANOMIPS_TLS_DTPREL_I32;
+    case Mips::fixup_NANOMIPS_TLS_GOTTPREL: return ELF::R_NANOMIPS_TLS_GOTTPREL;
+    case Mips::fixup_NANOMIPS_TLS_GOTTPREL_PC_I32: return ELF::R_NANOMIPS_TLS_GOTTPREL_PC_I32;
+    case Mips::fixup_NANOMIPS_TLS_TPREL12: return ELF::R_NANOMIPS_TLS_TPREL12;
+    case Mips::fixup_NANOMIPS_TLS_TPREL16: return ELF::R_NANOMIPS_TLS_TPREL16;
+    case Mips::fixup_NANOMIPS_TLS_TPREL_I32: return ELF::R_NANOMIPS_TLS_TPREL_I32;
+  }
+
+  llvm_unreachable("invalid fixup kind!");
+}
 
 unsigned MipsELFObjectWriter::getRelocType(MCContext &Ctx,
                                            const MCValue &Target,
@@ -221,12 +338,15 @@ unsigned MipsELFObjectWriter::getRelocType(MCContext &Ctx,
   // Determine the type of the relocation.
   unsigned Kind = Fixup.getTargetKind();
 
+  if (Ctx.getTargetTriple().isNanoMips())
+    return getNanoMipsRelocType(Ctx, Target, Fixup, IsPCRel);
+
   switch (Kind) {
   case FK_NONE:
-    return ELF::R_MIPS_NONE;
+      return ELF::R_MIPS_NONE;
   case FK_Data_1:
     Ctx.reportError(Fixup.getLoc(),
-                    "MIPS does not support one byte relocations");
+            "MIPS does not support one byte relocations");
     return ELF::R_MIPS_NONE;
   case Mips::fixup_Mips_16:
   case FK_Data_2:
@@ -237,8 +357,8 @@ unsigned MipsELFObjectWriter::getRelocType(MCContext &Ctx,
   case Mips::fixup_Mips_64:
   case FK_Data_8:
     return IsPCRel
-               ? setRTypes(ELF::R_MIPS_PC32, ELF::R_MIPS_64, ELF::R_MIPS_NONE)
-               : (unsigned)ELF::R_MIPS_64;
+      ? setRTypes(ELF::R_MIPS_PC32, ELF::R_MIPS_64, ELF::R_MIPS_NONE)
+      : (unsigned)ELF::R_MIPS_64;
   }
 
   if (IsPCRel) {
@@ -505,6 +625,11 @@ void MipsELFObjectWriter::sortRelocs(const MCAssembler &Asm,
 
 bool MipsELFObjectWriter::needsRelocateWithSymbol(const MCSymbol &Sym,
                                                   unsigned Type) const {
+  // Conservative assumption for NanoMips, let the linker handle it!
+  if (getEMachine() == ELF::EM_NANOMIPS)
+    return (!Sym.isInSection() ||
+	    !Sym.getSection().getName().startswith(".rodata"));
+
   // If it's a compound relocation for N64 then we need the relocation if any
   // sub-relocation needs it.
   if (!isUInt<8>(Type))
@@ -664,7 +789,9 @@ std::unique_ptr<MCObjectTargetWriter>
 llvm::createMipsELFObjectWriter(const Triple &TT, bool IsN32) {
   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
   bool IsN64 = TT.isArch64Bit() && !IsN32;
-  bool HasRelocationAddend = TT.isArch64Bit();
+  bool HasRelocationAddend = (TT.isArch64Bit() || TT.getArch() == llvm::Triple::nanomips);
+  uint16_t EMachine = ((TT.getArch() == llvm::Triple::nanomips)?
+		       ELF::EM_NANOMIPS : ELF::EM_MIPS);
   return std::make_unique<MipsELFObjectWriter>(OSABI, HasRelocationAddend,
-                                                IsN64);
+					       EMachine, IsN64);
 }

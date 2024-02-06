@@ -4566,10 +4566,14 @@ bool AsmParser::parseDirectiveMacro(SMLoc DirectiveLoc) {
         if (MacroDepth == 0) { // Outermost macro.
           EndToken = getTok();
           Lexer.Lex();
-          if (getLexer().isNot(AsmToken::EndOfStatement))
-            return TokError("unexpected token in '" + EndToken.getIdentifier() +
-                            "' directive");
-          break;
+          if (getLexer().isNot(AsmToken::EndOfStatement)) {
+	    if (!getLexer().is(AsmToken::Identifier) || getTok().getIdentifier() != Name)
+	      return TokError("unexpected token in '" + EndToken.getIdentifier() +
+			      "' directive");
+	    else
+	      Lexer.Lex();
+	  }
+	  break;
         } else {
           // Otherwise we just found the end of an inner macro.
           --MacroDepth;

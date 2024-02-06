@@ -30,6 +30,7 @@ enum AFL_REG {
 // Masks for the ases word of an ABI flags structure.
 enum AFL_ASE {
   AFL_ASE_DSP = 0x00000001,       // DSP ASE
+  AFL_ASE_TLB = 0x00000001,	  // Re-uses above bit
   AFL_ASE_DSPR2 = 0x00000002,     // DSP R2 ASE
   AFL_ASE_EVA = 0x00000004,       // Enhanced VA Scheme
   AFL_ASE_MCU = 0x00000008,       // MCU (MicroController) ASE
@@ -43,7 +44,8 @@ enum AFL_ASE {
   AFL_ASE_MICROMIPS = 0x00000800, // MICROMIPS ASE
   AFL_ASE_XPA = 0x00001000,       // XPA ASE
   AFL_ASE_CRC = 0x00008000,       // CRC ASE
-  AFL_ASE_GINV = 0x00020000       // GINV ASE
+  AFL_ASE_GINV = 0x00020000,       // GINV ASE
+  AFL_ASE_xNMS = 0x00040000,       // not nanoMIPS Subset
 };
 
 // Values for the isa_ext word of an ABI flags structure.

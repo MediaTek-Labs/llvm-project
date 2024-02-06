@@ -454,12 +454,12 @@ void assemble(const Config &Conf, TargetMachine *TM, AddStreamFn AddStream,
   Assembler.append(LtoExternalAsm);
   std::vector<StringRef> Args;
   Args.push_back(Assembler);
-  Args.push_back(AsmFileName);
-  Args.push_back("-o");
-  Args.push_back(DojFileName);
   for ( auto &A : LtoExternalAsmArgs ) {
     Args.push_back(A);
   }
+  Args.push_back(AsmFileName);
+  Args.push_back("-o");
+  Args.push_back(DojFileName);
 
   LLVM_DEBUG(dbgs() << "Run assembler on module " << Mod.getModuleIdentifier()
                     << "\n");

@@ -87,6 +87,11 @@ NoZeroDivCheck("mno-check-zero-division", cl::Hidden,
                cl::desc("MIPS: Don't trap on integer division by zero."),
                cl::init(false));
 
+static cl::opt<bool>
+CombineAddiu48("mips-combine-addiu48", cl::Hidden,
+               cl::desc("MIPS: Combine address callculation into addiu48"),
+               cl::init(true));
+
 extern cl::opt<bool> EmitJalrReloc;
 
 static const MCPhysReg Mips64DPRegs[8] = {
@@ -185,6 +190,7 @@ const char *MipsTargetLowering::getTargetNodeName(unsigned Opcode) const {
   case MipsISD::JmpLink:           return "MipsISD::JmpLink";
   case MipsISD::TailCall:          return "MipsISD::TailCall";
   case MipsISD::FullAddr:          return "MipsISD::FullAddr";
+  case MipsISD::FullAddrAdd:       return "MipsISD::FullAddrAdd";
   case MipsISD::Highest:           return "MipsISD::Highest";
   case MipsISD::Higher:            return "MipsISD::Higher";
   case MipsISD::Hi:                return "MipsISD::Hi";
@@ -1377,6 +1383,58 @@ static SDValue performSUBCombine(SDNode *N, SelectionDAG &DAG,
   return SDValue();
 }
 
+static SDValue performADDIU48Combine(SDNode *ROOTNode, SelectionDAG &CurDAG,
+                                     const MipsSubtarget &) {
+  if (!CombineAddiu48)
+    return SDValue();
+
+  int64_t Offset = 0;
+  GlobalAddressSDNode* Global = nullptr;
+  SDValue Index;
+  ConstantSDNode *CN;
+  if (ConstantSDNode *C = dyn_cast<ConstantSDNode>(ROOTNode->getOperand(1))) {
+    if (!ROOTNode->getOperand(0).hasOneUse() ||
+        ROOTNode->getOperand(0)->getOpcode() != ISD::ADD)
+      return SDValue();
+
+    Offset = C->getSExtValue();
+    ROOTNode = ROOTNode->getOperand(0).getNode();
+  }
+
+  if (ROOTNode->getOperand(0).getOpcode() == MipsISD::FullAddr &&
+      ROOTNode->getOperand(0).hasOneUse() &&
+      !isa<ConstantSDNode>(ROOTNode->getOperand(1))) {
+    Global = dyn_cast<GlobalAddressSDNode>(ROOTNode->getOperand(0).getOperand(0));
+    Index = ROOTNode->getOperand(1);
+  } else if (ROOTNode->getOperand(1).getOpcode() == MipsISD::FullAddr &&
+             ROOTNode->getOperand(1).hasOneUse()) {
+    Global = dyn_cast<GlobalAddressSDNode>(ROOTNode->getOperand(1).getOperand(0));
+    Index = ROOTNode->getOperand(0);
+  }
+
+  if (!Global)
+    return SDValue();
+
+  if (Index.getOpcode() == ISD::SHL &&
+        (CN = dyn_cast<ConstantSDNode>(Index.getOperand(1))) &&
+        CN->getSExtValue() < 4)
+    return SDValue();
+
+  EVT VT = ROOTNode->getValueType(0);
+  SDLoc DL(ROOTNode);
+
+  assert(Global->getOffset() == 0);
+
+  SDValue ops[] = {Index, SDValue(Global, 0)};
+  EVT NodeTys[] = {VT};
+
+  if (Offset)
+    ops[1] = CurDAG.getTargetGlobalAddress(
+                    Global->getGlobal(), DL, VT, Offset, Global->getTargetFlags());
+
+  return CurDAG.getNode(MipsISD::FullAddrAdd, DL, NodeTys, ops);
+}
+
 static SDValue performADDCombine(SDNode *N, SelectionDAG &DAG,
                                  TargetLowering::DAGCombinerInfo &DCI,
                                  const MipsSubtarget &Subtarget) {
@@ -1389,11 +1447,20 @@ static SDValue performADDCombine(SDNode *N, SelectionDAG &DAG,
     return SDValue();
   }
 
+
+  if (Subtarget.hasNanoMips())
+    return performADDIU48Combine(N, DAG, Subtarget);
+
+
   // (add v0, (add v1, abs_lo(tjt))) => (add (add v0, v1), abs_lo(tjt))
   SDValue Add = N->getOperand(1);
 
+
+
   if (Add.getOpcode() != ISD::ADD)
     return SDValue();
+
+
 
   SDValue Lo = Add.getOperand(1);
 
@@ -1578,7 +1645,15 @@ static MachineBasicBlock *insertDivByZeroTrap(MachineInstr &MI,
   auto TeqIns =
       IsMicroMips ? Mips::TEQ_MM : (IsNanoMips ? Mips::TEQ_NM : Mips::TEQ);
   auto ZeroReg = IsNanoMips ? Mips::ZERO_NM : Mips::ZERO;
-  MIB = BuildMI(MBB, std::next(I), MI.getDebugLoc(), TII.get(TeqIns))
+  // For nanoMIPS, match the order of operands used by GNU compiler
+  // for easy comparison.
+  if (IsNanoMips)
+    MIB = BuildMI(MBB, std::next(I), MI.getDebugLoc(), TII.get(TeqIns))
+            .addReg(ZeroReg)
+            .addReg(Divisor.getReg(), getKillRegState(Divisor.isKill()))
+            .addImm(7);
+  else
+    MIB = BuildMI(MBB, std::next(I), MI.getDebugLoc(), TII.get(TeqIns))
             .addReg(Divisor.getReg(), getKillRegState(Divisor.isKill()))
             .addReg(ZeroReg)
             .addImm(7);
@@ -2006,7 +2081,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicBinaryPartword(
 
   if (Subtarget.hasNanoMips()) {
     SLL = Mips::SLL_NM;
-    ANDi = Mips::ANDI_NM;
+    ANDi = Mips::PseudoANDI_NM;
     XORi = Mips::XORI_NM;
     ORi = Mips::ORI_NM;
     SLLV = Mips::SLLV_NM;
@@ -2117,7 +2192,7 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicBinaryPartword(
   //    sll     incr2,incr,shiftamt
 
   int64_t MaskImm = (Size == 1) ? 255 : 65535;
-  BuildMI(BB, DL, TII->get(ABI.GetPtrAddiuOp()), MaskLSB2)
+  BuildMI(BB, DL, TII->get(ABI.GetPtrAddiuOp(-4)), MaskLSB2)
     .addReg(ABI.GetNullPtr()).addImm(-4);
   BuildMI(BB, DL, TII->get(ABI.GetPtrAndOp()), AlignedAddr)
     .addReg(Ptr).addReg(MaskLSB2);
@@ -2131,8 +2206,12 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicBinaryPartword(
       .addReg(PtrLSB2).addImm((Size == 1) ? 3 : 2);
     BuildMI(BB, DL, TII->get(SLL), ShiftAmt).addReg(Off).addImm(3);
   }
-  BuildMI(BB, DL, TII->get(ORi), MaskUpper)
-    .addReg(ZERO).addImm(MaskImm);
+  if (Subtarget.hasNanoMips())
+    BuildMI(BB, DL, TII->get(Mips::PseudoLI_NM), MaskUpper)
+      .addImm(MaskImm);
+  else
+    BuildMI(BB, DL, TII->get(ORi), MaskUpper)
+      .addReg(ZERO).addImm(MaskImm);
   BuildMI(BB, DL, TII->get(SLLV), Mask)
     .addReg(MaskUpper).addReg(ShiftAmt);
   BuildMI(BB, DL, TII->get(NOR), Mask2).addReg(ZERO).addReg(Mask);
@@ -2271,15 +2350,17 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
   unsigned SLLV = Mips::SLLV;
   unsigned NOR = Mips::NOR;
   unsigned ZERO = Mips::ZERO;
+  unsigned EXT = Mips::EXT;
   
   if (Subtarget.hasNanoMips()) {
     SLL = Mips::SLL_NM;
-    ANDi = Mips::ANDI_NM;
+    ANDi = Mips::PseudoANDI_NM;
     XORi = Mips::XORI_NM;
     ORi = Mips::ORI_NM;
     SLLV = Mips::SLLV_NM;
     NOR = Mips::NOR_NM;
     ZERO = Mips::ZERO_NM;
+    EXT = Mips::EXT_NM;
   }
 
   // The scratch registers here with the EarlyClobber | Define | Dead | Implicit
@@ -2322,7 +2403,8 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
   //    andi    maskednewval,newval,255
   //    sll     shiftednewval,maskednewval,shiftamt
   int64_t MaskImm = (Size == 1) ? 255 : 65535;
-  BuildMI(BB, DL, TII->get(ABI.GetPtrAddiuOp()), MaskLSB2)
+  int64_t MaskImmBits = (Size == 1) ? 8 : 16 ;
+  BuildMI(BB, DL, TII->get(ABI.GetPtrAddiuOp(-4)), MaskLSB2)
     .addReg(ABI.GetNullPtr()).addImm(-4);
   BuildMI(BB, DL, TII->get(ABI.GetPtrAndOp()), AlignedAddr)
     .addReg(Ptr).addReg(MaskLSB2);
@@ -2336,17 +2418,29 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
       .addReg(PtrLSB2).addImm((Size == 1) ? 3 : 2);
     BuildMI(BB, DL, TII->get(SLL), ShiftAmt).addReg(Off).addImm(3);
   }
-  BuildMI(BB, DL, TII->get(ORi), MaskUpper)
-    .addReg(ZERO).addImm(MaskImm);
+  if (Subtarget.hasNanoMips())
+    BuildMI(BB, DL, TII->get(Mips::PseudoLI_NM), MaskUpper)
+      .addImm(MaskImm);
+  else
+    BuildMI(BB, DL, TII->get(ORi), MaskUpper)
+      .addReg(ZERO).addImm(MaskImm);
   BuildMI(BB, DL, TII->get(SLLV), Mask)
     .addReg(MaskUpper).addReg(ShiftAmt);
   BuildMI(BB, DL, TII->get(NOR), Mask2).addReg(ZERO).addReg(Mask);
-  BuildMI(BB, DL, TII->get(ANDi), MaskedCmpVal)
-    .addReg(CmpVal).addImm(MaskImm);
+  if (Subtarget.hasNanoMips() && MaskImm > 4095)
+    BuildMI(BB, DL, TII->get(EXT), MaskedCmpVal)
+      .addReg(CmpVal).addImm(0).addImm(MaskImmBits);
+  else
+    BuildMI(BB, DL, TII->get(ANDi), MaskedCmpVal)
+      .addReg(CmpVal).addImm(MaskImm);
   BuildMI(BB, DL, TII->get(SLLV), ShiftedCmpVal)
     .addReg(MaskedCmpVal).addReg(ShiftAmt);
-  BuildMI(BB, DL, TII->get(ANDi), MaskedNewVal)
-    .addReg(NewVal).addImm(MaskImm);
+  if (Subtarget.hasNanoMips() && MaskImm > 4095)
+    BuildMI(BB, DL, TII->get(EXT), MaskedNewVal)
+      .addReg(NewVal).addImm(0).addImm(MaskImmBits);
+  else
+    BuildMI(BB, DL, TII->get(ANDi), MaskedNewVal)
+      .addReg(NewVal).addImm(MaskImm);
   BuildMI(BB, DL, TII->get(SLLV), ShiftedNewVal)
     .addReg(MaskedNewVal).addReg(ShiftAmt);
 
@@ -4678,12 +4772,12 @@ MipsTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
         if (Subtarget.inMips16Mode())
           return std::make_pair(0U, &Mips::CPU16RegsRegClass);
         if (Subtarget.hasNanoMips())
-          return std::make_pair(0U, &Mips::GPR32NMRegClass);
+          return std::make_pair(0U, &Mips::GPRNM32RegClass);
         return std::make_pair(0U, &Mips::GPR32RegClass);
       }
       if (VT == MVT::i64 && !Subtarget.isGP64bit())
         return std::make_pair(0U, Subtarget.hasNanoMips()
-                                      ? &Mips::GPR32NMRegClass
+                                      ? &Mips::GPRNM32RegClass
                                       : &Mips::GPR32RegClass);
       if (VT == MVT::i64 && Subtarget.isGP64bit())
         return std::make_pair(0U, &Mips::GPR64RegClass);
@@ -4859,15 +4953,20 @@ bool MipsTargetLowering::isLegalAddressingMode(const DataLayout &DL,
   if (AM.BaseGV)
     return false;
 
+  if (Subtarget.hasNanoMips() && !isInt<9>(AM.BaseOffs) && !isUInt<12>(AM.BaseOffs))
+    return false;
+
   switch (AM.Scale) {
   case 0: // "r+i" or just "i", depending on HasBaseReg.
     break;
   case 1:
     if (!AM.HasBaseReg) // allow "r+i".
       break;
-    return false; // disallow "r+r" or "r+r+i".
+    return Subtarget.hasNanoMips() && AM.BaseOffs == 0; // disallow "r+r" or "r+r+i".
   default:
-    return false;
+    if (!Subtarget.hasNanoMips() || AM.BaseOffs != 0)
+      return false;
+    return Ty->isSized() && (AM.Scale * 8u) == Ty->getScalarSizeInBits();
   }
 
   return true;
@@ -4910,6 +5009,17 @@ unsigned MipsTargetLowering::getJumpTableEncoding() const {
 
 bool MipsTargetLowering::useSoftFloat() const {
   return Subtarget.useSoftFloat();
+}
+
+bool MipsTargetLowering::shouldExpandShift(SelectionDAG &DAG, SDNode *N) const {
+  if (Subtarget.hasNanoMips() &&
+      DAG.getMachineFunction().getFunction().hasOptSize())
+    return false;
+  return true;
+}
+
+bool MipsTargetLowering::shouldConsiderGEPOffsetSplit() const {
+  return Subtarget.hasNanoMips();
 }
 
 void MipsTargetLowering::copyByValRegs(

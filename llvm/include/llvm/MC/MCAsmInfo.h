@@ -224,6 +224,10 @@ protected:
   /// still be lexed as a comment.
   bool AllowHashAtStartOfIdentifier = false;
 
+  /// This is true if the assembler allows the "[]" characters within an
+  /// identifier.
+  bool AllowBracInName = false;
+
   /// If this is true, symbol names with invalid characters will be printed in
   /// quotes.
   bool SupportsQuotedNames = true;
@@ -482,6 +486,10 @@ protected:
   /// location is allowed.
   bool SupportsExtendedDwarfLocDirective = true;
 
+  /// True if the target uses compressed half-word instruction byte order.
+  /// This is true for NanoMips and Thumb2.
+  bool UsesCompInstByteOrder = false;
+
   //===--- Prologue State ----------------------------------------------===//
 
   std::vector<MCCFIInstruction> InitialFrameState;
@@ -683,6 +691,7 @@ public:
   bool doesAllowHashAtStartOfIdentifier() const {
     return AllowHashAtStartOfIdentifier;
   }
+  bool doesAllowBracInName() const { return AllowBracInName; }
   bool supportsNameQuoting() const { return SupportsQuotedNames; }
 
   bool doesSupportDataRegionDirectives() const {
@@ -855,6 +864,9 @@ public:
   bool hasMipsExpressions() const { return HasMipsExpressions; }
   bool needsFunctionDescriptors() const { return NeedsFunctionDescriptors; }
   bool shouldUseMotorolaIntegers() const { return UseMotorolaIntegers; }
+
+  /// True if the target uses compressed half-word instruction byte ordering.
+  bool usesCompInstByteOrder() const { return UsesCompInstByteOrder; }
 };
 
 } // end namespace llvm

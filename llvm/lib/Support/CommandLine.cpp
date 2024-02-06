@@ -44,6 +44,7 @@
 #include "llvm/Support/StringSaver.h"
 #include "llvm/Support/VirtualFileSystem.h"
 #include "llvm/Support/raw_ostream.h"
+#include "mtk/tool_copyright.h"
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -2432,6 +2433,7 @@ public:
        << "  Host CPU: " << CPU;
 #endif
     OS << '\n';
+    OS << TOOL_COPYRIGHT;
   }
   void operator=(bool OptionWasSpecified);
 };

@@ -246,7 +246,13 @@ bool NMMoveOpt::generateMoveP(MachineBasicBlock &MBB) {
     bool Swap = std::get<2>(Tuple);
     if (Swap)
       std::swap(Move1, Move2);
-    BuildMI(MBB, InsertBefore, DL, TII->get(Mips::MOVEP_NM))
+    bool Rev= (isInSet(GPR4, Move1->getOperand(0).getReg()) &&
+	       isInSet(GPR2REG1, Move1->getOperand(1).getReg()) &&
+	       isInSet(GPR4, Move2->getOperand(0).getReg()) &&
+	       isInSet(GPR2REG2, Move2->getOperand(1).getReg()));
+
+    BuildMI(MBB, InsertBefore, DL,
+	    TII->get(Rev ? Mips::MOVEPREV_NM : Mips::MOVEP_NM))
         .addReg(Move1->getOperand(0).getReg(), RegState::Define)
         .addReg(Move2->getOperand(0).getReg(), RegState::Define)
         .addReg(Move1->getOperand(1).getReg())

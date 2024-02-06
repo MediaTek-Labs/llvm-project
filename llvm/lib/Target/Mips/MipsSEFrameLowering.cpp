@@ -415,13 +415,12 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
   unsigned FP = ABI.GetFramePtr();
   unsigned ZERO = ABI.GetNullPtr();
   unsigned MOVE = ABI.GetGPRMoveOp();
-  unsigned ADDiu = ABI.GetPtrAddiuOp();
   unsigned AND = ABI.GetPtrAndOp();
 
   const TargetRegisterClass *RC =
       ABI.ArePtrs64bit()
           ? &Mips::GPR64RegClass
-          : ABI.IsP32() ? &Mips::GPR32NMRegClass : &Mips::GPR32RegClass;
+          : ABI.IsP32() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
 
   // First, compute final stack size.
   uint64_t StackSize = MFI.getStackSize();
@@ -544,9 +543,10 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
       assert((Log2(MFI.getMaxAlign()) < 16) &&
              "Function's alignment size requirement is not supported.");
       int64_t MaxAlign = -(int64_t)MFI.getMaxAlign().value();
+      unsigned ADDiu = ABI.GetPtrAddiuOp(MaxAlign);
 
       if (ABI.IsP32())
-        BuildMI(MBB, MBBI, dl, TII.get(Mips::Li_NM), VR).addImm(MaxAlign);
+        BuildMI(MBB, MBBI, dl, TII.get(Mips::PseudoLI_NM), VR).addImm(MaxAlign);
       else
         BuildMI(MBB, MBBI, dl, TII.get(ADDiu), VR)
             .addReg(ZERO)
@@ -724,7 +724,7 @@ void MipsSEFrameLowering::emitEpilogue(MachineFunction &MF,
     const TargetRegisterClass *RC =
         ABI.ArePtrs64bit()
             ? &Mips::GPR64RegClass
-            : ABI.IsP32() ? &Mips::GPR32NMRegClass : &Mips::GPR32RegClass;
+            : ABI.IsP32() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
 
     // Find first instruction that restores a callee-saved register.
     MachineBasicBlock::iterator I = MBBI;
@@ -923,7 +923,7 @@ void MipsSEFrameLowering::determineCalleeSaves(MachineFunction &MF,
   const TargetRegisterClass &RC =
       ABI.ArePtrs64bit()
           ? Mips::GPR64RegClass
-          : ABI.IsP32() ? Mips::GPR32NMRegClass : Mips::GPR32RegClass;
+          : ABI.IsP32() ? Mips::GPRNM32RegClass : Mips::GPR32RegClass;
   int FI = MF.getFrameInfo().CreateStackObject(TRI->getSpillSize(RC),
                                                TRI->getSpillAlign(RC), false);
   RS->addScavengingFrameIndex(FI);

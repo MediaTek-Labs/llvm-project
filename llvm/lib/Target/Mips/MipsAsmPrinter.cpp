@@ -329,6 +329,92 @@ static void emitDirectiveRelocJalr(const MachineInstr &MI,
   }
 }
 
+void MipsAsmPrinter::emitPseudoAndiNM(MCStreamer &OutStreamer,
+				      const MachineInstr *MI) {
+  MCInst Inst;
+  MCOperand Imm;
+  unsigned Mask;
+  const TargetRegisterClass *RC = MF->getSubtarget().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
+  Register Rt = MI->getOperand(0).getReg();
+  Register Rs;
+
+  Inst.addOperand(MCOperand::createReg(Rt));
+
+  if (MI->getNumOperands() == 3) {
+    Rs = MI->getOperand(1).getReg();
+    Inst.addOperand(MCOperand::createReg(Rs));
+    lowerOperand(MI->getOperand(2), Imm);
+  }
+  else {
+    Rs = Rt;
+    lowerOperand(MI->getOperand(1), Imm);
+  }
+
+  Mask = Imm.getImm();
+  if (RC->contains(Rt) && RC->contains(Rs)
+      && (Mask <= 11 || Mask == 0xff || Mask == 0xffff || Mask == 14 || Mask == 15)) {
+    Inst.addOperand(Imm);
+    Inst.setOpcode(Mips::ANDI16_NM);
+  }
+  else if (isUInt<12>(Mask)) {
+    Inst.addOperand(Imm);
+    Inst.setOpcode(Mips::ANDI_NM);
+  }
+  else if (Mask == 0xffff) {
+    // FIXME: add EXT_NM expansion for any contiguous mask pattern
+    Inst.addOperand(MCOperand::createImm(0));
+    Inst.addOperand(MCOperand::createImm(16));
+    Inst.setOpcode(Mips::EXT_NM);
+  }
+  EmitToStreamer(OutStreamer, Inst);
+}
+
+// FIXME: This is deliberately conservative for now, knowing that the
+// assembler will pick the most optimal form.
+void MipsAsmPrinter::emitLoadImmediateNM(MCStreamer &OutStreamer,
+					 const MachineInstr *MI) {
+  MCInst Inst;
+  MCOperand Imm;
+  const TargetRegisterClass *RC = MF->getSubtarget().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
+  Register Rt = MI->getOperand(0).getReg();
+  lowerOperand(MI->getOperand(1), Imm);
+  int32_t ImmVal = Imm.getImm();
+
+  Inst.addOperand(MCOperand::createReg(Rt));
+  if (RC->contains(Rt) && ImmVal >= -1 && ImmVal <= 126)
+    Inst.setOpcode(Mips::LI16_NM);
+  else if (Rt != Mips::ZERO_NM && ImmVal > 0 && ImmVal <= 65535) {
+    Inst.setOpcode(Mips::ADDIU_NM);
+    Inst.addOperand(MCOperand::createReg(Mips::ZERO_NM));
+  }
+  else if (ImmVal < 0 && ImmVal >= -4095) {
+    Inst.setOpcode(Mips::ADDIUNEG_NM);
+    Inst.addOperand(MCOperand::createReg(Mips::ZERO_NM));
+  }
+  else
+    Inst.setOpcode(Mips::LI48_NM);
+
+  Inst.addOperand(Imm);
+  EmitToStreamer(OutStreamer, Inst);
+}
+
+void MipsAsmPrinter::emitLoadAddressNM(MCStreamer &OutStreamer,
+                                       const MachineInstr *MI) {
+  Register Reg = MI->getOperand(0).getReg();
+  MCInst LA;
+  MCOperand Addr;
+
+   if (Subtarget->usePCRel())
+    LA.setOpcode(Mips::LAPC48_NM);
+  else
+    LA.setOpcode(Mips::LI48_NM);
+
+  lowerOperand(MI->getOperand(1), Addr);
+  LA.addOperand(MCOperand::createReg(Reg));
+  LA.addOperand(Addr);
+  EmitToStreamer(OutStreamer, LA);
+}
+
 void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
   MipsTargetStreamer &TS = getTargetStreamer();
   unsigned Opc = MI->getOpcode();
@@ -427,6 +513,19 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
       emitBrsc(*OutStreamer, &*I);
       continue;
     }
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoANDI_NM) {
+      emitPseudoAndiNM(*OutStreamer, &*I);
+      continue;
+    }
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoLI_NM) {
+      emitLoadImmediateNM(*OutStreamer, &*I);
+      continue;
+    }
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoLA_NM) {
+      emitLoadAddressNM(*OutStreamer, &*I);
+      continue;
+    }
+
     // The inMips16Mode() test is not permanent.
     // Some instructions are marked as pseudo right now which
     // would make the test fail for the wrong reason but
@@ -971,7 +1070,7 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
         OutContext.getELFSection(SectionName, ELF::SHT_PROGBITS, 0));
   }
 
-  if (IsNanoMips)
+  if (IsNanoMips && STI.useLinkerRelax())
     TS.emitDirectiveLinkRelax();
 
   if (!IsNanoMips)
@@ -991,7 +1090,7 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
   if ((ABI.IsO32() && (STI.isABI_FPXX() || STI.isFP64bit())) ||
       STI.useSoftFloat())
     TS.emitDirectiveModuleFP();
-  if (ABI.IsP32())
+  if (ABI.IsP32() && STI.usePCRel())
     TS.emitDirectiveModulePcRel();
 
   // We should always emit a '.module [no]oddspreg' but binutils 2.24 does not

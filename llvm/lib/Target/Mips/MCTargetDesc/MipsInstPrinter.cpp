@@ -106,6 +106,21 @@ void MipsInstPrinter::printInst(const MCInst *MI, uint64_t Address,
     printSaveRestore(MI, O);
     O << "\n";
     return;
+  case Mips::RESTORE_NM:
+    O << "\trestore\t";
+    printSaveRestore(MI, O);
+    return;
+  case Mips::SAVE16_NM:
+  case Mips::SAVE_NM:
+    O << "\tsave\t";
+    printSaveRestore(MI, O);
+    return;
+  case Mips::RESTOREJRC16_NM:
+  case Mips::RESTOREJRC_NM:
+    O << "\trestore.jrc\t";
+    printSaveRestore(MI, O);
+    O << "\n";
+    return;
   }
 
   // Try to print any aliases first.
@@ -124,6 +139,22 @@ void MipsInstPrinter::printInst(const MCInst *MI, uint64_t Address,
 
 void MipsInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
                                    raw_ostream &O) {
+  switch (MI->getOpcode()) {
+  default:
+    break;
+  case Mips::AND16_NM:
+  case Mips::XOR16_NM:
+  case Mips::OR16_NM:
+    if (MI->getNumOperands() == 2 && OpNo == 2)
+      OpNo = 0; // rt, rs -> rt, rs, rt
+    break;
+  case Mips::ADDu4x4_NM:
+  case Mips::MUL4x4_NM:
+    if (MI->getNumOperands() == 2 && OpNo > 0)
+      OpNo = OpNo - 1; // rt, rs -> rt, rt, rs
+    break;
+  }
+
   const MCOperand &Op = MI->getOperand(OpNo);
   if (Op.isReg()) {
     printRegName(O, Op.getReg());
@@ -175,7 +206,36 @@ printMemOperand(const MCInst *MI, int opNum, raw_ostream &O) {
     break;
   }
 
-  printOperand(MI, opNum+1, O);
+  // Index register is encoded as immediate value
+  // in case of nanoMIPS indexed instructions
+  switch (MI->getOpcode()) {
+    // No offset needed for paired LL/SC
+    case Mips::LLWP_NM:
+    case Mips::SCWP_NM:
+      break;
+    case Mips::LWX_NM:
+    case Mips::LWXS_NM:
+    case Mips::LWXS16_NM:
+    case Mips::LBX_NM:
+    case Mips::LBUX_NM:
+    case Mips::LHX_NM:
+    case Mips::LHUX_NM:
+    case Mips::LHXS_NM:
+    case Mips::LHUXS_NM:
+    case Mips::SWX_NM:
+    case Mips::SWXS_NM:
+    case Mips::SBX_NM:
+    case Mips::SHX_NM:
+    case Mips::SHXS_NM:
+      if (!MI->getOperand(opNum+1).isReg()) {
+	printRegName(O, MI->getOperand(opNum+1).getImm());
+	break;
+      }
+      // Fall through
+    default:
+      printOperand(MI, opNum+1, O);
+      break;
+  }
   O << "(";
   printOperand(MI, opNum, O);
   O << ")";
@@ -214,6 +274,17 @@ bool MipsInstPrinter::printAlias(const char *Str, const MCInst &MI,
   printAlias(Str, MI, OpNo0, OS);
   OS << ", ";
   printOperand(&MI, OpNo1, OS);
+  return true;
+}
+
+bool MipsInstPrinter::printAlias(const char *Str, const MCInst &MI,
+                                 unsigned OpNo0, unsigned OpNo1,
+                                 unsigned OpNo2, raw_ostream &OS) {
+  printAlias(Str, MI, OpNo0, OS);
+  OS << ", ";
+  printOperand(&MI, OpNo1, OS);
+  OS << ", ";
+  printOperand(&MI, OpNo2, OS);
   return true;
 }
 
@@ -262,6 +333,27 @@ bool MipsInstPrinter::printAlias(const MCInst &MI, raw_ostream &OS) {
   case Mips::OR:
     // or $r0, $r1, $zero => move $r0, $r1
     return isReg<Mips::ZERO>(MI, 2) && printAlias("move", MI, 0, 1, OS);
+  case Mips::LI48_NM:
+  case Mips::LI16_NM:
+    // li[16/48] $r0, imm => li $r0, imm
+    return printAlias("li", MI, 0, 1, OS);
+  case Mips::ADDIU_NM:
+  case Mips::ADDIUNEG_NM:
+    if (isReg<Mips::ZERO_NM>(MI, 1))
+      return printAlias("li", MI, 0, 2, OS);
+    else
+      return printAlias("addiu", MI, 0, 1, 2, OS);
+  case Mips::ADDIU48_NM:
+  case Mips::ADDIURS5_NM:
+  case Mips::ADDIUR1SP_NM:
+  case Mips::ADDIUR2_NM:
+  case Mips::ADDIUGPB_NM:
+  case Mips::ADDIUGPW_NM:
+    return printAlias("addiu", MI, 0, 1, 2, OS);
+  case Mips::ANDI16_NM:
+  case Mips::ANDI_NM:
+    // andi[16/32] $r0, $r1, imm => andi $r0, $r1, imm
+    return printAlias("andi", MI, 0, 1, 2, OS);
   default: return false;
   }
 }
@@ -293,4 +385,22 @@ void MipsInstPrinter::printNanoMipsRegisterList(const MCInst *MI, int OpNum,
     O << ", ";
     printRegName(O, MI->getOperand(I).getReg());
   }
+}
+
+void MipsInstPrinter::printHi20(const MCInst *MI, int OpNum,
+				raw_ostream &O) {
+  const MCOperand& MO = MI->getOperand(OpNum);
+  if (MO.isImm())
+    O << "%hi(" <<  formatHex(MO.getImm()) << ")";
+  else
+    printOperand(MI, OpNum, O);
+}
+
+void MipsInstPrinter::printHi20PCRel(const MCInst *MI, int OpNum,
+				raw_ostream &O) {
+  const MCOperand& MO = MI->getOperand(OpNum);
+  if (MO.isImm())
+    O << "%pcrel_hi(" << formatHex(MO.getImm()) << ")";
+  else
+    printOperand(MI, OpNum, O);
 }

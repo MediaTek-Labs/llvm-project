@@ -57,7 +57,7 @@ struct NMLoadStoreOpt : public MachineFunctionPass {
       {Mips::S1_NM, 4}, {Mips::S2_NM, 5}, {Mips::S3_NM, 6},  {Mips::S4_NM, 7},
       {Mips::S5_NM, 8}, {Mips::S6_NM, 9}, {Mips::S7_NM, 10},
   };
-  MCRegisterClass RC = MipsMCRegisterClasses[Mips::GPR32NMRegClassID];
+  MCRegisterClass RC = MipsMCRegisterClasses[Mips::GPRNM32RegClassID];
 
   NMLoadStoreOpt() : MachineFunctionPass(ID) {}
   StringRef getPassName() const override { return NM_LOAD_STORE_OPT_NAME; }
@@ -103,7 +103,8 @@ bool NMLoadStoreOpt::runOnMachineFunction(MachineFunction &Fn) {
 
 bool NMLoadStoreOpt::isStackPointerAdjustment(MachineInstr &MI,
                                               bool IsRestore) {
-  if (MI.getOpcode() != Mips::ADDiu_NM)
+  if (MI.getOpcode() != Mips::ADDIU_NM &&
+      MI.getOpcode() != Mips::ADDIUNEG_NM)
     return false;
   Register DstReg = MI.getOperand(0).getReg();
   Register SrcReg = MI.getOperand(1).getReg();
@@ -356,7 +357,7 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
     // because it needs to be the last instruction in the basic block. If
     // possible, it will be generated with NewStackOffset.
     unsigned Opcode = IsRestore
-                          ? ((Return && !NewStackOffset) ? Mips::RESTOREJRC_NM
+                          ? ((Return && !NewStackOffset) ? Mips::RESTOREJRC16_NM
                                                          : Mips::RESTORE_NM)
                           : Mips::SAVE_NM;
     auto InsertBefore =
@@ -395,7 +396,7 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
           // In case return is also consumed, we should put restore.jrc after
           // return, to make sure it is very last instruction.
           InsertBefore = std::next(MBBIter(Return));
-          BuildMI(MBB, InsertBefore, DL, TII->get(Mips::RESTOREJRC_NM))
+          BuildMI(MBB, InsertBefore, DL, TII->get(Mips::RESTOREJRC16_NM))
               .addImm(NewStackOffset);
           MBB.erase(Return);
         } else {
@@ -407,7 +408,7 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
         // In case of save, the offset is subtracted from SP.
         if (!IsRestore)
           NewStackOffset = -NewStackOffset;
-        BuildMI(MBB, InsertBefore, DL, TII->get(Mips::ADDiu_NM), Mips::SP_NM)
+        BuildMI(MBB, InsertBefore, DL, TII->get(Mips::ADDIUNEG_NM), Mips::SP_NM)
             .addReg(Mips::SP_NM)
             .addImm(NewStackOffset);
       }
@@ -602,10 +603,18 @@ static bool isValidUse(MachineInstr *MI, Register Reg) {
   case Mips::LH_NM:
   case Mips::LHU_NM:
   case Mips::SW_NM:
-  case Mips::SWs9_NM:
   case Mips::LW_NM:
+  case Mips::SWs9_NM:
   case Mips::LWs9_NM:
-  case Mips::ADDiu_NM:
+  case Mips::SBs9_NM:
+  case Mips::LBs9_NM:
+  case Mips::LBUs9_NM:
+  case Mips::SHs9_NM:
+  case Mips::LHs9_NM:
+  case Mips::LHUs9_NM:
+  case Mips::ADDIU48_NM:
+  case Mips::ADDIU_NM:
+  case Mips::ADDIUNEG_NM:
     return MI->getOperand(1).getReg() == Reg;
   default:
     return false;
@@ -651,7 +660,8 @@ static bool isLoadStoreShortChar(MachineInstr *MI) {
 bool NMLoadStoreOpt::generatePCRelative(MachineBasicBlock &MBB) {
   SmallVector<std::pair<MachineInstr *, MachineInstr *>> Candidates;
   for (auto &MI : MBB) {
-    if (MI.getOpcode() == Mips::LA_NM) {
+    if (MI.getOpcode() == Mips::LAPC48_NM ||
+	MI.getOpcode() == Mips::PseudoLA_NM) {
       bool IsRedefined = false;
       bool IsUsedByMultipleMIs = false;
       MachineInstr *FirstUse = nullptr;
@@ -714,13 +724,17 @@ bool NMLoadStoreOpt::generatePCRelative(MachineBasicBlock &MBB) {
   for (auto Pair : Candidates) {
     auto *LA = Pair.first;
     auto *Use = Pair.second;
-    auto &Address = LA->getOperand(1);
+    auto &Address = LA->getOperand((LA->getOpcode() == Mips::LAPC48_NM ||
+				    LA->getOpcode() == Mips::LI48_NM ||
+				    LA->getOpcode() == Mips::PseudoLA_NM)? 1 : 2);
     auto Dst = Use->getOperand(0).getReg();
     int64_t Offset = Use->getOperand(2).getImm() + Address.getOffset();
 
     assert(Address.isGlobal());
 
-    if (Use->getOpcode() == Mips::ADDiu_NM) {
+    if (Use->getOpcode() == Mips::ADDIU_NM ||
+	Use->getOpcode() == Mips::ADDIUNEG_NM ||
+	Use->getOpcode() == Mips::ADDIU48_NM) {
       // Move LA to its use to avoid extending the lifetime of Dst
       MBB.insert(MBBIter(Use),
                  MBB.remove(LA));

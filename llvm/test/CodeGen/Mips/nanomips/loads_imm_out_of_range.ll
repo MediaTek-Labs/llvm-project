@@ -31,8 +31,8 @@ define signext i8 @lb_2(i8* %p) {
 
 define signext i8 @lb_3(i8* %p) {
 ; CHECK-LABEL: lb_3
-; CHECK-NOT: addiu $a0, $a0, -4096
-; CHECK-NOT: lb $a0, 0($a0)
+; CHECK: addiu $a0, $a0, -4096
+; CHECK: lb $a0, 0($a0)
   %i = getelementptr inbounds i8, i8* %p, i64 -4096
   %v = load i8, i8* %i, align 1
   ret i8 %v
@@ -67,8 +67,8 @@ define signext i8 @lb_6(i8* %p) {
 
 define signext i8 @lb_7(i8* %p) {
 ; CHECK-LABEL: lb_7
-; CHECK-NOT: addiu $a0, $a0, 65536
-; CHECK-NOT: lb $a0, 0($a0)
+; CHECK: addiu $a0, $a0, 65536
+; CHECK: lb $a0, 0($a0)
   %i = getelementptr inbounds i8, i8* %p, i64 65536
   %v = load i8, i8* %i, align 1
   ret i8 %v

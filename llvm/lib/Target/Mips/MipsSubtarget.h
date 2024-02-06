@@ -189,6 +189,9 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   // HasGINV -- supports R6 Global INValidate ASE
   bool HasGINV;
 
+  // HasTLB -- supports TLB extension
+  bool HasTLB;
+
   // Use hazard variants of the jump register instructions for indirect
   // function calls and jump tables.
   bool UseIndirectJumpsHazard;
@@ -201,11 +204,17 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   
   bool UseAbsoluteJumpTables = false;
 
+  // CPU supports NanoMips low-power subset (NMS)
+  bool HasNMS;
+
   // Use unaliged loads and stores (nanoMIPS only).
   bool UseUnalignedLoadStore = false;
 
   // Use linker relaxation
-  bool UseLinkerRelax = true;
+  bool UseLinkerRelax = false;
+
+  // PC-relative addressing mode (nanoMIPS only).
+  bool UsePCRel = false;
 
   /// The minimum alignment known to hold of the stack frame on
   /// entry to the function and which must be maintained by every function.
@@ -288,6 +297,7 @@ public:
 
   bool hasCnMips() const { return HasCnMips; }
   bool hasCnMipsP() const { return HasCnMipsP; }
+  bool hasNMS() const { return HasNMS; }
 
   bool isLittle() const { return IsLittle; }
   bool isABICalls() const { return !NoABICalls; }
@@ -334,6 +344,7 @@ public:
   bool hasCRC() const { return HasCRC; }
   bool hasVirt() const { return HasVirt; }
   bool hasGINV() const { return HasGINV; }
+  bool hasTLB() const { return HasTLB; }
   bool useIndirectJumpsHazard() const {
     return UseIndirectJumpsHazard && hasMips32r2();
   }
@@ -355,7 +366,9 @@ public:
 
   bool useLinkerRelax() const { return UseLinkerRelax; }
 
-  bool enableLongBranchPass() const {
+  bool usePCRel() const { return UsePCRel; }
+
+ bool enableLongBranchPass() const {
     return hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32();
   }
 

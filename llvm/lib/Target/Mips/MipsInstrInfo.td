@@ -259,6 +259,8 @@ def HasVirt  : Predicate<"Subtarget->hasVirt()">,
                AssemblerPredicate<(all_of FeatureVirt)>;
 def HasGINV  : Predicate<"Subtarget->hasGINV()">,
                AssemblerPredicate<(all_of FeatureGINV)>;
+def HasTLB  : Predicate<"Subtarget->hasTLB()">,
+               AssemblerPredicate<(all_of FeatureTLB)>;
 // TODO: Add support for FPOpFusion::Standard
 def AllowFPOpFusion : Predicate<"TM.Options.AllowFPOpFusion =="
                                 " FPOpFusion::Fast">;
@@ -484,6 +486,10 @@ class ASE_CRC {
 
 class ASE_VIRT {
   list <Predicate> ASEPredicate = [HasVirt];
+}
+
+class ASE_TLB {
+  list <Predicate> ASEPredicate = [HasTLB];
 }
 
 class ASE_GINV {
@@ -2874,6 +2880,7 @@ let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
                       (RDHWR GPR32Opnd:$rt, HWRegsOpnd:$rs, 0), 1>, ISA_MIPS1;
 
 }
+let AdditionalPredicates = [NotNanoMips] in {
 def : MipsInstAlias<"sub, $rd, $rs, $imm",
                     (ADDi GPR32Opnd:$rd, GPR32Opnd:$rs,
                           InvertedImOperand:$imm), 0>, ISA_MIPS1_NOT_32R6_64R6;
@@ -2885,6 +2892,7 @@ def : MipsInstAlias<"subu, $rd, $rs, $imm",
                            InvertedImOperand:$imm), 0>;
 def : MipsInstAlias<"subu $rs, $imm", (ADDiu GPR32Opnd:$rs, GPR32Opnd:$rs,
                                              InvertedImOperand:$imm), 0>;
+}
 let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def : MipsInstAlias<"sll $rd, $rt, $rs",
                       (SLLV GPR32Opnd:$rd, GPR32Opnd:$rt, GPR32Opnd:$rs), 0>;
@@ -3402,10 +3410,6 @@ include "MipsMSAInstrInfo.td"
 include "MipsEVAInstrFormats.td"
 include "MipsEVAInstrInfo.td"
 
-// MT
-include "MipsMTInstrFormats.td"
-include "MipsMTInstrInfo.td"
-
 // Micromips
 include "MicroMipsInstrFormats.td"
 include "MicroMipsInstrInfo.td"
@@ -3422,3 +3426,7 @@ include "MicroMipsDSPInstrInfo.td"
 // Nanomips
 include "NanoMipsInstrFormats.td"
 include "NanoMipsInstrInfo.td"
+
+// MT
+include "MipsMTInstrFormats.td"
+include "MipsMTInstrInfo.td"

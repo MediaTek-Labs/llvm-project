@@ -366,6 +366,30 @@ bool MipsSEDAGToDAGISel::selectAddrDefault(SDValue Addr, SDValue &Base,
   return true;
 }
 
+bool MipsSEDAGToDAGISel::selectAddrSym(SDValue Addr, SDValue &Base) const {
+  SDValue Opnd0 = Addr;
+  if (isa<ConstantPoolSDNode>(Opnd0) || isa<GlobalAddressSDNode>(Opnd0) ||
+      isa<JumpTableSDNode>(Opnd0) || isa<MCSymbolSDNode>(Opnd0) ||
+      isa<BasicBlockSDNode>(Opnd0) ||
+      isa<ExternalSymbolSDNode>(Opnd0)) {
+      Base = Addr;
+      return true;
+    }
+  else
+    return false;
+}
+
+bool MipsSEDAGToDAGISel::selectAddrSymGPRel(SDValue Addr, SDValue &Base) const {
+  SDValue Opnd0 = Addr;
+  if (isa<GlobalAddressSDNode>(Opnd0) ||
+      isa<ExternalSymbolSDNode>(Opnd0)) {
+      Base = Addr;
+      return true;
+    }
+  else
+    return false;
+}
+
 bool MipsSEDAGToDAGISel::selectIntAddr(SDValue Addr, SDValue &Base,
                                        SDValue &Offset) const {
   return selectAddrRegImm(Addr, Base, Offset) ||
@@ -544,6 +568,24 @@ bool MipsSEDAGToDAGISel::selectIntAddrUImm12(SDValue Addr, SDValue &Base,
   return selectAddrFrameIndexUOffset(Addr, Base, Offset, 12, 0);
 }
 
+bool MipsSEDAGToDAGISel::selectIntAddrUImm19s2(SDValue Addr, SDValue &Base,
+                                             SDValue &Offset) const {
+  // FIXME: 16-bit load/store selection disabled for DAG
+  return false;
+}
+
+bool MipsSEDAGToDAGISel::selectIntAddrUImm17s1(SDValue Addr, SDValue &Base,
+                                             SDValue &Offset) const {
+  // FIXME: 16-bit load/store selection disabled for DAG
+  return false;
+}
+
+bool MipsSEDAGToDAGISel::selectIntAddrUImm18(SDValue Addr, SDValue &Base,
+                                             SDValue &Offset) const {
+  // FIXME: 16-bit load/store selection disabled for DAG
+  return false;
+}
+
 // A load/store 'x' indexed (reg + reg)
 bool MipsSEDAGToDAGISel::selectIntAddrIndexed(SDValue Addr, SDValue &Base,
                                               SDValue &Offset) const {
@@ -556,7 +598,11 @@ bool MipsSEDAGToDAGISel::selectIntAddrIndexed(SDValue Addr, SDValue &Base,
         Op1.getOpcode() != ISD::TargetExternalSymbol &&
         Op1.getOpcode() != ISD::TargetGlobalAddress &&
         Op0.getOpcode() != MipsISD::GPRel &&
-        Op1.getOpcode() != MipsISD::GPRel) {
+        Op1.getOpcode() != MipsISD::GPRel &&
+        Op0.getOpcode() != ISD::Constant &&
+        Op0.getOpcode() != ISD::TargetConstant &&
+        Op1.getOpcode() != ISD::Constant &&
+        Op1.getOpcode() != ISD::TargetConstant) {
       Base = Op0;
       Offset = Op1;
       return true;
@@ -1523,8 +1569,8 @@ SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
         OutOps.push_back(Offset);
         return false;
       }
-    } else if (Subtarget->hasMips32r6()) {
-      // On MIPS32r6/MIPS64r6, they can only handle 9-bit offsets.
+    } else if (Subtarget->hasMips32r6() || Subtarget->hasNanoMips()) {
+      // On MIPS32r6/MIPS64r6/nanoMIPS, they can only handle 9-bit offsets.
       if (selectAddrRegImm9(Op, Base, Offset)) {
         OutOps.push_back(Base);
         OutOps.push_back(Offset);
@@ -1702,6 +1748,31 @@ void MipsSEDAGToDAGISel::PostprocessISelDAG()
     NanoMipsDAGPeepholes();
 }
 
+static bool selectOffsetGP(SelectionDAG *CurDAG, SDValue Addr, SDValue &Offset,
+			   unsigned OffsetBits, unsigned ShiftAmount = 0) {
+  if (Addr.getOpcode() == MipsISD::GPRel ||
+      isa<GlobalAddressSDNode>(Addr) ||
+      isa<ExternalSymbolSDNode>(Addr)) {
+    ConstantSDNode *CN = dyn_cast<ConstantSDNode>(Addr.getOperand(0));
+    if (CN != nullptr && isUIntN(OffsetBits + ShiftAmount, CN->getZExtValue())) {
+      EVT ValTy = Addr.getValueType();
+      Offset =
+          CurDAG->getTargetConstant(CN->getZExtValue(), SDLoc(Addr), ValTy);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MipsSEDAGToDAGISel::selectOffsetGP18(SDValue Addr,
+					  SDValue &Offset) const {
+  return selectOffsetGP(CurDAG, Addr, Offset, 18);
+}
+
+bool MipsSEDAGToDAGISel::selectOffsetGP19s2(SDValue Addr,
+					    SDValue &Offset) const {
+  return selectOffsetGP(CurDAG, Addr, Offset, 19, 2);
+}
 
 FunctionPass *llvm::createMipsSEISelDag(MipsTargetMachine &TM,
                                         CodeGenOpt::Level OptLevel) {

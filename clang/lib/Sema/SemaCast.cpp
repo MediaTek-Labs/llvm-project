@@ -2154,8 +2154,11 @@ void Sema::CheckStrictAliasing(Expr const *E, QualType DstTy, bool IsLValueCast,
   }
 
   QualType SrcTy = SrcExpr->getType();
-  if (!IsLValueCast)
+  if (!IsLValueCast) {
+    if (!SrcTy->isPointerType())
+      return;
     SrcTy = SrcTy->getPointeeType();
+  }
   if (SrcTy->isVoidType())
     return; // From void type.
   if (SrcTy->isFunctionType())

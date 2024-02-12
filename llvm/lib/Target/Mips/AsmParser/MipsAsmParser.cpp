@@ -6450,7 +6450,7 @@ bool MipsAsmParser::expandSubuNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
   assert(Inst.getOperand(0).isReg() && "expected register operand kind");
   assert(Inst.getOperand(1).isReg() && "expected register operand kind");
   assert(Inst.getOperand(2).isImm() && "expected immediate operand kind");
-  assert(Inst.getOperand(2).getImm() < 0 && "expected immediate operand >= 0");
+  assert(Inst.getOperand(2).getImm() >= 0 && "expected immediate operand >= 0");
 
   MipsTargetStreamer &TOut = getTargetStreamer();
   unsigned rt = Inst.getOperand(0).getReg();

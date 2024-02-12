@@ -15,6 +15,8 @@
 #include "llvm/Object/ELFTypes.h"
 #include "Symbols.h"
 #include "OutputSections.h"
+#include "llvm/Support/Process.h"
+#include "lld/Common/Memory.h"
 
 #include "Target.h"
 
@@ -347,6 +349,44 @@ std::string NanoMipsTransform::getTypeAsString() const
 }
 
 void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t location, int32_t delta){
+  // FIXME: Don't like this, when allocating large object files
+  // mmap is used with only read rights but we need write as well
+  // so we are allocating memory for that file again
+  // Note: not using the reallocation, just changed priveleges from
+  // readonly to priveleged, this is not good as well should be changed
+  
+  // uint32_t PageSize = sys::Process::getPageSizeEstimate();
+  // auto * objFile = isec->getFile<ELF32LE>();
+  // uint64_t FileSize = objFile->getObj().getBufSize();
+
+  // Taken from shouldUseMmap in MemoryBuffer.cpp
+  // FIXME: This doesn't work as is now, find another way
+  // if(FileSize >= 4 * 4096 && FileSize >= PageSize && llvm::find(reallocatedFiles, objFile->mb.getBufferIdentifier()) == reallocatedFiles.end())
+  // {
+  //   const uint8_t *currentObj = objFile->getObj().base();
+  //   // TODO: Don't know where this will be deleted? Find out where is the deletion 
+  //   char *reallocatedObj = bAlloc.Allocate<char>(FileSize);
+  //   memcpy(reallocatedObj, currentObj, FileSize);
+  //   StringRef r(const_cast<char *>(reallocatedObj), FileSize);
+  //   // FIXME: This may cause trouble somewhere else, but we'll see, as we haven't changed the memory in
+  //   // ELF32LEFile
+  //   objFile->mb = MemoryBufferRef(r, objFile->mb.getBufferIdentifier());
+  //   reallocatedFiles.push_back(objFile->mb.getBufferIdentifier());
+  //   for(uint32_t i = 0; i < objFile->getSections().size(); i++)
+  //   {
+  //     // TODO: See if you should only do this for specific sections
+  //     InputSectionBase *sec = objFile->getSections()[i];
+  //     auto expectedSec = objFile->getObj().getSection(i);
+  //     if(expectedSec)
+  //     {
+  //       sec->setData(reallocatedObj + expectedSec.get()->sh_offset, expectedSec.get()->sh_size);
+  //       LLVM_DEBUG(llvm::dbgs() << "Reallocated sec: " << sec->name << ", as it was allocaed with readonly mmap\n";);
+  //     }
+  //     else
+  //       llvm_unreachable("There should be a section!\n");
+  //   }
+  //   LLVM_DEBUG(llvm::dbgs() << "Reallocated obj: " << isec->getFile<ELF32LE>()->getName() << ", as it was allocated with readonly mmap\n";);
+  // }
   if(delta < 0)
     isec->deleteBytes(location, -delta);
   else

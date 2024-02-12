@@ -263,9 +263,9 @@ namespace elf{
       };
       virtual TransformKind getType() const = 0;
       NanoMipsTransform(const NanoMipsInsPropertyTable *tbl): insPropertyTable(tbl) {}
-      virtual ~NanoMipsTransform() {};
-      virtual const NanoMipsInsProperty *getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const;
-      virtual const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const;
+      virtual ~NanoMipsTransform() {}
+      virtual const NanoMipsInsProperty *getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const = 0;
+      virtual const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const = 0;
       virtual void updateSectionContent(InputSection *isec, uint64_t location, int32_t delta);
       bool getChanged() { return changed; }
       bool getChangedThisIteration() { return changedThisIteration; }
@@ -284,10 +284,6 @@ namespace elf{
       bool changedThisIteration;
       // if the code size has been changed during this iteration
       bool changed;
-
-    private:
-      void addBytesToSection(InputSection *isec, uint64_t location, uint32_t delta);
-      void reduceBytesFromSection(InputSection *isec, uint64_t location, uint32_t delta);
   };
 
 

@@ -209,7 +209,8 @@ void InputSectionBase::addBytes(uint64_t location, uint32_t count)
 
 void InputSectionBase::deleteBytes(uint64_t location, uint32_t count)
 {
-  // FIXME: Too big sections seem to mess the allocator and invalidate other locs 
+  // FIXME: Too big objs are mapped with readonly mmap, changed
+  // it to be private mapping, ths should be fixed
   assert(location <= rawData.size() - bytesDropped && "Location mustn't be larger than size of section");
   assert(count > 0 && count <= location && "Number of deleted bytes must be larger than 0 and less than location");
   // llvm::outs() << "Count: " << count << "\t Location: " << location << "\n"
@@ -227,6 +228,7 @@ void InputSectionBase::deleteBytes(uint64_t location, uint32_t count)
   //   llvm::outs() << (uint32_t)(*ptr) << "\n";
   //   *ptr = rawData[i];
   // }
+  
   memmove(const_cast<uint8_t *>(rawData.begin()) + location - count, rawData.begin() + location, rawData.size() - bytesDropped - location);
   bytesDropped += count;
 }

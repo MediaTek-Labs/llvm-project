@@ -1086,9 +1086,9 @@ void MipsTargetELFStreamer::emitDirectiveEnd(StringRef Name) {
     MCA.registerSection(*Sec);
     Sec->setAlignment(Align(4));
 
-  OS.pushSection();
+    OS.pushSection();
 
-  OS.switchSection(Sec);
+    OS.switchSection(Sec);
 
     OS.emitValueImpl(ExprRef, 4);
 
@@ -1107,8 +1107,6 @@ void MipsTargetELFStreamer::emitDirectiveEnd(StringRef Name) {
   // The .end directive marks the end of a procedure. Invalidate
   // the information gathered up until this point.
   GPRInfoSet = FPRInfoSet = FrameInfoSet = false;
-
-  OS.popSection();
 
   // .end also implicitly sets the size.
   MCSymbol *CurPCSym = Context.createTempSymbol();

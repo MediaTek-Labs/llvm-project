@@ -131,7 +131,11 @@ x:
 x1:
     .skip 0x5c
 x2:
+# Only used to test on big obj files as Inputs
+# as there was an error before
+    .skip 0x7e0000
+x3:
     .end x
     .size x, .-x
 
-    .equ x3, 0x800000
+#.equ x3, 0x800000

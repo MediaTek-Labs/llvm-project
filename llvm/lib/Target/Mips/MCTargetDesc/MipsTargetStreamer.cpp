@@ -1107,7 +1107,6 @@ void MipsTargetELFStreamer::emitDirectiveEnd(StringRef Name) {
     // the information gathered up until this point.
     GPRInfoSet = FPRInfoSet = FrameInfoSet = false;
 
-    OS.popSection();
   }
 
   // .end also implicitly sets the size.

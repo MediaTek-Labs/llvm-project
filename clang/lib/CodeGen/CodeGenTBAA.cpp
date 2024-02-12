@@ -659,6 +659,9 @@ CodeGenTBAA::AliasingKind CodeGenTBAA::getAliasingKind(QualType &Dst,
   Src = QualType{Src->getBaseElementTypeUnsafe(), 0};
   Dst = QualType{Dst->getBaseElementTypeUnsafe(), 0};
 
+  if (Context.hasSameType(Src, Dst))
+    return AliasingKind::Ok;
+
   auto *SrcDecl = Src->getAsRecordDecl();
   auto *DstDecl = Dst->getAsRecordDecl();
 

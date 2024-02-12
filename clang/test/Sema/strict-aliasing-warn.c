@@ -199,3 +199,13 @@ int main() {
 
 // GCC gets (cast)[0], but not (cast)[1] because it represents the first as
 // *(cast), and so it falls into the indirect operator path.
+
+typedef struct Bug1 {
+  int a;
+} Bug1;
+
+void BugFn1 (Bug1 const a, Bug1 const *b) {
+  Bug1 *q = (Bug1 *)b; // wrong at 1
+  Bug1 *p = (Bug1 *)&a; // wrong at 1, 2
+  ((Bug1 *)&b)->a = 2; // wrong at 1, 2, 4
+}

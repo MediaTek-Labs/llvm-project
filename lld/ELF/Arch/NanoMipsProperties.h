@@ -248,7 +248,14 @@ namespace elf{
   };
 
   
+  struct NewInsnToWrite{
+    uint64_t insn;
+    // From current input section
+    uint32_t offset;
+    uint32_t size;
 
+    NewInsnToWrite(uint64_t i, uint32_t off, uint32_t sz) : insn(i), offset(off), size(sz) {}
+  };
   enum NanoMipsTransformationEnum {
     NANOMIPS_NONE_STATE,
     NANOMIPS_RELAX_STATE,
@@ -276,14 +283,17 @@ namespace elf{
       // const NanoMipsInsProperty *
       // Debugging purposes only
       std::string getTypeAsString() const;
-      static uint64_t readInsn(ArrayRef<uint8_t> data, uint64_t offset, uint32_t instSize);
-      static void writeInsn(uint64_t insn, ArrayRef<uint8_t> data, uint64_t offset, uint32_t instSize);
+      SmallVector<NewInsnToWrite> &getNewInsns() const
+      { return newInsns; }
     protected:
       const NanoMipsInsPropertyTable *insPropertyTable;
       // if the code size has been changed in this state
       bool changedThisIteration;
       // if the code size has been changed during this iteration
       bool changed;
+    
+    private:
+      mutable SmallVector<NewInsnToWrite> newInsns;
   };
 
 
@@ -312,6 +322,7 @@ namespace elf{
       const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const override;
   };
 
+
   class NanoMipsTransformNone: public NanoMipsTransform {
     public:
       // NanoMipsTransformNone won't use the table so it doesn't need it
@@ -339,6 +350,8 @@ namespace elf{
       void updateSectionContent(InputSection *isec, uint64_t location, int32_t delta) const { this->currentState->updateSectionContent(isec, location, delta);}
       void transform(Relocation &reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const
       { this->currentState->transform(reloc, transformTemplate, insProperty, isec, insn, relNum); }
+
+      SmallVector<NewInsnToWrite> &getNewInsns() const { return this->currentState->getNewInsns(); }
     private:
       NanoMipsTransformRelax transformRelax;
       NanoMipsTransformExpand transformExpand;
@@ -351,6 +364,8 @@ namespace elf{
 
 }
 }
+
+
 
 
 

@@ -354,7 +354,7 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
   // so we are allocating memory for that file again
   // Note: not using the reallocation, just changed priveleges from
   // readonly to priveleged, this is not good as well should be changed
-  
+
   // uint32_t PageSize = sys::Process::getPageSizeEstimate();
   // auto * objFile = isec->getFile<ELF32LE>();
   // uint64_t FileSize = objFile->getObj().getBufSize();
@@ -531,8 +531,9 @@ void NanoMipsTransform::transform(Relocation &reloc, const NanoMipsTransformTemp
       }
     }
 
-    writeInsn(newInsn, isec->data(), offset, insTemplate.getSize());
-    LLVM_DEBUG(llvm::dbgs() << "Written instruction " << insTemplate.getName() << ": 0x" << utohexstr(newInsn) << " to offset: 0x" << utohexstr(offset) << "\n");
+
+    newInsns.emplace_back(newInsn, offset, insTemplate.getSize());
+    LLVM_DEBUG(llvm::dbgs() << "New instruction " << insTemplate.getName() << ": 0x" << utohexstr(newInsn) << " to offset: 0x" << utohexstr(offset) << "\n");
     offset += insTemplate.getSize();
   }
 
@@ -545,25 +546,6 @@ uint32_t swap16BitWords(uint32_t val)
   return newHi | newLo;
 }
 
-uint64_t NanoMipsTransform::readInsn(ArrayRef<uint8_t> data, uint64_t off, uint32_t insnSize)
-{
-  assert(off + insnSize <= data.size() && "Overflow on buffer in readInsn");
-  if(insnSize == 6) return read16le(&data[off - 2]);
-  // bswap is for more natural instruction layout
-  else if(insnSize == 4) return swap16BitWords(read32le(&data[off]));
-  else if(insnSize == 2) return read16le(&data[off]);
-  else llvm_unreachable("Unknown byte size of nanoMIPS instruction (only 2, 4 and 6 known)");
-}
-
-void NanoMipsTransform::writeInsn(uint64_t insn, ArrayRef<uint8_t>data, uint64_t off, uint32_t insnSize)
-{
-    assert(off + insnSize <= data.size() && "Overflow on buffer in writeInsn");
-    uint8_t *dataPtr = const_cast<uint8_t *>(data.begin());
-    if (insnSize == 6) write16le(dataPtr + off, (uint16_t)insn);
-    else if(insnSize == 4) write32le(dataPtr + off, swap16BitWords((uint32_t)insn));
-    else if(insnSize == 2) write16le(dataPtr + off, (uint16_t)insn);
-    else llvm_unreachable("Unknown byte size of nanoMIPS instruction (only 2, 4, and 6 known)");
-}
 // NanoMipsTransformRelax
 
 const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const

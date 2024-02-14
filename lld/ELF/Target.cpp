@@ -88,7 +88,22 @@ TargetInfo *elf::getTarget() {
   case EM_X86_64:
     return getX86_64TargetInfo();
   case EM_NANOMIPS:
-    return getNanoMipsTargetInfo();
+    switch (config->ekind)
+    {
+      case ELF32LEKind:
+        return getNanoMipsTargetInfo<ELF32LE>();
+      // TODO: When these architectures are fully supported
+      // this may be uncommented, for now only little endian 32bit
+      // is supported
+      // case ELF32BEKind:
+      //   return getNanoMipsTargetInfo<ELF32BE>();
+      // case ELF64LEKind:
+      //   return getNanoMipsTargetInfo<ELF64LE>();
+      // case ELF64BEKind:
+      //   return getNanoMipsTargetInfo<ELF64BE>();
+      default:
+        llvm_unreachable("unsupported nanoMIPS target");
+    }
   }
   
   llvm_unreachable("unknown target machine");

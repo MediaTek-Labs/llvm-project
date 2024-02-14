@@ -1,4 +1,4 @@
-//===- Nanomips.cpp -------------------------------------------------*- C++ -*-===//
+//===- NanoMips.cpp -------------------------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -24,24 +24,73 @@ using namespace llvm::ELF;
 using namespace lld;
 using namespace lld::elf;
 using namespace llvm;
+using namespace llvm::support;
 
 // use --mllvm with --debug or --debug-only=<name>
 #define DEBUG_TYPE "lld-nanomips"
 
-
-uint32_t bswap(uint32_t data){
-  uint32_t lo = ((data & 0xffff) << 16) & ~0xffff;
-  uint32_t hi = ((data & ~0xffff) >> 16) & 0xffff;
-  return lo | hi;
+template <endianness E>
+static uint32_t readShuffle32(const uint8_t *loc)
+{
+  // Similar to microMIPS, little endian instructions are encoded as
+  // big endian so that the opcode comes first and that the hardware could
+  // know sooner if it is a 16bit, 32bit or 48bit instruction
+  uint32_t v = read32(loc);
+  if(E == support::little)
+    return (v << 16) | (v >> 16);
+  return v;
 }
 
-// No need for this anymore we are using only the first 16bit of 48bit instruction
-// Swap for 48bit instructions
-uint64_t bswap48(uint64_t data){
-  uint64_t lo = ((data & 0xffff) << 32);
-  uint64_t mid = (data & 0xffff0000);
-  uint64_t hi = (data & ~0xffffffffL) >> 32;
-  return lo | mid | hi;
+
+template <endianness E>
+static void writeShuffle32(uint8_t *loc, uint64_t val)
+{
+  uint16_t *words = (uint16_t *)loc;
+  if(E == support::little)
+    std::swap(words[0], words[1]);
+  
+  write32(loc, val);
+
+  if(E == support::little)
+    std::swap(words[0], words[1]);
+}
+
+template <endianness E>
+static void writeImm48bitIns(uint8_t *loc, uint64_t val)
+{
+  // Different than the shuffle, the 48 bit instruction have
+  // 32 bit imms at last two 16bit words in order so that
+  // 15..0 goes first, and than the 31..16 portion, which
+  // is opposite to big endian
+    uint16_t *words = (uint16_t *)loc;
+  if(E == support::big)
+    std::swap(words[0], words[1]);
+  
+  write32(loc, val);
+
+  if(E == support::big)
+    std::swap(words[0], words[1]);
+}
+
+template <endianness E>
+static uint64_t readInsn(ArrayRef<uint8_t> data, uint64_t off, uint32_t insnSize)
+{
+  assert(off + insnSize <= data.size() && "Overflow on buffer in readInsn");
+  if(insnSize == 6) return read16(&data[off - 2]);
+  else if(insnSize == 4) return readShuffle32<E>(&data[off]);
+  else if(insnSize == 2) return read16(&data[off]);
+  else llvm_unreachable("Unknown byte size of nanoMIPS instruction (only 2, 4 and 6 known)");
+}
+
+template <endianness E>
+static void writeInsn(uint64_t insn, ArrayRef<uint8_t>data, uint64_t off, uint32_t insnSize)
+{
+    assert(off + insnSize <= data.size() && "Overflow on buffer in writeInsn");
+    uint8_t *dataPtr = const_cast<uint8_t *>(data.begin());
+    if (insnSize == 6) write16(dataPtr + off, (uint16_t)insn);
+    else if(insnSize == 4) writeShuffle32<E>(dataPtr + off,((uint32_t)insn));
+    else if(insnSize == 2) write16(dataPtr + off, (uint16_t)insn);
+    else llvm_unreachable("Unknown byte size of nanoMIPS instruction (only 2, 4, and 6 known)");
 }
 
 uint64_t elf::getNanoMipsPage(uint64_t expr) {
@@ -51,7 +100,8 @@ uint64_t elf::getNanoMipsPage(uint64_t expr) {
 namespace {
 
   
-// TO DO: Support for other endianess, and bit size, now it is Little Endian 32 bit
+// TODO: Support for other endianess, and bit size, now it is Little Endian 32 bit
+template <class ELFT>
 class NanoMips final : public TargetInfo {
 public:
     NanoMips();
@@ -83,7 +133,10 @@ private:
 };
 } // namespace
 
-NanoMips::NanoMips(): currentTransformation(&insPropertyTable) {
+template <class ELFT>
+NanoMips<ELFT>::NanoMips(): currentTransformation(&insPropertyTable) {
+  // assert(!ELFT::Is64Bits() && ELF32LE::TargetEndianness() == llvm::support::endianness::little
+  //         && "32 little endian is the only supported target for nanoMIPS for now");
   copyRel = R_NANOMIPS_COPY;
   // noneRel Already zero, and is now static constexpr
   // noneRel = R_NANOMIPS_NONE;
@@ -101,14 +154,15 @@ NanoMips::NanoMips(): currentTransformation(&insPropertyTable) {
 }
 
 //used for: R_NANOMIPS_HI20, R_NANOMIPS_PC_HI20 and R_NANOMIPS_GPREL_HI20
+template <endianness E>
 static void writeValueHi20(uint8_t *loc, uint64_t val) {
-  uint32_t instr = read32(loc);
-  instr = bswap(instr);
+  uint32_t instr = readShuffle32<E>(loc);
+  // instr = bswap(instr);
   uint32_t data = (val & ~1) | ((val >> 31) & 1);
   data = (data & ~0xffc) | ((val >> 19) & 0xffc); 
   uint32_t masked = (instr & ~0x1ffffd) | (data & 0x1ffffd);
-  masked = bswap(masked);
-  write32(loc, masked);
+  // masked = bswap(masked);
+  writeShuffle32<E>(loc, masked);
 }
 
 //used for: R_NANOMIPS_PC4_S1 and R_NANOMIPS_GPREL_S2
@@ -130,25 +184,27 @@ static void writePcRel16(uint8_t *loc, uint64_t val, uint8_t bitsSize) {
 }
 
 //used for: R_NANOMIPS_PC25_S1, R_NANOMIPS_PC21_S1, R_NANOMIPS_PC14_S1 and R_NANOMIPS_PC11_S1
+template <endianness E>
 static void writePcRel32(uint8_t *loc, uint64_t val, uint8_t bitsSize) {
-    uint32_t instr = read32(loc); 
-    instr = bswap(instr);
+    uint32_t instr = readShuffle32<E>(loc); 
+    // instr = bswap(instr);
     val = (val & ~1) | ((val >> bitsSize) & 1);
     uint32_t mask = (0xffffffff >> (32 - bitsSize));
     uint32_t data = (instr & ~mask) | (val & mask);
-    data = bswap(data);
-    write32(loc, data);
+    // data = bswap(data);
+    writeShuffle32<E>(loc, data);
 }
 
 //used for: R_NANOMIPS_LO12, R_NANOMIPS_GPREL19_S2, R_NANOMIPS_GPREL18, R_NANOMIPS_GPREL17_S1 and R_NANOMIPS_GPREL_LO12
+template <endianness E>
 static void writeValue32be(uint8_t *loc, uint64_t val, uint8_t bitsSize,
                        uint8_t shift) {
-    uint32_t instr = read32(loc); 
-    instr = bswap(instr);
+    uint32_t instr = readShuffle32<E>(loc); 
+    // instr = bswap(instr);
     uint32_t mask = (0xffffffff >> (32 - bitsSize)) << shift;
     uint32_t data = (instr & ~mask) | (val & mask);
-    data = bswap(data);
-    write32(loc, data);
+    // data = bswap(data);
+    writeShuffle32<E>(loc, data);
 }
 
 void checkIntPcRel(uint8_t *loc, int64_t v, int n, const Relocation &rel, const Symbol &sym) {
@@ -162,7 +218,8 @@ void checkIntPcRel(uint8_t *loc, int64_t v, int n, const Relocation &rel, const 
     checkInt(loc, v, n, rel); //we have to check if value v fits in signed n-bit integer
 }
 
-RelExpr NanoMips::getRelExpr(RelType type, const Symbol &s,
+template<class ELFT>
+RelExpr NanoMips<ELFT>::getRelExpr(RelType type, const Symbol &s,
                             const uint8_t *loc) const {
   switch (type){
   case R_NANOMIPS_PC25_S1:
@@ -210,18 +267,19 @@ RelExpr NanoMips::getRelExpr(RelType type, const Symbol &s,
   }                   
 }
 
-void NanoMips::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const {
+template <class ELFT>
+void NanoMips<ELFT>::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const {
   switch (rel.type) {
   case R_NANOMIPS_PC_I32:
     checkInt(loc, val - 4, 32, rel);
-    write32(loc, val - 4);
+    writeImm48bitIns<ELFT::TargetEndianness>(loc, val - 4);
     break;
   case R_NANOMIPS_PC32:
   case R_NANOMIPS_32:
   case R_NANOMIPS_I32:
   case R_NANOMIPS_GPREL_I32:
     checkInt(loc, val, 32, rel);
-    write32(loc, val);
+    writeImm48bitIns<ELFT::TargetEndianness>(loc, val);
     break;
   case R_NANOMIPS_NEG:
   case R_NANOMIPS_ASHIFTR_1: 
@@ -245,7 +303,7 @@ void NanoMips::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const
   case R_NANOMIPS_PC_HI20:
   case R_NANOMIPS_GPREL_HI20:
     checkInt(loc, val, 32, rel);
-    writeValueHi20(loc, val); 
+    writeValueHi20<ELFT::TargetEndianness>(loc, val); 
     break;
   case R_NANOMIPS_PC4_S1:{
     checkIntPcRel(loc, val - 2, 5, rel, *rel.sym);
@@ -276,38 +334,38 @@ void NanoMips::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const
     break;
   case R_NANOMIPS_PC25_S1:
     checkIntPcRel(loc, val - 4, 26, rel, *rel.sym);
-    writePcRel32(loc, val - 4, 25);
+    writePcRel32<ELFT::TargetEndianness>(loc, val - 4, 25);
     break;
   case R_NANOMIPS_PC21_S1:
     checkIntPcRel(loc, val - 4, 22, rel, *rel.sym);
-    writePcRel32(loc, val - 4, 21);
+    writePcRel32<ELFT::TargetEndianness>(loc, val - 4, 21);
     break;
   case R_NANOMIPS_PC14_S1:
     checkIntPcRel(loc, val - 4, 15, rel, *rel.sym);
-    writePcRel32(loc, val - 4, 14);
+    writePcRel32<ELFT::TargetEndianness>(loc, val - 4, 14);
     break;
   case R_NANOMIPS_PC11_S1:
     checkIntPcRel(loc, val - 4, 12, rel, *rel.sym);
-    writePcRel32(loc, val - 4, 11);
+    writePcRel32<ELFT::TargetEndianness>(loc, val - 4, 11);
     break;
   case R_NANOMIPS_LO12:
-    writeValue32be(loc, val, 12, 0);
+    writeValue32be<ELFT::TargetEndianness>(loc, val, 12, 0);
     break;
   case R_NANOMIPS_GPREL19_S2:
     checkUInt(loc, val, 21, rel);
-    writeValue32be(loc, val, 19, 2);
+    writeValue32be<ELFT::TargetEndianness>(loc, val, 19, 2);
     break;
   case R_NANOMIPS_GPREL18:
     checkUInt(loc, val, 18, rel);
-    writeValue32be(loc, val, 18, 0);
+    writeValue32be<ELFT::TargetEndianness>(loc, val, 18, 0);
     break;
   case R_NANOMIPS_GPREL17_S1:
     checkUInt(loc, val, 18, rel);
-    writeValue32be(loc, val, 17, 1);
+    writeValue32be<ELFT::TargetEndianness>(loc, val, 17, 1);
     break;
   case R_NANOMIPS_GPREL_LO12:
     checkInt(loc, val, 12, rel);
-    writeValue32be(loc, val, 12, 0);
+    writeValue32be<ELFT::TargetEndianness>(loc, val, 12, 0);
     break;
   default:
     llvm_unreachable("unknown relocation");
@@ -315,19 +373,22 @@ void NanoMips::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const
   }
 }
 
+template <class ELFT>
 TargetInfo *elf::getNanoMipsTargetInfo() {
-    static NanoMips t;
+    static NanoMips<ELFT> t;
     return &t;
 }
 
-bool NanoMips::mayRelax() const
+template <class ELFT>
+bool NanoMips<ELFT>::mayRelax() const
 {
   // TODO: When the finalize-relocs option is added, change this expression
   // also goes for sort-by-reference option
   return (!config->relocatable && (config->relax || config->expand));
 }
 
-bool NanoMips::safeToModify(InputSection *sec) const
+template <class ELFT>
+bool NanoMips<ELFT>::safeToModify(InputSection *sec) const
 {
   bool modifiable = false;
   if(auto *obj = sec->getFile<ELF32LE>())
@@ -338,7 +399,8 @@ bool NanoMips::safeToModify(InputSection *sec) const
 }
 
 // TODO: Emit reloc option, somewhat different transformations
-bool NanoMips::relaxOnce(int pass) const
+template <class ELFT>
+bool NanoMips<ELFT>::relaxOnce(int pass) const
 {
   LLVM_DEBUG(llvm::dbgs() << "Transformation Pass num: " << pass << "\n";);
   // TODO: Should full nanoMips ISA be checked as full or per obj, as it is checked
@@ -372,7 +434,8 @@ bool NanoMips::relaxOnce(int pass) const
   return changed;
 }
 
-void NanoMips::transform(InputSection *sec) const 
+template <class ELFT>
+void NanoMips<ELFT>::transform(InputSection *sec) const 
 {
 
   const uint32_t bits = config->wordsize * 8;
@@ -391,7 +454,7 @@ void NanoMips::transform(InputSection *sec) const
     uint32_t instSize = relocProp->getInstSize();
     // 48 bit instruction reloc offsets point to 32 bit imm/off not to the beginning of ins~
     uint32_t relocOffset = reloc.offset - (instSize == 6 ? 2 : 0);
-    uint64_t insn = NanoMipsTransform::readInsn(sec->data(), reloc.offset, instSize);
+    uint64_t insn = readInsn<ELFT::TargetEndianness>(sec->data(), reloc.offset, instSize);
 
     uint64_t insMask = relocProp->getMask();
     LLVM_DEBUG(
@@ -435,6 +498,12 @@ void NanoMips::transform(InputSection *sec) const
 
     this->currentTransformation.transform(reloc, transformTemplate, insProperty, sec, insn, relNum);
 
+    auto &newInsns = this->currentTransformation.getNewInsns();
+    for(auto &newInsn : newInsns)
+    {
+      writeInsn<ELFT::TargetEndianness>(newInsn.insn, sec->data(), newInsn.offset, newInsn.size);
+    }
+    newInsns.clear();
     // Finalize content?
   }
   return;
@@ -664,6 +733,13 @@ void NanoMips::transform(InputSection *sec) const
 //   }
 //   return changed;
 // }
+
+
+
+template TargetInfo *elf::getNanoMipsTargetInfo<ELF32LE>();
+template TargetInfo *elf::getNanoMipsTargetInfo<ELF32BE>();
+template TargetInfo *elf::getNanoMipsTargetInfo<ELF64LE>();
+template TargetInfo *elf::getNanoMipsTargetInfo<ELF64BE>();
 
 uint64_t elf::getNanoMipsNegCompositeRelDataAlloc(Relocation *&it, Relocation *&end, uint8_t *bufLoc, uint8_t *buf, InputSectionBase *sec, const InputFile *file, uint64_t addrLoc)
 {

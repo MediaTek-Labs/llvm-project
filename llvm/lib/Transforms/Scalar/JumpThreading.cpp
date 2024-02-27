@@ -89,6 +89,11 @@ BBDuplicateThreshold("jump-threading-threshold",
           cl::init(6), cl::Hidden);
 
 static cl::opt<unsigned>
+BBDuplicateThresholdOptSize("jump-threading-threshold-optsize",
+          cl::desc("Max block size to duplicate for jump threading"),
+          cl::init(3), cl::Hidden);
+
+static cl::opt<unsigned>
 ImplicationSearchThreshold(
   "jump-threading-implication-search-threshold",
   cl::desc("The number of predecessors to search for a stronger "
@@ -300,10 +305,10 @@ bool JumpThreadingPass::runImpl(Function &F_, FunctionAnalysisManager *FAM_,
 
   // Reduce the number of instructions duplicated when optimizing strictly for
   // size.
-  if (BBDuplicateThreshold.getNumOccurrences())
+  if (F->hasOptSize() || F->hasFnAttribute(Attribute::MinSize))
+    BBDupThreshold = BBDuplicateThresholdOptSize;
+  else if (BBDuplicateThreshold.getNumOccurrences())
     BBDupThreshold = BBDuplicateThreshold;
-  else if (F->hasFnAttribute(Attribute::MinSize))
-    BBDupThreshold = 3;
   else
     BBDupThreshold = DefaultBBDupThreshold;
 

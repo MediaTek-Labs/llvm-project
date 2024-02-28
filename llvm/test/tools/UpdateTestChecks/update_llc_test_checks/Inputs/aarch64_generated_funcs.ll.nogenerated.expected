@@ -23,15 +23,15 @@ define dso_local i32 @check_boundaries() #0 {
 ; CHECK-NEXT:    str w8, [sp, #16]
 ; CHECK-NEXT:    b .LBB0_5
 ; CHECK-NEXT:  .LBB0_3:
-; CHECK-NEXT:    bl OUTLINED_FUNCTION_0
+; CHECK-NEXT:    bl OUTLINED_FUNCTION[[SUFFIX0:.*]]
 ; CHECK-NEXT:    ldur w8, [x29, #-8]
 ; CHECK-NEXT:    cbnz w8, .LBB0_2
 ; CHECK-NEXT:  .LBB0_4:
 ; CHECK-NEXT:    mov w8, #1
-; CHECK-NEXT:    bl OUTLINED_FUNCTION_0
+; CHECK-NEXT:    bl OUTLINED_FUNCTION[[SUFFIX0]]
 ; CHECK-NEXT:  .LBB0_5:
 ; CHECK-NEXT:    ldp x29, x30, [sp, #32] // 16-byte Folded Reload
-; CHECK-NEXT:    b OUTLINED_FUNCTION_1
+; CHECK-NEXT:    b OUTLINED_FUNCTION[[SUFFIX1:.*]]
   %1 = alloca i32, align 4
   %2 = alloca i32, align 4
   %3 = alloca i32, align 4
@@ -91,7 +91,7 @@ define dso_local i32 @main() #0 {
 ; CHECK-NEXT:    stp w10, w9, [x29, #-12]
 ; CHECK-NEXT:    ldp x29, x30, [sp, #32] // 16-byte Folded Reload
 ; CHECK-NEXT:    stp w12, w11, [sp, #12]
-; CHECK-NEXT:    b OUTLINED_FUNCTION_1
+; CHECK-NEXT:    b OUTLINED_FUNCTION[[SUFFIX1]]
   %1 = alloca i32, align 4
   %2 = alloca i32, align 4
   %3 = alloca i32, align 4

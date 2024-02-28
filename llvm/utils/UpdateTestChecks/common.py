@@ -20,6 +20,7 @@ _verbose = False
 _prefix_filecheck_ir_name = ''
 
 outlined_fn_to_filecheck_var = {}
+outlined_function_counter = 0
 
 def parse_commandline_args(parser):
   parser.add_argument('--include-generated-funcs', action='store_true',
@@ -633,8 +634,7 @@ def generalize_check_lines(lines, is_analyze, vars_seen, global_vars_seen):
 
 def add_checks(output_lines, comment_marker, prefix_list, func_dict, func_name, check_label_format, is_asm, is_analyze, global_vars_seen_dict):
   global outlined_function_counter
-  outlined_function_counter = 0
-
+  global outlined_fn_to_filecheck_var
   # prefix_exclusions are prefixes we cannot use to print the function because it doesn't exist in run lines that use these prefixes as well.
   prefix_exclusions = set()
   printed_prefixes = []

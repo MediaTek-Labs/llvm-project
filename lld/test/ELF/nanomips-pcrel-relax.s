@@ -1,24 +1,26 @@
 # REQUIRES: nanomips
-
+# TODO: When the define directive is availble, use it
+# DEFINE: %{skip_bc_sym} = __skip_bc_
+ 
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6 -mpcrel %s -o %t1.o
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6s -mpcrel %S/Inputs/nanomips-pcrel-relax-sup.s -o %t2.o
-# RUN: ld.lld --relax %t2.o %t1.o -o %t
+# RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --relax %t2.o %t1.o -o %t
 # RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMF-PCREL %s
 
-# RUN: ld.lld --insn32 --relax %t2.o %t1.o -o %t
+# RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --insn32 --relax %t2.o %t1.o -o %t
 # RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-INSN32 %s
 
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6 -mno-pcrel %s -o %t1.o
-# RUN: ld.lld --relax %t2.o %t1.o -o %t
+# RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --relax %t2.o %t1.o -o %t
 # RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMF-ABS %s
 
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6s -mpcrel --defsym nms=1 %s -o %t1.o
-# RUN: ld.lld --relax %t2.o %t1.o -o %t
+# RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --relax %t2.o %t1.o -o %t
 
 # RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMS-PCREL %s
 
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6s -mno-pcrel --defsym nms=1 %s -o %t1.o
-# RUN: ld.lld --relax %t2.o %t1.o -o %t
+# RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --relax %t2.o %t1.o -o %t
 
 # RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMS-ABS %s
 
@@ -43,6 +45,14 @@
 
 # CHECK-NMF-PCREL: a8e0{{.*}} bnezc {{.*}} <x2>
 # CHECK-NMF-PCREL: 88e6{{.*}} beqc {{.*}} <x1>
+
+# CHECK-NMF-PCREL: dae{{.*}} bnec {{.*}} <__skip_bc_{{[0-9]*}}>
+# CHECK-NMF-PCREL-NEXT: 28{{.*}} bc {{.*}} <pc14_far>
+# CHECK-NMF-PCREL: db5{{.*}} beqc {{.*}} <__skip_bc_{{[0-9]*}}>
+# CHECK-NMF-PCREL: a8c5{{.*}} bltc {{.*}} <__skip_bc_{{[0-9]*}}>
+# CHECK-NMF-PCREL: 88c5{{.*}} bgec {{.*}} <__skip_bc_{{[0-9]*}}>
+# CHECK-NMF-PCREL: a8c5{{.*}} bltuc {{.*}} <__skip_bc_{{[0-9]*}}>
+# CHECK-NMF-PCREL: 88c5{{.*}} bgeuc {{.*}} <__skip_bc_{{[0-9]*}}>
 
 # Will only check differences from others from now on
 
@@ -78,6 +88,8 @@
     .globl _start
     .ent _start
 
+# relax R_NANOMIPS_PC14_S1
+# expand R_NANOMIPS_PC4_S1 and R_NANOMIPS_PC21_S1
 _start:
     # No relaxation bc of zero jump
     bnec $a1, $a2, zero_jump
@@ -138,4 +150,31 @@ x3:
     .end x
     .size x, .-x
 
-#.equ x3, 0x800000
+# expand R_NANOMIPS_PC14_S1
+    .section .expand_pc14_sec, "ax", @progbits
+    .align 1
+    .globl expand_pc14
+    .ent expand_pc14
+expand_pc14:
+
+    beqc $a1, $a2, pc14_far
+    bnec $a1, $a2, pc14_far
+    bgec $a1, $a2, pc14_far
+    bltc $a1, $a2, pc14_far
+    bgeuc $a1, $a2, pc14_far
+    bltuc $a1, $a2, pc14_far
+
+    .end expand_pc14
+    .size expand_pc14, .-expand_pc14
+
+    .section .pc14_far_sec, "ax", @progbits
+    .align 1
+    .globl pc14_far
+    .ent pc14_far
+
+pc14_far:
+    addiu $a1, $a2, 1
+    .end pc14_far
+    .size pc14_far, .-pc14_far
+
+

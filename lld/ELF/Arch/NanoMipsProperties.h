@@ -279,11 +279,11 @@ namespace elf{
       void resetChanged() { changed = false; }
       void resetChangedThisIteration() { changedThisIteration = false; }
       // Relnum is changed in transform as it is passed by reference
-      virtual void transform(Relocation &reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const;
+      virtual void transform(Relocation *reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, const NanoMipsRelocProperty *relocProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const;
       // const NanoMipsInsProperty *
       // Debugging purposes only
       std::string getTypeAsString() const;
-      SmallVector<NewInsnToWrite> &getNewInsns() const
+      auto &getNewInsns() const
       { return newInsns; }
     protected:
       const NanoMipsInsPropertyTable *insPropertyTable;
@@ -293,7 +293,10 @@ namespace elf{
       bool changed;
     
     private:
-      mutable SmallVector<NewInsnToWrite> newInsns;
+      mutable SmallVector<NewInsnToWrite, 3> newInsns;
+      // Storage for new symbol names
+      mutable SmallVector<std::string ,0> newSymNames;
+      mutable uint32_t newSymCount = 0;
   };
 
 
@@ -348,10 +351,10 @@ namespace elf{
       { return this->currentState->getTransformTemplate(insProperty, reloc, valueToRelocate, insn, isec);}
 
       void updateSectionContent(InputSection *isec, uint64_t location, int32_t delta) const { this->currentState->updateSectionContent(isec, location, delta);}
-      void transform(Relocation &reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const
-      { this->currentState->transform(reloc, transformTemplate, insProperty, isec, insn, relNum); }
+      void transform(Relocation *reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, const NanoMipsRelocProperty *relocProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const
+      { this->currentState->transform(reloc, transformTemplate, insProperty, relocProperty, isec, insn, relNum); }
 
-      SmallVector<NewInsnToWrite> &getNewInsns() const { return this->currentState->getNewInsns(); }
+      auto &getNewInsns() const { return this->currentState->getNewInsns(); }
     private:
       NanoMipsTransformRelax transformRelax;
       NanoMipsTransformExpand transformExpand;

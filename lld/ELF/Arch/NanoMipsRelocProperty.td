@@ -176,15 +176,15 @@ class BNEC16_T: InstructionTemplate16<BNEC16, PC4_S1, InsertReg<7,3,TREG>, Inser
 class LAPC32_T<RegKind reg>: InstructionTemplate32<LAPC32, PC21_S1, InsertReg<21, 5, reg>, ?>;
 class LAPC48_T<RegKind reg>: InstructionTemplate48<LAPC48, PC_I32, InsertReg<5, 5, reg>>;
 class SWPC48_T: InstructionTemplate48<SWPC48, PC_I32, InsertReg<5, 5, TREG>>;
-class BEQC32_T<RelocProperty reloc>: InstructionTemplate32<BEQC32, reloc, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
-class BNEC32_T<RelocProperty reloc>: InstructionTemplate32<BNEC32, reloc, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
+class BEQC32_T: InstructionTemplate32<BEQC32, PC14_S1, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
+class BNEC32_T: InstructionTemplate32<BNEC32, PC14_S1, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
 class BEQZC16_T: InstructionTemplate16<BEQZC16, PC7_S1, InsertReg<7, 3, TREG>, ?>;
 class BC32_T: InstructionTemplate32<BC32, PC25_S1, ?, ?>;
 class BNEZC16_T: InstructionTemplate16<BNEZC16, PC7_S1, InsertReg<7,3, TREG>, ?>;
-class BLTC_T: InstructionTemplate32<BLTC, NONE, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
-class BGEC_T: InstructionTemplate32<BGEC, NONE, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
-class BLTUC_T: InstructionTemplate32<BLTUC, NONE, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
-class BGEUC_T: InstructionTemplate32<BGEUC, NONE, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
+class BLTC_T: InstructionTemplate32<BLTC, PC14_S1, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
+class BGEC_T: InstructionTemplate32<BGEC, PC14_S1, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
+class BLTUC_T: InstructionTemplate32<BLTUC, PC14_S1, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
+class BGEUC_T: InstructionTemplate32<BGEUC, PC14_S1, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
 class LI48_T: InstructionTemplate48<LI48, I32, InsertReg<5, 5, TREG>>;
 class LUI_T<RelocProperty reloc, RegKind treg>: InstructionTemplate32<LUI, reloc, InsertReg<21, 5, treg>, ?>;
 class ORI_T<RelocProperty reloc, RegKind treg, RegKind sreg>: InstructionTemplate32<ORI, reloc, InsertReg<21, 5, treg>, InsertReg<16, 5, sreg>>;
@@ -225,16 +225,14 @@ def TT_PCREL32: TransformationType;
 
 
 
-def : TransformationTemplate<TT_BEQC32, BXXC16_P, (relocs PC4_S1), (insns BEQC32_T<PC14_S1>)>;
-def : TransformationTemplate<TT_BNEC32, BXXC16_P, (relocs PC4_S1), (insns BNEC32_T<PC14_S1>)>;
+def : TransformationTemplate<TT_BEQC32, BXXC16_P, (relocs PC4_S1), (insns BEQC32_T<>)>;
+def : TransformationTemplate<TT_BNEC32, BXXC16_P, (relocs PC4_S1), (insns BNEC32_T<>)>;
 def : TransformationTemplate<TT_PCREL16, BEQC32_P, (relocs PC14_S1), (insns BEQC16_T<>)>;
 def : TransformationTemplate<TT_PCREL16_ZERO, BEQC32_P, (relocs PC14_S1), (insns BEQZC16_T<>)>;
-// Check next one out, how does it work?
-def : TransformationTemplate<TT_PCREL32_LONG, BEQC32_P, (relocs PC14_S1), (insns BNEC32_T<NONE>, BC32_T<>)>;
+def : TransformationTemplate<TT_PCREL32_LONG, BEQC32_P, (relocs PC14_S1), (insns BNEC32_T<>, BC32_T<>)>;
 def : TransformationTemplate<TT_PCREL16, BNEC32_P, (relocs PC14_S1), (insns BNEC16_T<>)>;
 def : TransformationTemplate<TT_PCREL16_ZERO, BNEC32_P, (relocs PC14_S1), (insns BNEZC16_T<>)>;
-// This one as well
-def : TransformationTemplate<TT_PCREL32_LONG, BNEC32_P, (relocs PC14_S1), (insns BEQC32_T<NONE>, BC32_T<>)>;
+def : TransformationTemplate<TT_PCREL32_LONG, BNEC32_P, (relocs PC14_S1), (insns BEQC32_T<>, BC32_T<>)>;
 def : TransformationTemplate<TT_PCREL32_LONG, BGEC_P, (relocs PC14_S1), (insns BLTC_T<>, BC32_T<>)>;
 def : TransformationTemplate<TT_PCREL32_LONG, BLTC_P, (relocs PC14_S1), (insns BGEC_T<>, BC32_T<>)>;
 def : TransformationTemplate<TT_PCREL32_LONG, BGEUC_P, (relocs PC14_S1), (insns BLTUC_T<>, BC32_T<>)>;

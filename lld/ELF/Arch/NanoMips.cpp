@@ -482,9 +482,8 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
     const NanoMipsTransformTemplate *transformTemplate = this->currentTransformation.getTransformTemplate(insProperty, reloc, valueToRelocate, insn, sec);
 
     if(!transformTemplate) continue;
-
     LLVM_DEBUG( 
-      llvm::dbgs() << "TransformTemplate: " << transformTemplate->toString() << "\n";
+      llvm::dbgs() << "Chosen transform template:\n" << transformTemplate->toString() << "\n";
     );
 
     // TODO: gold creates a new input section, check if it is needed?
@@ -495,8 +494,8 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
       this->currentTransformation.updateSectionContent(sec, relocOffset + instSize, delta);
 
     // Transform
-
-    this->currentTransformation.transform(reloc, transformTemplate, insProperty, sec, insn, relNum);
+    // Note: Reloc may be invalidated, but we don't need it from this point on
+    this->currentTransformation.transform(&reloc, transformTemplate, insProperty, relocProp, sec, insn, relNum);
 
     auto &newInsns = this->currentTransformation.getNewInsns();
     for(auto &newInsn : newInsns)

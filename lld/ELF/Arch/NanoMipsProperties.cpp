@@ -17,6 +17,9 @@
 #include "OutputSections.h"
 #include "llvm/Support/Process.h"
 #include "lld/Common/Memory.h"
+#include "SymbolTable.h"
+#include "SyntheticSections.h"
+#include <sstream>
 
 #include "Target.h"
 
@@ -395,7 +398,7 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
   this->changed = true;
   this->changedThisIteration = true;
   LLVM_DEBUG(llvm::dbgs() << "Changed size of input section " 
-              << (isec->getFile<ELF32LE>() ? isec->getFile<ELF32LE>()->getName() : "None") 
+              << (isec->file ? isec->file->getName() : "None") 
               << ":" << isec->name
               << " by " << delta << " on location 0x" << utohexstr(location) << "\n";);
 
@@ -439,18 +442,16 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
   }
 }
 
-void NanoMipsTransform::transform(Relocation &reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const
+void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, const NanoMipsRelocProperty *relocProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const
 {
   uint32_t tReg = 0;
   uint32_t sReg = 0;
-
-  switch(reloc.type)
+  switch(reloc->type)
   {
     case R_NANOMIPS_PC14_S1:
     {
       tReg = insProperty->getTReg(insn);
       sReg = insProperty->getSReg(insn);
-      // Check if register swap is necessary
       if(transformTemplate->getType() == TT_NANOMIPS_PCREL16)
       {
         uint32_t tReg16 = tReg & 0x7;
@@ -484,17 +485,18 @@ void NanoMipsTransform::transform(Relocation &reloc, const NanoMipsTransformTemp
 
     default:
     // Should be unreachable, but for now just break and return
-      LLVM_DEBUG(llvm::dbgs() << "Transform for relocation: " << reloc.type << " not supported yet!\n");
+      LLVM_DEBUG(llvm::dbgs() << "Transform for relocation: " << reloc->type << " not supported yet!\n");
       return;
   }
 
   // TODO: Conditional branches here, if added to implementation
 
-  // TODO: Change size for 48-bit insns
-  uint32_t offset = reloc.offset;
+  // TODO: Check for 48bit instructions
+  uint32_t offset = reloc->offset - (relocProperty->getInstSize() == 6 ? 2 : 0);
   
   // Whether we are inserting a new reloc, or just changing the existing one
   bool newReloc = false;
+  RelType oldRelType = reloc->type;
   auto instructionList = makeArrayRef(transformTemplate->getInsns(), transformTemplate->getInsCount());
   for(auto &insTemplate : instructionList)
   {
@@ -508,25 +510,27 @@ void NanoMipsTransform::transform(Relocation &reloc, const NanoMipsTransformTemp
       uint32_t newROffset = (insTemplate.getSize() == 6 ? offset + 2 : offset);
       if(!newReloc)
       {
-        reloc.offset = newROffset;
-        reloc.type = newRelType;
+        reloc->offset = newROffset;
+        reloc->type = newRelType;
         // Only param needed is relType, other ones are not important for nanoMIPS
-        reloc.expr = target->getRelExpr(newRelType, *reloc.sym, isec->data().data() + newROffset);
+        reloc->expr = target->getRelExpr(newRelType, *reloc->sym, isec->data().data() + newROffset);
         newReloc = true;
-        LLVM_DEBUG(llvm::dbgs() << "Changed current reloc to " << reloc.type << "\n";);
+        LLVM_DEBUG(llvm::dbgs() << "Changed current reloc to " << reloc->type << "\n";);
       }
       else
       {
         Relocation newRelocation;
-        newRelocation.addend = reloc.addend;
+        newRelocation.addend = reloc->addend;
         newRelocation.offset = newROffset;
         // Only param needed is relType, other ones are not important for nanoMIPS
-        newRelocation.expr = target->getRelExpr(newRelType, *reloc.sym, isec->data().data() + newROffset);
-        newRelocation.sym = reloc.sym;
+        newRelocation.expr = target->getRelExpr(newRelType, *reloc->sym, isec->data().data() + newROffset);
+        newRelocation.sym = reloc->sym;
         newRelocation.type = newRelType;
-        isec->relocations.insert(isec->relocations.begin() + relNum, newRelocation);
         relNum++;
-        LLVM_DEBUG(llvm::dbgs() << "Added new reloc " << reloc.type << "\n";);
+        isec->relocations.insert(isec->relocations.begin() + relNum, newRelocation);
+        // Because we add a relocation, it might invalidate our previous reloc!
+        reloc = &isec->relocations[relNum - 1];
+        LLVM_DEBUG(llvm::dbgs() << "Added new reloc " << newRelType << "\n";);
         // TODO: Setting reloc strategy for finalizing relocs
       }
     }
@@ -535,6 +539,24 @@ void NanoMipsTransform::transform(Relocation &reloc, const NanoMipsTransformTemp
     newInsns.emplace_back(newInsn, offset, insTemplate.getSize());
     LLVM_DEBUG(llvm::dbgs() << "New instruction " << insTemplate.getName() << ": 0x" << utohexstr(newInsn) << " to offset: 0x" << utohexstr(offset) << "\n");
     offset += insTemplate.getSize();
+  }
+
+  // We are adding a symbol for branch over the bc instruction, as this generates a negative branch + bc32
+  // and the negative branch needs to skip bc32
+  if(oldRelType == R_NANOMIPS_PC14_S1 && transformTemplate->getType() == TT_NANOMIPS_PCREL32_LONG)
+  {
+    // TODO: Maybe optimize this writing to string?
+    std::stringstream SS;
+    SS << "__skip_bc_" << ++newSymCount;
+    // TODO: Do not make new strings like this
+    std::string &name = *make<std::string>(SS.str());
+    StringRef nameRef = name;
+    Symbol *s = symtab->addSymbol(Defined{isec->file, nameRef, STB_GLOBAL, STV_HIDDEN, STT_NOTYPE, offset, 0, isec});
+    assert(s && "Didn't create needed symbol for relaxations/expansions!");
+    reloc->sym = s;
+    isec->file->symbols.emplace_back(s);
+    in.symTab->addSymbol(s);
+    LLVM_DEBUG(llvm::dbgs() << "New symbol " << s->getName() << " in section " << (isec->file ? isec->file->getName() : "no file") << ":" << isec->name << " on offset " << offset << "\n";);
   }
 
 }
@@ -630,6 +652,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
   switch(reloc)
   {
     case R_NANOMIPS_PC21_S1:
+    case R_NANOMIPS_PC14_S1:
     case R_NANOMIPS_PC4_S1:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
@@ -647,6 +670,13 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
     {
       uint64_t val = valueToRelocate - 4;
       if(((val & 0x1) == 0) && isInt<22>(val))
+        return nullptr;
+      break;
+    }
+    case R_NANOMIPS_PC14_S1:
+    {
+      uint64_t val = valueToRelocate - 4;
+      if(isInt<15>(val))
         return nullptr;
       break;
     }
@@ -675,7 +705,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
   {
     case R_NANOMIPS_PC21_S1:
       if(insProperty->getName() == "move.balc")
-        // See how this goes with insn32 option, as this transformation generates 16bit move with balc
+        // TODO: See how this goes with insn32 option, as this transformation generates 16bit move with balc
         return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type);
       else if(nanoMipsFullAbi)
         return pcrel ? 
@@ -685,14 +715,18 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
         return pcrel ?
           insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type) :
           insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type);
+    
+    case R_NANOMIPS_PC14_S1:
+        return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type);
+
     case R_NANOMIPS_PC4_S1:
-      // Equality should be impossible but just in case
-      return insProperty->getSReg(insn) >= insProperty->getTReg(insn) ?
+      // Equality should be impossible
+      return insProperty->getSReg(insn) > insProperty->getTReg(insn) ?
         insProperty->getTransformTemplate(TT_NANOMIPS_BNEC32, reloc.type) :
         insProperty->getTransformTemplate(TT_NANOMIPS_BEQC32, reloc.type);
     default:
       // Should be unreachable when all relocs are processed
-      LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expandsions\n";);
+      LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);
       return nullptr;
   }
 }

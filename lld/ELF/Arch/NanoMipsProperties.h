@@ -29,12 +29,6 @@
 
 namespace lld {
 namespace elf{
-
-  template<class ELFT>
-  bool isNanoMipsPcRel(const ObjFile<ELFT> *obj)
-  {
-    return (obj->getObj().getHeader().e_flags & llvm::ELF::EF_NANOMIPS_PCREL) != 0;
-  }
   
   class NanoMipsRelocProperty;
   // Should be used only by NanoMips target, contains NanoMips reloc properties
@@ -261,8 +255,16 @@ namespace elf{
     NANOMIPS_RELAX_STATE,
     NANOMIPS_EXPAND_STATE
   };
+
+  struct NanoMipsContextProperties {
+    bool fullNanoMipsISA;
+    bool pcrel;      
+  };
   class NanoMipsTransform {
+    // !NanoMipsAbiFlagsSection<ELF32LE>::get()->isFullNanoMipsISA(isec)
+    // bool pcrel = isNanoMipsPcRel<ELF32LE>(obj);
     public:
+      NanoMipsContextProperties contextProperties;
       enum TransformKind {
         TransformNone = 0,
         TransformRelax = 1,
@@ -342,6 +344,9 @@ namespace elf{
 
       void initState();
       void changeState();
+
+      NanoMipsContextProperties& getContextProperties() const { return this->currentState->contextProperties; }
+
       NanoMipsTransform::TransformKind getType() const { return this->currentState->getType(); }
       // should be called before change state
       bool shouldRunAgain() const { return this->currentState->getChanged(); }

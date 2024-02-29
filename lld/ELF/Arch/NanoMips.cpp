@@ -97,6 +97,12 @@ uint64_t elf::getNanoMipsPage(uint64_t expr) {
   return expr & ~static_cast<uint64_t>(0xFFF);
 }
 
+template<class ELFT>
+static bool isNanoMipsPcRel(const ObjFile<ELFT> *obj)
+{
+  return (obj->getObj().getHeader().e_flags & llvm::ELF::EF_NANOMIPS_PCREL) != 0;
+}
+
 namespace {
 
   
@@ -437,6 +443,12 @@ bool NanoMips<ELFT>::relaxOnce(int pass) const
 template <class ELFT>
 void NanoMips<ELFT>::transform(InputSection *sec) const 
 {
+  NanoMipsContextProperties &contextProperties = this->currentTransformation.getContextProperties();
+  contextProperties.fullNanoMipsISA = NanoMipsAbiFlagsSection<ELFT>::get()->isFullNanoMipsISA(sec);
+  auto *obj = sec->getFile<ELFT>();
+  // TODO: Don't know if there isn't an object file (and why it isn't there)
+  // what to put in as pcrel, for now it is false
+  contextProperties.pcrel = obj ? isNanoMipsPcRel<ELFT>(obj) : false;
 
   const uint32_t bits = config->wordsize * 8;
   uint64_t secAddr = sec->getOutputSection()->addr + sec->outSecOff;

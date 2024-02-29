@@ -586,7 +586,7 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
     {
       uint32_t sReg = insProperty->getSReg(insn);
       if(!insProperty->hasTransform(TT_NANOMIPS_PCREL16, reloc) 
-         || !NanoMipsAbiFlagsSection<ELF32LE>::get()->isFullNanoMipsISA(isec) 
+         || !contextProperties.fullNanoMipsISA 
          || (!insProperty->areRegsValid(insn) 
              && !(insProperty->hasTransform(TT_NANOMIPS_PCREL16_ZERO, reloc)
                  && insProperty->isTRegValid(insn)
@@ -698,9 +698,8 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
 const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTransformTemplate(const NanoMipsInsProperty * insProperty, const Relocation & reloc, uint64_t insn, const InputSection * isec) const
 {
   // TODO: Test all versions
-  bool nanoMipsFullAbi = NanoMipsAbiFlagsSection<ELF32LE>::get()->isFullNanoMipsISA(isec);
-  auto *obj = isec->getFile<ELF32LE>();
-  bool pcrel = isNanoMipsPcRel<ELF32LE>(obj);
+  bool nanoMipsFullAbi = contextProperties.fullNanoMipsISA;
+  bool pcrel = contextProperties.pcrel;
   switch(reloc.type)
   {
     case R_NANOMIPS_PC21_S1:

@@ -176,5 +176,3 @@ pc14_far:
     addiu $a1, $a2, 1
     .end pc14_far
     .size pc14_far, .-pc14_far
-
-

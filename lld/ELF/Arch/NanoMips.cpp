@@ -76,7 +76,7 @@ template <endianness E>
 static uint64_t readInsn(ArrayRef<uint8_t> data, uint64_t off, uint32_t insnSize)
 {
   assert(off + insnSize <= data.size() && "Overflow on buffer in readInsn");
-  if(insnSize == 6) return read16(&data[off - 2]);
+  if(insnSize == 6) return read16(&data[off]);
   else if(insnSize == 4) return readShuffle32<E>(&data[off]);
   else if(insnSize == 2) return read16(&data[off]);
   else llvm_unreachable("Unknown byte size of nanoMIPS instruction (only 2, 4 and 6 known)");
@@ -143,6 +143,7 @@ template <class ELFT>
 NanoMips<ELFT>::NanoMips(): currentTransformation(&insPropertyTable) {
   // assert(!ELFT::Is64Bits() && ELF32LE::TargetEndianness() == llvm::support::endianness::little
   //         && "32 little endian is the only supported target for nanoMIPS for now");
+  assert(config->nanoMipsExpandReg >= 0 && config->nanoMipsExpandReg < 32 && "nanoMIPS regs range from 0 to 32");
   copyRel = R_NANOMIPS_COPY;
   // noneRel Already zero, and is now static constexpr
   // noneRel = R_NANOMIPS_NONE;
@@ -154,8 +155,9 @@ NanoMips<ELFT>::NanoMips(): currentTransformation(&insPropertyTable) {
   llvm::dbgs() << "Current instruction properties:\n" << insPropertyTable.toString() << "\n\n\n";
   llvm::dbgs() << "relax_lo12: " << config->nanoMipsRelaxLo12 << "\n";
   llvm::dbgs() << "insn32: " << config->nanoMipsInsn32 << "\n";
+  llvm::dbgs() << "fix_nmips_hw110880: " << config->nanoMipsFixHw110880 << "\n"; 
+  llvm::dbgs() << "expand_reg: " << config->nanoMipsExpandReg << "\n";
   );
-
   this->currentTransformation.initState();
 }
 
@@ -466,7 +468,7 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
     uint32_t instSize = relocProp->getInstSize();
     // 48 bit instruction reloc offsets point to 32 bit imm/off not to the beginning of ins~
     uint32_t relocOffset = reloc.offset - (instSize == 6 ? 2 : 0);
-    uint64_t insn = readInsn<ELFT::TargetEndianness>(sec->data(), reloc.offset, instSize);
+    uint64_t insn = readInsn<ELFT::TargetEndianness>(sec->data(), relocOffset, instSize);
 
     uint64_t insMask = relocProp->getMask();
     LLVM_DEBUG(

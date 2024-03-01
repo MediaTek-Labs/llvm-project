@@ -87,6 +87,14 @@ bool isRegValid(uint32_t reg)
   return ((4 <= reg && reg <= 7) || (16 <= reg && reg <= 19));
 }
 
+// Functions for checking if some instructions need to be fixed
+
+static bool valueNeedsHw110880Fix(uint64_t val)
+{
+  if(!config->nanoMipsFixHw110880) return false;
+  return ((val & 0x50016400) == 0x50012400) && (((val >> 24) & 0x7) == 0x1 || ((val >> 24) & 0x2) == 0x2);
+}
+
 // NanoMipsRelocPropertyTable
 
 NanoMipsRelocPropertyTable::NanoMipsRelocPropertyTable()
@@ -482,6 +490,15 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
       sReg = insProperty->convSReg(insn);
       break;
     }
+    case R_NANOMIPS_PC_I32:
+    {
+      tReg = insProperty->getTReg(insn);
+      // Needed for addu 32 to fill spots of two registers rt and rs
+      // rd is sReg here
+      tReg = tReg << 5 | tReg;
+      sReg = config->nanoMipsExpandReg;
+      break;
+    }
 
     default:
     // Should be unreachable, but for now just break and return
@@ -637,6 +654,17 @@ const NanoMipsTransformTemplate *NanoMipsTransformRelax::getTransformTemplate(co
       else
         return nullptr;
     }
+    case R_NANOMIPS_PC_I32:
+    {
+      uint64_t val = valueToRelocate - 4;
+      // Adjust value if this is a backward branch
+      if(static_cast<int64_t>(val) < 0)
+        val += 2;
+      if((val & 0x1) == 0 && isInt<22>(val))
+        return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32, reloc.type);
+      else
+        return nullptr;
+    }
     default:
       //TODO: Should be unreachable when all relocs are processed
       break;
@@ -654,6 +682,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
     case R_NANOMIPS_PC21_S1:
     case R_NANOMIPS_PC14_S1:
     case R_NANOMIPS_PC4_S1:
+    case R_NANOMIPS_PC_I32:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -684,6 +713,13 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
     {
       uint64_t val = valueToRelocate - 2;
       if(isUInt<5>(val))
+        return nullptr;
+      break;
+    }
+    case R_NANOMIPS_PC_I32:
+    {
+      uint64_t val = valueToRelocate - 4;
+      if(!valueNeedsHw110880Fix(val))
         return nullptr;
       break;
     }
@@ -723,6 +759,9 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
       return insProperty->getSReg(insn) > insProperty->getTReg(insn) ?
         insProperty->getTransformTemplate(TT_NANOMIPS_BNEC32, reloc.type) :
         insProperty->getTransformTemplate(TT_NANOMIPS_BEQC32, reloc.type);
+    
+    case R_NANOMIPS_PC_I32:
+      return insProperty->getTransformTemplate(TT_NANOMIPS_IMM48_FIX, reloc.type);
     default:
       // Should be unreachable when all relocs are processed
       LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);

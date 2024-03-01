@@ -734,6 +734,15 @@ defm relax_lo12: BB<"relax-lo12",
     "(nanoMIPS only) Do not relax R_NANOMIPS_LO12 relocation (default)"
 >;
 
+defm fix_nmips_hw110880: BB<"fix-nmips-hw110880",
+    "(nanoMIPS only) Rewrite instructions to avoid hw110880 issue",
+    "(nanoMIPS only) Do not rewrite instructions to avoid hw110880 issue (default)"
+>;
+
+defm expand_reg: EEq<"expand-reg",
+    "(nanoMIPS only) Set the register that will be used in expansions (default $1 - pass the value without dollar sign)"
+>;
+
 // Hidden option used for testing MIPS multi-GOT implementation.
 defm mips_got_size:
   Eq<"mips-got-size", "Max size of a single MIPS GOT. 0x10000 by default.">,

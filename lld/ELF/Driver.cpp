@@ -1154,8 +1154,10 @@ static void readConfigs(opt::InputArgList &args) {
       args.hasFlag(OPT_merge_exidx_entries, OPT_no_merge_exidx_entries, true);
   config->mmapOutputFile =
       args.hasFlag(OPT_mmap_output_file, OPT_no_mmap_output_file, true);
+  config->nanoMipsFixHw110880 = args.hasFlag(OPT_fix_nmips_hw110880, OPT_no_fix_nmips_hw110880, false);
   config->nanoMipsInsn32 = args.hasFlag(OPT_insn32, OPT_no_insn32, false);
   config->nanoMipsRelaxLo12 = args.hasFlag(OPT_relax_lo12, OPT_no_relax_lo12, false);
+  config->nanoMipsExpandReg = args::getInteger(args, OPT_expand_reg, 1);
   config->nmagic = args.hasFlag(OPT_nmagic, OPT_no_nmagic, false);
   config->noinhibitExec = args.hasArg(OPT_noinhibit_exec);
   config->nostdlib = args.hasArg(OPT_nostdlib);

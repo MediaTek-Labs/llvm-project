@@ -23,9 +23,16 @@
 #include "llvm/MC/MCSymbolELF.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/CommandLine.h"
 #include "MCTargetDesc/MipsFixupKinds.h"
 
 using namespace llvm;
+
+namespace {
+static cl::opt<bool> UseNamedTemps(
+    "nanomips-use-named-temps", cl::init(true),
+    cl::desc("Use named instead of anonymous temporary symbols (enabled by default)"), cl::NotHidden);
+} // end anonymous namespace
 
 MipsELFStreamer::MipsELFStreamer(MCContext &Context,
                                  std::unique_ptr<MCAsmBackend> MAB,
@@ -36,6 +43,8 @@ MipsELFStreamer::MipsELFStreamer(MCContext &Context,
   RegInfoRecord = new MipsRegInfoRecord(this, Context);
   MipsOptionRecords.push_back(
       std::unique_ptr<MipsRegInfoRecord>(RegInfoRecord));
+  if (Context.getTargetTriple().isNanoMips())
+    Context.setUseNamesOnTempLabels(UseNamedTemps);
 }
 
 void MipsELFStreamer::emitInstruction(const MCInst &Inst,

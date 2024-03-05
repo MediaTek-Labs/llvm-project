@@ -359,7 +359,7 @@ std::string NanoMipsTransform::getTypeAsString() const
   }
 }
 
-void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t location, int32_t delta){
+void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t location, int32_t delta, bool align){
   // FIXME: Don't like this, when allocating large object files
   // mmap is used with only read rights but we need write as well
   // so we are allocating memory for that file again
@@ -416,6 +416,11 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
   {
     // TODO: Need to make this different for align, fill and max reloc
     // but that will be done after they are implemented
+    // Need to skip these 3 relocs if the change is due to alignment,
+    // which it is if align == true
+    if(align && reloc.offset == location && (reloc.type == R_NANOMIPS_ALIGN || reloc.type == R_NANOMIPS_FILL || reloc.type == R_NANOMIPS_MAX))
+      continue;
+
     if(reloc.offset >= location)
       reloc.offset += delta;
   }
@@ -564,7 +569,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
   {
     // TODO: Maybe optimize this writing to string?
     std::stringstream SS;
-    SS << "__skip_bc_" << ++newSymCount;
+    SS << "__skip_bc__" << ++newSymCount;
     // TODO: Do not make new strings like this
     std::string &name = *make<std::string>(SS.str());
     StringRef nameRef = name;
@@ -576,13 +581,6 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
     LLVM_DEBUG(llvm::dbgs() << "New symbol " << s->getName() << " in section " << (isec->file ? isec->file->getName() : "no file") << ":" << isec->name << " on offset " << offset << "\n";);
   }
 
-}
-
-uint32_t swap16BitWords(uint32_t val)
-{
-  uint32_t newLo = val >> 16;
-  uint32_t newHi = (val & 0xFFFF) << 16;
-  return newHi | newLo;
 }
 
 // NanoMipsTransformRelax

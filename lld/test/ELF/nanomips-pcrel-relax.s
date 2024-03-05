@@ -1,6 +1,6 @@
 # REQUIRES: nanomips
 # TODO: When the define directive is availble, use it
-# DEFINE: %{skip_bc_sym} = __skip_bc_
+# DEFINE: %{skip_bc_sym} = __skip_bc__
  
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6 -mpcrel %s -o %t1.o
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6s -mpcrel %S/Inputs/nanomips-pcrel-relax-sup.s -o %t2.o
@@ -46,13 +46,13 @@
 # CHECK-NMF-PCREL: a8e0{{.*}} bnezc {{.*}} <x2>
 # CHECK-NMF-PCREL: 88e6{{.*}} beqc {{.*}} <x1>
 
-# CHECK-NMF-PCREL: dae{{.*}} bnec {{.*}} <__skip_bc_{{[0-9]*}}>
+# CHECK-NMF-PCREL: dae{{.*}} bnec {{.*}} <__skip_bc__{{[0-9]*}}>
 # CHECK-NMF-PCREL-NEXT: 28{{.*}} bc {{.*}} <pc14_far>
-# CHECK-NMF-PCREL: db5{{.*}} beqc {{.*}} <__skip_bc_{{[0-9]*}}>
-# CHECK-NMF-PCREL: a8c5{{.*}} bltc {{.*}} <__skip_bc_{{[0-9]*}}>
-# CHECK-NMF-PCREL: 88c5{{.*}} bgec {{.*}} <__skip_bc_{{[0-9]*}}>
-# CHECK-NMF-PCREL: a8c5{{.*}} bltuc {{.*}} <__skip_bc_{{[0-9]*}}>
-# CHECK-NMF-PCREL: 88c5{{.*}} bgeuc {{.*}} <__skip_bc_{{[0-9]*}}>
+# CHECK-NMF-PCREL: db5{{.*}} beqc {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: a8c5{{.*}} bltc {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: 88c5{{.*}} bgec {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: a8c5{{.*}} bltuc {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: 88c5{{.*}} bgeuc {{.*}} <__skip_bc__{{[0-9]*}}>
 
 # Will only check differences from others from now on
 

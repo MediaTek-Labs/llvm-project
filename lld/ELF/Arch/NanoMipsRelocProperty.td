@@ -27,6 +27,7 @@ class RelocProperty48<int bitsToRelocate, bits<64> insMask> : RelocProperty<48, 
 class RelocProperty48HI6LO5<int bitsToRelocate> : RelocProperty48<bitsToRelocate, 0xfc1f>;
 
 def NONE : RelocProperty<0, 0, 0>;
+def ALIGN : RelocProperty<0, 0, 0>;
 def PC4_S1 : RelocProperty16HI6<5>;
 def PC14_S1 : RelocProperty32<15, 0xfc00c000>;
 def PC21_S1 : RelocProperty32<22, 0xfc000000>;

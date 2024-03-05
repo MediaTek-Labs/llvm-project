@@ -275,7 +275,7 @@ namespace elf{
       virtual ~NanoMipsTransform() {}
       virtual const NanoMipsInsProperty *getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const = 0;
       virtual const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const = 0;
-      virtual void updateSectionContent(InputSection *isec, uint64_t location, int32_t delta);
+      virtual void updateSectionContent(InputSection *isec, uint64_t location, int32_t delta, bool align = false);
       bool getChanged() { return changed; }
       bool getChangedThisIteration() { return changedThisIteration; }
       void resetChanged() { changed = false; }
@@ -355,7 +355,7 @@ namespace elf{
       const NanoMipsTransformTemplate *getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const
       { return this->currentState->getTransformTemplate(insProperty, reloc, valueToRelocate, insn, isec);}
 
-      void updateSectionContent(InputSection *isec, uint64_t location, int32_t delta) const { this->currentState->updateSectionContent(isec, location, delta);}
+      void updateSectionContent(InputSection *isec, uint64_t location, int32_t delta, bool align = false) const { this->currentState->updateSectionContent(isec, location, delta, align);}
       void transform(Relocation *reloc, const NanoMipsTransformTemplate *transformTemplate, const NanoMipsInsProperty *insProperty, const NanoMipsRelocProperty *relocProperty, InputSection *isec, uint64_t insn, uint32_t &relNum) const
       { this->currentState->transform(reloc, transformTemplate, insProperty, relocProperty, isec, insn, relNum); }
 

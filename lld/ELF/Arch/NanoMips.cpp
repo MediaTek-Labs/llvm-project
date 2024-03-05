@@ -133,7 +133,7 @@ private:
 
     // relax + expand
     void transform(InputSection *sec) const;
-
+    void align(InputSection *sec, Relocation &reloc, uint32_t relNum) const;
     // bool relax(InputSection *sec) const;
     // bool expand(InputSection *sec) const;
 };
@@ -264,10 +264,17 @@ RelExpr NanoMips<ELFT>::getRelExpr(RelType type, const Symbol &s,
     return R_NANOMIPS_GPREL;
   case R_NANOMIPS_NONE:
   case R_NANOMIPS_FIXED:
-  case R_NANOMIPS_ALIGN:
   case R_NANOMIPS_INSN32:
   case R_NANOMIPS_INSN16:
     return R_NONE;
+  
+  case R_NANOMIPS_ALIGN:
+  case R_NANOMIPS_MAX:
+  case R_NANOMIPS_FILL:
+    // Used to save R_NANOMIPS_ALIGN in relocation vector
+    // TODO: See if this is only needed for relaxations and expansions
+    // so maybe it could be relaxed to R_NONE in that case
+    return R_RELAX_HINT;
   default:
     error(getErrorLocation(loc) + "unknown relocation (" + Twine(type) +
           ") against symbol " + toString(s) + " loc: " + llvm::utohexstr(uint64_t(loc)) + " file name: " + toString(s.file->getName()) );
@@ -298,6 +305,8 @@ void NanoMips<ELFT>::relocate(uint8_t *loc, const Relocation &rel, uint64_t val)
   case R_NANOMIPS_ALIGN:
   case R_NANOMIPS_INSN16:
   case R_NANOMIPS_INSN32:
+  case R_NANOMIPS_FILL:
+  case R_NANOMIPS_MAX:
     break;
   case R_NANOMIPS_UNSIGNED_16:
     checkUInt(loc, val, 16, rel);
@@ -451,7 +460,6 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
   // TODO: Don't know if there isn't an object file (and why it isn't there)
   // what to put in as pcrel, for now it is false
   contextProperties.pcrel = obj ? isNanoMipsPcRel<ELFT>(obj) : false;
-
   const uint32_t bits = config->wordsize * 8;
   uint64_t secAddr = sec->getOutputSection()->addr + sec->outSecOff;
   // Need to do it like this bc at transform we may invalidate the iterator
@@ -459,6 +467,12 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
   for(uint32_t relNum = 0; relNum < sec->relocations.size(); relNum++)
   {
     Relocation &reloc = sec->relocations[relNum];
+
+    if(reloc.type == R_NANOMIPS_ALIGN)
+    {
+      this->align(sec, reloc, relNum);
+      continue;
+    }
     // TODO: Check if section should be compressed when returning value
     uint64_t addrLoc = secAddr + reloc.offset;
     uint64_t valueToRelocate = llvm::SignExtend64(sec->getRelocTargetVA(sec->file, reloc.type, reloc.addend, addrLoc, *reloc.sym, reloc.expr), bits);
@@ -509,6 +523,7 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
 
     // Transform
     // Note: Reloc may be invalidated, but we don't need it from this point on
+    // To restore it use its relNum, not the one after transform as it changes
     this->currentTransformation.transform(&reloc, transformTemplate, insProperty, relocProp, sec, insn, relNum);
 
     auto &newInsns = this->currentTransformation.getNewInsns();
@@ -520,6 +535,96 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
     // Finalize content?
   }
   return;
+}
+
+template <class ELFT>
+void NanoMips<ELFT>::align(InputSection *sec, Relocation &reloc, uint32_t relNum) const
+{
+  // TODO: Maybe change this so we get them from InsProperties somehow
+  // not hardcode like this
+  // TODO: Find out how to specify fill size and max, as fill size is always 1 byte,
+  // and max cannot even be specified for align
+  const uint32_t nop32 = 0x8000c000;
+  const uint32_t nop16 = 0x9008;
+
+  uint64_t align = 1 << reloc.sym->getVA();
+  uint64_t addr = sec->getOutputSection()->addr + sec->outSecOff + reloc.offset;
+  // Note: the reinterpret cast is safe here, as in alignAddr function it is also
+  // used to change the pointer to an unsigned long
+  uint64_t newAddr = alignAddr(reinterpret_cast<void *>(addr), Align(align));
+
+  uint64_t newPadding = newAddr - addr;
+  uint64_t oldPadding = reloc.sym->getSize();
+  
+  uint64_t fill = nop16;
+  uint64_t max = ELFT::Is64Bits ? (uint64_t)(0) - 1 : (uint32_t)(0) - 1;
+  size_t fillSize = 2;
+
+  for(uint32_t i = relNum + 1; i < sec->relocations.size(); i++)
+  {
+    Relocation &r = sec->relocations[i];
+    if(r.offset != reloc.offset)
+      break;
+
+    if(r.type == R_NANOMIPS_FILL)
+    {
+      fill = r.sym->getVA();
+      fillSize = cast<Defined>(r.sym)->size;
+    }
+    else if(r.type == R_NANOMIPS_MAX)
+    {
+      max = r.sym->getVA();
+    }
+  }
+
+  // Set the padding to 0, if the padding bytes exceed max bytes
+  if(newPadding > max)
+    newPadding = 0;
+
+  // Equal paddings, mean nothing should change, so return
+  if(newPadding == oldPadding)
+    return;
+
+  int64_t count = (int64_t)(newPadding - oldPadding);
+
+  // Check if we are cutting nop32 on half, then we need
+  // to replace it with nop16 instruction
+  if(count < 0 && newPadding >= 2)
+  {
+    uint64_t insn = readInsn<ELFT::TargetEndianness>(sec->data(), reloc.offset + newPadding - 2, 4);
+    if(insn == nop32)
+    {
+      writeInsn<ELFT::TargetEndianness>(nop16, sec->data(), reloc.offset + newPadding - 2, 2);
+      LLVM_DEBUG(
+      llvm::dbgs() << "nop[32] is replaced with nop[16] due to new alignment on offset " << reloc.offset + newPadding - 2 
+                << " in section " << sec->name << " from obj " << (sec->file ? sec->file->getName() : "None") << "\n";
+      );
+    }
+  }
+  
+  this->currentTransformation.updateSectionContent(sec, reloc.offset + oldPadding, count, true);
+  // Update size of symbol, cast is used because we are sure this symbol is defined
+  // if it is not defined then there is an error in code
+  cast<Defined>(reloc.sym)->size = newPadding;
+
+  // Add padding
+  if(count > 0)
+  {
+    if(fillSize > (uint64_t)count)
+    {
+      fill = nop16;
+      fillSize = 2;
+    }
+
+    for(int i = 0; i < count; i += fillSize)
+    {
+      // This shouldn't really happen among instructions
+      if(fillSize == 1)
+        write8(const_cast<uint8_t *>(sec->data().begin()) + reloc.offset + oldPadding + i, fill);
+      else
+        writeInsn<ELFT::TargetEndianness>(fill, sec->data(), reloc.offset + oldPadding + i, fillSize);
+    }
+  }
 }
 
 

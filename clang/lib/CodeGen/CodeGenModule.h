@@ -1698,6 +1698,14 @@ public:
   /// because we'll lose all important information after each repl.
   void moveLazyEmissionStates(CodeGenModule *NewBuilder);
 
+  // Maps may-overflow expressions to the Value holding
+  // their source location and stored as operand in
+  // a unique trap intrinsic call.
+  // When filtering a warning of a guarded may-overflow expression
+  // use this map to convert the unique trap into a regular one
+  using ExprInsPair = std::pair<const Expr *, llvm::Value *>;
+  SmallVector<ExprInsPair, 4> OverflowExpr;
+
   /// Emit the IR encoding to attach the CUDA launch bounds attribute to \p F.
   /// If \p MaxThreadsVal is not nullptr, the max threads value is stored in it,
   /// if a valid one was found.
@@ -1906,6 +1914,9 @@ private:
   // __attribute__((destructor)) annotated functions which were previously
   // registered by the atexit subroutine using unatexit.
   void unregisterGlobalDtorsWithUnAtExit();
+
+  /// Filter warnings regarding undefined behaviour sanitizer
+  void filterGuardedUBSanTraps();
 
   /// Emit deferred multiversion function resolvers and associated variants.
   void emitMultiVersionFunctions();

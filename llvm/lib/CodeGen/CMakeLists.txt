@@ -246,6 +246,7 @@ add_llvm_component_library(LLVMCodeGen
   ValueTypes.cpp
   VLIWMachineScheduler.cpp
   VirtRegMap.cpp
+  WarnUBSanTrap.cpp
   WasmEHPrepare.cpp
   WindowScheduler.cpp
   WinEHPrepare.cpp

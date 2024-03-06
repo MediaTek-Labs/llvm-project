@@ -4388,6 +4388,8 @@ void CodeGenModule::emitMultiVersionFunctions() {
     CGF.EmitMultiVersionResolver(ResolverFunc, Options);
   }
 
+  filterGuardedUBSanTraps();
+
   // Ensure that any additions to the deferred decls list caused by emitting a
   // variant are emitted.  This can happen when the variant itself is inline and
   // calls a function without linkage.

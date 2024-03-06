@@ -7766,6 +7766,9 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
 
   ParseMPreferVectorWidth(D, Args, CmdArgs);
 
+  Args.AddLastArg(CmdArgs, options::OPT_fwarn_ubsantrap,
+                  options::OPT_fno_warn_ubsantrap);
+
   Args.AddLastArg(CmdArgs, options::OPT_fshow_overloads_EQ);
   Args.AddLastArg(CmdArgs,
                   options::OPT_fsanitize_undefined_strip_path_components_EQ);

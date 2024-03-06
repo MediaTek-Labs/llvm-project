@@ -583,6 +583,10 @@ public:
     ~SanitizerScope();
   };
 
+  /// Parameter for next ubsantrap, if not null,
+  /// we should emit ubsantrap_unique and use that value as operand
+  llvm::Value *UBSanTrapUniqueParam = nullptr;
+
   /// In C++, whether we are code generating a thunk.  This controls whether we
   /// should emit cleanups.
   bool CurFuncIsThunk = false;

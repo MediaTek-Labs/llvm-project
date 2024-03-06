@@ -3921,7 +3921,8 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
   llvm::BasicBlock *&TrapBB = TrapBBs[CheckHandlerID];
 
   NoMerge = NoMerge || !CGM.getCodeGenOpts().OptimizationLevel ||
-            (CurCodeDecl && CurCodeDecl->hasAttr<OptimizeNoneAttr>());
+            (CurCodeDecl && CurCodeDecl->hasAttr<OptimizeNoneAttr>()) ||
+            UBSanTrapUniqueParam;
 
   if (TrapBB && !NoMerge) {
     auto Call = TrapBB->begin();
@@ -3935,9 +3936,19 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
     Builder.CreateCondBr(Checked, Cont, TrapBB);
     EmitBlock(TrapBB);
 
-    llvm::CallInst *TrapCall =
-        Builder.CreateCall(CGM.getIntrinsic(llvm::Intrinsic::ubsantrap),
-                           llvm::ConstantInt::get(CGM.Int8Ty, CheckHandlerID));
+    llvm::CallInst *TrapCall;
+    if (UBSanTrapUniqueParam) {
+      TrapCall = Builder.CreateCall(
+          CGM.getIntrinsic(llvm::Intrinsic::ubsantrap_unique),
+          {llvm::ConstantInt::get(CGM.Int8Ty, CheckHandlerID),
+           UBSanTrapUniqueParam});
+      // reset value for next time
+      UBSanTrapUniqueParam = nullptr;
+    } else {
+      TrapCall = Builder.CreateCall(
+          CGM.getIntrinsic(llvm::Intrinsic::ubsantrap),
+          llvm::ConstantInt::get(CGM.Int8Ty, CheckHandlerID));
+    }
 
     if (!CGM.getCodeGenOpts().TrapFuncName.empty()) {
       auto A = llvm::Attribute::get(getLLVMContext(), "trap-func-name",

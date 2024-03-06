@@ -140,6 +140,7 @@
 #include "llvm/CodeGen/TwoAddressInstructionPass.h"
 #include "llvm/CodeGen/TypePromotion.h"
 #include "llvm/CodeGen/VirtRegMap.h"
+#include "llvm/CodeGen/WarnUBSanTrap.h"
 #include "llvm/CodeGen/WasmEHPrepare.h"
 #include "llvm/CodeGen/WinEHPrepare.h"
 #include "llvm/IR/DebugInfo.h"

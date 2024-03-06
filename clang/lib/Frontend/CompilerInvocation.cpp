@@ -2298,6 +2298,7 @@ bool CompilerInvocation::ParseCodeGenArgs(CodeGenOptions &Opts, ArgList &Args,
       Opts.getDebugInfo() == llvm::codegenoptions::NoDebugInfo)
     Opts.setDebugInfo(llvm::codegenoptions::LocTrackingOnly);
 
+  Opts.WarnUBSanTraps = Args.hasArg(OPT_fwarn_ubsantrap);
   // Parse -fsanitize-recover= arguments.
   // FIXME: Report unrecoverable sanitizers incorrectly specified here.
   parseSanitizerKinds("-fsanitize-recover=",

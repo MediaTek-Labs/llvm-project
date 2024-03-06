@@ -2638,6 +2638,12 @@ defm sanitize_stats : BoolOption<"f", "sanitize-stats",
           "Disable">,
   BothFlags<[], [ClangOption], " sanitizer statistics gathering.">>,
   Group<f_clang_Group>;
+defm warn_ubsantrap : BoolOption<"f", "warn-ubsantrap",
+  CodeGenOpts<"WarnUBSanTraps">, DefaultFalse,
+  PosFlag<SetTrue, [], [], "Enable">,
+  NegFlag<SetFalse, [NoXarchOption], [ClangOption, CLOption, DXCOption], "Disable">,
+  BothFlags<[], [], " warn about unguarded sanitizer traps.">>,
+  Group<f_clang_Group>;
 def fsanitize_undefined_ignore_overflow_pattern_EQ : CommaJoined<["-"], "fsanitize-undefined-ignore-overflow-pattern=">,
   HelpText<"Specify the overflow patterns to exclude from arithmetic sanitizer instrumentation">,
   Visibility<[ClangOption, CC1Option]>,

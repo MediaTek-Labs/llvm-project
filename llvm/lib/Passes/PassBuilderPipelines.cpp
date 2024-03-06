@@ -25,6 +25,7 @@
 #include "llvm/Analysis/ScopedNoAliasAA.h"
 #include "llvm/Analysis/TypeBasedAliasAnalysis.h"
 #include "llvm/CodeGen/GlobalMergeFunctions.h"
+#include "llvm/CodeGen/WarnUBSanTrap.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 #include "llvm/Passes/OptimizationLevel.h"
@@ -1260,6 +1261,8 @@ PassBuilder::buildModuleSimplificationPipeline(OptimizationLevel Level,
   if (Phase != ThinOrFullLTOPhase::ThinLTOPreLink)
     MPM.addPass(CoroCleanupPass());
 
+  MPM.addPass(WarnUBSanTrapPass());
+    
   // Optimize globals now that functions are fully simplified.
   MPM.addPass(GlobalOptPass());
   MPM.addPass(GlobalDCEPass());
@@ -2235,6 +2238,9 @@ PassBuilder::buildO0DefaultPipeline(OptimizationLevel Level,
   CoroPM.addPass(CoroEarlyPass());
   CGSCCPassManager CGPM;
   CGPM.addPass(CoroSplitPass());
+
+  MPM.addPass(WarnUBSanTrapPass());
+
   CoroPM.addPass(createModuleToPostOrderCGSCCPassAdaptor(std::move(CGPM)));
   CoroPM.addPass(CoroCleanupPass());
   CoroPM.addPass(GlobalDCEPass());

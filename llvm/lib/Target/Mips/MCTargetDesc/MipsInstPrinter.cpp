@@ -237,7 +237,7 @@ void MipsInstPrinter::printUImm(const MCInst *MI, int opNum,
     case 10:
       markup(O, Markup::Immediate) << formatImm(Imm); break;
     case 16:
-      markup(O, Markup::Immediate) << formatImm(Imm); break;
+      markup(O, Markup::Immediate) << formatHex(Imm); break;
     default:
       llvm_unreachable("Unhandled base for output format!");
     }

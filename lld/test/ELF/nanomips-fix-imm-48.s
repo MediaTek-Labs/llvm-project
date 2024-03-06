@@ -14,7 +14,7 @@
 
 # CHECK: e0b{{.*}} aluipc a1,0x7{{.}}ff2
 # CHECK-NEXT: 80a5{{.*}} ori a1,a1,0x600
-# CHECK-NEXT: e0b{{.*}} aluipc a1,0x7{{.}}ff2
+# CHECK-NEXT: e0d{{.*}} aluipc a2,0x7{{.}}ff2
 # CHECK-NEXT: 84a6{{.*}} sw a1,1542(a2)
 # CHECK-NEXT: 04b{{.*}} lapc {{.*}} <far_positive>
 # CHECK-NEXT: 04c0 0001 lapc {{.*}} <far_negative>

@@ -87,6 +87,12 @@ bool isRegValid(uint32_t reg)
   return ((4 <= reg && reg <= 7) || (16 <= reg && reg <= 19));
 }
 
+// Check if a 5-bit store source register can be converted to a 3-bit one
+bool isStoreSrcRegValid(uint32_t reg)
+{
+  return (reg == 0 || ( 4 <= reg && reg <= 7) || (17 <= reg && reg <= 19));
+} 
+
 // Functions for checking if some instructions need to be fixed
 
 static bool valueNeedsHw110880Fix(uint64_t val)
@@ -505,6 +511,13 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
       break;
     }
 
+    case R_NANOMIPS_GPREL19_S2:
+    {
+      tReg = insProperty->getTReg(insn);
+      sReg = config->nanoMipsExpandReg;
+      break;
+    }
+
     default:
     // Should be unreachable, but for now just break and return
       LLVM_DEBUG(llvm::dbgs() << "Transform for relocation: " << reloc->type << " not supported yet!\n");
@@ -681,6 +694,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
     case R_NANOMIPS_PC14_S1:
     case R_NANOMIPS_PC4_S1:
     case R_NANOMIPS_PC_I32:
+    case R_NANOMIPS_GPREL19_S2:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -691,6 +705,8 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
 
 const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransformTemplate(const NanoMipsInsProperty * insProperty, const Relocation & reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const
 {
+  const uint32_t bits = config->wordsize * 8;
+  uint64_t gpVal = SignExtend64(ElfSym::mipsGp->value, bits);
   switch(reloc.type)
   {
     case R_NANOMIPS_PC21_S1:
@@ -703,14 +719,14 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
     case R_NANOMIPS_PC14_S1:
     {
       uint64_t val = valueToRelocate - 4;
-      if(isInt<15>(val))
+      if(((val & 0x1) == 0) && isInt<15>(val))
         return nullptr;
       break;
     }
     case R_NANOMIPS_PC4_S1:
     {
       uint64_t val = valueToRelocate - 2;
-      if(isUInt<5>(val))
+      if(((val & 0x1) == 0) && isUInt<5>(val))
         return nullptr;
       break;
     }
@@ -718,6 +734,13 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
     {
       uint64_t val = valueToRelocate - 4;
       if(!valueNeedsHw110880Fix(val))
+        return nullptr;
+      break;
+    }
+    case R_NANOMIPS_GPREL19_S2:
+    {
+      uint64_t val = valueToRelocate;
+      if(gpVal == -1ULL || (isUInt<21>(val) && ((val & 0x3) == 0)))
         return nullptr;
       break;
     }
@@ -760,6 +783,31 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
     
     case R_NANOMIPS_PC_I32:
       return insProperty->getTransformTemplate(TT_NANOMIPS_IMM48_FIX, reloc.type);
+    case R_NANOMIPS_GPREL19_S2:
+      if(insProperty->getName().contains("addiu"))
+      {
+        // Transforms for addiu[gp.w] and addiu[gp.b]
+        if(nanoMipsFullAbi)
+          return insProperty->getTransformTemplate(TT_NANOMIPS_GPREL_NMF, reloc.type);
+        else if(config->nanoMipsStrictAddressModes)
+          return insProperty->getTransformTemplate(TT_NANOMIPS_GPREL_LONG, reloc.type);
+        else
+          return pcrel ?
+            insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type) :
+            insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type);
+      }
+      else {
+        if(config->nanoMipsStrictAddressModes)
+          return nanoMipsFullAbi ?
+            insProperty->getTransformTemplate(TT_NANOMIPS_GPREL32_NMF, reloc.type) :
+            insProperty->getTransformTemplate(TT_NANOMIPS_GPREL_LONG, reloc.type);
+        else if(nanoMipsFullAbi && insProperty->hasTransform(TT_NANOMIPS_PCREL_NMF, reloc.type))
+          return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL_NMF, reloc.type);
+        else
+          return pcrel ?
+            insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type) :
+            insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type);
+      }
     default:
       // Should be unreachable when all relocs are processed
       LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);

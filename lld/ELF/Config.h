@@ -233,6 +233,7 @@ struct Config {
   bool nanoMipsFixHw110880;
   bool nanoMipsInsn32;
   bool nanoMipsRelaxLo12;
+  bool nanoMipsStrictAddressModes;
   bool nmagic;
   bool noDynamicLinker = false;
   bool noinhibitExec;

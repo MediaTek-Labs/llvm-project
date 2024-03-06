@@ -739,6 +739,11 @@ defm fix_nmips_hw110880: BB<"fix-nmips-hw110880",
     "(nanoMIPS only) Do not rewrite instructions to avoid hw110880 issue (default)"
 >;
 
+defm strict_address_modes: BB<"strict-address-modes",
+    "(nanoMIPS only) Strict address modes for expansions (default)",
+    "(nanoMIPS only) Don't strict address modes for expansions"
+>;
+
 defm expand_reg: EEq<"expand-reg",
     "(nanoMIPS only) Set the register that will be used in expansions (default $1 - pass the value without dollar sign)"
 >;

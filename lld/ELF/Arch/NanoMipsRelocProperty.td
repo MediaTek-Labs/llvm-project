@@ -32,6 +32,8 @@ def PC4_S1 : RelocProperty16HI6<5>;
 def PC14_S1 : RelocProperty32<15, 0xfc00c000>;
 def PC21_S1 : RelocProperty32<22, 0xfc000000>;
 def PC_I32 : RelocProperty48HI6LO5<32>;
+// Currently doing
+def GPREL19_S2: RelocProperty32<21, 0xfc000003>;
 // The next need to be worked on
 def PC7_S1: RelocProperty16HI6<8>;
 def PC25_S1: RelocProperty32<26, 0xfe000000>;
@@ -39,6 +41,11 @@ def I32: RelocProperty48HI6LO5<32>;
 def PC_HI20: RelocProperty32NoMask<20>;
 def HI20: RelocProperty32NoMask<20>;
 def LO12: RelocProperty32<12, 0xfc00f000>;
+def GPREL7_S2: RelocProperty16HI6<9>;
+def GPREL_I32: RelocProperty48HI6LO5<32>;
+def GPREL_HI20: RelocProperty32NoMask<20>;
+def GPREL_LO12: RelocProperty32NoMask<12>;
+
 // Instruction properties and transforms, from here
 // reg is SREG or TREG  depending which reg are we copying 
 class RegKind;
@@ -63,6 +70,7 @@ class IsRegValid;
 
 def convertReg: ConvertReg;
 def isRegValid: IsRegValid;
+def isStoreSrcRegValid: IsRegValid;
 
 def moveBalcTReg: ExtractReg<?, ?>;
 def moveBalcSReg: ExtractReg<?, ?>;
@@ -112,7 +120,7 @@ class InstructionProperty48<InstructionIdentifier insId, ExtractReg extractTReg>
 class InstructionProperty32<InstructionIdentifier insId, 
         ExtractReg extractTReg, IsRegValid isTRegVal, 
         ExtractReg extractSReg, IsRegValid isSRegValid>
-        : InstructionProperty<insId, extractTReg,?, isTRegVal, extractSReg, ?, isSRegValid>;
+        : InstructionProperty<insId, extractTReg, ?, isTRegVal, extractSReg, ?, isSRegValid>;
 
 class InstructionProperty16<InstructionIdentifier insId,
         ExtractReg extractTReg, ConvertReg convertTReg,
@@ -172,10 +180,22 @@ def SW32: InstructionIdentifier<"sw", 0x84009000>;
 // Needed for not generating zero size array warning
 def NOINS: InstructionIdentifier<"noins", 0x0>;
 
+def ADDIUGPW32: InstructionIdentifier<"addiu[gp.w]", 0x40000000>;
+def LWGP32: InstructionIdentifier<"lw[gp]", 0x40000002>;
+def SWGP32: InstructionIdentifier<"sw[gp]", 0x40000003>;
+def LW32: InstructionIdentifier<"lw", 0x84008000>;
+def LWPC48: InstructionIdentifier<"lwpc[48]", 0x600b>;
+def LWGP16: InstructionIdentifier<"lw[gp16]", 0x5400>;
+def ADDIUGP48: InstructionIdentifier<"addiugp[48]", 0x6002>;
+// There is no addugp instruction it is addu, it is called addugp
+// as one of the operands will be gp
+def ADDUGP: InstructionIdentifier<"addu", 0x23800150>;
+def SWGP16: InstructionIdentifier<"sw[gp16]", 0xd400>;
+
 class BEQC16_T: InstructionTemplate16<BEQC16, PC4_S1, InsertReg<7,3,TREG>, InsertReg<4,3,SREG>>;
 class BNEC16_T: InstructionTemplate16<BNEC16, PC4_S1, InsertReg<7,3,TREG>, InsertReg<4,3,SREG>>;
-class LAPC32_T<RegKind reg>: InstructionTemplate32<LAPC32, PC21_S1, InsertReg<21, 5, reg>, ?>;
-class LAPC48_T<RegKind reg>: InstructionTemplate48<LAPC48, PC_I32, InsertReg<5, 5, reg>>;
+class LAPC32_T<RegKind treg>: InstructionTemplate32<LAPC32, PC21_S1, InsertReg<21, 5, treg>, ?>;
+class LAPC48_T<RegKind treg>: InstructionTemplate48<LAPC48, PC_I32, InsertReg<5, 5, treg>>;
 class SWPC48_T: InstructionTemplate48<SWPC48, PC_I32, InsertReg<5, 5, TREG>>;
 class BEQC32_T: InstructionTemplate32<BEQC32, PC14_S1, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
 class BNEC32_T: InstructionTemplate32<BNEC32, PC14_S1, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
@@ -189,13 +209,22 @@ class BGEUC_T: InstructionTemplate32<BGEUC, PC14_S1, InsertReg<21, 5, TREG>, Ins
 class LI48_T: InstructionTemplate48<LI48, I32, InsertReg<5, 5, TREG>>;
 class LUI_T<RelocProperty reloc, RegKind treg>: InstructionTemplate32<LUI, reloc, InsertReg<21, 5, treg>, ?>;
 class ORI_T<RelocProperty reloc, RegKind treg, RegKind sreg>: InstructionTemplate32<ORI, reloc, InsertReg<21, 5, treg>, InsertReg<16, 5, sreg>>;
-class ALUIPC_T<RelocProperty reloc, RegKind treg>: InstructionTemplate32<ALUIPC, reloc, InsertReg<21, 5, TREG>, ?>;
+class ALUIPC_T<RelocProperty reloc, RegKind treg>: InstructionTemplate32<ALUIPC, reloc, InsertReg<21, 5, treg>, ?>;
 class MOVE16_T: InstructionTemplate16<MOVE16, NONE, InsertReg<0, 5, TREG>, InsertReg<5, 5, SREG>>;
 class BALC32_T: InstructionTemplate32<BALC32, PC25_S1, ?, ?>;
 class SW32_T<RelocProperty reloc>: InstructionTemplate32<SW32, reloc, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
 // Needed for not generating zero size array warning for DISCARD transformation
 class NOINS_T: InstructionTemplate<NOINS, NONE, 0, ?, ?>;
 
+class ADDIUGPW32_T: InstructionTemplate32<ADDIUGPW32, GPREL19_S2, InsertReg<21, 5, TREG>, ?>;
+class LWGP32_T: InstructionTemplate32<LWGP32, GPREL19_S2, InsertReg<21, 5, TREG>, ?>;
+class SWGP32_T: InstructionTemplate32<SWGP32, GPREL19_S2, InsertReg<21, 5, TREG>, ?>;
+class LW32_T<RelocProperty reloc>: InstructionTemplate32<LW32, reloc, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
+class LWPC48_T<RelocProperty reloc>: InstructionTemplate48<LWPC48, reloc, InsertReg<5, 5, TREG>>;
+class LWGP16_T: InstructionTemplate16<LWGP16, GPREL7_S2, InsertReg<7, 3, TREG>, ?>;
+class ADDIUGP48_T<RelocProperty reloc, RegKind treg>: InstructionTemplate48<ADDIUGP48, reloc, InsertReg<5, 5, treg>>;
+class ADDUGP_T<RegKind treg, RegKind sreg>: InstructionTemplate32<ADDUGP, NONE, InsertReg<16, 5, treg>, InsertReg<11, 5, sreg>>;
+class SWGP16_T: InstructionTemplate16<SWGP16, GPREL7_S2, InsertReg<7, 3, TREG>, ?>;
 
 def BXXC16_P: InstructionProperty16Conv<BXXC16, ExtractReg<7, 3>, ExtractReg<4, 3>>;
 def BEQC32_P: InstructionProperty32Valid<BEQC32, ExtractReg<21, 5>, ExtractReg<16, 5>>;
@@ -209,6 +238,10 @@ def MOVE_BALC_P: InstructionProperty32NoValid<MOVE_BALC, moveBalcTReg, moveBalcS
 def LAPC32_P: InstructionProperty32NoValid<LAPC32, ExtractReg<21, 5>, ?>;
 def LAPC48_P: InstructionProperty48<LAPC48, ExtractReg<5, 5>>;
 def SWPC48_P: InstructionProperty48<SWPC48, ExtractReg<5, 5>>;
+
+def LWGP32_P: InstructionProperty32<LWGP32, ExtractReg<21,5>, isRegValid, ?, ?>;
+def SWGP32_P: InstructionProperty32<SWGP32, ExtractReg<21, 5>, isStoreSrcRegValid, ?, ?>;
+def ADDIUGPW32_P: InstructionProperty32<ADDIUGPW32, ExtractReg<21, 5>, ?, ?, ?>;
 
 
 def TT_NONE: TransformationType;
@@ -224,26 +257,59 @@ def TT_PCREL_NMF: TransformationType;
 def TT_IMM48_FIX: TransformationType;
 def TT_PCREL32: TransformationType;
 
+def TT_GPREL16: TransformationType;
+def TT_GPREL32_NMF: TransformationType;
+def TT_GPREL_LONG: TransformationType;
+def TT_GPREL_NMF: TransformationType;
 
 
 def : TransformationTemplate<TT_BEQC32, BXXC16_P, (relocs PC4_S1), (insns BEQC32_T<>)>;
 def : TransformationTemplate<TT_BNEC32, BXXC16_P, (relocs PC4_S1), (insns BNEC32_T<>)>;
+
 def : TransformationTemplate<TT_PCREL16, BEQC32_P, (relocs PC14_S1), (insns BEQC16_T<>)>;
 def : TransformationTemplate<TT_PCREL16_ZERO, BEQC32_P, (relocs PC14_S1), (insns BEQZC16_T<>)>;
 def : TransformationTemplate<TT_PCREL32_LONG, BEQC32_P, (relocs PC14_S1), (insns BNEC32_T<>, BC32_T<>)>;
+
 def : TransformationTemplate<TT_PCREL16, BNEC32_P, (relocs PC14_S1), (insns BNEC16_T<>)>;
 def : TransformationTemplate<TT_PCREL16_ZERO, BNEC32_P, (relocs PC14_S1), (insns BNEZC16_T<>)>;
 def : TransformationTemplate<TT_PCREL32_LONG, BNEC32_P, (relocs PC14_S1), (insns BEQC32_T<>, BC32_T<>)>;
+
 def : TransformationTemplate<TT_PCREL32_LONG, BGEC_P, (relocs PC14_S1), (insns BLTC_T<>, BC32_T<>)>;
+
 def : TransformationTemplate<TT_PCREL32_LONG, BLTC_P, (relocs PC14_S1), (insns BGEC_T<>, BC32_T<>)>;
+
 def : TransformationTemplate<TT_PCREL32_LONG, BGEUC_P, (relocs PC14_S1), (insns BLTUC_T<>, BC32_T<>)>;
+
 def : TransformationTemplate<TT_PCREL32_LONG, BLTUC_P, (relocs PC14_S1), (insns BGEUC_T<>, BC32_T<>)>;
+
 def : TransformationTemplate<TT_DISCARD, LAPC32_P, (relocs PC21_S1), (insns NOINS_T<>)>;
 def : TransformationTemplate<TT_ABS_NMF, LAPC32_P, (relocs PC21_S1), (insns LI48_T<>)>;
 def : TransformationTemplate<TT_ABS32_LONG, LAPC32_P, (relocs PC21_S1), (insns LUI_T<HI20, TREG>, ORI_T<LO12,TREG, TREG>)>;
 def : TransformationTemplate<TT_PCREL_NMF, LAPC32_P, (relocs PC21_S1), (insns LAPC48_T<TREG>)>;
 def : TransformationTemplate<TT_PCREL32_LONG, LAPC32_P, (relocs PC21_S1), (insns ALUIPC_T<PC_HI20, TREG>, ORI_T<LO12, TREG, TREG>)>;
+
 def : TransformationTemplate<TT_PCREL32_LONG, MOVE_BALC_P, (relocs PC21_S1), (insns MOVE16_T<>, BALC32_T<>)>;
+
 def : TransformationTemplate<TT_PCREL32, LAPC48_P, (relocs PC_I32), (insns LAPC32_T<TREG>)>;
 def : TransformationTemplate<TT_IMM48_FIX, LAPC48_P, (relocs PC_I32), (insns ALUIPC_T<PC_HI20, TREG>, ORI_T<LO12, TREG, TREG>)>;
+
 def : TransformationTemplate<TT_IMM48_FIX, SWPC48_P, (relocs PC_I32), (insns ALUIPC_T<PC_HI20, SREG>, SW32_T<LO12>)>;
+
+def : TransformationTemplate<TT_ABS32_LONG, LWGP32_P, (relocs GPREL19_S2), (insns LUI_T<HI20, SREG>, LW32_T<LO12>)>;
+def : TransformationTemplate<TT_PCREL_NMF, LWGP32_P, (relocs GPREL19_S2), (insns LWPC48_T<PC_I32>)>;
+def : TransformationTemplate<TT_PCREL32_LONG, LWGP32_P, (relocs GPREL19_S2), (insns ALUIPC_T<PC_HI20, SREG>, LW32_T<LO12>)>;
+def : TransformationTemplate<TT_GPREL16, LWGP32_P, (relocs GPREL19_S2), (insns LWGP16_T<>)>;
+def : TransformationTemplate<TT_GPREL32_NMF, LWGP32_P, (relocs GPREL19_S2), (insns ADDIUGP48_T<GPREL_I32, SREG>, LW32_T<NONE>)>;
+def : TransformationTemplate<TT_GPREL_LONG, LWGP32_P, (relocs GPREL19_S2), (insns LUI_T<GPREL_HI20, SREG>, ADDUGP_T<SREG, SREG>, LW32_T<GPREL_LO12>)>;
+
+def : TransformationTemplate<TT_ABS32_LONG, SWGP32_P, (relocs GPREL19_S2), (insns LUI_T<HI20, SREG>, SW32_T<LO12>)>;
+def : TransformationTemplate<TT_PCREL_NMF, SWGP32_P, (relocs GPREL19_S2), (insns SWPC48_T<>)>;
+def : TransformationTemplate<TT_PCREL32_LONG, SWGP32_P, (relocs GPREL19_S2), (insns ALUIPC_T<PC_HI20, SREG>, SW32_T<LO12>)>;
+def : TransformationTemplate<TT_GPREL16, SWGP32_P, (relocs GPREL19_S2), (insns SWGP16_T<>)>;
+def : TransformationTemplate<TT_GPREL32_NMF, SWGP32_P, (relocs GPREL19_S2), (insns ADDIUGP48_T<GPREL_I32, SREG>, SW32_T<NONE>)>;
+def : TransformationTemplate<TT_GPREL_LONG, SWGP32_P, (relocs GPREL19_S2), (insns LUI_T<GPREL_HI20, SREG>, ADDUGP_T<SREG, SREG>, SW32_T<GPREL_LO12>)>;
+
+def : TransformationTemplate<TT_ABS32_LONG, ADDIUGPW32_P, (relocs GPREL19_S2), (insns LUI_T<HI20, SREG>, ORI_T<LO12, TREG, SREG>)>;
+def : TransformationTemplate<TT_PCREL32_LONG, ADDIUGPW32_P, (relocs GPREL19_S2), (insns ALUIPC_T<PC_HI20, SREG>, ORI_T<LO12, TREG, SREG>)>;
+def : TransformationTemplate<TT_GPREL_NMF, ADDIUGPW32_P, (relocs GPREL19_S2), (insns ADDIUGP48_T<GPREL_I32, TREG>)>;
+def : TransformationTemplate<TT_GPREL_LONG, ADDIUGPW32_P, (relocs GPREL19_S2), (insns LUI_T<GPREL_HI20, SREG>, ORI_T<GPREL_LO12, SREG, SREG>, ADDUGP_T<SREG, TREG>)>;

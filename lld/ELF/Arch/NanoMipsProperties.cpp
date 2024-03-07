@@ -512,12 +512,26 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
     }
 
     case R_NANOMIPS_GPREL19_S2:
+    case R_NANOMIPS_GPREL18:
+    case R_NANOMIPS_GPREL17_S1:
     {
       tReg = insProperty->getTReg(insn);
       sReg = config->nanoMipsExpandReg;
       break;
     }
 
+    case R_NANOMIPS_PC25_S1:
+    {
+      tReg = config->nanoMipsExpandReg;
+      sReg = config->nanoMipsExpandReg;
+      break;
+    }
+    case R_NANOMIPS_PC10_S1:
+    {
+      tReg = 0;
+      sReg = 0;
+      break;
+    }
     default:
     // Should be unreachable, but for now just break and return
       LLVM_DEBUG(llvm::dbgs() << "Transform for relocation: " << reloc->type << " not supported yet!\n");
@@ -600,9 +614,17 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
 
 const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const
 {
+  // Can't relax 32-bit to 16-bit instructions if
+  // --insn32 option is passed
   if(config->nanoMipsInsn32)
-  {  
-    return nullptr;
+  { 
+    switch(reloc)
+    {
+      case R_NANOMIPS_PC_I32:
+        break;
+      default:
+        return nullptr;
+    }
   }
 
   const NanoMipsInsProperty *insProperty = this->insPropertyTable->findInsProperty(insn, insnMask, reloc);
@@ -638,6 +660,11 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
       if(insProperty->hasTransform(TT_NANOMIPS_PCREL32, reloc)) return insProperty;
       return nullptr;
     }
+    case R_NANOMIPS_PC25_S1:
+    {
+      if(insProperty->hasTransform(TT_NANOMIPS_PCREL16, reloc)) return insProperty;
+      return nullptr;
+    }
     default:
       // TODO: Should be just break, but after all relocs are processed
       // I will change this 
@@ -650,6 +677,8 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
 
 const NanoMipsTransformTemplate *NanoMipsTransformRelax::getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const
 {
+  // TODO: Maybe it is not possible to have val & 0x1 not equal to 0 at some cases
+  // check this
   switch(reloc.type)
   {
     case R_NANOMIPS_PC14_S1:
@@ -658,9 +687,9 @@ const NanoMipsTransformTemplate *NanoMipsTransformRelax::getTransformTemplate(co
       // End of instruction is used for pcrel jumps.
       uint64_t val = valueToRelocate - 4;
       uint32_t sReg = insProperty->getSReg(insn);
-      if(val != 0 && sReg != 0 && isUInt<5>(val))
+      if(val != 0 && sReg != 0 && isUInt<5>(val) && ((val & 0x1) == 0))
         return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL16, reloc.type);
-      else if(sReg == 0 && isInt<8>(val))
+      else if(sReg == 0 && isInt<8>(val) && ((val & 0x1) == 0))
         return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL16_ZERO, reloc.type);
       else
         return nullptr;
@@ -673,6 +702,18 @@ const NanoMipsTransformTemplate *NanoMipsTransformRelax::getTransformTemplate(co
         val += 2;
       if((val & 0x1) == 0 && isInt<22>(val))
         return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32, reloc.type);
+      else
+        return nullptr;
+    }
+    case R_NANOMIPS_PC25_S1:
+    {
+      uint64_t val = valueToRelocate - 4;
+      // Adjust value if this is a backward branch
+      if(static_cast<int64_t>(val) < 0)
+        val += 2;
+      
+      if(((val & 0x1) == 0) && isInt<11>(val))
+        return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL16, reloc.type);
       else
         return nullptr;
     }
@@ -695,6 +736,9 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
     case R_NANOMIPS_PC4_S1:
     case R_NANOMIPS_PC_I32:
     case R_NANOMIPS_GPREL19_S2:
+    case R_NANOMIPS_GPREL18:
+    case R_NANOMIPS_GPREL17_S1:
+    case R_NANOMIPS_PC10_S1:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -705,6 +749,8 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
 
 const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransformTemplate(const NanoMipsInsProperty * insProperty, const Relocation & reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const
 {
+  // TODO: Maybe it is not possible to have val & 0x1 not equal to 0 at some cases
+  // check this
   const uint32_t bits = config->wordsize * 8;
   uint64_t gpVal = SignExtend64(ElfSym::mipsGp->value, bits);
   switch(reloc.type)
@@ -741,6 +787,29 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
     {
       uint64_t val = valueToRelocate;
       if(gpVal == -1ULL || (isUInt<21>(val) && ((val & 0x3) == 0)))
+        return nullptr;
+      break;
+    }
+    case R_NANOMIPS_GPREL18:
+    {
+      uint64_t val = valueToRelocate;
+      if(gpVal == -1ULL || isUInt<18>(val))
+        return nullptr;
+      else if(gpVal != -1ULL && isUInt<21>(val) && ((val & 0x3) == 0) && insProperty->hasTransform(TT_NANOMIPS_GPREL32_WORD, reloc.type))
+        return insProperty->getTransformTemplate(TT_NANOMIPS_GPREL32_WORD, reloc.type);
+      break;
+    }
+    case R_NANOMIPS_GPREL17_S1:
+    {
+      uint64_t val = valueToRelocate;
+      if(gpVal == -1ULL || (isUInt<18>(val) && ((val & 0x1) == 0)))
+        return nullptr;
+      break;
+    }
+    case R_NANOMIPS_PC10_S1:
+    {
+      uint64_t val = valueToRelocate - 2;
+      if(isInt<11>(val) && ((val & 0x1) == 0))
         return nullptr;
       break;
     }
@@ -784,6 +853,8 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
     case R_NANOMIPS_PC_I32:
       return insProperty->getTransformTemplate(TT_NANOMIPS_IMM48_FIX, reloc.type);
     case R_NANOMIPS_GPREL19_S2:
+    case R_NANOMIPS_GPREL18:
+    case R_NANOMIPS_GPREL17_S1:
       if(insProperty->getName().contains("addiu"))
       {
         // Transforms for addiu[gp.w] and addiu[gp.b]
@@ -808,6 +879,8 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
             insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type) :
             insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type);
       }
+    case R_NANOMIPS_PC10_S1:
+      return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32, reloc.type);
     default:
       // Should be unreachable when all relocs are processed
       LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);
@@ -831,7 +904,7 @@ void NanoMipsTransformController::initState()
   return;
 }
 
-void NanoMipsTransformController::changeState()
+void NanoMipsTransformController::changeState(int pass)
 {
   if(this->currentState->getChangedThisIteration()) 
   {
@@ -847,7 +920,7 @@ void NanoMipsTransformController::changeState()
     return;
   }
 
-  if(this->currentState->getChanged() && this->currentState->getType() == NanoMipsTransform::TransformExpand && config->relax)
+  if(this->currentState->getChanged() && this->currentState->getType() == NanoMipsTransform::TransformExpand && config->relax && pass < relaxPassLimit)
   {
     this->currentState->resetChanged();
     this->currentState = &this->transformRelax;

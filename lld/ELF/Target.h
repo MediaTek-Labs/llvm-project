@@ -121,6 +121,11 @@ public:
     return false;
   }
 
+  // Used for finalizing and cleanup of relax info
+  virtual void finalizeRelaxations() const
+  {
+  }
+
   unsigned defaultCommonPageSize = 4096;
   unsigned defaultMaxPageSize = 4096;
 

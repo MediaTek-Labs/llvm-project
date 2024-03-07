@@ -29,6 +29,10 @@
 
 namespace lld {
 namespace elf{
+
+  struct NanoMipsRelaxAux {
+    uint32_t prevBytesDropped;
+  };
   
   class NanoMipsRelocProperty;
   // Should be used only by NanoMips target, contains NanoMips reloc properties
@@ -343,7 +347,7 @@ namespace elf{
       NanoMipsTransformController(const NanoMipsInsPropertyTable *tbl): transformRelax(tbl), transformExpand(tbl), transformNone(tbl), currentState(&transformNone){}
 
       void initState();
-      void changeState();
+      void changeState(int pass);
 
       NanoMipsContextProperties& getContextProperties() const { return this->currentState->contextProperties; }
 
@@ -360,13 +364,17 @@ namespace elf{
       { this->currentState->transform(reloc, transformTemplate, insProperty, relocProperty, isec, insn, relNum); }
 
       auto &getNewInsns() const { return this->currentState->getNewInsns(); }
+
+      bool isNone() const { return &transformNone == currentState; }
     private:
       NanoMipsTransformRelax transformRelax;
       NanoMipsTransformExpand transformExpand;
       NanoMipsTransformNone transformNone;
       // This should be declared after transforms
       NanoMipsTransform *currentState;
-
+      // There can be an infinite loop between relax and expand
+      // so relaxations are limited to only work up until 10 passes total
+      const int relaxPassLimit = 10;
 
   };
 

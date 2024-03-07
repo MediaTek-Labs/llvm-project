@@ -187,7 +187,7 @@ void InputSectionBase::addBytes(uint64_t location, uint32_t count)
       std::lock_guard<std::mutex> lock(mu);
       // TODO: Check if this can eat up a lot of memory
       // as bptr allocator only allocates, it doesn't free
-    // the memory
+      // the memory
       increasedData = bAlloc.Allocate<uint8_t>(size);
     }
 

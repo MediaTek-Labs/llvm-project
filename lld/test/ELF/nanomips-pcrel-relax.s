@@ -54,6 +54,11 @@
 # CHECK-NMF-PCREL: a8c5{{.*}} bltuc {{.*}} <__skip_bc__{{[0-9]*}}>
 # CHECK-NMF-PCREL: 88c5{{.*}} bgeuc {{.*}} <__skip_bc__{{[0-9]*}}>
 
+# CHECK-NMF-PCREL: 2a{{.*}} balc {{.*}} <pc10_far
+# CHECK-NMF-PCREL-NEXT: 28{{.*}} bc {{.*}} <pc10_far_a>
+# CHECK-NMF-PCREL-NEXT: 3{{.*}} balc {{.*}} <pc10_far_a>
+# CHECK-NMF-PCREL-NEXT: 1{{.*}} bc {{.*}} <pc10_far_a>
+
 # Will only check differences from others from now on
 
 # CHECK-INSN32: 88e6{{.*}} beqc {{.*}} <fun>
@@ -176,3 +181,36 @@ pc14_far:
     addiu $a1, $a2, 1
     .end pc14_far
     .size pc14_far, .-pc14_far
+
+
+# expand R_NANOMIPS_PC10_S1 + relax R_NANOMIPS_PC25_S1
+# First there is a relaxation to 16bit version then there is an expansion
+
+    .section .expand_pc10_sec, "ax", @progbits
+    .align 1
+    .globl expand_pc10
+    .ent expand_pc10
+
+expand_pc10:
+    balc pc10_far_a-4
+    bc pc10_far_a
+    # pc10_far_a is not far for next two
+    # as pc has moved
+    balc pc10_far_a
+    bc pc10_far_a
+
+    .end expand_pc10
+    .size expand_pc10, .-expand_pc10
+
+    .section .pc10_far_sec, "ax", @progbits
+    .align 1
+    .globl pc10_far
+    .ent pc10_far
+
+pc10_far:
+    lapc $a1, pc10_far_sec_lapc_far
+pc10_far_a:
+    addiu $a1, $a2, 1
+    .end pc10_far
+    .size pc10_far, .-pc10_far
+

@@ -18,6 +18,7 @@
 #include "llvm/Support/Endian.h"
 #include "Arch/NanoMipsProperties.h"
 #include "SyntheticSections.h"
+#include "lld/Common/Memory.h"
 
 using namespace llvm::object;
 using namespace llvm::ELF;
@@ -133,7 +134,9 @@ private:
 
     // relax + expand
     void transform(InputSection *sec) const;
+    void initTransformAuxInfo() const;
     void align(InputSection *sec, Relocation &reloc, uint32_t relNum) const;
+    void finalizeRelaxations() const override;
     // bool relax(InputSection *sec) const;
     // bool expand(InputSection *sec) const;
 };
@@ -351,9 +354,11 @@ void NanoMips<ELFT>::relocate(uint8_t *loc, const Relocation &rel, uint64_t val)
     writePcRel16(loc, val - 2, 7);
     break;
   case R_NANOMIPS_PC25_S1:
+    {
     checkIntPcRel(loc, val - 4, 26, rel, *rel.sym);
     writePcRel32<ELFT::TargetEndianness>(loc, val - 4, 25);
     break;
+    }
   case R_NANOMIPS_PC21_S1:
     checkIntPcRel(loc, val - 4, 22, rel, *rel.sym);
     writePcRel32<ELFT::TargetEndianness>(loc, val - 4, 21);
@@ -419,6 +424,11 @@ bool NanoMips<ELFT>::safeToModify(InputSection *sec) const
 template <class ELFT>
 bool NanoMips<ELFT>::relaxOnce(int pass) const
 {
+  if(pass == 0)
+  {
+    initTransformAuxInfo();
+  }
+  if(this->currentTransformation.isNone()) return false;
   LLVM_DEBUG(llvm::dbgs() << "Transformation Pass num: " << pass << "\n";);
   // TODO: Should full nanoMips ISA be checked as full or per obj, as it is checked
   bool changed = false;
@@ -440,7 +450,7 @@ bool NanoMips<ELFT>::relaxOnce(int pass) const
     }
 
     changed = this->currentTransformation.shouldRunAgain();
-    const_cast<NanoMipsTransformController &>(this->currentTransformation).changeState();
+    const_cast<NanoMipsTransformController &>(this->currentTransformation).changeState(pass);
     // if(!changed && config->expand && this->currentTransformState->getType() == NanoMipsTransform::TransformRelax)
     // {
     //   // Set changed to true to initiate a round of expansion transformations
@@ -542,6 +552,27 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
 }
 
 template <class ELFT>
+void NanoMips<ELFT>::initTransformAuxInfo() const
+{
+  // Storage is used in higher llvms
+  SmallVector<InputSection *, 0> storage;
+  for(OutputSection *osec: outputSections)
+  {
+    if((osec->flags & (SHF_EXECINSTR | SHF_ALLOC)) != (SHF_EXECINSTR | SHF_ALLOC) ||
+          !(osec->type & SHT_PROGBITS))
+          continue;
+    
+    for(InputSection *sec : getInputSections(osec))
+    {
+      if(!this->safeToModify(sec) || sec->numRelocations == 0) continue;
+      sec->nanoMipsRelaxAux = make<NanoMipsRelaxAux>();
+      sec->nanoMipsRelaxAux->prevBytesDropped = sec->bytesDropped;
+      sec->bytesDropped = 0;
+    }
+  }
+}
+
+template <class ELFT>
 void NanoMips<ELFT>::align(InputSection *sec, Relocation &reloc, uint32_t relNum) const
 {
   // TODO: Maybe change this so we get them from InsProperties somehow
@@ -631,6 +662,30 @@ void NanoMips<ELFT>::align(InputSection *sec, Relocation &reloc, uint32_t relNum
   }
 }
 
+template <class ELFT>
+void NanoMips<ELFT>::finalizeRelaxations() const {
+  // Return previous bytesDropped values
+  // and change array ref sizes
+   // Storage is used in higher llvms
+  SmallVector<InputSection *, 0> storage;
+  for(OutputSection *osec: outputSections)
+  {
+    if((osec->flags & (SHF_EXECINSTR | SHF_ALLOC)) != (SHF_EXECINSTR | SHF_ALLOC) ||
+          !(osec->type & SHT_PROGBITS))
+          continue;
+    
+    for(InputSection *sec : getInputSections(osec))
+    {
+      if(!this->safeToModify(sec) || sec->numRelocations == 0) continue;
+      // This means we have more bytes than needed, shorten the array ref
+      if(sec->bytesDropped)
+      {
+        sec->setRawData(sec->data().drop_back(sec->bytesDropped));
+      }
+      sec->bytesDropped = sec->nanoMipsRelaxAux->prevBytesDropped;
+    }
+  }
+}
 
 // bool NanoMips::relax(InputSection *sec) const {
 

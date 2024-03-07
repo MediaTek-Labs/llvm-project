@@ -1,7 +1,7 @@
 # RUN: llvm-mc -triple=nanomips-elf -mattr=+mt -show-encoding < %s \
 # RUN:   | FileCheck %s
 # RUN: llvm-mc -filetype=obj -triple nanomips-elf -mattr=+mt %s -o - \
-# RUN:   | llvm-objdump --triple nanomips-elf --mattr=+mt -dr - | FileCheck --check-prefixes DISAS %s
+# RUN:   | llvm-objdump --no-print-imm-hex --triple nanomips-elf --mattr=+mt -dr - | FileCheck --check-prefixes DISAS %s
   dmt                       # CHECK:  dmt                        # encoding: [0x01,0x20,0xb0,0x0a]
                             # DISAS: {{.*}}: 01 20 b0 0a    dmt
   dmt $a1                   # CHECK:  dmt $a1                    # encoding: [0xa1,0x20,0xb0,0x0a]

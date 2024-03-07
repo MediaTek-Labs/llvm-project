@@ -12,7 +12,7 @@
 #
 # RUN: llvm-mc %s -triple=nanomips-elf -show-encoding -show-inst 2> %t0 | FileCheck %s
 # RUN: llvm-mc -filetype=obj -triple nanomips-elf %s -o - \
-# RUN:   | llvm-objdump --triple nanomips-elf -dr - | FileCheck --check-prefixes DISAS %s
+# RUN:   | llvm-objdump --no-print-imm-hex --triple nanomips-elf -dr - | FileCheck --check-prefixes DISAS %s
 	.text
 	# CHECK: .text
 	.set noat

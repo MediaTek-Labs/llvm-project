@@ -595,6 +595,10 @@ bool NMLoadStoreOpt::generateLoadStoreMultiple(MachineBasicBlock &MBB,
 // Check if the instruction is lw, sw or addiu with Reg as second operand.
 static bool isValidUse(MachineInstr *MI, Register Reg) {
   switch (MI->getOpcode()) {
+  case Mips::ADDIU48_NM:
+    if (!MI->getOperand(2).isImm())
+      return false;
+  LLVM_FALLTHROUGH;
   case Mips::SB_NM:
   case Mips::LB_NM:
   case Mips::LBU_NM:
@@ -611,7 +615,6 @@ static bool isValidUse(MachineInstr *MI, Register Reg) {
   case Mips::SHs9_NM:
   case Mips::LHs9_NM:
   case Mips::LHUs9_NM:
-  case Mips::ADDIU48_NM:
   case Mips::ADDIU_NM:
   case Mips::ADDIUNEG_NM:
     return MI->getOperand(1).getReg() == Reg;

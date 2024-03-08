@@ -488,7 +488,7 @@ if config.libcxx_used:
     config.available_features.add("libcxx-used")
 
 # Direct object generation
-if (not 'nanomips' in config.target_triple):
+if (not config.target_triple.startswith('nanomips')):
     config.available_features.add('object-emission')
 
 # Integrated assembler
@@ -500,7 +500,7 @@ if not 'nanomips' in config.target_triple:
 if config.target_triple:
     config.available_features.add("default_triple")
     # Direct object generation
-    if not config.target_triple.startswith(("nvptx", "xcore")):
+    if not config.target_triple.startswith(("nvptx", "xcore", "nanomips")):
         config.available_features.add("object-emission")
 
 if config.have_llvm_driver:

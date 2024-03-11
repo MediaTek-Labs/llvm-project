@@ -59,6 +59,11 @@
 # CHECK-NMF-PCREL-NEXT: 3{{.*}} balc {{.*}} <pc10_far_a>
 # CHECK-NMF-PCREL-NEXT: 1{{.*}} bc {{.*}} <pc10_far_a>
 
+# CHECK-NMF-PCREL: 88a0{{.*}} beqzc {{.*}}<pc7_far
+# CHECK-NMF-PCREL-NEXT: a8a0{{.*}} bnezc {{.*}}<pc7_far_a>
+# CHECK-NMF-PCREL-NEXT: 9af{{.*}} beqzc {{.*}} <pc7_far_a>
+# CHECK-NMF-PCREL-NEXT: baf{{.*}} bnezc {{.*}} <pc7_far_a>
+
 # Will only check differences from others from now on
 
 # CHECK-INSN32: 88e6{{.*}} beqc {{.*}} <fun>
@@ -195,7 +200,8 @@ expand_pc10:
     balc pc10_far_a-4
     bc pc10_far_a
     # pc10_far_a is not far for next two
-    # as pc has moved
+    # as pc has moved, if lapc expands
+    # to 6byte lapc
     balc pc10_far_a
     bc pc10_far_a
 
@@ -213,4 +219,34 @@ pc10_far_a:
     addiu $a1, $a2, 1
     .end pc10_far
     .size pc10_far, .-pc10_far
+
+# expand R_NANOMIPS_PC7_S1, after relaxing R_NANOMIPS_PC_14_S1
+
+    .section .expand_pc7_sec, "ax", @progbits
+    .align 1
+    .globl expand_pc7
+    .ent expand_pc7
+    
+expand_pc7:
+    beqzc $a1, pc7_far_a-4
+    bnezc $a1, pc7_far_a
+    # pc7_far is not far for next two
+    # if lapc expands to 6byte lapc
+    beqzc $a1, pc7_far_a
+    bnezc $a1, pc7_far_a
+
+    .end expand_pc7
+    .size expand_pc7, .-expand_pc7
+
+    .section .pc7_far_sec, "ax", @progbits
+    .align 1
+    .globl pc7_far
+    .ent pc7_far
+
+pc7_far:
+    lapc $a1, pc7_far_sec_lapc_far
+pc7_far_a:
+    addiu $a1, $a2, 1
+    .end pc7_far
+    .size pc7_far, .-pc7_far
 

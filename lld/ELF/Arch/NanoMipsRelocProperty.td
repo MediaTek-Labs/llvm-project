@@ -37,10 +37,10 @@ def PC_I32 : RelocProperty48HI6LO5<32>;
 def GPREL19_S2: RelocProperty32<21, 0xfc000003>;
 def GPREL18: RelocProperty32<18, 0xfc1c0000>;
 def GPREL17_S1: RelocProperty32<18, 0xfc1c0001>;
-// Currently doing
 def PC10_S1: RelocProperty16HI6<11>;
-// The next need to be worked on
 def PC7_S1: RelocProperty16HI6<8>;
+// Currently doing
+// The next need to be worked on
 def PC25_S1: RelocProperty32<26, 0xfe000000>;
 def I32: RelocProperty48HI6LO5<32>;
 def PC_HI20: RelocProperty32NoMask<20>;
@@ -318,6 +318,8 @@ def BC16_P: InstructionProperty16NoConv<BC16, ?, ?>;
 def BALC16_P: InstructionProperty16NoConv<BALC16, ?, ?>;
 def BC32_P: InstructionProperty32NoValid<BC32, ?, ?>;
 def BALC32_P: InstructionProperty32NoValid<BALC32, ?, ?>;
+def BEQZC16_P: InstructionProperty16<BEQZC16, ExtractReg<7, 3>, convertReg, ?, ?>;
+def BNEZC16_P: InstructionProperty16<BNEZC16, ExtractReg<7, 3>, convertReg, ?, ?>;
 
 // -------------------------- End InstructionProperty --------------------------
 
@@ -441,5 +443,9 @@ def : TransformationTemplate<TT_PCREL32, BALC16_P, (relocs PC10_S1), (insns BALC
 def : TransformationTemplate<TT_PCREL16, BC32_P, (relocs PC25_S1), (insns BC16_T<>)>;
 
 def : TransformationTemplate<TT_PCREL16, BALC32_P, (relocs PC25_S1), (insns BALC16_T<>)>;
+
+def : TransformationTemplate<TT_PCREL32, BEQZC16_P, (relocs PC7_S1), (insns BEQC32_T<>)>;
+
+def : TransformationTemplate<TT_PCREL32, BNEZC16_P, (relocs PC7_S1), (insns BNEC32_T<>)>;
 
 // ------------------------ End TransformationTemplate -------------------------

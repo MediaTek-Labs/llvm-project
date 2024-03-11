@@ -441,8 +441,9 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
     {
       if(isa<Defined>(sym))
       {
-        auto dSym = cast<Defined>(sym);
-        if(sym->getOutputSection() && sym->getOutputSection()->sectionIndex == isec->getOutputSection()->sectionIndex)
+        auto *dSym = cast<Defined>(sym);
+        auto *symSec = dyn_cast_or_null<InputSection>(dSym->section);
+        if(symSec && symSec == isec)
         {
           if(dSym->value >= location)
           {
@@ -529,6 +530,12 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
     case R_NANOMIPS_PC10_S1:
     {
       tReg = 0;
+      sReg = 0;
+      break;
+    }
+    case R_NANOMIPS_PC7_S1:
+    {
+      tReg = insProperty->convTReg(insn);
       sReg = 0;
       break;
     }
@@ -739,6 +746,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
     case R_NANOMIPS_GPREL18:
     case R_NANOMIPS_GPREL17_S1:
     case R_NANOMIPS_PC10_S1:
+    case R_NANOMIPS_PC7_S1:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -813,6 +821,13 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
         return nullptr;
       break;
     }
+    case R_NANOMIPS_PC7_S1:
+    {
+      uint64_t val = valueToRelocate - 2;
+      if(isInt<8>(val) && ((val & 0x1) == 0))
+        return nullptr;
+      break;
+    }
     default:
     // TODO: Should be unreachable when all relocs are processed
     LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);
@@ -880,6 +895,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
             insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type);
       }
     case R_NANOMIPS_PC10_S1:
+    case R_NANOMIPS_PC7_S1:
       return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32, reloc.type);
     default:
       // Should be unreachable when all relocs are processed

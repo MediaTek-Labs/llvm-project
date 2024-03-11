@@ -464,6 +464,7 @@ bool NanoMips<ELFT>::relaxOnce(int pass) const
 template <class ELFT>
 void NanoMips<ELFT>::transform(InputSection *sec) const 
 {
+  // TODO: Check undef weak symbols, seems like they are producing bad output in out files
   NanoMipsContextProperties &contextProperties = this->currentTransformation.getContextProperties();
   contextProperties.fullNanoMipsISA = NanoMipsAbiFlagsSection<ELFT>::get()->isFullNanoMipsISA(sec);
   auto *obj = sec->getFile<ELFT>();
@@ -521,6 +522,9 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
     // TODO: Return to this later, and see if somethings need to be fixed
 
     // TODO: Undef weak symbols
+    // Ignore undef weak symbols
+    if(reloc.sym && reloc.sym->isUndefWeak())
+      continue;
     const NanoMipsTransformTemplate *transformTemplate = this->currentTransformation.getTransformTemplate(insProperty, reloc, valueToRelocate, insn, sec);
 
     if(!transformTemplate) continue;

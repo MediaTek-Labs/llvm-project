@@ -12,7 +12,7 @@ entry:
   %1 = bitcast i32* %local to i8*
   %2 = bitcast [100 x i32]* %__pad1 to i8*
   store i32 0, i32* %local, align 4
-  call void asm sideeffect "", "*m,*m,*m,~{$1}"([100 x i32]* nonnull %__pad0, i32* nonnull %local, [100 x i32]* nonnull %__pad1)
+  call void asm sideeffect "", "*m,*m,*m,~{$1}"(ptr nonnull elementtype([100 x i32]) %__pad0, ptr nonnull elementtype(i32) %local, ptr nonnull elementtype([100 x i32]) %__pad1)
   ret void
 }
 

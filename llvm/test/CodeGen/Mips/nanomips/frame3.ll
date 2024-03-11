@@ -11,6 +11,7 @@ define dso_local void @foo() local_unnamed_addr {
 ; CHECK-NEXT:    .cfi_offset 18, -12
 ; CHECK-NEXT:    addiu $sp, $sp, -32
 ; CHECK-NEXT:    .cfi_def_cfa_offset 4112
+; CHECK-NEXT:	 addiu $a0, $sp, 4
 ; CHECK-NEXT:    #APP
 ; CHECK-NEXT:    #NO_APP
 ; CHECK-NEXT:    addiu $sp, $sp, 32
@@ -18,6 +19,6 @@ define dso_local void @foo() local_unnamed_addr {
 entry:
   %__tmp = alloca [4096 x i8], align 1
   %0 = getelementptr inbounds [4096 x i8], [4096 x i8]* %__tmp, i32 0, i32 0
-  call void asm sideeffect "", "*m,~{$16},~{$17},~{$18},~{$1}"([4096 x i8]* nonnull %__tmp)
+  call void asm sideeffect "", "*m,~{$16},~{$17},~{$18},~{$1}"(ptr nonnull elementtype([4096 x i8]) %__tmp)
   ret void
 }

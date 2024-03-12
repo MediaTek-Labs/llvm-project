@@ -32,6 +32,7 @@ def NONE : RelocProperty<0, 0, 0>;
 def ALIGN : RelocProperty<0, 0, 0>;
 def PC4_S1 : RelocProperty16HI6<5>;
 def PC14_S1 : RelocProperty32<15, 0xfc00c000>;
+// PC21_S1 discard for gpsetup remaining
 def PC21_S1 : RelocProperty32<22, 0xfc000000>;
 def PC_I32 : RelocProperty48HI6LO5<32>;
 def GPREL19_S2: RelocProperty32<21, 0xfc000003>;
@@ -40,6 +41,7 @@ def GPREL17_S1: RelocProperty32<18, 0xfc1c0001>;
 def PC10_S1: RelocProperty16HI6<11>;
 def PC7_S1: RelocProperty16HI6<8>;
 // Currently doing
+def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
 // The next need to be worked on
 def PC25_S1: RelocProperty32<26, 0xfe000000>;
 def I32: RelocProperty48HI6LO5<32>;
@@ -82,6 +84,10 @@ def isStoreSrcRegValid: IsRegValid;
 
 def moveBalcTReg: ExtractReg<?, ?>;
 def moveBalcSReg: ExtractReg<?, ?>;
+def extractSaveResFields: ExtractReg<?, ?>;
+
+def insertSaveResFields: InsertReg<?, ? ,?>;
+def insertSaveRes16Fields: InsertReg<?, ?, ?>;
 
 class InstructionIdentifier<string name, bits<64> opcode>
 {
@@ -218,6 +224,15 @@ def SH32: InstructionIdentifier<"lhu", 0x84005000>;
 def BALC16: InstructionIdentifier<"balc[16]", 0x3800>;
 def BC16: InstructionIdentifier<"bc[16]", 0x1800>;
 
+def RESTOREGP: InstructionIdentifier<"restore[gp]", 0x80003006>;
+def RESTOREJRCGP: InstructionIdentifier<"restore.jrc[gp]", 0x80003007>;
+def RESTORE32: InstructionIdentifier<"restore", 0x80003002>;
+def RESTOREJRC32: InstructionIdentifier<"restore.jrc", 0x80003003>;
+def RESTOREJRC16: InstructionIdentifier<"restore.jrc[16]", 0x1d00>;
+def SAVEGP: InstructionIdentifier<"save[gp]", 0x80003004>;
+def SAVE32: InstructionIdentifier<"save", 0x80003000>;
+def SAVE16: InstructionIdentifier<"save[16]", 0x1c00>;
+
 // ------------------------- End InstructionIdentifier -------------------------
 
 // ---------------------------- InstructionTemplate ----------------------------
@@ -273,6 +288,12 @@ class LWGP16_T: InstructionTemplate16<LWGP16, GPREL7_S2, InsertReg<7, 3, TREG>, 
 class SWGP16_T: InstructionTemplate16<SWGP16, GPREL7_S2, InsertReg<7, 3, TREG>, ?>;
 
 class ADDUGP_T<RegKind treg, RegKind sreg>: InstructionTemplate32<ADDUGP, NONE, InsertReg<16, 5, treg>, InsertReg<11, 5, sreg>>;
+// Here, treg is actually count
+class RESTORE32_T: InstructionTemplate32<RESTORE32, NONE, InsertReg<16, 4, TREG>, insertSaveResFields>;
+class RESTOREJRC32_T: InstructionTemplate32<RESTOREJRC32, NONE, InsertReg<16, 4, TREG>, insertSaveResFields>;
+class RESTOREJRC16_T: InstructionTemplate16<RESTOREJRC16, NONE, InsertReg<0, 4, TREG>, insertSaveRes16Fields>;
+class SAVE32_T: InstructionTemplate32<SAVE32, NONE, InsertReg<16, 4, TREG>, insertSaveResFields>;
+class SAVE16_T: InstructionTemplate16<SAVE16, NONE, InsertReg<0, 4, TREG>, insertSaveRes16Fields>;
 
 class ADDIUGPB32_T: InstructionTemplate32<ADDIUGPB32, GPREL18, InsertReg<21, 5, TREG>, ?>;
 class LBGP32_T: InstructionTemplate32<LBGP32, GPREL18, InsertReg<21, 5, TREG>, ?>;
@@ -321,6 +342,11 @@ def BALC32_P: InstructionProperty32NoValid<BALC32, ?, ?>;
 def BEQZC16_P: InstructionProperty16<BEQZC16, ExtractReg<7, 3>, convertReg, ?, ?>;
 def BNEZC16_P: InstructionProperty16<BNEZC16, ExtractReg<7, 3>, convertReg, ?, ?>;
 
+// Extract reg -> extracts count in save/restore
+def RESTOREGP_P: InstructionProperty32<RESTOREGP, ExtractReg<16, 4>, ?, extractSaveResFields, ?>;
+def RESTOREJRCGP_P: InstructionProperty32<RESTOREJRCGP, ExtractReg<16, 4>, ?, extractSaveResFields, ?>;
+def SAVEGP_P: InstructionProperty32<SAVEGP, ExtractReg<16, 4>, ?, extractSaveResFields, ?>;
+
 // -------------------------- End InstructionProperty --------------------------
 
 // ---------------------------- TransformationType -----------------------------
@@ -343,6 +369,8 @@ def TT_GPREL32_NMF: TransformationType;
 def TT_GPREL_LONG: TransformationType;
 def TT_GPREL_NMF: TransformationType;
 def TT_GPREL32_WORD: TransformationType;
+
+def TT_SAVERESTORE16: TransformationType;
 
 // -------------------------- End TransformationType ---------------------------
 
@@ -447,5 +475,14 @@ def : TransformationTemplate<TT_PCREL16, BALC32_P, (relocs PC25_S1), (insns BALC
 def : TransformationTemplate<TT_PCREL32, BEQZC16_P, (relocs PC7_S1), (insns BEQC32_T<>)>;
 
 def : TransformationTemplate<TT_PCREL32, BNEZC16_P, (relocs PC7_S1), (insns BNEC32_T<>)>;
+
+def : TransformationTemplate<TT_DISCARD, RESTOREGP_P, (relocs SAVERESTORE), (insns RESTORE32_T<>)>;
+
+def : TransformationTemplate<TT_DISCARD, RESTOREJRCGP_P, (relocs SAVERESTORE), (insns RESTOREJRC32_T<>)>;
+def : TransformationTemplate<TT_SAVERESTORE16, RESTOREJRCGP_P, (relocs SAVERESTORE), (insns RESTOREJRC16_T<>)>;
+
+def : TransformationTemplate<TT_DISCARD, SAVEGP_P, (relocs SAVERESTORE), (insns SAVE32_T<>)>;
+def : TransformationTemplate<TT_SAVERESTORE16, SAVEGP_P, (relocs SAVERESTORE), (insns SAVE16_T<>)>;
+
 
 // ------------------------ End TransformationTemplate -------------------------

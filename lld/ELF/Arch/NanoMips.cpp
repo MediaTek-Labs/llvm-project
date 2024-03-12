@@ -275,7 +275,8 @@ RelExpr NanoMips<ELFT>::getRelExpr(RelType type, const Symbol &s,
   case R_NANOMIPS_ALIGN:
   case R_NANOMIPS_MAX:
   case R_NANOMIPS_FILL:
-    // Used to save R_NANOMIPS_ALIGN in relocation vector
+  case R_NANOMIPS_SAVERESTORE:
+    // Used to save R_NANOMIPS_ALIGN, R_NANOMIPS_SAVERESTORE in relocation vector
     // TODO: See if this is only needed for relaxations and expansions
     // so maybe it could be relaxed to R_NONE in that case
     return R_RELAX_HINT;
@@ -311,6 +312,7 @@ void NanoMips<ELFT>::relocate(uint8_t *loc, const Relocation &rel, uint64_t val)
   case R_NANOMIPS_INSN32:
   case R_NANOMIPS_FILL:
   case R_NANOMIPS_MAX:
+  case R_NANOMIPS_SAVERESTORE:
     break;
   case R_NANOMIPS_UNSIGNED_16:
     checkUInt(loc, val, 16, rel);
@@ -424,11 +426,11 @@ bool NanoMips<ELFT>::safeToModify(InputSection *sec) const
 template <class ELFT>
 bool NanoMips<ELFT>::relaxOnce(int pass) const
 {
+  if(this->currentTransformation.isNone()) return false;
   if(pass == 0)
   {
     initTransformAuxInfo();
   }
-  if(this->currentTransformation.isNone()) return false;
   LLVM_DEBUG(llvm::dbgs() << "Transformation Pass num: " << pass << "\n";);
   // TODO: Should full nanoMips ISA be checked as full or per obj, as it is checked
   bool changed = false;

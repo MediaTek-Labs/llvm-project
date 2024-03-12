@@ -101,6 +101,32 @@ static bool valueNeedsHw110880Fix(uint64_t val)
   return ((val & 0x50016400) == 0x50012400) && (((val >> 24) & 0x7) == 0x1 || ((val >> 24) & 0x2) == 0x2);
 }
 
+// Return rt and u[11:3] fields from nanoMIPS save/restore instruction
+
+uint32_t extractSaveResFields(uint64_t data)
+{
+  return (((data >> 3) & 0x1ff) | ((data >> 12) & 0x3e00));
+}
+
+// Insert rt and u[11:3] fields in nanoMIPS save/restore instruction
+// sreg contains fields
+uint64_t insertSaveResFields(uint32_t treg, uint32_t sreg, uint64_t data)
+{
+  uint32_t u = ((sreg & 0x1ff) << 3);
+  uint32_t rt = ((sreg & 0x3e00) << 12);
+  return (data | rt | u); 
+}
+
+// Insert rt and u[7:4] fields in nanoMIPS save[16]/restore.jrc[16] instruction
+// sreg contains fields
+uint64_t insertSaveRes16Fields(uint32_t treg, uint32_t sreg, uint64_t data)
+{
+  uint32_t u = ((sreg & 0x1ff) << 3);
+  uint32_t rt = ((sreg & 0x3e00) >> 9);
+  uint32_t rt1 = (rt == 30) ? 0 : (1U << 9);
+  return (data | rt1 | u);
+}
+
 // NanoMipsRelocPropertyTable
 
 NanoMipsRelocPropertyTable::NanoMipsRelocPropertyTable()

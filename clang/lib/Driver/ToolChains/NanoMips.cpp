@@ -200,6 +200,8 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
       if (OnlyLibstdcxxStatic)
         CmdArgs.push_back("-Bstatic");
       ToolChain.AddCXXStdlibLibArgs(Args, CmdArgs);
+      if (ToolChain.GetCXXStdlibType(Args) == ToolChain::CST_Libcxx)
+	CmdArgs.push_back("-lc++abi");
       if (OnlyLibstdcxxStatic)
         CmdArgs.push_back("-Bdynamic");
     }
@@ -298,4 +300,12 @@ void NanoMips::AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
     addSystemInclude(DriverArgs, CC1Args, GCCInstallation.getInstallPath() + "/include");
   }
 
+  if (DriverArgs.hasArg(options::OPT_nostdincxx))
+    return;
+
+  if (GetCXXStdlibType(DriverArgs) == ToolChain::CST_Libcxx) {
+    SmallString<128> Dir(getDriver().SysRoot);
+    llvm::sys::path::append(Dir, "include", "c++", "v1");
+    addSystemInclude(DriverArgs, CC1Args, Dir.str());
+  }
 }

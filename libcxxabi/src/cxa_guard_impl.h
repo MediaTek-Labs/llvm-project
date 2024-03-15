@@ -46,7 +46,7 @@
 
 #include "__cxxabi_config.h"
 #include "include/atomic_support.h" // from libc++
-#if defined(__has_include)
+#if defined(__has_include) && defined(__linux__)
 #  if __has_include(<sys/futex.h>)
 #    include <sys/futex.h>
 #  endif

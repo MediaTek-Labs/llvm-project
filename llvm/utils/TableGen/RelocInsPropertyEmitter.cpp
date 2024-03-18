@@ -75,7 +75,7 @@ namespace llvm {
 
     void emitRelocProperty(const Record *relocProperty, raw_ostream &OS)
     {
-
+        const Init *InsMaskInit = relocProperty->getValue("InsMask")->getValue();
         OS << RELOC_MACRO_BEGIN
         << relocProperty->getName()
         << COMMA_SPACE
@@ -83,7 +83,7 @@ namespace llvm {
         << COMMA_SPACE
         << relocProperty->getValue("BitsToRelocate")->getValue()->getAsString()
         << COMMA_SPACE
-        << "0x" << utohexstr(dyn_cast<IntInit>(relocProperty->getValue("InsMask")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue())
+        << "0x" << utohexstr(dyn_cast<IntInit>(InsMaskInit->convertInitializerTo(IntRecTy::get(InsMaskInit->getRecordKeeper())))->getValue())
         << MACRO_END;
 
     }
@@ -232,11 +232,12 @@ namespace llvm {
 
         Record *insId = dyn_cast<DefInit>(insProperty->getValue("InsId")->getValue())->getDef();
         std::string insName = insId->getValue("Name")->getValue()->getAsString();
+        const Init *OpcodeInit = insId->getValue("Opcode")->getValue();
         // UnsetInit, for everything unset
         OS << INS_MACRO_BEGIN
         << insName
         << COMMA_SPACE
-        << "0x" << utohexstr(dyn_cast<IntInit>(insId->getValue("Opcode")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue())
+        << "0x" << utohexstr(dyn_cast<IntInit>(OpcodeInit->convertInitializerTo(IntRecTy::get(OpcodeInit->getRecordKeeper())))->getValue())
         << COMMA_SPACE
         << getExtractRegEmission(insProperty, "ExtractTReg")
         << COMMA_SPACE
@@ -372,7 +373,8 @@ namespace llvm {
             SS2.reserveExtraSpace(128);
             const Record *insId = dyn_cast<DefInit>(argInit->getDef()->getValue("InsId")->getValue())->getDef();
             std::string insName = insId->getValue("Name")->getValue()->getAsString();
-            SS2 << "0x" << utohexstr(dyn_cast<IntInit>(insId->getValue("Opcode")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue());
+            const Init *OpcodeInit = insId->getValue("Opcode")->getValue();
+            SS2 << "0x" << utohexstr(dyn_cast<IntInit>(OpcodeInit->convertInitializerTo(IntRecTy::get(OpcodeInit->getRecordKeeper())))->getValue());
             std::string opcode = SS2.str();
             const Record *relocation = dyn_cast<DefInit>(argInit->getDef()->getValue("Relocation")->getValue())->getDef();
             std::string relocName = relocation->getName().str();
@@ -404,10 +406,12 @@ namespace llvm {
         std::string typeName = transformTypeFullName(typeInit->getDef(), arch);
         const DefInit *insPropInit = dyn_cast<DefInit>(transformTemplate->getValue("InsProp")->getValue());
         const DefInit *insIdInit = dyn_cast<DefInit>(insPropInit->getDef()->getValue("InsId")->getValue());
+        const Init *OpcodeInit = insIdInit->getDef()->getValue("Opcode")->getValue();
+
         OS << TRANSFORM_TEMPLATE_MACRO_BEGIN
         << typeName
         << COMMA_SPACE
-        << "0x" << utohexstr(dyn_cast<IntInit>(insIdInit->getDef()->getValue("Opcode")->getValue()->convertInitializerTo(IntRecTy::get()))->getValue())
+        << "0x" << utohexstr(dyn_cast<IntInit>(OpcodeInit->convertInitializerTo(IntRecTy::get(OpcodeInit->getRecordKeeper())))->getValue())
         << COMMA_SPACE
         << getRelocListEmission(transformTemplate, arch, "RelocList")
         << COMMA_SPACE

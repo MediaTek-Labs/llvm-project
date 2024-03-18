@@ -26,12 +26,22 @@
 // using namespace lld;
 // Used for relaxation purposes
 
+namespace {
+  struct SymbolAnchor {
+    // uint64_t offset;
+    lld::elf::Defined *d;
+    bool end;
+
+    SymbolAnchor(lld::elf::Defined *defined, bool e): d(defined), end(e) {}
+  };
+}
 
 namespace lld {
 namespace elf{
 
   struct NanoMipsRelaxAux {
     uint32_t prevBytesDropped;
+    SmallVector<SymbolAnchor, 0> anchors;
   };
   
   class NanoMipsRelocProperty;

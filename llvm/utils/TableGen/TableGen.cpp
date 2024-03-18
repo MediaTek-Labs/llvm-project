@@ -286,6 +286,7 @@ bool LLVMTableGenMain(raw_ostream &OS, RecordKeeper &Records) {
     break;
   case GenRISCVTargetDef:
     EmitRISCVTargetDef(Records, OS);
+    break;
   case GenRelocInsProperty:
     EmitRelocInsProperties(Records, OS);
     break;

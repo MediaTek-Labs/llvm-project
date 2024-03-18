@@ -442,11 +442,11 @@ bool NanoMips<ELFT>::relaxOnce(int pass) const
           !(osec->type & SHT_PROGBITS))
           continue;
       // TODO: There are null input sections, sections in gold, see what's up with that later
-      for(InputSection *sec : getInputSections(osec))
+      SmallVector<InputSection *, 0> storage;
+      for(InputSection *sec : getInputSections(*osec, storage))
       {
         if(!this->safeToModify(sec)) continue;
-
-        if(sec->numRelocations) this->transform(sec);
+        if(sec->relocations.size()) this->transform(sec);
 
       }
     }
@@ -499,7 +499,7 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
     uint32_t instSize = relocProp->getInstSize();
     // 48 bit instruction reloc offsets point to 32 bit imm/off not to the beginning of ins~
     uint32_t relocOffset = reloc.offset - (instSize == 6 ? 2 : 0);
-    uint64_t insn = readInsn<ELFT::TargetEndianness>(sec->data(), relocOffset, instSize);
+    uint64_t insn = readInsn<ELFT::TargetEndianness>(sec->content(), relocOffset, instSize);
 
     uint64_t insMask = relocProp->getMask();
     LLVM_DEBUG(
@@ -549,7 +549,7 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
     auto &newInsns = this->currentTransformation.getNewInsns();
     for(auto &newInsn : newInsns)
     {
-      writeInsn<ELFT::TargetEndianness>(newInsn.insn, sec->data(), newInsn.offset, newInsn.size);
+      writeInsn<ELFT::TargetEndianness>(newInsn.insn, sec->content(), newInsn.offset, newInsn.size);
     }
     newInsns.clear();
     // Finalize content?
@@ -560,7 +560,6 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
 template <class ELFT>
 void NanoMips<ELFT>::initTransformAuxInfo() const
 {
-  // Storage is used in higher llvms
   SmallVector<InputSection *, 0> storage;
   for(OutputSection *osec: outputSections)
   {
@@ -568,12 +567,31 @@ void NanoMips<ELFT>::initTransformAuxInfo() const
           !(osec->type & SHT_PROGBITS))
           continue;
     
-    for(InputSection *sec : getInputSections(osec))
+    for(InputSection *sec : getInputSections(*osec, storage))
     {
-      if(!this->safeToModify(sec) || sec->numRelocations == 0) continue;
+      if(!this->safeToModify(sec) || sec->relocations.size() == 0) continue;
       sec->nanoMipsRelaxAux = make<NanoMipsRelaxAux>();
       sec->nanoMipsRelaxAux->prevBytesDropped = sec->bytesDropped;
       sec->bytesDropped = 0;
+    }
+  }
+
+  for(InputFile *file: ctx.objectFiles)
+  {
+    for(Symbol *sym : file->getSymbols())
+    {
+      auto *d = dyn_cast<Defined>(sym);
+      if(!d || d->file != file) continue;
+      if(auto *sec = dyn_cast_or_null<InputSection>(d->section))
+      {
+        if((sec->flags & (SHF_EXECINSTR | SHF_ALLOC)) != (SHF_EXECINSTR | SHF_ALLOC) ||
+          !(sec->type & SHT_PROGBITS) || !sec->nanoMipsRelaxAux || !this->safeToModify(sec) ||
+          sec->relocations.size() == 0) continue;
+        
+        sec->nanoMipsRelaxAux->anchors.push_back({d, false});
+        if(d->size > 0)
+          sec->nanoMipsRelaxAux->anchors.push_back({d, true});
+      }
     }
   }
 }
@@ -632,10 +650,10 @@ void NanoMips<ELFT>::align(InputSection *sec, Relocation &reloc, uint32_t relNum
   // to replace it with nop16 instruction
   if(count < 0 && newPadding >= 2)
   {
-    uint64_t insn = readInsn<ELFT::TargetEndianness>(sec->data(), reloc.offset + newPadding - 2, 4);
+    uint64_t insn = readInsn<ELFT::TargetEndianness>(sec->content(), reloc.offset + newPadding - 2, 4);
     if(insn == nop32)
     {
-      writeInsn<ELFT::TargetEndianness>(nop16, sec->data(), reloc.offset + newPadding - 2, 2);
+      writeInsn<ELFT::TargetEndianness>(nop16, sec->content(), reloc.offset + newPadding - 2, 2);
       LLVM_DEBUG(
       llvm::dbgs() << "nop[32] is replaced with nop[16] due to new alignment on offset " << reloc.offset + newPadding - 2 
                 << " in section " << sec->name << " from obj " << (sec->file ? sec->file->getName() : "None") << "\n";
@@ -661,9 +679,9 @@ void NanoMips<ELFT>::align(InputSection *sec, Relocation &reloc, uint32_t relNum
     {
       // This shouldn't really happen among instructions
       if(fillSize == 1)
-        write8(const_cast<uint8_t *>(sec->data().begin()) + reloc.offset + oldPadding + i, fill);
+        write8(const_cast<uint8_t *>(sec->content().begin()) + reloc.offset + oldPadding + i, fill);
       else
-        writeInsn<ELFT::TargetEndianness>(fill, sec->data(), reloc.offset + oldPadding + i, fillSize);
+        writeInsn<ELFT::TargetEndianness>(fill, sec->content(), reloc.offset + oldPadding + i, fillSize);
     }
   }
 }
@@ -672,7 +690,6 @@ template <class ELFT>
 void NanoMips<ELFT>::finalizeRelaxations() const {
   // Return previous bytesDropped values
   // and change array ref sizes
-   // Storage is used in higher llvms
   SmallVector<InputSection *, 0> storage;
   for(OutputSection *osec: outputSections)
   {
@@ -680,242 +697,20 @@ void NanoMips<ELFT>::finalizeRelaxations() const {
           !(osec->type & SHT_PROGBITS))
           continue;
     
-    for(InputSection *sec : getInputSections(osec))
+    for(InputSection *sec : getInputSections(*osec, storage))
     {
-      if(!this->safeToModify(sec) || sec->numRelocations == 0) continue;
+      if(!this->safeToModify(sec) || sec->relocations.size() == 0) continue;
       // This means we have more bytes than needed, shorten the array ref
       if(sec->bytesDropped)
       {
-        sec->setRawData(sec->data().drop_back(sec->bytesDropped));
+        // TODO: Check if bytesDropped should be a bigger value, uint16_t is maybe small
+        sec->content_ = sec->content().drop_back(sec->bytesDropped).begin();
+        sec->size -= sec->bytesDropped;
       }
       sec->bytesDropped = sec->nanoMipsRelaxAux->prevBytesDropped;
     }
   }
 }
-
-// bool NanoMips::relax(InputSection *sec) const {
-
-//   auto &relocations = sec->relocations;
-//   bool changed = false;
-//   const uint32_t bits = config->wordsize * 8;
-//   uint64_t secAddr = sec->getOutputSection()->addr + sec->outSecOff;
-//   for(auto &reloc : relocations)
-//   {
-//     // TODO: Check if section should be compressed when returning value
-//     ArrayRef<uint8_t> oldContent = sec->data();
-//     uint64_t oldSize = sec->getSize();
-//     uint64_t addrLoc = secAddr + reloc.offset;
-//     uint64_t valueToRelocate = SignExtend64(sec->getRelocTargetVA(sec->file, reloc.type, reloc.addend, addrLoc, *reloc.sym, reloc.expr), bits);
-//     const NanoMipsRelocProperty *relocProp =  relocPropertyTable.getRelocProperty(reloc.type);
-//     if(relocProp)
-//     {
-//       llvm::outs() << relocProp->getName() << "\n";
-//     }
-//     switch(reloc.type)
-//     {
-//       case R_NANOMIPS_PC14_S1:
-//       {
-//         uint64_t insn = support::endian::read32le(&oldContent[reloc.offset]);
-//         // For more natural working with instruction
-//         insn = bswap(insn);
-//         // Check if it is a beqc instruction
-//         // TODO: Make this prettier
-//         if((insn >> 26) != 0x22 || ((insn >> 14) & 0x3) != 0x00) break; 
-//         // 4 is the size of instruction
-//         valueToRelocate -= 4;
-//         // TODO: Make extract bits function
-//         uint32_t srcReg =  (insn >> 16) & 0x1f;
-//         uint32_t dstReg = (insn >> 21) & 0x1f;
-//         // TODO: Check if we should change the value for relocation, as we are going to generate a 2 byte instruciton
-//         // FIXME: srcReg and dstReg not good, shouldn't only be less than 7
-//         if(valueToRelocate != 0 && srcReg != 0 && srcReg <= 7 && dstReg <= 7 && srcReg != dstReg && isUInt<5>(valueToRelocate))
-//         {
-//           // New instruction is smaller for 2 bytes
-//           // TODO: Used make_unique here, as I know how to use it, should change to some sort of allocator
-//           // like the BumpPointerAllocator that is being used in InputSection, this is also very inefficient 
-//           // as there is a lot of unecessary copying but it is used to check if this will work
-//           auto newContentUnique = std::make_unique<uint8_t>((oldSize - 2) * sizeof(uint8_t));
-//           uint8_t *newContent = newContentUnique.get();
-//           uint64_t newSize = oldSize - 2;
-//           // Swap src and dest if they don't conform to the abi (rs3<rt3)
-//           if(srcReg > dstReg)
-//           {
-//             uint32_t tmp = srcReg;
-//             srcReg = dstReg;
-//             dstReg = tmp;
-//           }
-//           uint32_t newIns = 0x36 << 10 | (dstReg & 7) << 7 | (srcReg & 7) << 4 | 0;
-//           uint32_t oldI = 0;
-//           uint32_t newI = 0;
-//           while(oldI != oldSize)
-//           {
-//             if(oldI != reloc.offset)
-//             {
-//               newContent[newI] = oldContent[oldI];
-//               newI++;
-//               oldI++;
-//             }
-//             else{
-//               support::endian::write16le(newContent + newI, newIns);
-//               newI += 2;
-//               oldI += 4;
-//             }
-//           }
-//           newI = 0;
-//           while(newI != newSize)
-//           {
-//             const_cast<uint8_t *>(oldContent.data())[newI] = newContent[newI];
-//             newI++;
-//           }
-//           // Inefficient as well, change relocs to have good offset
-//           for(auto &reloc2 : relocations)
-//           {
-//             if(reloc2.offset > reloc.offset)
-//               reloc2.offset -= 2;
-//           }
-
-//           // Inefficient as well, adjust symbols
-//           // TODO: Change size of function
-//           if(sec->file)
-//           {
-//             for(auto *sym: sec->file->symbols)
-//             {
-//               if(isa<Defined>(sym))
-//               {
-//                 auto dSym = cast<Defined>(sym);
-//                 if(sym->getOutputSection() && sym->getOutputSection()->sectionIndex == sec->getOutputSection()->sectionIndex)
-//                 {
-//                   if(dSym->value > reloc.offset)
-//                   {
-//                     dSym->value -= 2;
-//                   }
-//                 }
-//               }
-
-//             }
-//           }
-//           reloc.type = R_NANOMIPS_PC4_S1;
-//           sec->drop_back(oldSize - newSize);
-//           changed = true;
-//         }
-//         else if(srcReg == 0 && isInt<8>(valueToRelocate))
-//         {
-//           // TODO
-//           llvm::outs() << "Can relocate to beqz version, but not implemented yet!\n";
-//         }
-//         break;
-//       }
-//       default:
-//         break;
-//     }
-//   }
-//   return changed;
-// }
-
-// TODO: Check if we can mix these into relax and expand into one function
-// bool NanoMips::expand(InputSection *sec) const {
-//   llvm::outs() << "expand called\n";
-//   auto &relocations = sec->relocations;
-//   bool changed = false;
-//   const uint32_t bits = config->wordsize * 8;
-//   const uint64_t secAddr = sec->getOutputSection()->addr + sec->outSecOff;
-//   for(auto &reloc: relocations)
-//   {
-//     // TODO: Check if section should be compressed when returning value
-//     ArrayRef<uint8_t> oldContent = sec->data();
-//     uint64_t oldSize = sec->getSize();
-//     uint64_t addrLoc = secAddr + reloc.offset;
-//     uint64_t valueToRelocate = SignExtend64(sec->getRelocTargetVA(sec->file, reloc.type, reloc.addend, addrLoc, *reloc.sym, reloc.expr), bits);
-//     switch(reloc.type)
-//     {
-//       case R_NANOMIPS_PC21_S1:
-//       {
-//         llvm::outs() << "Expansion of R_NANOMIPS_PC21_S1\n";
-//         valueToRelocate -= 4;
-//         uint32_t insn = support::endian::read32le(&oldContent[reloc.offset]);
-//         insn = bswap(insn);
-//         // lapc
-//         llvm::outs() << insn << "\n";
-//         if((insn >> 26) != 0x1) break;
-//         llvm::outs() << "Expansion of lapc\n";
-//         uint32_t dstReg = (insn >> 21) & 0x1f;
-
-//         if((valueToRelocate & 0x1) == 0 && !isInt<22>(valueToRelocate))
-//         {
-//           auto newContentUnique = std::make_unique<uint8_t>((oldSize + 2) * sizeof(uint8_t));
-//           uint8_t *newContent = newContentUnique.get();
-//           uint64_t newSize = oldSize + 2;
-//           uint64_t newIns = 0x18UL << 42 | static_cast<uint64_t>(dstReg) << 37 | 0x3UL << 32 | 0x0UL;
-//           newIns = bswap48(newIns);
-//           uint32_t oldI = 0;
-//           uint32_t newI = 0;
-//           llvm::outs() << newIns << "\n";
-//           while(oldI != oldSize)
-//           {
-//             if(oldI != reloc.offset)
-//             {
-//               newContent[newI] = oldContent[oldI];
-//               newI++;
-//               oldI++;
-//             }
-//             else{
-//               support::endian::write32le(newContent + newI, newIns & 0xffffffffL);
-//               support::endian::write16le(newContent + newI + 4, newIns >> 32);
-//               newI += 6;
-//               oldI += 4;
-//             }
-//           }
-
-//           llvm::outs() << sec->bytesDropped << "\n";
-//           if(sec->bytesDropped < 2)
-//           {
-//             sec->increaseSizeOfSection(2 - sec->bytesDropped);
-//           }
-//           oldContent = sec->data();
-//           sec->push_back(newSize - oldSize);
-//           newI = 0;
-//           while(newI != newSize)
-//           {
-//             const_cast<uint8_t *>(oldContent.data())[newI] = newContent[newI];
-//             llvm::outs() << (uint32_t)newContent[newI] << "\n";
-//             newI++;
-//           }
-
-//           for(auto &reloc2: relocations)
-//           {
-//             if(reloc2.offset > reloc.offset)
-//               reloc2.offset += 2;
-//           }
-
-//           if(sec->file)
-//           {
-//             for(auto *sym : sec->file->symbols)
-//             {
-//               if(isa<Defined>(sym))
-//               {
-//                 auto dSym = cast<Defined>(sym);
-//                 if(sym->getOutputSection() && sym->getOutputSection()->sectionIndex == sec->getOutputSection()->sectionIndex)
-//                 {
-//                   if(dSym->value > reloc.offset)
-//                     dSym->value += 2;
-//                 }
-//               }
-//             }
-//           }
-
-//           reloc.type = R_NANOMIPS_PC_I32;
-//           reloc.offset += 2;
-//           // TODO: See what to do about the assert in this function, we need to see how to change the size of sections
-//           changed = true;
-//         }
-//       }
-//         break;
-//       default:
-//         break;
-//     }
-//   }
-//   return changed;
-// }
 
 
 

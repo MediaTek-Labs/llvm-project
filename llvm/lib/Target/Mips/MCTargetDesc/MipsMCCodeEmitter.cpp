@@ -1117,7 +1117,7 @@ getMemEncodingMMImm4sp(const MCInst &MI, unsigned OpNo,
   return ((OffBits >> 2) & 0x0F);
 }
 
-template <unsigned Bits, unsigned ShiftAmount=0>
+template <unsigned Bits, unsigned ShiftAmount>
 unsigned MipsMCCodeEmitter::
 getMemEncodingNMImm(const MCInst &MI, unsigned OpNo,
                       SmallVectorImpl<MCFixup> &Fixups,

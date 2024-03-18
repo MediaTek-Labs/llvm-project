@@ -210,6 +210,8 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
   Elf_NanoMips_ABIFlags flags = {};
   bool create = false;
 
+  llvm::DenseMap<ObjFile<ELFT> *, const Elf_NanoMips_ABIFlags *> tmpMap;
+
   for(InputSectionBase *sec: ctx.inputSections)
   {
     if(sec->type != SHT_NANOMIPS_ABIFLAGS) continue;
@@ -225,11 +227,15 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
     }
 
     auto *s = reinterpret_cast<const Elf_NanoMips_ABIFlags *>(sec->content().data());
+
+    tmpMap[sec->getFile<ELFT>()] = s;
     if(s->version != 0)
     {
       error(filename + ": unexpected .nanoMIPS.abiflags version " + Twine(s->version));
       return nullptr;
     }
+
+     
 
     flags.isa_level = std::max(flags.isa_level, s->isa_level);
     flags.isa_rev = std::max(flags.isa_rev, s->isa_rev);
@@ -245,10 +251,9 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
 
   }
 
-  // Will stay new instead of make, until I see what other options I have
   if(create)
   {
-    auto *abiFlagsSec = new NanoMipsAbiFlagsSection<ELFT>(flags);
+    auto *abiFlagsSec = make<NanoMipsAbiFlagsSection<ELFT>>(flags);
     abiFlagsSec->mapOfAbiFlags = std::move(tmpMap);
     return abiFlagsSec;
   }

@@ -463,24 +463,21 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
 
   if(isec->file)
   {
-    for(auto *sym: isec->file->symbols)
+    for(auto &symAnchor: isec->nanoMipsRelaxAux->anchors)
     {
-      if(isa<Defined>(sym))
+      auto *dSym = symAnchor.d;
+      auto *symSec = dyn_cast_or_null<InputSection>(dSym->section);
+      if(symSec && symSec == isec)
       {
-        auto *dSym = cast<Defined>(sym);
-        auto *symSec = dyn_cast_or_null<InputSection>(dSym->section);
-        if(symSec && symSec == isec)
+        if(!symAnchor.end && dSym->value >= location)
         {
-          if(dSym->value >= location)
-          {
-            LLVM_DEBUG(llvm::dbgs() << "Changed symbol value: " << dSym->getName() << " by " << delta << "\n";);
-            dSym->value += delta;
-          }
-          if(dSym->isFunc() && dSym->value < location && dSym->value + dSym->size >= location)
-          {
-            LLVM_DEBUG(llvm::dbgs() << "Changed symbol size: " << dSym->getName() << " by " << delta << "\n";);
-            dSym->size += delta;
-          }
+          LLVM_DEBUG(llvm::dbgs() << "Changed symbol value: " << dSym->getName() << " by " << delta << "\n";);
+          dSym->value += delta;
+        }
+        else if(symAnchor.end && dSym->value < location && dSym->value + dSym->size >= location)
+        {
+          LLVM_DEBUG(llvm::dbgs() << "Changed symbol size: " << dSym->getName() << " by " << delta << "\n";);
+          dSym->size += delta;
         }
       }
 
@@ -579,7 +576,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
   // Whether we are inserting a new reloc, or just changing the existing one
   bool newReloc = false;
   RelType oldRelType = reloc->type;
-  auto instructionList = makeArrayRef(transformTemplate->getInsns(), transformTemplate->getInsCount());
+  auto instructionList = ArrayRef(transformTemplate->getInsns(), transformTemplate->getInsCount());
   for(auto &insTemplate : instructionList)
   {
     uint64_t newInsn = insTemplate.getInstruction(tReg, sReg);
@@ -595,7 +592,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
         reloc->offset = newROffset;
         reloc->type = newRelType;
         // Only param needed is relType, other ones are not important for nanoMIPS
-        reloc->expr = target->getRelExpr(newRelType, *reloc->sym, isec->data().data() + newROffset);
+        reloc->expr = target->getRelExpr(newRelType, *reloc->sym, isec->content().data() + newROffset);
         newReloc = true;
         LLVM_DEBUG(llvm::dbgs() << "Changed current reloc to " << reloc->type << "\n";);
       }
@@ -605,7 +602,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
         newRelocation.addend = reloc->addend;
         newRelocation.offset = newROffset;
         // Only param needed is relType, other ones are not important for nanoMIPS
-        newRelocation.expr = target->getRelExpr(newRelType, *reloc->sym, isec->data().data() + newROffset);
+        newRelocation.expr = target->getRelExpr(newRelType, *reloc->sym, isec->content().data() + newROffset);
         newRelocation.sym = reloc->sym;
         newRelocation.type = newRelType;
         relNum++;
@@ -633,10 +630,10 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
     // TODO: Do not make new strings like this
     std::string &name = *make<std::string>(SS.str());
     StringRef nameRef = name;
-    Symbol *s = symtab->addSymbol(Defined{isec->file, nameRef, STB_GLOBAL, STV_HIDDEN, STT_NOTYPE, offset, 0, isec});
+    Defined *s = dyn_cast<Defined>(symtab.addSymbol(Defined{isec->file, nameRef, STB_GLOBAL, STV_HIDDEN, STT_NOTYPE, offset, 0, isec}));
     assert(s && "Didn't create needed symbol for relaxations/expansions!");
     reloc->sym = s;
-    isec->file->symbols.emplace_back(s);
+    isec->nanoMipsRelaxAux->anchors.push_back({s, false});
     in.symTab->addSymbol(s);
     LLVM_DEBUG(llvm::dbgs() << "New symbol " << s->getName() << " in section " << (isec->file ? isec->file->getName() : "no file") << ":" << isec->name << " on offset " << offset << "\n";);
   }

@@ -1008,6 +1008,7 @@ using Elf_NanoMips_ABIFlags = llvm::object::Elf_NanoMips_ABIFlags<ELFT>;
 public:
   static NanoMipsAbiFlagsSection *get();
   
+  NanoMipsAbiFlagsSection(Elf_NanoMips_ABIFlags flags);
   size_t getSize() const override { return sizeof(Elf_NanoMips_ABIFlags); }
   const Elf_NanoMips_ABIFlags *getFlags() const { return &flags; };
   void writeTo(uint8_t *buf) override;
@@ -1018,7 +1019,7 @@ public:
 
 private:
   static NanoMipsAbiFlagsSection *create();
-  NanoMipsAbiFlagsSection(Elf_NanoMips_ABIFlags flags);
+
   // gold's way of selecing isa_ext, fp_abi
   static uint32_t select_isa_ext(const StringRef filename, uint32_t in_isa_ext, uint32_t out_isa_ext);
   static uint32_t select_fp_abi(const StringRef filename, uint32_t in_fp, uint32_t out_fp);

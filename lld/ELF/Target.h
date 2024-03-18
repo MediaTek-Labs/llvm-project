@@ -114,13 +114,6 @@ public:
   {
     return false;
   }
-
-  // Used to relax and/or expand nanoMIPS code for now
-  virtual bool relaxOnce(int pass) const
-  {
-    return false;
-  }
-
   // Used for finalizing and cleanup of relax info
   virtual void finalizeRelaxations() const
   {

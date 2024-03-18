@@ -150,37 +150,15 @@ template <class ELFT> RelsOrRelas<ELFT> InputSectionBase::relsOrRelas() const {
   }
   return ret;
 }
-// void InputSectionBase::increaseSizeOfSection(uint64_t delta)
-// {
-//   size_t size = rawData.size() + delta;
-//   char* increasedData;
-//   {
-//     static std::mutex mu;
-//     std::lock_guard<std::mutex> lock(mu);
-//     // TODO: Check if this can eat up a lot of memory
-//     // as bptr allocator only allocates, it doesn't free
-//     // the memory
-//     increasedData = bAlloc.Allocate<char>(size);
-//   }
-
-//   if(increasedData == nullptr) fatal(toString(this) + "allocation of new size failed");
-//   for(uint64_t i = 0; i < rawData.size(); i++)
-//   {
-//     increasedData[i] = rawData[i];
-//   }
-
-//   rawData = makeArrayRef((uint8_t *)increasedData, size);
-//   bytesDropped += delta;
-// }
 
 void InputSectionBase::addBytes(uint64_t location, uint32_t count)
 {
-  assert(location <= rawData.size() - bytesDropped && "Location mustn't be larger than size of section");
+  assert(location <= this->size - bytesDropped && "Location mustn't be larger than size of section");
   assert(count > 0 && "Number of new bytes must be larger than 0");
   if(count > bytesDropped)
   {
     // Allocate more data just in case
-    size_t size = (rawData.size() + count - bytesDropped) * 2;
+    size_t size = (this->size + count - bytesDropped) * 2;
     uint8_t *increasedData;
     {
       static std::mutex mu;
@@ -188,21 +166,21 @@ void InputSectionBase::addBytes(uint64_t location, uint32_t count)
       // TODO: Check if this can eat up a lot of memory
       // as bptr allocator only allocates, it doesn't free
       // the memory
-      increasedData = bAlloc.Allocate<uint8_t>(size);
+      increasedData = context().bAlloc.Allocate<uint8_t>(size);
     }
 
     if(increasedData == nullptr) fatal(toString(this) + " allocation of new size failed");
     
-    memcpy(increasedData, rawData.begin(), location);
-    memcpy(increasedData + location + count, rawData.begin() + location, rawData.size() - bytesDropped - location);
+    memcpy(increasedData, this->content_, location);
+    memcpy(increasedData + location + count, this->content_ + location, this->size - bytesDropped - location);
 
-    // Hope this is not concurrent
-    bytesDropped = rawData.size() + count - bytesDropped;
-    rawData = makeArrayRef((uint8_t *)increasedData, size);
+    bytesDropped = this->size + count - bytesDropped;
+    this->content_ = increasedData;
+    this->size = size;
   }
   else {
     // TODO: See this can be done backwards as well, maybe that is faster
-    memmove(const_cast<uint8_t *>(rawData.begin()) + location + count, rawData.begin() + location, rawData.size() - bytesDropped - location);
+    memmove(const_cast<uint8_t *>(this->content_) + location + count, this->content_ + location, this->size - bytesDropped - location);
     bytesDropped -= count;
   }
 }
@@ -211,7 +189,7 @@ void InputSectionBase::deleteBytes(uint64_t location, uint32_t count)
 {
   // FIXME: Too big objs are mapped with readonly mmap, changed
   // it to be private mapping, ths should be fixed
-  assert(location <= rawData.size() - bytesDropped && "Location mustn't be larger than size of section");
+  assert(location <= this->size - bytesDropped && "Location mustn't be larger than size of section");
   assert(count > 0 && count <= location && "Number of deleted bytes must be larger than 0 and less than location");
   // llvm::outs() << "Count: " << count << "\t Location: " << location << "\n"
   // << "Size: " << rawData.size() << "\t" << "Dropped: " << bytesDropped << "\n";
@@ -229,15 +207,15 @@ void InputSectionBase::deleteBytes(uint64_t location, uint32_t count)
   //   *ptr = rawData[i];
   // }
   
-  memmove(const_cast<uint8_t *>(rawData.begin()) + location - count, rawData.begin() + location, rawData.size() - bytesDropped - location);
+  memmove(const_cast<uint8_t *>(this->content_) + location - count, this->content_ + location, this->size - bytesDropped - location);
   bytesDropped += count;
 }
 
-uint64_t InputSectionBase::getOffsetInFile() const {
-  const uint8_t *fileStart = (const uint8_t *)file->mb.getBufferStart();
-  const uint8_t *secStart = data().begin();
-  return secStart - fileStart;
-}
+// uint64_t InputSectionBase::getOffsetInFile() const {
+//   const uint8_t *fileStart = (const uint8_t *)file->mb.getBufferStart();
+//   const uint8_t *secStart = data().begin();
+//   return secStart - fileStart;
+// }
 
 uint64_t SectionBase::getOffset(uint64_t offset) const {
   switch (kind()) {

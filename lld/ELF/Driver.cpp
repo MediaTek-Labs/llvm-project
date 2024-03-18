@@ -1196,7 +1196,6 @@ static void readConfigs(opt::InputArgList &args) {
       args.getLastArgValue(OPT_print_symbol_order);
   config->relax = args.hasFlag(OPT_relax, OPT_no_relax, true);
   config->rpath = getRpath(args);
-  config->relax = args.hasFlag(OPT_relax, OPT_no_relax, false);
   config->relocatable = args.hasArg(OPT_relocatable);
 
   if (args.hasArg(OPT_save_temps)) {

@@ -1155,6 +1155,7 @@ static void readConfigs(opt::InputArgList &args) {
   config->mmapOutputFile =
       args.hasFlag(OPT_mmap_output_file, OPT_no_mmap_output_file, true);
   config->nanoMipsFixHw110880 = args.hasFlag(OPT_fix_nmips_hw110880, OPT_no_fix_nmips_hw110880, false);
+  config->nanoMipsFixHw113064 = args.hasFlag(OPT_fix_nmips_hw113064, OPT_no_fix_nmips_hw113064, false);
   config->nanoMipsInsn32 = args.hasFlag(OPT_insn32, OPT_no_insn32, false);
   config->nanoMipsRelaxLo12 = args.hasFlag(OPT_relax_lo12, OPT_no_relax_lo12, false);
   config->nanoMipsStrictAddressModes = args.hasFlag(OPT_strict_address_modes, OPT_no_strict_address_modes, true);

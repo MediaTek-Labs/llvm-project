@@ -8,7 +8,7 @@
 # RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMF-PCREL %s
 
 # RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --insn32 --relax %t2.o %t1.o -o %t
-# RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-INSN32 %s
+# RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMF-INSN32 %s
 
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6 -mno-pcrel %s -o %t1.o
 # RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --relax %t2.o %t1.o -o %t
@@ -19,10 +19,18 @@
 
 # RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMS-PCREL %s
 
+# RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --relax --insn32 %t2.o %t1.o -o %t
+
+# RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMS-PCREL-INSN32 %s
+
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6s -mno-pcrel --defsym nms=1 %s -o %t1.o
 # RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --relax %t2.o %t1.o -o %t
 
 # RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMS-ABS %s
+
+# RUN: ld.lld -T %S/Inputs/nanomips-pcrel-relax.ld --relax --insn32 %t2.o %t1.o -o %t
+
+# RUN: %nanomips-elf-objdump -d %t | FileCheck -check-prefix=CHECK-NMS-ABS-INSN32 %s
 
 
 # CHECK-NMF-PCREL: 88e6{{.*}} beqc {{.*}} <_start>
@@ -64,15 +72,28 @@
 # CHECK-NMF-PCREL-NEXT: 9af{{.*}} beqzc {{.*}} <pc7_far_a>
 # CHECK-NMF-PCREL-NEXT: baf{{.*}} bnezc {{.*}} <pc7_far_a>
 
+# CHECK-NMF-PCREL: 6023{{.*}} lapc at{{.*}}<pc25_far>
+# CHECK-NMF-PCREL: d820 jrc at
+# CHECK-NMF-PCREL-NEXT: 6023{{.*}} lapc at{{.*}}<pc25_far>
+# CHECK-NMF-PCREL: d830 jalrc at
+# CHECK-NMF-PCREL-NEXT: 29{{.*}} bc {{.*}}<pc25_far>
+
+
 # Will only check differences from others from now on
 
-# CHECK-INSN32: 88e6{{.*}} beqc {{.*}} <fun>
-# CHECK-INSN32: a8a6{{.*}} bnec {{.*}} <fun>
-# CHECK-INSN32: 88c0{{.*}} beqzc {{.*}} <a>
+# CHECK-NMF-INSN32: 88e6{{.*}} beqc {{.*}} <fun>
+# CHECK-NMF-INSN32: a8a6{{.*}} bnec {{.*}} <fun>
+# CHECK-NMF-INSN32: 88c0{{.*}} beqzc {{.*}} <a>
 
 
 # CHECK-NMF-ABS: 60a0{{.*}} li {{.*}}
 # CHECK-NMF-ABS: 60e0{{.*}} li {{.*}}
+
+# CHECK-NMF-ABS: 6020{{.*}} li at{{.*}}
+# CHECK-NMF-ABS: d820 jrc at
+# CHECK-NMF-ABS-NEXT: 6020{{.*}} li at{{.*}}
+# CHECK-NMF-ABS: d830 jalrc at
+# CHECK-NMF-ABS-NEXT: 29{{.*}} bc {{.*}}<pc25_far> 
 
 
 # CHECK-NMS-PCREL: e0b{{.*}} aluipc {{.*}}
@@ -83,11 +104,42 @@
 # CHECK-NMS-PCREL: a8c5{{.*}} bnec {{.*}} <fun>
 # CHECK-NMS-PCREL: 88c0{{.*}} beqzc {{.*}} <a>
 
+# CHECK-NMS-PCREL: e02{{.*}} aluipc at,
+# CHECK-NMS-PCREL-NEXT: 8021{{.*}} ori at,at,
+# CHECK-NMS-PCREL-NEXT: d820 jrc at
+# CHECK-NMS-PCREL-NEXT: e02{{.*}} aluipc at,
+# CHECK-NMS-PCREL-NEXT: 8021{{.*}} ori at,at
+# CHECK-NMS-PCREL-NEXT: d830 jalrc at
+# CHECK-NMS-PCREL-NEXT: 29{{.*}} bc {{.*}}<pc25_far>
+
+# CHECK-NMS-PCREL-INSN32: e02{{.*}} aluipc at,
+# CHECK-NMS-PCREL-INSN32-NEXT: 8021{{.*}} ori at,at,
+# CHECK-NMS-PCREL-INSN32-NEXT: 4801 0000 jrc at
+# CHECK-NMS-PCREL-INSN32-NEXT: e02{{.*}} aluipc at,
+# CHECK-NMS-PCREL-INSN32-NEXT: 8021{{.*}} ori at,at
+# CHECK-NMS-PCREL-INSN32-NEXT: 4be1 0000 jalrc at
+# CHECK-NMS-PCREL-INSN32-NEXT: 29{{.*}} bc {{.*}}<pc25_far>
+
 # CHECK-NMS-ABS: e0a{{.*}} lui {{.*}}%hi
 # CHECK-NMS-ABS: 80a5{{.*}} ori {{.*}}
 # CHECK-NMS-ABS: e0e{{.*}} lui {{.*}}%hi
 # CHECK-NMS-ABS: 80e7{{.*}} ori {{.*}}
 
+# CHECK-NMS-ABS: e02{{.*}} lui at,%hi
+# CHECK-NMS-ABS-NEXT: 8021{{.*}} ori at,at
+# CHECK-NMS-ABS-NEXT: d820 jrc at
+# CHECK-NMS-ABS-NEXT: e02{{.*}} lui at,%hi
+# CHECK-NMS-ABS-NEXT: 8021{{.*}} ori at,at
+# CHECK-NMS-ABS-NEXT: d830 jalrc at
+# CHECK-NMS-ABS-NEXT: 29{{.*}} bc {{.*}}<pc25_far>
+
+# CHECK-NMS-ABS-INSN32: e02{{.*}} lui at,%hi
+# CHECK-NMS-ABS-INSN32-NEXT: 8021{{.*}} ori at,at
+# CHECK-NMS-ABS-INSN32-NEXT: 4801 0000 jrc at
+# CHECK-NMS-ABS-INSN32-NEXT: e02{{.*}} lui at,%hi
+# CHECK-NMS-ABS-INSN32-NEXT: 8021{{.*}} ori at,at
+# CHECK-NMS-ABS-INSN32-NEXT: 4be1 0000 jalrc at
+# CHECK-NMS-ABS-INSN32-NEXT: 29{{.*}} bc {{.*}}<pc25_far>
 
 # Starting testcase of nanomips relaxations, needs to convert
 # 32bit beqc to 16 bit beqc
@@ -250,3 +302,26 @@ pc7_far_a:
     .end pc7_far
     .size pc7_far, .-pc7_far
 
+    .section .expand_pc25_sec, "ax", @progbits
+    .align 1
+    .globl expand_pc25
+    .ent expand_pc25
+
+expand_pc25:
+    bc pc25_far
+    balc pc25_far
+    # Shouldn't expand
+    bc pc25_far
+
+    .end expand_pc25
+    .size expand_pc25, .-expand_pc25
+
+    .section .pc25_far_sec, "ax", @progbits
+    .align 1
+    .globl pc25_far
+    .ent pc25_far
+
+pc25_far:
+    addiu $a1, $a2, 1
+    .end pc25_far
+    .size pc25_far, .-pc25_far

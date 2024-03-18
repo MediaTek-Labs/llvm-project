@@ -735,6 +735,11 @@ defm fix_nmips_hw110880: BB<"fix-nmips-hw110880",
     "(nanoMIPS only) Do not rewrite instructions to avoid hw110880 issue (default)"
 >;
 
+defm fix_nmips_hw113064: BB<"fix-nmips-hw113064",
+    "(nanoMIPS only) Fix binaries for nanoMIPS erratum 113064",
+    "(nanoMIPS only) Do not fix binaries for nanoMIPS erratum 113064 (default)"
+>;
+
 defm strict_address_modes: BB<"strict-address-modes",
     "(nanoMIPS only) Strict address modes for expansions (default)",
     "(nanoMIPS only) Don't strict address modes for expansions"

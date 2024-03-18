@@ -231,6 +231,7 @@ struct Config {
   bool mipsN32Abi = false;
   bool mmapOutputFile;
   bool nanoMipsFixHw110880;
+  bool nanoMipsFixHw113064;
   bool nanoMipsInsn32;
   bool nanoMipsRelaxLo12;
   bool nanoMipsStrictAddressModes;

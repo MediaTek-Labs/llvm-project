@@ -42,8 +42,9 @@ def PC10_S1: RelocProperty16HI6<11>;
 def PC7_S1: RelocProperty16HI6<8>;
 // Currently doing
 def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
-// The next need to be worked on
 def PC25_S1: RelocProperty32<26, 0xfe000000>;
+
+// The next need to be worked on
 def I32: RelocProperty48HI6LO5<32>;
 def PC_HI20: RelocProperty32NoMask<20>;
 def HI20: RelocProperty32NoMask<20>;
@@ -233,6 +234,11 @@ def SAVEGP: InstructionIdentifier<"save[gp]", 0x80003004>;
 def SAVE32: InstructionIdentifier<"save", 0x80003000>;
 def SAVE16: InstructionIdentifier<"save[16]", 0x1c00>;
 
+def JALRC16: InstructionIdentifier<"jalrc[16]", 0xd810>;
+def JALRC32: InstructionIdentifier<"jalrc", 0x4be00000>;
+def JRC16: InstructionIdentifier<"jrc[16]", 0xd800>;
+def JRC32: InstructionIdentifier<"jrc", 0x48000000>;
+
 // ------------------------- End InstructionIdentifier -------------------------
 
 // ---------------------------- InstructionTemplate ----------------------------
@@ -241,6 +247,7 @@ class BEQC16_T: InstructionTemplate16<BEQC16, PC4_S1, InsertReg<7,3,TREG>, Inser
 class BNEC16_T: InstructionTemplate16<BNEC16, PC4_S1, InsertReg<7,3,TREG>, InsertReg<4,3,SREG>>;
 
 class LAPC32_T<RegKind treg>: InstructionTemplate32<LAPC32, PC21_S1, InsertReg<21, 5, treg>, ?>;
+class JALRC16_T<RegKind treg>: InstructionTemplate16<JALRC16, NONE, InsertReg<5, 5, treg>, ?>;
 
 class LAPC48_T<RegKind treg>: InstructionTemplate48<LAPC48, PC_I32, InsertReg<5, 5, treg>>;
 class SWPC48_T: InstructionTemplate48<SWPC48, PC_I32, InsertReg<5, 5, TREG>>;
@@ -294,6 +301,9 @@ class RESTOREJRC32_T: InstructionTemplate32<RESTOREJRC32, NONE, InsertReg<16, 4,
 class RESTOREJRC16_T: InstructionTemplate16<RESTOREJRC16, NONE, InsertReg<0, 4, TREG>, insertSaveRes16Fields>;
 class SAVE32_T: InstructionTemplate32<SAVE32, NONE, InsertReg<16, 4, TREG>, insertSaveResFields>;
 class SAVE16_T: InstructionTemplate16<SAVE16, NONE, InsertReg<0, 4, TREG>, insertSaveRes16Fields>;
+class JALRC32_T: InstructionTemplate32<JALRC32, NONE, ?, InsertReg<16, 5, SREG>>;
+class JRC16_T: InstructionTemplate16<JRC16, NONE, InsertReg<5, 5, SREG>, ?>;
+class JRC32_T: InstructionTemplate32<JRC32, NONE, ?, InsertReg<16, 5, SREG>>;
 
 class ADDIUGPB32_T: InstructionTemplate32<ADDIUGPB32, GPREL18, InsertReg<21, 5, TREG>, ?>;
 class LBGP32_T: InstructionTemplate32<LBGP32, GPREL18, InsertReg<21, 5, TREG>, ?>;
@@ -371,6 +381,9 @@ def TT_GPREL_NMF: TransformationType;
 def TT_GPREL32_WORD: TransformationType;
 
 def TT_SAVERESTORE16: TransformationType;
+
+def TT_ABS16_LONG: TransformationType;
+def TT_PCREL16_LONG: TransformationType;
 
 // -------------------------- End TransformationType ---------------------------
 
@@ -469,8 +482,20 @@ def : TransformationTemplate<TT_PCREL32, BC16_P, (relocs PC10_S1), (insns BC32_T
 def : TransformationTemplate<TT_PCREL32, BALC16_P, (relocs PC10_S1), (insns BALC32_T<>)>;
 
 def : TransformationTemplate<TT_PCREL16, BC32_P, (relocs PC25_S1), (insns BC16_T<>)>;
+def : TransformationTemplate<TT_ABS_NMF, BC32_P, (relocs PC25_S1), (insns LI48_T<>, JRC16_T<>)>;
+def : TransformationTemplate<TT_ABS16_LONG, BC32_P, (relocs PC25_S1), (insns LUI_T<HI20, SREG>, ORI_T<LO12, SREG, SREG>, JRC16_T<>)>;
+def : TransformationTemplate<TT_ABS32_LONG, BC32_P, (relocs PC25_S1), (insns LUI_T<HI20, SREG>, ORI_T<LO12, SREG, SREG>, JRC32_T<>)>;
+def : TransformationTemplate<TT_PCREL_NMF, BC32_P, (relocs PC25_S1), (insns LAPC48_T<TREG>, JRC16_T<>)>;
+def : TransformationTemplate<TT_PCREL16_LONG, BC32_P, (relocs PC25_S1), (insns ALUIPC_T<PC_HI20, SREG>, ORI_T<LO12, SREG, SREG>, JRC16_T<>)>;
+def : TransformationTemplate<TT_PCREL32_LONG, BC32_P, (relocs PC25_S1), (insns ALUIPC_T<PC_HI20, SREG>, ORI_T<LO12, SREG, SREG>, JRC32_T<>)>;
 
 def : TransformationTemplate<TT_PCREL16, BALC32_P, (relocs PC25_S1), (insns BALC16_T<>)>;
+def : TransformationTemplate<TT_ABS_NMF, BALC32_P, (relocs PC25_S1), (insns LI48_T<>, JALRC16_T<SREG>)>;
+def : TransformationTemplate<TT_ABS16_LONG, BALC32_P, (relocs PC25_S1), (insns LUI_T<HI20, SREG>, ORI_T<LO12, SREG, SREG>, JALRC16_T<SREG>)>;
+def : TransformationTemplate<TT_ABS32_LONG, BALC32_P, (relocs PC25_S1), (insns LUI_T<HI20, SREG>, ORI_T<LO12, SREG, SREG>, JALRC32_T<>)>;
+def : TransformationTemplate<TT_PCREL_NMF, BALC32_P, (relocs PC25_S1), (insns LAPC48_T<TREG>, JALRC16_T<SREG>)>;
+def : TransformationTemplate<TT_PCREL16_LONG, BALC32_P, (relocs PC25_S1), (insns ALUIPC_T<PC_HI20, SREG>, ORI_T<LO12, SREG, SREG>, JALRC16_T<SREG>)>;
+def : TransformationTemplate<TT_PCREL32_LONG, BALC32_P, (relocs PC25_S1), (insns ALUIPC_T<PC_HI20, SREG>, ORI_T<LO12, SREG, SREG>, JALRC32_T<>)>;
 
 def : TransformationTemplate<TT_PCREL32, BEQZC16_P, (relocs PC7_S1), (insns BEQC32_T<>)>;
 

@@ -158,7 +158,8 @@ NanoMips<ELFT>::NanoMips(): currentTransformation(&insPropertyTable) {
   llvm::dbgs() << "Current instruction properties:\n" << insPropertyTable.toString() << "\n\n\n";
   llvm::dbgs() << "relax_lo12: " << config->nanoMipsRelaxLo12 << "\n";
   llvm::dbgs() << "insn32: " << config->nanoMipsInsn32 << "\n";
-  llvm::dbgs() << "fix_nmips_hw110880: " << config->nanoMipsFixHw110880 << "\n"; 
+  llvm::dbgs() << "fix_nmips_hw110880: " << config->nanoMipsFixHw110880 << "\n";
+  llvm::dbgs() << "fix_nmips_hw113064: " << config->nanoMipsFixHw113064 << "\n";
   llvm::dbgs() << "expand_reg: " << config->nanoMipsExpandReg << "\n";
   llvm::dbgs() << "strict_address_modes: " << config->nanoMipsStrictAddressModes << "\n";
   );

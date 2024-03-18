@@ -20,6 +20,12 @@ SECTIONS {
     .expand_pc7_sec : { *(.expand_pc7_sec) }
 
     . = 0x826080;
-    .pc7_far : { *(.pc7_far_sec) }
+    .pc7_far_sec : { *(.pc7_far_sec) }
     pc7_far_sec_lapc_far = . + 0x200000;
+
+    . = 0x827000;
+    .expand_pc25_sec : { *(.expand_pc25_sec) }
+    
+    . = 0x2827010;
+    .pc25_far_sec : { *(.pc25_far_sec ) }
 }

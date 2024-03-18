@@ -770,6 +770,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
     case R_NANOMIPS_GPREL17_S1:
     case R_NANOMIPS_PC10_S1:
     case R_NANOMIPS_PC7_S1:
+    case R_NANOMIPS_PC25_S1:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -851,6 +852,28 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
         return nullptr;
       break;
     }
+    case R_NANOMIPS_PC25_S1:
+    {
+      uint64_t val = valueToRelocate - 4;
+      if(isInt<26>(val) && ((val & 0x1) == 0))
+      {
+        // The offset in backward branch should be less than or equal to 0xffff.
+        // The offset in forward branch should be greater than or equal to
+        // 0xff0000. The range is (-33423362, 33423360).
+        if(config->nanoMipsFixHw113064)
+        {
+          int64_t signedVal = SignExtend64(val, bits);
+          if(signedVal <= SignExtend64(0xfe01fffe, bits) || 
+             signedVal >= SignExtend64(0x1fe0000, bits)
+          )
+            // Expand to lapc+jalrc
+          return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL_NMF, reloc.type);
+        }
+        return nullptr;
+      }
+
+      break;
+    }
     default:
     // TODO: Should be unreachable when all relocs are processed
     LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);
@@ -920,6 +943,25 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
     case R_NANOMIPS_PC10_S1:
     case R_NANOMIPS_PC7_S1:
       return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32, reloc.type);
+    
+    case R_NANOMIPS_PC25_S1:
+    {
+      // TODO: Check if logic for insn32 is right
+      if(nanoMipsFullAbi)
+        return pcrel ? 
+          insProperty->getTransformTemplate(TT_NANOMIPS_PCREL_NMF, reloc.type) : 
+          insProperty->getTransformTemplate(TT_NANOMIPS_ABS_NMF, reloc.type);
+      
+      else if(!pcrel)
+        return config->nanoMipsInsn32 ?
+          insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type) :
+          insProperty->getTransformTemplate(TT_NANOMIPS_ABS16_LONG, reloc.type);
+      
+      else
+        return config->nanoMipsInsn32 ?
+          insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type) :
+          insProperty->getTransformTemplate(TT_NANOMIPS_PCREL16_LONG, reloc.type);
+    }
     default:
       // Should be unreachable when all relocs are processed
       LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);

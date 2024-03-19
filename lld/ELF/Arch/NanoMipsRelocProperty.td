@@ -40,10 +40,10 @@ def GPREL18: RelocProperty32<18, 0xfc1c0000>;
 def GPREL17_S1: RelocProperty32<18, 0xfc1c0001>;
 def PC10_S1: RelocProperty16HI6<11>;
 def PC7_S1: RelocProperty16HI6<8>;
+def PC25_S1: RelocProperty32<26, 0xfe000000>;
+def PC11_S1: RelocProperty32<12, 0xfc1c0000>;
 // Currently doing
 def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
-def PC25_S1: RelocProperty32<26, 0xfe000000>;
-
 // The next need to be worked on
 def I32: RelocProperty48HI6LO5<32>;
 def PC_HI20: RelocProperty32NoMask<20>;
@@ -239,6 +239,15 @@ def JALRC32: InstructionIdentifier<"jalrc", 0x4be00000>;
 def JRC16: InstructionIdentifier<"jrc[16]", 0xd800>;
 def JRC32: InstructionIdentifier<"jrc", 0x48000000>;
 
+def BBEQZC: InstructionIdentifier<"bbeqzc", 0xc8040000>;
+def BBNEZC: InstructionIdentifier<"bbnezc", 0xc8140000>;
+def BEQIC: InstructionIdentifier<"beqic", 0xc8000000>;
+def BNEIC: InstructionIdentifier<"bneic", 0xc8100000>;
+def BGEIC: InstructionIdentifier<"bgeic", 0xc8080000>;
+def BLTIC: InstructionIdentifier<"bltic", 0xc8180000>;
+def BGEIUC: InstructionIdentifier<"bgeiuc", 0xc80c0000>;
+def BLTIUC: InstructionIdentifier<"bltiuc", 0xc81c0000>;
+
 // ------------------------- End InstructionIdentifier -------------------------
 
 // ---------------------------- InstructionTemplate ----------------------------
@@ -317,6 +326,17 @@ class SHGP32_T: InstructionTemplate32<SHGP32, GPREL17_S1, InsertReg<21, 5, TREG>
 class BALC16_T: InstructionTemplate16<BALC16, PC10_S1, ?, ?>;
 class BC16_T: InstructionTemplate16<BC16, PC10_S1, ?, ?>;
 
+// Here sreg represents bits val or imm
+class BBEQZC_T: InstructionTemplate32<BBEQZC, PC11_S1, InsertReg<21, 5, TREG>, InsertReg<11, 6, SREG>>;
+class BBNEZC_T: InstructionTemplate32<BBNEZC, PC11_S1, InsertReg<21, 5, TREG>, InsertReg<11, 6, SREG>>;
+class BEQIC_T: InstructionTemplate32<BEQIC, PC11_S1, InsertReg<21, 5, TREG>, InsertReg<11, 7, SREG>>;
+class BNEIC_T: InstructionTemplate32<BNEIC, PC11_S1, InsertReg<21, 5, TREG>, InsertReg<11, 7, SREG>>;
+class BGEIC_T: InstructionTemplate32<BGEIC, PC11_S1, InsertReg<21, 5, TREG>, InsertReg<11, 7, SREG>>;
+class BLTIC_T: InstructionTemplate32<BLTIC, PC11_S1, InsertReg<21, 5, TREG>, InsertReg<11, 7, SREG>>;
+class BGEIUC_T: InstructionTemplate32<BGEIUC, PC11_S1, InsertReg<21, 5, TREG>, InsertReg<11, 7, SREG>>;
+class BLTIUC_T: InstructionTemplate32<BLTIUC, PC11_S1, InsertReg<21, 5, TREG>, InsertReg<11, 7, SREG>>;
+
+
 // -------------------------- End InstructionTemplate --------------------------
 
 // ---------------------------- InstructionProperty ----------------------------
@@ -356,6 +376,16 @@ def BNEZC16_P: InstructionProperty16<BNEZC16, ExtractReg<7, 3>, convertReg, ?, ?
 def RESTOREGP_P: InstructionProperty32<RESTOREGP, ExtractReg<16, 4>, ?, extractSaveResFields, ?>;
 def RESTOREJRCGP_P: InstructionProperty32<RESTOREJRCGP, ExtractReg<16, 4>, ?, extractSaveResFields, ?>;
 def SAVEGP_P: InstructionProperty32<SAVEGP, ExtractReg<16, 4>, ?, extractSaveResFields, ?>;
+
+// Here sreg represents bits val or imm
+def BBEQZC_P: InstructionProperty32NoValid<BBEQZC, ExtractReg<21, 5>, ExtractReg<11, 6>>;
+def BBNEZC_P: InstructionProperty32NoValid<BBNEZC, ExtractReg<21, 5>, ExtractReg<11, 6>>;
+def BEQIC_P: InstructionProperty32NoValid<BEQIC, ExtractReg<21, 5>, ExtractReg<11, 7>>;
+def BNEIC_P: InstructionProperty32NoValid<BNEIC, ExtractReg<21, 5>, ExtractReg<11, 7>>;
+def BGEIC_P: InstructionProperty32NoValid<BGEIC, ExtractReg<21, 5>, ExtractReg<11, 7>>;
+def BLTIC_P: InstructionProperty32NoValid<BLTIC, ExtractReg<21, 5>, ExtractReg<11, 7>>;
+def BGEIUC_P: InstructionProperty32NoValid<BGEIUC, ExtractReg<21, 5>, ExtractReg<11, 7>>;
+def BLTIUC_P: InstructionProperty32NoValid<BLTIUC, ExtractReg<21, 5>, ExtractReg<11, 7>>;
 
 // -------------------------- End InstructionProperty --------------------------
 
@@ -509,5 +539,20 @@ def : TransformationTemplate<TT_SAVERESTORE16, RESTOREJRCGP_P, (relocs SAVERESTO
 def : TransformationTemplate<TT_DISCARD, SAVEGP_P, (relocs SAVERESTORE), (insns SAVE32_T<>)>;
 def : TransformationTemplate<TT_SAVERESTORE16, SAVEGP_P, (relocs SAVERESTORE), (insns SAVE16_T<>)>;
 
+def : TransformationTemplate<TT_PCREL32_LONG, BBEQZC_P, (relocs PC11_S1), (insns BBNEZC_T<>, BC32_T<>)>;
+
+def : TransformationTemplate<TT_PCREL32_LONG, BBNEZC_P, (relocs PC11_S1), (insns BBEQZC_T<>, BC32_T<>)>;
+
+def : TransformationTemplate<TT_PCREL32_LONG, BEQIC_P, (relocs PC11_S1), (insns BNEIC_T<>, BC32_T<>)>;
+
+def : TransformationTemplate<TT_PCREL32_LONG, BNEIC_P, (relocs PC11_S1), (insns BEQIC_T<>, BC32_T<>)>;
+
+def : TransformationTemplate<TT_PCREL32_LONG, BGEIC_P, (relocs PC11_S1), (insns BLTIC_T<>, BC32_T<>)>;
+
+def : TransformationTemplate<TT_PCREL32_LONG, BLTIC_P, (relocs PC11_S1), (insns BGEIC_T<>, BC32_T<>)>;
+
+def : TransformationTemplate<TT_PCREL32_LONG, BGEIUC_P, (relocs PC11_S1), (insns BLTIUC_T<>, BC32_T<>)>;
+
+def : TransformationTemplate<TT_PCREL32_LONG, BLTIUC_P, (relocs PC11_S1), (insns BGEIUC_T<>, BC32_T<>)>;
 
 // ------------------------ End TransformationTemplate -------------------------

@@ -78,6 +78,15 @@
 # CHECK-NMF-PCREL: d830 jalrc at
 # CHECK-NMF-PCREL-NEXT: 29{{.*}} bc {{.*}}<pc25_far>
 
+# CHECK-NMF-PCREL: c8{{.*}} bbnezc {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL-NEXT: 28{{.*}} bc {{.*}} <pc11_far>
+# CHECK-NMF-PCREL: c8{{.*}} bbeqzc {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: c8{{.*}} bneic {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: c8{{.*}} beqic {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: c8{{.*}} bltic {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: c8{{.*}} bgeic {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: c8{{.*}} bltiuc {{.*}} <__skip_bc__{{[0-9]*}}>
+# CHECK-NMF-PCREL: c8{{.*}} bgeiuc {{.*}} <__skip_bc__{{[0-9]*}}>
 
 # Will only check differences from others from now on
 
@@ -325,3 +334,35 @@ pc25_far:
     addiu $a1, $a2, 1
     .end pc25_far
     .size pc25_far, .-pc25_far
+
+
+    .section .expand_pc11_sec, "ax", @progbits
+    .align 1
+    .globl expand_pc11
+    .ent expand_pc11
+
+expand_pc11:
+    .ifndef nms
+    bbeqzc $a1, 5, pc11_far
+    bbnezc $a1, 5, pc11_far
+    beqic $a1, 10, pc11_far
+    bneic $a1, 10, pc11_far
+    bgeic $a1, 15, pc11_far
+    bltic $a1, 15, pc11_far
+    bgeiuc $a1, 20, pc11_far
+    bltiuc $a1, 20, pc11_far
+    # Shouldn't expand as it is not too far
+    bbeqzc $a1, 25, pc11_far
+    .endif
+    .end expand_pc11
+    .size expand_pc11, .-expand_pc11
+
+    .section .pc11_far_sec, "ax", @progbits
+    .align 1
+    .globl pc11_far
+    .ent pc11_far
+
+pc11_far:
+    addiu $a1, $a2, 1
+    .end pc11_far
+    .size pc11_far, .-pc11_far

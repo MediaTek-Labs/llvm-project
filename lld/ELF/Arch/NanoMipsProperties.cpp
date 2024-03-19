@@ -562,6 +562,13 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
       sReg = 0;
       break;
     }
+    case R_NANOMIPS_PC11_S1:
+    {
+      tReg = insProperty->getTReg(insn);
+      // sReg is imm or bit value here
+      sReg = insProperty->getSReg(insn);
+      break;
+    }
     default:
     // Should be unreachable, but for now just break and return
       LLVM_DEBUG(llvm::dbgs() << "Transform for relocation: " << reloc->type << " not supported yet!\n");
@@ -622,7 +629,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
 
   // We are adding a symbol for branch over the bc instruction, as this generates a negative branch + bc32
   // and the negative branch needs to skip bc32
-  if(oldRelType == R_NANOMIPS_PC14_S1 && transformTemplate->getType() == TT_NANOMIPS_PCREL32_LONG)
+  if((oldRelType == R_NANOMIPS_PC14_S1 || oldRelType == R_NANOMIPS_PC11_S1) && transformTemplate->getType() == TT_NANOMIPS_PCREL32_LONG)
   {
     // TODO: Maybe optimize this writing to string?
     std::stringstream SS;
@@ -771,6 +778,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
     case R_NANOMIPS_PC10_S1:
     case R_NANOMIPS_PC7_S1:
     case R_NANOMIPS_PC25_S1:
+    case R_NANOMIPS_PC11_S1:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -783,6 +791,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
 {
   // TODO: Maybe it is not possible to have val & 0x1 not equal to 0 at some cases
   // check this
+  // TODO: Check if pcrel and/or abs is respected well
   const uint32_t bits = config->wordsize * 8;
   uint64_t gpVal = SignExtend64(ElfSym::mipsGp->value, bits);
   switch(reloc.type)
@@ -857,6 +866,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
       uint64_t val = valueToRelocate - 4;
       if(isInt<26>(val) && ((val & 0x1) == 0))
       {
+        // Copied from gold
         // The offset in backward branch should be less than or equal to 0xffff.
         // The offset in forward branch should be greater than or equal to
         // 0xff0000. The range is (-33423362, 33423360).
@@ -872,6 +882,14 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
         return nullptr;
       }
 
+      break;
+    }
+    case R_NANOMIPS_PC11_S1:
+    {
+      uint64_t val = valueToRelocate - 4;
+      if(isInt<12>(val) && ((val & 0x1) == 0))
+        return nullptr;
+      
       break;
     }
     default:
@@ -903,6 +921,8 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
           insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type);
     
     case R_NANOMIPS_PC14_S1:
+    case R_NANOMIPS_PC11_S1:
+    // Opposite branch transformation
         return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type);
 
     case R_NANOMIPS_PC4_S1:

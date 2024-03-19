@@ -563,6 +563,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
       break;
     }
     case R_NANOMIPS_PC11_S1:
+    case R_NANOMIPS_LO12:
     {
       tReg = insProperty->getTReg(insn);
       // sReg is imm or bit value here
@@ -702,6 +703,13 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
       if(insProperty->hasTransform(TT_NANOMIPS_PCREL16, reloc)) return insProperty;
       return nullptr;
     }
+    case R_NANOMIPS_LO12:
+    {
+      if(config->nanoMipsRelaxLo12 && insProperty->hasTransform(TT_NANOMIPS_ABS16, reloc)
+        && insProperty->areRegsValid(insn)) return insProperty;
+
+      return nullptr;
+    }
     default:
       // TODO: Should be just break, but after all relocs are processed
       // I will change this 
@@ -751,6 +759,14 @@ const NanoMipsTransformTemplate *NanoMipsTransformRelax::getTransformTemplate(co
       
       if(((val & 0x1) == 0) && isInt<11>(val))
         return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL16, reloc.type);
+      else
+        return nullptr;
+    }
+    case R_NANOMIPS_LO12:
+    {
+      uint64_t val = valueToRelocate & 0xfff;
+      if(((val & 0x3) == 0) && isUInt<6>(val))
+        return insProperty->getTransformTemplate(TT_NANOMIPS_ABS16, reloc.type);
       else
         return nullptr;
     }

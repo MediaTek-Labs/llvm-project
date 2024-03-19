@@ -44,15 +44,16 @@ def PC25_S1: RelocProperty32<26, 0xfe000000>;
 def PC11_S1: RelocProperty32<12, 0xfc1c0000>;
 // Currently doing
 def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
+def LO12: RelocProperty32<12, 0xfc00f000>;
 // The next need to be worked on
 def I32: RelocProperty48HI6LO5<32>;
 def PC_HI20: RelocProperty32NoMask<20>;
 def HI20: RelocProperty32NoMask<20>;
-def LO12: RelocProperty32<12, 0xfc00f000>;
 def GPREL7_S2: RelocProperty16HI6<9>;
 def GPREL_I32: RelocProperty48HI6LO5<32>;
 def GPREL_HI20: RelocProperty32NoMask<20>;
 def GPREL_LO12: RelocProperty32NoMask<12>;
+def LO4_S2: RelocProperty16HI6<6>;
 
 // ----------------------------- End RelocProperty -----------------------------
 
@@ -248,6 +249,9 @@ def BLTIC: InstructionIdentifier<"bltic", 0xc8180000>;
 def BGEIUC: InstructionIdentifier<"bgeiuc", 0xc80c0000>;
 def BLTIUC: InstructionIdentifier<"bltiuc", 0xc81c0000>;
 
+def LW16: InstructionIdentifier<"lw[16]", 0x1400>;
+def SW16: InstructionIdentifier<"sw[16]", 0x9400>;
+
 // ------------------------- End InstructionIdentifier -------------------------
 
 // ---------------------------- InstructionTemplate ----------------------------
@@ -295,6 +299,8 @@ class SB32_T<RelocProperty reloc>: InstructionTemplate32<SB32, reloc, InsertReg<
 class LH32_T<RelocProperty reloc>: InstructionTemplate32<LH32, reloc, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
 class LHU32_T<RelocProperty reloc>: InstructionTemplate32<LHU32, reloc, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
 class SH32_T<RelocProperty reloc>: InstructionTemplate32<SH32, reloc, InsertReg<21, 5, TREG>, InsertReg<16, 5, SREG>>;
+class LW16_T<RelocProperty reloc>: InstructionTemplate16<LW16, reloc, InsertReg<7, 3, TREG>, InsertReg<4, 3, SREG>>;
+class SW16_T<RelocProperty reloc>: InstructionTemplate16<SW16, reloc, InsertReg<7, 3, TREG>, InsertReg<4, 3, SREG>>;
 
 class ADDIUGPW32_T: InstructionTemplate32<ADDIUGPW32, GPREL19_S2, InsertReg<21, 5, TREG>, ?>;
 class LWGP32_T: InstructionTemplate32<LWGP32, GPREL19_S2, InsertReg<21, 5, TREG>, ?>;
@@ -387,6 +393,9 @@ def BLTIC_P: InstructionProperty32NoValid<BLTIC, ExtractReg<21, 5>, ExtractReg<1
 def BGEIUC_P: InstructionProperty32NoValid<BGEIUC, ExtractReg<21, 5>, ExtractReg<11, 7>>;
 def BLTIUC_P: InstructionProperty32NoValid<BLTIUC, ExtractReg<21, 5>, ExtractReg<11, 7>>;
 
+def LW32_P: InstructionProperty32Valid<LW32, ExtractReg<21, 5>, ExtractReg<16, 5>>;
+def SW32_P: InstructionProperty32<SW32, ExtractReg<21, 5>, isStoreSrcRegValid, ExtractReg<16, 5>, isRegValid>;
+
 // -------------------------- End InstructionProperty --------------------------
 
 // ---------------------------- TransformationType -----------------------------
@@ -414,6 +423,8 @@ def TT_SAVERESTORE16: TransformationType;
 
 def TT_ABS16_LONG: TransformationType;
 def TT_PCREL16_LONG: TransformationType;
+
+def TT_ABS16: TransformationType;
 
 // -------------------------- End TransformationType ---------------------------
 
@@ -554,5 +565,9 @@ def : TransformationTemplate<TT_PCREL32_LONG, BLTIC_P, (relocs PC11_S1), (insns 
 def : TransformationTemplate<TT_PCREL32_LONG, BGEIUC_P, (relocs PC11_S1), (insns BLTIUC_T<>, BC32_T<>)>;
 
 def : TransformationTemplate<TT_PCREL32_LONG, BLTIUC_P, (relocs PC11_S1), (insns BGEIUC_T<>, BC32_T<>)>;
+
+def : TransformationTemplate<TT_ABS16, LW32_P, (relocs LO12), (insns LW16_T<LO4_S2>)>;
+
+def : TransformationTemplate<TT_ABS16, SW32_P, (relocs LO12), (insns SW16_T<LO4_S2>)>;
 
 // ------------------------ End TransformationTemplate -------------------------

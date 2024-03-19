@@ -10,6 +10,13 @@
     .globl fix_neg
     .ent fix_neg
 
+# CHECK: 6023 {{.*}} lapc at{{.*}}<fix_pos>
+# CHECK: d820 jrc at
+# CHECK-NEXT: 29{{.*}} bc {{.*}}<fix_pos>
+# CHECK-NEXT: 2a{{.*}} balc {{.*}}<fix_neg>
+# CHECK-NEXT: 6023{{.*}} lapc {{.*}}
+# CHECK: d830 jalrc at
+
 fix_neg:
 
     addiu $a1, $a2, 1

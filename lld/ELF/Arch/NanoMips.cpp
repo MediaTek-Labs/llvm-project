@@ -220,6 +220,21 @@ static void writeValue32be(uint8_t *loc, uint64_t val, uint8_t bitsSize,
     writeShuffle32<E>(loc, data);
 }
 
+void checkVal(uint8_t *loc, int64_t v, int n, const Relocation &rel, const Symbol &sym, uint32_t shift, bool signedVal)
+{
+  // TODO: Make this function used by all Relocation with S in them
+  if ((v & ((1 << shift) - 1)) != 0)
+  {
+    error(getErrorLocation(loc) + "\tvalue: \t" + llvm::utohexstr(v) + "\tlast N bits have to be zero in all S{N} relocations \n");
+  }
+
+  if(sym.isUndefWeak()) return;
+  if(signedVal)
+    checkInt(loc, v, n, rel);
+  else
+    checkUInt(loc, v, n, rel);
+}
+
 void checkIntPcRel(uint8_t *loc, int64_t v, int n, const Relocation &rel, const Symbol &sym) {
   if ((v & 1) != 0)
     error(getErrorLocation(loc) + "\tvalue: \t" + llvm::utohexstr(v) + "\tlast bit has to be zero in all PC_REL \n");
@@ -256,6 +271,7 @@ RelExpr NanoMips<ELFT>::getRelExpr(RelType type, const Symbol &s,
   case R_NANOMIPS_ASHIFTR_1:
   case R_NANOMIPS_I32:
   case R_NANOMIPS_HI20:
+  case R_NANOMIPS_LO4_S2:
     return R_ABS;
   case R_NANOMIPS_PC_HI20:
     return R_NANOMIPS_PAGE_PC;
@@ -376,6 +392,11 @@ void NanoMips<ELFT>::relocate(uint8_t *loc, const Relocation &rel, uint64_t val)
     break;
   case R_NANOMIPS_LO12:
     writeValue32be<ELFT::TargetEndianness>(loc, val, 12, 0);
+    break;
+  case R_NANOMIPS_LO4_S2:
+  // TODO: Check if you should see that the
+    checkVal(loc, val & 0xfff, 6, rel, *rel.sym, 2, false);
+    writeValue16(loc, val >> 2, 4, 0);
     break;
   case R_NANOMIPS_GPREL19_S2:
     checkUInt(loc, val, 21, rel);

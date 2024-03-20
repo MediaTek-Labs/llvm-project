@@ -1,18 +1,21 @@
 # REQUIRES: nanomips
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6 -mpcrel %s -o %t.o
-# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6
+# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6 --relax
 # RUN: %nanomips-elf-objdump -d %t | FileCheck %s --check-prefix=CHECK-NMF-STRICT
-# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6 --no-strict-address-modes
+# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6 --no-strict-address-modes --relax
 # RUN: %nanomips-elf-objdump -d %t | FileCheck %s --check-prefix=CHECK-NMF-NO-STRICT
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6s -mpcrel %s -o %t.o
-# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6
+# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6 --relax
 # RUN: %nanomips-elf-objdump -d %t | FileCheck %s --check-prefix=CHECK-NMS-STRICT
-# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6 --no-strict-address-modes
+# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6 --no-strict-address-modes --relax
 # RUN: %nanomips-elf-objdump -d %t | FileCheck %s --check-prefix=CHECK-NMS-NO-STRICT-PCREL
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6s -mno-pcrel %s -o %t.o
-# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6 --no-strict-address-modes
+# RUN: ld.lld -T %S/Inputs/nanomips-gp-relax.ld %t.o -o %t --expand-reg 6 --no-strict-address-modes --relax
 # RUN: %nanomips-elf-objdump -d %t | FileCheck %s --check-prefix=CHECK-NMS-NO-STRICT-NO-PCREL
 
+
+# CHECK-NMF-STRICT: 60a3{{.*}} lapc {{.*}} <lapc_far>
+# CHECK-NMF-STRICT: 60e3{{.*}} lapc {{.*}} <lapc_far>
 
 # CHECK-NMF-STRICT: 40{{.*}} lw {{.*}}(gp)
 # CHECK-NMF-STRICT-NEXT: 60c2{{.*}} addiu a2,gp
@@ -41,6 +44,11 @@
 # CHECK-NMF-STRICT: 84a6{{.*}} lhu {{.*}}0(a2)
 # CHECK-NMF-STRICT-NEXT: 60c2{{.*}} addiu a2,gp
 # CHECK-NMF-STRICT: 84a6{{.*}} sh {{.*}}0(a2)
+
+# CHECK-NMF-STRICT: 56{{.*}} lw {{.*}}(gp)
+# CHECK-NMF-STRICT-NEXT: d6{{.*}} sw {{.*}}(gp)
+# CHECK-NMF-STRICT-NEXT: 41{{.*}} lw {{.*}}(gp)
+# CHECK-NMF-STRICT-NEXT: 40{{.*}} lw {{.*}}(gp)
 
 
 
@@ -92,61 +100,60 @@
 # CHECK-NMS-STRICT-NEXT: 84a6{{.*}} sh{{.*}}(a2)
 
 
-
-# CHECK-NMS-NO-STRICT-PCREL: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 84a6{{.*}} lw {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 84a6{{.*}} lw {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 84a6{{.*}} sw {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 80a6{{.*}} ori {{.*}},a2
 
-# CHECK-NMS-NO-STRICT-PCREL: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 84a6{{.*}} lb {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 84a6{{.*}} sb {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 84a6{{.*}} lbu {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-PCREL: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 80a6{{.*}} ori {{.*}},a2
-# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 80a6{{.*}} ori {{.*}},a2
 
-# CHECK-NMS-NO-STRICT-PCREL: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 84a6{{.*}} lh {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 84a6{{.*}} lhu {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0c{{.*}} aluipc a2
+# CHECK-NMS-NO-STRICT-PCREL-NEXT: e0{{.*}} aluipc a2
 # CHECK-NMS-NO-STRICT-PCREL-NEXT: 84a6{{.*}} sh {{.*}}(a2)
 
 
 
-# CHECK-NMS-NO-STRICT-NO-PCREL: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 84a6{{.*}} lw {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 84a6{{.*}} lw {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 84a6{{.*}} sw {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 80a6{{.*}} ori {{.*}},a2
 
-# CHECK-NMS-NO-STRICT-NO-PCREL: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 84a6{{.*}} lb {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 84a6{{.*}} sb {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 84a6{{.*}} lbu {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-NO-PCREL: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 80a6{{.*}} ori {{.*}},a2
-# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 80a6{{.*}} ori {{.*}},a2
 
-# CHECK-NMS-NO-STRICT-NO-PCREL: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 84a6{{.*}} lh {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 84a6{{.*}} lhu {{.*}}(a2)
-# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0c{{.*}} lui a2,%hi
+# CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: e0{{.*}} lui a2,%hi
 # CHECK-NMS-NO-STRICT-NO-PCREL-NEXT: 84a6{{.*}} sh {{.*}}(a2)
 
 
@@ -179,5 +186,29 @@ _start:
     lhu $a1, %gprel(out_range_18)($gp)
     sh $a1, %gprel(out_range_18)($gp)
 
+    # Relax
+
+    lw $a1, %gprel(gprel9_relax)($gp)
+    sw $a1, %gprel(gprel9_relax)($gp)
+    # No expand, not valid reg
+    lw $t0, %gprel(gprel9_relax)($gp)
+    # Relax then expand
+    lw $a1, %gprel(gprel9_relax_expand_sym)($gp) 
+
     .end _start
     .size _start, .-_start
+
+    .section .gprel9_relax_sec, "ax", @progbits
+    .globl gprel9_relax
+    .ent gprel9_relax
+
+gprel9_relax:
+
+    lapc $a1, lapc_far
+    lapc $a3, lapc_far
+
+gprel9_relax_expand_sym:
+
+    .end gprel9_relax
+    .size gprel9_relax, .-gprel9_relax
+

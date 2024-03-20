@@ -44,12 +44,12 @@ def PC25_S1: RelocProperty32<26, 0xfe000000>;
 def PC11_S1: RelocProperty32<12, 0xfc1c0000>;
 def LO12: RelocProperty32<12, 0xfc00f000>;
 def LO4_S2: RelocProperty16HI6<6>;
+def PC_HI20: RelocProperty32NoMask<20>;
+def I32: RelocProperty48HI6LO5<32>;
+def HI20: RelocProperty32NoMask<20>;
 // Currently doing
 def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
-def I32: RelocProperty48HI6LO5<32>;
 // The next need to be worked on
-def PC_HI20: RelocProperty32NoMask<20>;
-def HI20: RelocProperty32NoMask<20>;
 def GPREL7_S2: RelocProperty16HI6<9>;
 def GPREL_I32: RelocProperty48HI6LO5<32>;
 def GPREL_HI20: RelocProperty32NoMask<20>;
@@ -407,6 +407,9 @@ def SW16_P: InstructionProperty16<SW16, ExtractReg<7, 3>, convertStoreSrcReg, Ex
 def LI48_P: InstructionProperty48<LI48, ExtractReg<5, 5>>;
 def ADDIU48_P: InstructionProperty48<ADDIU48, ExtractReg<5, 5>>;
 
+def LWGP16_P: InstructionProperty16<LWGP16, ExtractReg<7, 3>, convertReg, ?, ?>;
+def SWGP16_P: InstructionProperty16<SWGP16, ExtractReg<7, 3>, convertStoreSrcReg, ?, ?>;
+
 // -------------------------- End InstructionProperty --------------------------
 
 // ---------------------------- TransformationType -----------------------------
@@ -589,5 +592,9 @@ def : TransformationTemplate<TT_ABS32, SW16_P, (relocs LO4_S2), (insns SW32_T<LO
 def : TransformationTemplate<TT_IMM48_FIX, ADDIU48_P, (relocs I32), (insns LAPC48_T<SREG>, ADDU32_T<TREG, SREG>)>;
 
 def : TransformationTemplate<TT_IMM48_FIX, LI48_P, (relocs I32), (insns LAPC48_T<TREG>)>;
+
+def : TransformationTemplate<TT_GPREL32_WORD, LWGP16_P, (relocs GPREL7_S2), (insns LWGP32_T<>)>;
+
+def : TransformationTemplate<TT_GPREL32_WORD, SWGP16_P, (relocs GPREL7_S2), (insns SWGP32_T<>)>;
 
 // ------------------------ End TransformationTemplate -------------------------

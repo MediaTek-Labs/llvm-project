@@ -178,7 +178,7 @@ static void writeValueHi20(uint8_t *loc, uint64_t val) {
   writeShuffle32<E>(loc, masked);
 }
 
-//used for: R_NANOMIPS_PC4_S1 and R_NANOMIPS_GPREL_S2
+//used for: R_NANOMIPS_PC4_S1 and R_NANOMIPS_GPREL7_S2
 static void writeValue16(uint8_t *loc, uint64_t val, uint8_t bitsSize,
                        uint8_t shift) {
   uint32_t instr = read16(loc);
@@ -362,7 +362,7 @@ void NanoMips<ELFT>::relocate(uint8_t *loc, const Relocation &rel, uint64_t val)
     break;
   case R_NANOMIPS_GPREL7_S2:
     checkUInt(loc, val, 9, rel);
-    writeValue16(loc, val, 7, 2);
+    writeValue16(loc, val >> 2, 7, 0);
     break;
   case R_NANOMIPS_PC10_S1:
     checkIntPcRel(loc, val - 2, 11, rel, *rel.sym);

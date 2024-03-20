@@ -567,6 +567,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
       break;
     }
     case R_NANOMIPS_PC7_S1:
+    case R_NANOMIPS_GPREL7_S2:
     {
       tReg = insProperty->convTReg(insn);
       sReg = 0;
@@ -720,6 +721,13 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
 
       return nullptr;
     }
+    case R_NANOMIPS_GPREL19_S2:
+    {
+      if(insProperty->hasTransform(TT_NANOMIPS_GPREL16, reloc) && insProperty->isTRegValid(insn)) 
+        return insProperty;
+      
+      return nullptr;
+    }
     default:
       // TODO: Should be just break, but after all relocs are processed
       // I will change this 
@@ -732,6 +740,8 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
 
 const NanoMipsTransformTemplate *NanoMipsTransformRelax::getTransformTemplate(const NanoMipsInsProperty *insProperty, const Relocation &reloc, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const
 {
+  const uint32_t bits = config->wordsize * 8;
+  uint64_t gpVal = SignExtend64(ElfSym::mipsGp->value, bits);
   // TODO: Maybe it is not possible to have val & 0x1 not equal to 0 at some cases
   // check this
   switch(reloc.type)
@@ -780,6 +790,14 @@ const NanoMipsTransformTemplate *NanoMipsTransformRelax::getTransformTemplate(co
       else
         return nullptr;
     }
+    case R_NANOMIPS_GPREL19_S2:
+    {
+      uint64_t val = valueToRelocate;
+      if((gpVal != -1ULL) && (((val & 0x3) == 0) && isUInt<9>(val)))
+        return insProperty->getTransformTemplate(TT_NANOMIPS_GPREL16, reloc.type);
+      else
+        return nullptr;
+    }
     default:
       //TODO: Should be unreachable when all relocs are processed
       break;
@@ -807,6 +825,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
     case R_NANOMIPS_PC11_S1:
     case R_NANOMIPS_LO4_S2:
     case R_NANOMIPS_I32:
+    case R_NANOMIPS_GPREL7_S2:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -935,6 +954,14 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
       
       break;
     }
+    case R_NANOMIPS_GPREL7_S2:
+    {
+      uint64_t val = valueToRelocate;
+      if(gpVal == -1ULL || (isUInt<9>(val) && ((val & 0x3) == 0)))
+        return nullptr;
+      break;
+    }
+
     default:
     // TODO: Should be unreachable when all relocs are processed
     LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);
@@ -1031,6 +1058,9 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
     }
     case R_NANOMIPS_LO4_S2:
       return insProperty->getTransformTemplate(TT_NANOMIPS_ABS32, reloc.type);
+
+    case R_NANOMIPS_GPREL7_S2:
+      return insProperty->getTransformTemplate(TT_NANOMIPS_GPREL32_WORD, reloc.type);
     
     default:
       // Should be unreachable when all relocs are processed

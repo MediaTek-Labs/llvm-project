@@ -77,8 +77,16 @@ uint32_t moveBalcSReg(uint64_t data)
 uint32_t convertReg(uint32_t reg)
 {
   static uint32_t gpr3Map[] = { 16, 17, 18, 19, 4, 5, 6, 7 };
-  assert(reg < sizeof(gpr3Map) / sizeof(gpr3Map[0]));
+  assert(reg < sizeof(gpr3Map) / sizeof(gpr3Map[0]) && "Invalid 3bit reg");
   return gpr3Map[reg];
+}
+
+// Convert 3-bit store src reg to 5-bit reg
+uint32_t convertStoreSrcReg(uint32_t reg)
+{
+  static uint32_t gpr3StoreSrcMap[] = { 0, 17, 18, 19, 4, 5, 6, 7};
+  assert(reg < sizeof(gpr3StoreSrcMap) / sizeof(gpr3StoreSrcMap[0]) && "Invalid 3bit reg");
+  return gpr3StoreSrcMap[reg];
 }
 
 // Check if a 5-bit reg can be converted to a 3-bit one
@@ -520,6 +528,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
     }
 
     case R_NANOMIPS_PC4_S1:
+    case R_NANOMIPS_LO4_S2:
     {
       tReg = insProperty->convTReg(insn);
       sReg = insProperty->convSReg(insn);
@@ -795,6 +804,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
     case R_NANOMIPS_PC7_S1:
     case R_NANOMIPS_PC25_S1:
     case R_NANOMIPS_PC11_S1:
+    case R_NANOMIPS_LO4_S2:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -908,6 +918,14 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
       
       break;
     }
+    case R_NANOMIPS_LO4_S2:
+    {
+      uint64_t val = valueToRelocate & 0xfff;
+      if(isUInt<6>(val) && ((val & 0x3) == 0)) 
+        return nullptr;
+      
+      break;
+    }
     default:
     // TODO: Should be unreachable when all relocs are processed
     LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);
@@ -924,6 +942,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
   switch(reloc.type)
   {
     case R_NANOMIPS_PC21_S1:
+    {
       if(insProperty->getName() == "move.balc")
         // TODO: See how this goes with insn32 option, as this transformation generates 16bit move with balc
         return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type);
@@ -935,7 +954,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
         return pcrel ?
           insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type) :
           insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type);
-    
+    }
     case R_NANOMIPS_PC14_S1:
     case R_NANOMIPS_PC11_S1:
     // Opposite branch transformation
@@ -952,6 +971,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
     case R_NANOMIPS_GPREL19_S2:
     case R_NANOMIPS_GPREL18:
     case R_NANOMIPS_GPREL17_S1:
+    {
       if(insProperty->getName().contains("addiu"))
       {
         // Transforms for addiu[gp.w] and addiu[gp.b]
@@ -976,6 +996,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
             insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type) :
             insProperty->getTransformTemplate(TT_NANOMIPS_ABS32_LONG, reloc.type);
       }
+    }
     case R_NANOMIPS_PC10_S1:
     case R_NANOMIPS_PC7_S1:
       return insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32, reloc.type);
@@ -998,6 +1019,9 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
           insProperty->getTransformTemplate(TT_NANOMIPS_PCREL32_LONG, reloc.type) :
           insProperty->getTransformTemplate(TT_NANOMIPS_PCREL16_LONG, reloc.type);
     }
+    case R_NANOMIPS_LO4_S2:
+      return insProperty->getTransformTemplate(TT_NANOMIPS_ABS32, reloc.type);
+    
     default:
       // Should be unreachable when all relocs are processed
       LLVM_DEBUG(llvm::dbgs() << "Relocation: " << reloc.type << " not supported yet for expansions\n";);
@@ -1023,14 +1047,16 @@ void NanoMipsTransformController::initState()
 
 void NanoMipsTransformController::changeState(int pass)
 {
+
   if(this->currentState->getChangedThisIteration()) 
   {
     // We want to repeat the transformation until it doesn't change anything in iterations
     this->currentState->resetChangedThisIteration();
     return;
   }
-  if(this->currentState->getChanged() && this->currentState->getType() == NanoMipsTransform::TransformRelax && config->expand)
+  if((notExpandedYet || this->currentState->getChanged()) && this->currentState->getType() == NanoMipsTransform::TransformRelax && config->expand)
   {
+    notExpandedYet = false;
     this->currentState->resetChanged();
     this->currentState = &this->transformExpand;
     LLVM_DEBUG(llvm::dbgs() << "Changed transform state to Expand\n");

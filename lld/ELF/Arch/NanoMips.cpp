@@ -219,7 +219,7 @@ static void writeValue32be(uint8_t *loc, uint64_t val, uint8_t bitsSize,
     // data = bswap(data);
     writeShuffle32<E>(loc, data);
 }
-
+// TODO: Maybe put this function instead checkIntPcrel
 void checkVal(uint8_t *loc, int64_t v, int n, const Relocation &rel, const Symbol &sym, uint32_t shift, bool signedVal)
 {
   // TODO: Make this function used by all Relocation with S in them
@@ -394,7 +394,6 @@ void NanoMips<ELFT>::relocate(uint8_t *loc, const Relocation &rel, uint64_t val)
     writeValue32be<ELFT::TargetEndianness>(loc, val, 12, 0);
     break;
   case R_NANOMIPS_LO4_S2:
-  // TODO: Check if you should see that the
     checkVal(loc, val & 0xfff, 6, rel, *rel.sym, 2, false);
     writeValue16(loc, val >> 2, 4, 0);
     break;

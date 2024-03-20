@@ -385,6 +385,7 @@ namespace elf{
       // There can be an infinite loop between relax and expand
       // so relaxations are limited to only work up until 10 passes total
       const int relaxPassLimit = 10;
+      bool notExpandedYet = true;
 
   };
 

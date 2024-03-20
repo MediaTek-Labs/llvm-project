@@ -1640,16 +1640,11 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
 
     // With Thunk Size much smaller than branch range we expect to
     // converge quickly; if we get to 15 something has gone wrong.
-    if (changed && pass >= 15) {
+    // Note: Increased to 30 as nanoMIPS has expansions also
+    // this still doesn't guarantee if it will be expanded
+    if (changed && pass >= /*15*/ 30) {
       error(target->needsThunks ? "thunk creation not converged"
                                 : "relaxation not converged");
-      break;
-    }
-
-    // If relaxation doesn't converge within 30 iterations, break it
-    if (changed && pass >= 30)
-    {
-      error("relaxation not converged");
       break;
     }
 

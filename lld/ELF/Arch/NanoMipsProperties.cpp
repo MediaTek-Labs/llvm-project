@@ -535,6 +535,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
       break;
     }
     case R_NANOMIPS_PC_I32:
+    case R_NANOMIPS_I32:
     {
       tReg = insProperty->getTReg(insn);
       // Needed for addu 32 to fill spots of two registers rt and rs
@@ -805,6 +806,7 @@ const NanoMipsInsProperty * lld::elf::NanoMipsTransformExpand::getInsProperty(ui
     case R_NANOMIPS_PC25_S1:
     case R_NANOMIPS_PC11_S1:
     case R_NANOMIPS_LO4_S2:
+    case R_NANOMIPS_I32:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       break;
@@ -846,6 +848,13 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
     case R_NANOMIPS_PC_I32:
     {
       uint64_t val = valueToRelocate - 4;
+      if(!valueNeedsHw110880Fix(val))
+        return nullptr;
+      break;
+    }
+    case R_NANOMIPS_I32:
+    {
+      uint64_t val = valueToRelocate;
       if(!valueNeedsHw110880Fix(val))
         return nullptr;
       break;
@@ -967,6 +976,7 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTra
         insProperty->getTransformTemplate(TT_NANOMIPS_BEQC32, reloc.type);
     
     case R_NANOMIPS_PC_I32:
+    case R_NANOMIPS_I32:
       return insProperty->getTransformTemplate(TT_NANOMIPS_IMM48_FIX, reloc.type);
     case R_NANOMIPS_GPREL19_S2:
     case R_NANOMIPS_GPREL18:

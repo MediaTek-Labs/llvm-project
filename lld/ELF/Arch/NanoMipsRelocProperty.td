@@ -43,11 +43,11 @@ def PC7_S1: RelocProperty16HI6<8>;
 def PC25_S1: RelocProperty32<26, 0xfe000000>;
 def PC11_S1: RelocProperty32<12, 0xfc1c0000>;
 def LO12: RelocProperty32<12, 0xfc00f000>;
+def LO4_S2: RelocProperty16HI6<6>;
 // Currently doing
 def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
-def LO4_S2: RelocProperty16HI6<6>;
-// The next need to be worked on
 def I32: RelocProperty48HI6LO5<32>;
+// The next need to be worked on
 def PC_HI20: RelocProperty32NoMask<20>;
 def HI20: RelocProperty32NoMask<20>;
 def GPREL7_S2: RelocProperty16HI6<9>;
@@ -253,6 +253,9 @@ def BLTIUC: InstructionIdentifier<"bltiuc", 0xc81c0000>;
 def LW16: InstructionIdentifier<"lw[16]", 0x1400>;
 def SW16: InstructionIdentifier<"sw[16]", 0x9400>;
 
+def ADDIU48: InstructionIdentifier<"addiu[48]", 0x6001>;
+def ADDU32: InstructionIdentifier<"addu", 0x20000150>;
+
 // ------------------------- End InstructionIdentifier -------------------------
 
 // ---------------------------- InstructionTemplate ----------------------------
@@ -311,6 +314,8 @@ class LWGP16_T: InstructionTemplate16<LWGP16, GPREL7_S2, InsertReg<7, 3, TREG>, 
 class SWGP16_T: InstructionTemplate16<SWGP16, GPREL7_S2, InsertReg<7, 3, TREG>, ?>;
 
 class ADDUGP_T<RegKind treg, RegKind sreg>: InstructionTemplate32<ADDUGP, NONE, InsertReg<16, 5, treg>, InsertReg<11, 5, sreg>>;
+// Here, treg is inserted twice to get addu treg,treg,sreg
+class ADDU32_T<RegKind treg, RegKind sreg>: InstructionTemplate32<ADDU32, NONE, InsertReg<11, 10, treg>, InsertReg<21, 5, sreg>>;
 // Here, treg is actually count
 class RESTORE32_T: InstructionTemplate32<RESTORE32, NONE, InsertReg<16, 4, TREG>, insertSaveResFields>;
 class RESTOREJRC32_T: InstructionTemplate32<RESTOREJRC32, NONE, InsertReg<16, 4, TREG>, insertSaveResFields>;
@@ -398,6 +403,9 @@ def LW32_P: InstructionProperty32Valid<LW32, ExtractReg<21, 5>, ExtractReg<16, 5
 def SW32_P: InstructionProperty32<SW32, ExtractReg<21, 5>, isStoreSrcRegValid, ExtractReg<16, 5>, isRegValid>;
 def LW16_P: InstructionProperty16Conv<LW16, ExtractReg<7, 3>, ExtractReg<4, 3>>;
 def SW16_P: InstructionProperty16<SW16, ExtractReg<7, 3>, convertStoreSrcReg, ExtractReg<4, 3>, convertReg>;
+
+def LI48_P: InstructionProperty48<LI48, ExtractReg<5, 5>>;
+def ADDIU48_P: InstructionProperty48<ADDIU48, ExtractReg<5, 5>>;
 
 // -------------------------- End InstructionProperty --------------------------
 
@@ -577,5 +585,9 @@ def : TransformationTemplate<TT_ABS16, SW32_P, (relocs LO12), (insns SW16_T<LO4_
 def : TransformationTemplate<TT_ABS32, LW16_P, (relocs LO4_S2), (insns LW32_T<LO12>)>;
 
 def : TransformationTemplate<TT_ABS32, SW16_P, (relocs LO4_S2), (insns SW32_T<LO12>)>;
+
+def : TransformationTemplate<TT_IMM48_FIX, ADDIU48_P, (relocs I32), (insns LAPC48_T<SREG>, ADDU32_T<TREG, SREG>)>;
+
+def : TransformationTemplate<TT_IMM48_FIX, LI48_P, (relocs I32), (insns LAPC48_T<TREG>)>;
 
 // ------------------------ End TransformationTemplate -------------------------

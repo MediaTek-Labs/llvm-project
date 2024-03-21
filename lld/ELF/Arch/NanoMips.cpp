@@ -725,7 +725,7 @@ void NanoMips<ELFT>::finalizeRelaxations() const {
       if(sec->bytesDropped)
       {
         // TODO: Check if bytesDropped should be a bigger value, uint16_t is maybe small
-        sec->content_ = sec->content().drop_back(sec->bytesDropped).begin();
+        // sec->content_ = sec->content().drop_back(sec->bytesDropped).begin();
         sec->size -= sec->bytesDropped;
       }
       sec->bytesDropped = sec->nanoMipsRelaxAux->prevBytesDropped;

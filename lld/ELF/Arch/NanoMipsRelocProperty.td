@@ -47,11 +47,11 @@ def LO4_S2: RelocProperty16HI6<6>;
 def PC_HI20: RelocProperty32NoMask<20>;
 def I32: RelocProperty48HI6LO5<32>;
 def HI20: RelocProperty32NoMask<20>;
+def GPREL7_S2: RelocProperty16HI6<9>;
 // Currently doing
 def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
-// The next need to be worked on
-def GPREL7_S2: RelocProperty16HI6<9>;
 def GPREL_I32: RelocProperty48HI6LO5<32>;
+// The next need to be worked on
 def GPREL_HI20: RelocProperty32NoMask<20>;
 def GPREL_LO12: RelocProperty32NoMask<12>;
 
@@ -410,6 +410,8 @@ def ADDIU48_P: InstructionProperty48<ADDIU48, ExtractReg<5, 5>>;
 def LWGP16_P: InstructionProperty16<LWGP16, ExtractReg<7, 3>, convertReg, ?, ?>;
 def SWGP16_P: InstructionProperty16<SWGP16, ExtractReg<7, 3>, convertStoreSrcReg, ?, ?>;
 
+def ADDIUGP48_P: InstructionProperty48<ADDIUGP48, ExtractReg<5, 5>>;
+
 // -------------------------- End InstructionProperty --------------------------
 
 // ---------------------------- TransformationType -----------------------------
@@ -440,6 +442,8 @@ def TT_PCREL16_LONG: TransformationType;
 
 def TT_ABS16: TransformationType;
 def TT_ABS32: TransformationType;
+
+def TT_GPREL32: TransformationType;
 
 // -------------------------- End TransformationType ---------------------------
 
@@ -596,5 +600,8 @@ def : TransformationTemplate<TT_IMM48_FIX, LI48_P, (relocs I32), (insns LAPC48_T
 def : TransformationTemplate<TT_GPREL32_WORD, LWGP16_P, (relocs GPREL7_S2), (insns LWGP32_T<>)>;
 
 def : TransformationTemplate<TT_GPREL32_WORD, SWGP16_P, (relocs GPREL7_S2), (insns SWGP32_T<>)>;
+
+def : TransformationTemplate<TT_GPREL32, ADDIUGP48_P, (relocs GPREL_I32), (insns ADDIUGPB32_T<>)>;
+def : TransformationTemplate<TT_GPREL32_WORD, ADDIUGP48_P, (relocs GPREL_I32), (insns ADDIUGPW32_T<>)>;
 
 // ------------------------ End TransformationTemplate -------------------------

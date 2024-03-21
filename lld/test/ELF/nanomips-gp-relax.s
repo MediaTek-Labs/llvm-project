@@ -14,8 +14,12 @@
 # RUN: %nanomips-elf-objdump -d %t | FileCheck %s --check-prefix=CHECK-NMS-NO-STRICT-NO-PCREL
 
 
-# CHECK-NMF-STRICT: 60a3{{.*}} lapc {{.*}} <lapc_far>
-# CHECK-NMF-STRICT: 60e3{{.*}} lapc {{.*}} <lapc_far>
+# CHECK-NMF-STRICT: 60a3{{.*}} lapc {{.*}} <lapc_far_9>
+# CHECK-NMF-STRICT: 60e3{{.*}} lapc {{.*}} <lapc_far_9>
+
+# CHECK-NMF-STRICT: 60a3{{.*}} lapc {{.*}} <lapc_far_18>
+# CHECK-NMF-STRICT: 38{{.*}} balc {{.*}} <relax_balc_after_expand_18>
+
 
 # CHECK-NMF-STRICT: 40{{.*}} lw {{.*}}(gp)
 # CHECK-NMF-STRICT-NEXT: 60c2{{.*}} addiu a2,gp
@@ -38,7 +42,7 @@
 # CHECK-NMF-STRICT: 60a2{{.*}} addiu {{.*}},gp
 
 # CHECK-NMF-STRICT: 44{{.*}} lh {{.*}}(gp)
-# CHECK-NMF-STRICT-NEXT: 60c2{{.*}} addiu a2,gp
+# CHECK-NMF-STRICT-NEXT: 44{{.*}} addiu a2,gp
 # CHECK-NMF-STRICT: 84a6{{.*}} lh {{.*}}0(a2)
 # CHECK-NMF-STRICT-NEXT: 60c2{{.*}} addiu a2,gp
 # CHECK-NMF-STRICT: 84a6{{.*}} lhu {{.*}}0(a2)
@@ -49,6 +53,18 @@
 # CHECK-NMF-STRICT-NEXT: d6{{.*}} sw {{.*}}(gp)
 # CHECK-NMF-STRICT-NEXT: 41{{.*}} lw {{.*}}(gp)
 # CHECK-NMF-STRICT-NEXT: 40{{.*}} lw {{.*}}(gp)
+
+# CHECK-NMF-STRICT-NEXT: 44{{.*}} addiu {{.*}},gp
+# CHECK-NMF-STRICT-NEXT: 60a2{{.*}} addiu {{.*}},gp
+# CHECK-NMF-STRICT: 40{{.*}} addiu {{.*}},gp
+# CHECK-NMF-STRICT-NEXT: 60a2{{.*}} addiu {{.*}},gp
+# CHECK-NMF-STRICT: 60a2{{.*}} addiu {{.*}},gp
+
+# CHECK-NMF-STRICT: 60a3{{.*}} lapc {{.*}} <lapc_far_19>
+# CHECK-NMF-STRICT: 60a3{{.*}} lapc {{.*}} <lapc_far_19>
+# CHECK-NMF-STRICT: 38{{.*}} balc {{.*}} <relax_balc_after_expand_19>
+# CHECK-NMF-STRICT: 38{{.*}} balc {{.*}} <relax_balc_after_expand_19>
+
 
 
 
@@ -176,8 +192,8 @@ _start:
     lb $a1, %gprel(out_range_18)($gp)
     sb $a1, %gprel(out_range_18)($gp)
     lbu $a1, %gprel(out_range_18)($gp)
-    addiu.b $a1, $gp, %gprel(out_range_18)
     addiu.b $a1, $gp, %gprel(out_range_18 + 2)
+    addiu.b $a1, $gp, %gprel(out_range_18)
     addiu.b $a1, $gp, %gprel(b)
 
     lh $a1, %gprel(in_range_18-1)($gp)
@@ -193,7 +209,18 @@ _start:
     # No expand, not valid reg
     lw $t0, %gprel(gprel9_relax)($gp)
     # Relax then expand
-    lw $a1, %gprel(gprel9_relax_expand_sym)($gp) 
+    lw $a1, %gprel(gprel9_relax_expand_sym)($gp)
+
+    # Expand then relax
+    addiu.b $a1, $gp, %gprel(gprel_i32_18_expand_relax_sym)
+    # Expand no relax
+    addiu.b $a1, $gp, %gprel(gprel_i32_18_expand_relax_sym+3)
+    # Expand then relax
+    addiu.w $a1, $gp, %gprel(gprel_i32_19_expand_relax_sym)
+    # Expand no relax
+    addiu.w $a1, $gp, %gprel(gprel_i32_19_expand_relax_sym-2)
+    # Expand no relax
+    addiu.w $a1, $gp, %gprel(gprel_i32_19_expand_relax_sym+4)
 
     .end _start
     .size _start, .-_start
@@ -204,11 +231,68 @@ _start:
 
 gprel9_relax:
 
-    lapc $a1, lapc_far
-    lapc $a3, lapc_far
+    lapc $a1, lapc_far_9
+    lapc $a3, lapc_far_9
 
 gprel9_relax_expand_sym:
 
     .end gprel9_relax
     .size gprel9_relax, .-gprel9_relax
 
+
+    .section .gprel_i32_18_lapc_sec, "ax", @progbits
+    .globl gprel_i32_18_lapc
+    .ent gprel_i32_18_lapc
+
+gprel_i32_18_lapc:
+
+    lapc $a1, lapc_far_18
+
+relax_balc_after_expand_18:
+
+    .end gprel_i32_18_lapc
+    .size gprel_i32_18_lapc, .-gprel_i32_18_lapc
+
+
+
+    .section .gprel_i32_18_sec, "ax", @progbits
+    .globl gprel_i32_18
+    .ent gprel_i32_18
+
+gprel_i32_18:
+
+    balc relax_balc_after_expand_18
+
+gprel_i32_18_expand_relax_sym:
+
+    .end gprel_i32_18
+    .size gprel_i32_18, .-gprel_i32_18
+
+    .section .gprel_i32_19_lapc_sec, "ax", @progbits
+    .globl gprel_i32_19_lapc
+    .ent gprel_i32_19_lapc
+
+gprel_i32_19_lapc:
+
+    lapc $a1, lapc_far_19
+    lapc $a1, lapc_far_19
+
+relax_balc_after_expand_19:
+
+    .end gprel_i32_19_lapc
+    .size gprel_i32_19_lapc, .-gprel_i32_19_lapc
+
+
+    .section .gprel_i32_19_sec, "ax", @progbits
+    .globl gprel_i32_19
+    .ent gprel_i32_19
+
+gprel_i32_19:
+
+    balc relax_balc_after_expand_19
+    balc relax_balc_after_expand_19
+
+gprel_i32_19_expand_relax_sym:
+
+    .end gprel_i32_19
+    .size gprel_i32_19, .-gprel_i32_19

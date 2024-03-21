@@ -581,6 +581,12 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
       sReg = insProperty->getSReg(insn);
       break;
     }
+    case R_NANOMIPS_GPREL_I32:
+    {
+      tReg = insProperty->getTReg(insn);
+      sReg = 0;
+      break;
+    }
     default:
     // Should be unreachable, but for now just break and return
       LLVM_DEBUG(llvm::dbgs() << "Transform for relocation: " << reloc->type << " not supported yet!\n");
@@ -670,6 +676,7 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
     switch(reloc)
     {
       case R_NANOMIPS_PC_I32:
+      case R_NANOMIPS_GPREL_I32:
         break;
       default:
         return nullptr;
@@ -727,6 +734,13 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
         return insProperty;
       
       return nullptr;
+    }
+    case R_NANOMIPS_GPREL_I32:
+    {
+      if(insProperty->hasTransform(TT_NANOMIPS_GPREL32, reloc) || insProperty->hasTransform(TT_NANOMIPS_GPREL32_WORD, reloc))
+        return insProperty;
+      else
+        return nullptr;
     }
     default:
       // TODO: Should be just break, but after all relocs are processed
@@ -795,6 +809,22 @@ const NanoMipsTransformTemplate *NanoMipsTransformRelax::getTransformTemplate(co
       uint64_t val = valueToRelocate;
       if((gpVal != -1ULL) && (((val & 0x3) == 0) && isUInt<9>(val)))
         return insProperty->getTransformTemplate(TT_NANOMIPS_GPREL16, reloc.type);
+      else
+        return nullptr;
+    }
+    case R_NANOMIPS_GPREL_I32:
+    {
+      uint64_t val = valueToRelocate;
+
+      if(gpVal == -1ULL)
+        return nullptr;
+      
+      else if(((val & 0x3) != 0) && isUInt<18>(val))
+        return insProperty->getTransformTemplate(TT_NANOMIPS_GPREL32, reloc.type);
+      
+      else if(((val & 0x3) == 0) && isUInt<21>(val))
+        return insProperty->getTransformTemplate(TT_NANOMIPS_GPREL32_WORD, reloc.type);
+      
       else
         return nullptr;
     }

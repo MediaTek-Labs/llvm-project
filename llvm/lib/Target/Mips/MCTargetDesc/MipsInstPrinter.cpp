@@ -535,7 +535,7 @@ void MipsInstPrinter::printPCRel(const MCInst *MI, uint64_t Address,
                                     raw_ostream &O) {
   const MCOperand& MO = MI->getOperand(OpNum);
   if (MO.isImm())
-     O << formatHex(MO.getImm() + Address);
+    O << formatHex(Make_64(0, Lo_32((MO.getImm() + Address))));
   else
     printOperand(MI, OpNum, STI, O);
 }

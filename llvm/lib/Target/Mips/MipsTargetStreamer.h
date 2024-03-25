@@ -218,6 +218,7 @@ class MipsTargetAsmStreamer : public MipsTargetStreamer {
 
 public:
   MipsTargetAsmStreamer(MCStreamer &S, formatted_raw_ostream &OS);
+  void emitAssignment(MCSymbol *Symbol, const MCExpr *Value) override;
   void emitDirectiveSetMicroMips() override;
   void emitDirectiveSetNoMicroMips() override;
   void emitDirectiveSetMips16() override;

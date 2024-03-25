@@ -8726,6 +8726,7 @@ bool MipsAsmParser::parseSetAssignment() {
     return true;
   Sym->setVariableValue(Value);
 
+  getTargetStreamer().emitAssignment(Sym, Value);
   return false;
 }
 

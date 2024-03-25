@@ -410,6 +410,11 @@ MipsTargetAsmStreamer::MipsTargetAsmStreamer(MCStreamer &S,
                                              formatted_raw_ostream &OS)
     : MipsTargetStreamer(S), OS(OS) {}
 
+void MipsTargetAsmStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
+  OS << "\t.set\t" << Symbol->getName() << ", ";
+  emitValue(Value);
+}
+
 void MipsTargetAsmStreamer::emitDirectiveSetMicroMips() {
   OS << "\t.set\tmicromips\n";
   forbidModuleDirective();

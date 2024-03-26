@@ -48,12 +48,12 @@ def PC_HI20: RelocProperty32NoMask<20>;
 def I32: RelocProperty48HI6LO5<32>;
 def HI20: RelocProperty32NoMask<20>;
 def GPREL7_S2: RelocProperty16HI6<9>;
-// Currently doing
-def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
-def GPREL_I32: RelocProperty48HI6LO5<32>;
-// The next need to be worked on
 def GPREL_HI20: RelocProperty32NoMask<20>;
 def GPREL_LO12: RelocProperty32NoMask<12>;
+def GPREL_I32: RelocProperty48HI6LO5<32>;
+// Currently doing
+def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
+// The next need to be worked on
 
 // ----------------------------- End RelocProperty -----------------------------
 

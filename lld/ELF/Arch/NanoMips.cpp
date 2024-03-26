@@ -448,15 +448,15 @@ template <class ELFT>
 bool NanoMips<ELFT>::relaxOnce(int pass) const
 {
   if(this->currentTransformation.isNone()) return false;
-  if(pass == 0)
-  {
-    initTransformAuxInfo();
-  }
   LLVM_DEBUG(llvm::dbgs() << "Transformation Pass num: " << pass << "\n";);
   // TODO: Should full nanoMips ISA be checked as full or per obj, as it is checked
   bool changed = false;
   if(this->mayRelax())
   {
+    if(pass == 0)
+    {
+      initTransformAuxInfo();
+    }
     for(OutputSection *osec : outputSections)
     {
       if((osec->flags & (SHF_EXECINSTR | SHF_ALLOC)) != (SHF_EXECINSTR | SHF_ALLOC) ||
@@ -711,6 +711,7 @@ template <class ELFT>
 void NanoMips<ELFT>::finalizeRelaxations() const {
   // Return previous bytesDropped values
   // and change array ref sizes
+  if(!this->mayRelax()) return;
   SmallVector<InputSection *, 0> storage;
   for(OutputSection *osec: outputSections)
   {

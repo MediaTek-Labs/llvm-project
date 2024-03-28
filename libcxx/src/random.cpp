@@ -41,7 +41,24 @@
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCPP_USING_GETENTROPY)
+#if defined(__nanomips__)
+
+random_device::random_device(const string& __token)
+{
+}
+
+random_device::~random_device()
+{
+}
+
+unsigned random_device::operator()()
+{
+    unsigned r;
+    r = rand();
+    return r;
+}
+
+#elif defined(_LIBCPP_USING_GETENTROPY)
 
 random_device::random_device(const string& __token)
 {

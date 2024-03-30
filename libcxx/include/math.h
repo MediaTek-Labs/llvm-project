@@ -1657,7 +1657,7 @@ inline _LIBCPP_INLINE_VISIBILITY float       round(float __lcpp_x) _NOEXCEPT
 #if __has_builtin(__builtin_round)
     return __builtin_round(__lcpp_x);
 #else
-    return ::round(__lcpp_x);
+    return ::roundf(__lcpp_x);
 #endif
 }
 inline _LIBCPP_INLINE_VISIBILITY long double round(long double __lcpp_x) _NOEXCEPT
@@ -1718,7 +1718,7 @@ inline _LIBCPP_INLINE_VISIBILITY float       trunc(float __lcpp_x) _NOEXCEPT
 #if __has_builtin(__builtin_trunc)
     return __builtin_trunc(__lcpp_x);
 #else
-    return ::trunc(__lcpp_x);
+    return ::truncf(__lcpp_x);
 #endif
 }
 inline _LIBCPP_INLINE_VISIBILITY long double trunc(long double __lcpp_x) _NOEXCEPT

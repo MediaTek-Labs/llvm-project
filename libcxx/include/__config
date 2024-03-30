@@ -420,6 +420,9 @@
 #      define _LIBCPP_HAS_ALIGNED_ALLOC
 #      define _LIBCPP_HAS_TIMESPEC_GET
 #    endif
+#  elif defined(__nanomips__)
+#    define _LIBCPP_HAS_ALIGNED_ALLOC
+#    define _LIBCPP_HAS_QUICK_EXIT
 #  endif // __APPLE__
 #endif
 #endif // __has_attribute(using_if_exists)

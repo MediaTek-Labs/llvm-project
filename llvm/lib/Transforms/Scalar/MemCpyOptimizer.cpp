@@ -27,6 +27,7 @@
 #include "llvm/Analysis/MemorySSA.h"
 #include "llvm/Analysis/MemorySSAUpdater.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
+#include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/Argument.h"
 #include "llvm/IR/BasicBlock.h"
@@ -111,12 +112,15 @@ struct MemsetRange {
   /// TheStores - The actual stores that make up this range.
   SmallVector<Instruction*, 16> TheStores;
 
-  bool isProfitableToUseMemset(const DataLayout &DL) const;
+  bool isProfitableToUseMemset(const DataLayout &DL, TargetTransformInfo *TTI,
+                               LLVMContext *Context) const;
 };
 
 } // end anonymous namespace
 
-bool MemsetRange::isProfitableToUseMemset(const DataLayout &DL) const {
+bool MemsetRange::isProfitableToUseMemset(const DataLayout &DL,
+                                          TargetTransformInfo *TTI,
+                                          LLVMContext *Context) const {
   // If the merged range will take more than 16 bytes, use
   // memset. This avoids the more expensive calculation of merged
   // stores.
@@ -135,47 +139,75 @@ bool MemsetRange::isProfitableToUseMemset(const DataLayout &DL) const {
   // together if it wants to.
   if (TheStores.size() == 2) return false;
 
-  // Estimate the number of stores that will be used to implement a
-  // memset range after the DAG Combiner has merged naturally-aligned
-  // stores.
-  //
-  // This takes account of partial alignment information, which would
-  // be discarded by converting to a memset. For example:
-  //   struct A {
-  //     char a, b, c, d, e, f, g, h;
-  //     int counter;
-  //   } *Ap;
-  //    Ap->b = Ap->c = Ap->d = Ap->e = Ap->f = Ap->g = Ap->h = 0;
-  //
-  // The overall structure alignment is 32-bits. Naively, we see 7
-  // single-byte stores, the first of which, b, is only known to be
-  // byte-aligned. However, since most architectures support 32-bit and
-  // 16-bit stores, these can be merged by DAGCombine into only 3
-  // naturally-aligned stores:
-  //   store<(store (s8) into %ir.b...)> t0, Constant:i8<0>...
-  //   store<(store (s16) into %ir.c), trunc to i16> t0, Constant:i32<0>...
-  //   store<(store (s32) into %ir.e)> t0, Constant:i32<0>...
-
-  int Offset = Start;
-  int OffsetFromMaxAlign = MaxAlignment - MaxAlignmentOffset;
-  int StoreCount = 0;
+  // Since we don't have perfect knowledge here, make some assumptions: assume
+  // the maximum GPR width is the same size as the largest legal integer
+  // size. If so, check to see whether we will end up actually reducing the
+  // number of stores used.
   unsigned MaxIntSize = DL.getLargestLegalIntTypeSizeInBits() / 8;
+  if (MaxIntSize == 0)
+    MaxIntSize = 1;
 
-  while (Offset < End) {
-    unsigned StoreSize = 1;
-    for (unsigned NextStoreSize = 2;
-	 NextStoreSize <= MaxIntSize && End - Offset >= NextStoreSize;
-	 NextStoreSize *= 2) {
-      uint64_t StoreAlign = (DL.getABIIntegerTypeAlignment(8 * NextStoreSize)
-			     .value());
-      if (OffsetFromMaxAlign % StoreAlign == 0)
-	StoreSize = NextStoreSize;
+  bool AllowMisaligned = TTI->allowsMisalignedMemoryAccesses(
+    *Context, MaxIntSize);
+
+  if (AllowMisaligned) {
+    // Misaligned accesses are permitted. We can assume that inlining a
+    // memset() call can be inlined to MaxIntSize'd stores, plus single-byte
+    // stores, regardless of the alignment of the destination pointer.
+
+    unsigned Bytes = unsigned(End-Start);
+
+    unsigned NumPointerStores = Bytes / MaxIntSize;
+
+    // Assume the remaining bytes if any are done a byte at a time.
+    unsigned NumByteStores = Bytes % MaxIntSize;
+
+    // If we will reduce the # stores (according to this heuristic), do the
+    // transformation.  This encourages merging 4 x i8 -> i32 and 2 x i16 -> i32
+    // etc.
+    return TheStores.size() > NumPointerStores+NumByteStores;
+  } else {
+    // Estimate the number of stores that would be used to implement the
+    // stores in the range after the DAG Combiner has merged any
+    // naturally-aligned stores.
+    //
+    // This takes account of partial alignment information, which would
+    // be discarded by converting to a memset. For example:
+    //   struct A {
+    //     char a, b, c, d, e, f, g, h;
+    //     int counter;
+    //   } *Ap;
+    //   Ap->b = Ap->c = Ap->d = Ap->e = Ap->f = Ap->g = Ap->h = 0;
+    //
+    // The overall structure alignment is 32-bits. Naively, we see 7
+    // single-byte stores, the first of which, b, is only known to be
+    // byte-aligned. However, since most architectures support 32-bit and
+    // 16-bit stores, these can be merged by DAGCombine into only 3
+    // naturally-aligned stores:
+    //   store<(store (s8) into %ir.b...)> t0, Constant:i8<0>...
+    //   store<(store (s16) into %ir.c), trunc to i16> t0, Constant:i32<0>...
+    //   store<(store (s32) into %ir.e)> t0, Constant:i32<0>...
+
+    int Offset = Start;
+    int OffsetFromMaxAlign = MaxAlignment - MaxAlignmentOffset;
+    int StoreCount = 0;
+
+    while (Offset < End) {
+      unsigned StoreSize = 1;
+      for (unsigned NextStoreSize = 2;
+           NextStoreSize <= MaxIntSize && End - Offset >= NextStoreSize;
+           NextStoreSize *= 2) {
+        uint64_t StoreAlign = (DL.getABIIntegerTypeAlignment(8 * NextStoreSize)
+                               .value());
+        if (OffsetFromMaxAlign % StoreAlign == 0)
+          StoreSize = NextStoreSize;
+      }
+      OffsetFromMaxAlign += StoreSize;
+      Offset += StoreSize;
+      StoreCount++;
     }
-    OffsetFromMaxAlign += StoreSize;
-    Offset += StoreSize;
-    StoreCount++;
+    return StoreCount > 4;
   }
-  return StoreCount > 4;
 }
 
 namespace {
@@ -265,7 +297,10 @@ void MemsetRanges::addRange(int64_t Start, int64_t Size, Value *Ptr,
     I->Start = Start;
     I->StartPtr = Ptr;
     I->Alignment = Alignment;
-    I->MaxAlignmentOffset = (I->MaxAlignmentOffset + Size) % I->MaxAlignment;
+    if (I->MaxAlignment != 0)
+      I->MaxAlignmentOffset = (I->MaxAlignmentOffset + Size) % I->MaxAlignment;
+    else
+      I->MaxAlignmentOffset = 0;
   }
 
   // Does this store provide a better alignment than we have
@@ -321,6 +356,7 @@ private:
     AU.addRequired<TargetLibraryInfoWrapperPass>();
     if (!EnableMemorySSA)
       AU.addRequired<MemoryDependenceWrapperPass>();
+    AU.addRequired<TargetTransformInfoWrapperPass>();
     AU.addPreserved<MemoryDependenceWrapperPass>();
     AU.addRequired<AAResultsWrapperPass>();
     AU.addPreserved<AAResultsWrapperPass>();
@@ -346,6 +382,7 @@ INITIALIZE_PASS_DEPENDENCY(TargetLibraryInfoWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(AAResultsWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(GlobalsAAWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(MemorySSAWrapperPass)
+INITIALIZE_PASS_DEPENDENCY(TargetTransformInfoWrapperPass)
 INITIALIZE_PASS_END(MemCpyOptLegacyPass, "memcpyopt", "MemCpy Optimization",
                     false, false)
 
@@ -524,7 +561,7 @@ Instruction *MemCpyOptPass::tryMergingIntoMemset(Instruction *StartInst,
     if (Range.TheStores.size() == 1) continue;
 
     // If it is profitable to lower this range to memset, do so now.
-    if (!Range.isProfitableToUseMemset(DL))
+    if (!Range.isProfitableToUseMemset(DL, TTI, &StartInst->getContext()))
       continue;
 
     // Otherwise, we do want to transform this!  Create a new memset.
@@ -1777,11 +1814,12 @@ PreservedAnalyses MemCpyOptPass::run(Function &F, FunctionAnalysisManager &AM) {
   auto *AA = &AM.getResult<AAManager>(F);
   auto *AC = &AM.getResult<AssumptionAnalysis>(F);
   auto *DT = &AM.getResult<DominatorTreeAnalysis>(F);
+  auto *TTI = &AM.getResult<TargetIRAnalysis>(F);
   auto *MSSA = EnableMemorySSA ? &AM.getResult<MemorySSAAnalysis>(F)
                                : AM.getCachedResult<MemorySSAAnalysis>(F);
 
   bool MadeChange =
-      runImpl(F, MD, &TLI, AA, AC, DT, MSSA ? &MSSA->getMSSA() : nullptr);
+      runImpl(F, MD, &TLI, AA, AC, DT, MSSA ? &MSSA->getMSSA() : nullptr, TTI);
   if (!MadeChange)
     return PreservedAnalyses::all();
 
@@ -1797,7 +1835,7 @@ PreservedAnalyses MemCpyOptPass::run(Function &F, FunctionAnalysisManager &AM) {
 bool MemCpyOptPass::runImpl(Function &F, MemoryDependenceResults *MD_,
                             TargetLibraryInfo *TLI_, AliasAnalysis *AA_,
                             AssumptionCache *AC_, DominatorTree *DT_,
-                            MemorySSA *MSSA_) {
+                            MemorySSA *MSSA_, TargetTransformInfo *TTI_) {
   bool MadeChange = false;
   MD = MD_;
   TLI = TLI_;
@@ -1805,6 +1843,7 @@ bool MemCpyOptPass::runImpl(Function &F, MemoryDependenceResults *MD_,
   AC = AC_;
   DT = DT_;
   MSSA = MSSA_;
+  TTI = TTI_;
   MemorySSAUpdater MSSAU_(MSSA_);
   MSSAU = MSSA_ ? &MSSAU_ : nullptr;
   // If we don't have at least memset and memcpy, there is little point of doing
@@ -1838,10 +1877,11 @@ bool MemCpyOptLegacyPass::runOnFunction(Function &F) {
   auto *AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
   auto *AC = &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
   auto *DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+  auto *TTI = &getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
   auto *MSSAWP = EnableMemorySSA
       ? &getAnalysis<MemorySSAWrapperPass>()
       : getAnalysisIfAvailable<MemorySSAWrapperPass>();
 
   return Impl.runImpl(F, MDWP ? & MDWP->getMemDep() : nullptr, TLI, AA, AC, DT,
-                      MSSAWP ? &MSSAWP->getMSSA() : nullptr);
+                      MSSAWP ? &MSSAWP->getMSSA() : nullptr, TTI);
 }

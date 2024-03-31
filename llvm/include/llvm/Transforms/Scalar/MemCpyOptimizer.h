@@ -37,11 +37,13 @@ class MemorySSAUpdater;
 class MemSetInst;
 class StoreInst;
 class TargetLibraryInfo;
+class TargetTransformInfo;
 class Value;
 
 class MemCpyOptPass : public PassInfoMixin<MemCpyOptPass> {
   MemoryDependenceResults *MD = nullptr;
   TargetLibraryInfo *TLI = nullptr;
+  TargetTransformInfo *TTI = nullptr;
   AAResults *AA = nullptr;
   AssumptionCache *AC = nullptr;
   DominatorTree *DT = nullptr;
@@ -56,7 +58,7 @@ public:
   // Glue for the old PM.
   bool runImpl(Function &F, MemoryDependenceResults *MD, TargetLibraryInfo *TLI,
                AAResults *AA, AssumptionCache *AC, DominatorTree *DT,
-               MemorySSA *MSSA);
+               MemorySSA *MSSA, TargetTransformInfo *TTI);
 
 private:
   // Helper functions

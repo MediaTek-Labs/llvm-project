@@ -1,3 +1,5 @@
+project(ClangHeaders)
+include(AddLLVM)
 set(files
   adxintrin.h
   altivec.h
@@ -184,6 +186,10 @@ function(copy_header_to_output_dir src_dir file)
   set(out_files ${out_files} PARENT_SCOPE)
 endfunction(copy_header_to_output_dir)
 
+function(clang_tablegen out_file)
+   file(TOUCH "${CMAKE_CURRENT_BINARY_DIR}/${out_file}")
+endfunction(clang_tablegen)
+
 function(clang_generate_header td_option td_file out_file)
   clang_tablegen(${out_file} ${td_option}
   -I ${CLANG_SOURCE_DIR}/include/clang/Basic/
@@ -222,7 +228,7 @@ set_target_properties(clang-resource-headers PROPERTIES
   FOLDER "Misc"
   RUNTIME_OUTPUT_DIRECTORY "${output_dir}")
 
-set(header_install_dir lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION}/include)
+set(header_install_dir ${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION}/include)
 
 install(
   FILES ${files} ${generated_files}

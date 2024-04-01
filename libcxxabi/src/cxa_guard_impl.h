@@ -40,7 +40,7 @@
 #include "__cxxabi_config.h"
 #include "include/atomic_support.h"
 #include <unistd.h>
-#if defined(__has_include)
+#if defined(__has_include) && defined(__linux__)
 # if __has_include(<sys/syscall.h>)
 #   include <sys/syscall.h>
 # endif

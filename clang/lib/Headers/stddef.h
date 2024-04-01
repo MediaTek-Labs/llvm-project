@@ -7,6 +7,10 @@
  *===-----------------------------------------------------------------------===
  */
 
+#if !defined(__has_feature)
+#define __has_feature(x) 0
+#endif
+
 #if !defined(__STDDEF_H) || defined(__need_ptrdiff_t) ||                       \
     defined(__need_size_t) || defined(__need_wchar_t) ||                       \
     defined(__need_NULL) || defined(__need_wint_t)

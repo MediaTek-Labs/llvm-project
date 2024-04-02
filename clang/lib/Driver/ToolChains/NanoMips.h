@@ -50,6 +50,10 @@ class LLVM_LIBRARY_VISIBILITY NanoMips : public Generic_ELF {
     return true;
   }
 
+  // Default to DWARF4 for NanoMips as it's the highest supported by
+  // NanoMips gold and gdb.
+  unsigned GetDefaultDwarfVersion() const override { return 4; }
+
 };
 
 } // toolchains

@@ -134,7 +134,15 @@ system_clock::from_time_t(time_t t) noexcept
 
 #ifndef _LIBCPP_HAS_NO_MONOTONIC_CLOCK
 
-#if defined(__APPLE__)
+#if defined(__nanomips__)
+
+static steady_clock::time_point __libcpp_steady_clock_now() {
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    return steady_clock::time_point(seconds(tv.tv_sec) + microseconds(tv.tv_usec));
+}
+
+#elif defined(__APPLE__)
 
 // TODO(ldionne):
 // This old implementation of steady_clock is retained until Chrome drops supports

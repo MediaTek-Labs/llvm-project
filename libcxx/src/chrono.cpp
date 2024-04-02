@@ -170,7 +170,14 @@ system_clock::time_point system_clock::from_time_t(time_t t) noexcept { return s
 
 #if _LIBCPP_HAS_MONOTONIC_CLOCK
 
-#  if defined(__APPLE__)
+#  if defined(__nanomips__)
+
+static steady_clock::time_point __libcpp_steady_clock_now() {
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    return steady_clock::time_point(seconds(tv.tv_sec) + microseconds(tv.tv_usec));
+}
+#  elif defined(__APPLE__)
 
 // On Apple platforms, only CLOCK_UPTIME_RAW, CLOCK_MONOTONIC_RAW or
 // mach_absolute_time are able to time functions in the nanosecond range.

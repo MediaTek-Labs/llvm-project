@@ -1000,7 +1000,6 @@ private:
 // .nanoMIPS.abiflags section.
 
 // This is a singleton as only one .nanoMIPS.abiflags section is needed
-// Singleton is not freed until the end of the program as it is a class member not an object one; 
 template <class ELFT>
 class NanoMipsAbiFlagsSection final: public SyntheticSection {
 using Elf_NanoMips_ABIFlags = llvm::object::Elf_NanoMips_ABIFlags<ELFT>;
@@ -1027,8 +1026,6 @@ private:
   Elf_NanoMips_ABIFlags flags;
   static NanoMipsAbiFlagsSection *abiFlagsUnique;
 
-  // TODO: Check what is the usual num of obj files when linking nanoMIPS arch programs
-  // so we can set the default num of space
   llvm::DenseMap<ObjFile<ELFT> *, const Elf_NanoMips_ABIFlags *> mapOfAbiFlags;
 
 };

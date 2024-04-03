@@ -104,6 +104,20 @@ static bool isNanoMipsPcRel(const ObjFile<ELFT> *obj)
   return (obj->getObj().getHeader().e_flags & llvm::ELF::EF_NANOMIPS_PCREL) != 0;
 }
 
+static bool isForcedInsnLength(uint64_t offset, uint32_t relNum, InputSection *isec)
+{
+  for(uint32_t curRelNum = relNum + 1; curRelNum < isec->relocations.size(); curRelNum++)
+  {
+    Relocation &rel = isec->relocations[curRelNum];
+    if(offset != rel.offset)
+      break;
+    // TODO: Check if this is correct, insn32 and insn16 shouldn't ban all transformations
+    if(rel.type == R_NANOMIPS_FIXED || rel.type == R_NANOMIPS_INSN32 || rel.type == R_NANOMIPS_INSN16)
+      return true;
+  }
+  return false;
+}
+
 namespace {
 
   
@@ -284,15 +298,17 @@ RelExpr NanoMips<ELFT>::getRelExpr(RelType type, const Symbol &s,
   case R_NANOMIPS_GPREL7_S2:
     return R_NANOMIPS_GPREL;
   case R_NANOMIPS_NONE:
-  case R_NANOMIPS_FIXED:
-  case R_NANOMIPS_INSN32:
-  case R_NANOMIPS_INSN16:
     return R_NONE;
   
   case R_NANOMIPS_ALIGN:
   case R_NANOMIPS_MAX:
   case R_NANOMIPS_FILL:
   case R_NANOMIPS_SAVERESTORE:
+  case R_NANOMIPS_NORELAX:
+  case R_NANOMIPS_RELAX:
+  case R_NANOMIPS_FIXED:
+  case R_NANOMIPS_INSN32:
+  case R_NANOMIPS_INSN16:
     // Used to save R_NANOMIPS_ALIGN, R_NANOMIPS_SAVERESTORE in relocation vector
     // TODO: See if this is only needed for relaxations and expansions
     // so maybe it could be relaxed to R_NONE in that case
@@ -492,6 +508,8 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
   contextProperties.fullNanoMipsISA = NanoMipsAbiFlagsSection<ELFT>::get()->isFullNanoMipsISA(sec);
   auto *obj = sec->getFile<ELFT>();
 
+  bool seenNoRelax = false;
+
   // TODO: Don't know if there isn't an object file (and why it isn't there)
   // what to put in as pcrel, for now it is false
   contextProperties.pcrel = obj ? isNanoMipsPcRel<ELFT>(obj) : false;
@@ -506,6 +524,21 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
   {
     Relocation &reloc = sec->relocations[relNum];
 
+    // TODO: Check out if relocation with the same offset as R_NANOMIPS_NORELAX should or shouldn't be relaxed
+    if(reloc.type == R_NANOMIPS_NORELAX)
+    {
+      seenNoRelax = true;
+      continue;
+    }
+
+    if(reloc.type == R_NANOMIPS_RELAX)
+    {
+      seenNoRelax = false;
+      continue;
+    }
+
+    if(seenNoRelax) continue;
+
     if(reloc.type == R_NANOMIPS_ALIGN)
     {
       this->align(sec, reloc, relNum);
@@ -518,6 +551,9 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
     if(!relocProp) continue;
 
     uint32_t instSize = relocProp->getInstSize();
+    
+    if(instSize == 0) continue;
+
     // 48 bit instruction reloc offsets point to 32 bit imm/off not to the beginning of ins~
     uint32_t relocOffset = reloc.offset - (instSize == 6 ? 2 : 0);
     uint64_t insn = readInsn<ELFT::TargetEndianness>(sec->content(), relocOffset, instSize);
@@ -532,19 +568,19 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
     const NanoMipsInsProperty *insProperty = this->currentTransformation.getInsProperty(insn, insMask, reloc.type, sec);
     if(!insProperty) continue;
 
+    if(isForcedInsnLength(relocOffset, relNum, sec)) continue;
+
     LLVM_DEBUG(
       llvm::dbgs() << "InsProperty: " << insProperty->toString() << "\n";
     );
 
-    // if is forced length
     // TODO: Should check if R_NANOMIPS_INSN32 should allow expansion, or INSN16
-    // Note: Will skip this step, don't know how to generate FIXED,INSN32 or INSN16 relocs
-    // TODO: Find out how to generate these relocations
 
     // Note: Will skip symbol calculation as well, we calculate them through getRelocTargetVA 
     // TODO: Return to this later, and see if somethings need to be fixed
 
-    // TODO: Undef weak symbols
+    // TODO: Discarded sections?
+
     // Ignore undef weak symbols
     if(reloc.sym && reloc.sym->isUndefWeak())
       continue;

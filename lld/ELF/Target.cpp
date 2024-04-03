@@ -187,7 +187,7 @@ void TargetInfo::relocateAlloc(InputSectionBase &sec, uint8_t *buf) const {
     {
       const uint64_t addrLoc = secAddr + rel.offset;
       uint64_t data = getNanoMipsNegCompositeRelDataAlloc(it, end, loc, buf, &sec, sec.file, addrLoc);
-      target->relocate(loc, *it, data);
+      relocate(loc, *it, data);
     }
     else  if (rel.expr != R_RELAX_HINT)
       relocate(loc, rel, val);

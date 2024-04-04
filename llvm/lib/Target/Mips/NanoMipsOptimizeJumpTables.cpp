@@ -163,7 +163,8 @@ bool NMOptimizeJumpTables::optimizeRedundantEntries(
 
   // We want to delete all unnecessary instructions after removing
   // LoadJumpTableOffset.
-  for (auto &I : *CurrBB) {
+  for (auto &MBB : *(CurrBB->getParent()))
+   for (auto &I : MBB) {  
     for (llvm::MachineInstr::mop_iterator OpI = I.operands_begin(),
                                           OpEnd = I.operands_end();
          OpI != OpEnd; ++OpI) {
@@ -171,7 +172,7 @@ bool NMOptimizeJumpTables::optimizeRedundantEntries(
       if (Operand.isIdenticalTo(JTOp))
         InstrsToDelete.push_back(&I);
     }
-  }
+   }
 
   for (auto Instr : InstrsToDelete)
     Instr->removeFromParent();

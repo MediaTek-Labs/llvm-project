@@ -80,7 +80,11 @@
 /* Characteristics of floating point types, C99 5.2.4.2.2 */
 
 #define FLT_EVAL_METHOD __FLT_EVAL_METHOD__
-#define FLT_ROUNDS (__builtin_flt_rounds())
+#if defined(__clang__)
+#  define FLT_ROUNDS (__builtin_flt_rounds())
+#else
+#  define FLT_ROUNDS 1
+#endif
 #define FLT_RADIX __FLT_RADIX__
 
 #define FLT_MANT_DIG __FLT_MANT_DIG__

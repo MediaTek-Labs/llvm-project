@@ -1491,6 +1491,20 @@ void MipsAsmPrinter::PrintDebugValueComment(const MachineInstr *MI,
   // TODO: implement
 }
 
+void MipsAsmPrinter::emitKCFITypeId(const MachineFunction &MF) {
+  const Function &F = MF.getFunction();
+  if (const MDNode *MD = F.getMetadata(LLVMContext::MD_kcfi_type)) {
+    if (Subtarget->hasNanoMips()) {
+      // NanoMips function alignment requirements are only 16
+      // bytes. Ensure alignment to avoid unaligned 32-bit loads.
+      emitAlignment(Align(4));
+    }
+    emitGlobalConstant(F.getParent()->getDataLayout(),
+                       mdconst::extract<ConstantInt>(MD->getOperand(0)));
+  }
+}
+
+
 // Emit .dtprelword or .dtpreldword directive
 // and value for debug thread local expression.
 void MipsAsmPrinter::emitDebugValue(const MCExpr *Value, unsigned Size) const {

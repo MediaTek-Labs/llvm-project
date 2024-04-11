@@ -173,6 +173,7 @@ public:
   void PrintDebugValueComment(const MachineInstr *MI, raw_ostream &OS);
   void emitDebugValue(const MCExpr *Value, unsigned Size) const override;
   void emitJumpTableInfo() override;
+  void emitKCFITypeId(const MachineFunction &MF) override;
 };
 
 } // end namespace llvm

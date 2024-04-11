@@ -301,6 +301,10 @@ DEFAULT_FEATURES = [
             """
             #include <unistd.h>
             #include <sys/wait.h>
+            #if !defined(_POSIX_VERSION) && !defined(_XOPEN_VERSION)
+              #error "Not a unix system"
+            #endif
+
             int main(int, char**) {
               int fd[2];
               return pipe(fd);

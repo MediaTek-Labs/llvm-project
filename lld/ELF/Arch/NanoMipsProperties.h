@@ -53,7 +53,11 @@ namespace elf{
       // Debug only
       std::string toString() const;
 
-      const NanoMipsRelocProperty *getRelocProperty(RelType rel) const;
+      const NanoMipsRelocProperty *getRelocProperty(RelType rel) const
+      {
+        assert(rel < RelocPropertyTableSize);
+        return table[rel];
+      }
 
     private:
       friend class NanoMips;
@@ -180,7 +184,7 @@ namespace elf{
       { auto *t = this->transformationMap.lookup(type); return t ? t->hasReloc(reloc) : false; };
       
       const NanoMipsTransformTemplate *getTransformTemplate(NanoMipsTransformType type, RelType reloc) const
-      { auto *t = this->transformationMap.lookup(type); return t && t->hasReloc(reloc) ? t : nullptr; }
+      { auto *t = this->transformationMap.lookup(type); return (t && t->hasReloc(reloc)) ? t : nullptr; }
 
       // Shouldn't be called for instructions that don't have extract sReg
       uint32_t getSReg(uint64_t insn) const

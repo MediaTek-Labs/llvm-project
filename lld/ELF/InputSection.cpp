@@ -160,6 +160,8 @@ void InputSectionBase::addBytes(uint64_t location, uint32_t count)
     // Allocate more data just in case
     size_t size = (this->size + count - bytesDropped) * 2;
     uint8_t *increasedData;
+    // TODO: Check if the mutex is necessary as it is used only for nanoMIPS relaxations
+    // which shouldn't be concurrent
     {
       static std::mutex mu;
       std::lock_guard<std::mutex> lock(mu);
@@ -179,7 +181,12 @@ void InputSectionBase::addBytes(uint64_t location, uint32_t count)
     this->size = size;
   }
   else {
-    // TODO: See this can be done backwards as well, maybe that is faster
+    // TODO: See if this can be done backwards as well, maybe that is faster (use memcpy)
+    // Possible implementation
+    // uint8_t *beginSrc = const_cast<uint8_t *>(this->content_) + location;
+    // uint8_t *endSrc = beginSrc + this->size - bytesDropped - location;
+    // uint8_t *endDst = endSrc + count;
+    // std::reverse_copy<uint8_t *, uint8_t *>(beginSrc, endSrc, endDst);
     memmove(const_cast<uint8_t *>(this->content_) + location + count, this->content_ + location, this->size - bytesDropped - location);
     bytesDropped -= count;
   }
@@ -187,26 +194,9 @@ void InputSectionBase::addBytes(uint64_t location, uint32_t count)
 
 void InputSectionBase::deleteBytes(uint64_t location, uint32_t count)
 {
-  // FIXME: Too big objs are mapped with readonly mmap, changed
-  // it to be private mapping, ths should be fixed
   assert(location <= this->size - bytesDropped && "Location mustn't be larger than size of section");
   assert(count > 0 && count <= location && "Number of deleted bytes must be larger than 0 and less than location");
-  // llvm::outs() << "Count: " << count << "\t Location: " << location << "\n"
-  // << "Size: " << rawData.size() << "\t" << "Dropped: " << bytesDropped << "\n";
-  // uint8_t *ptr = const_cast<uint8_t *>(rawData.data());
-  // llvm::outs() << ptr << ":" << (uint32_t)*ptr << "\n";
-  // *ptr = 1;
-  // llvm::outs() << ptr << ":" << (uint32_t)*ptr << "\n";
-  // for(uint64_t i = location; i < rawData.size() - bytesDropped; i++)
-  // {
-  //   llvm::outs() << "I: " << i << "\n";
-  //   llvm::outs() << (uint32_t)rawData[i - count] << "|" << (uint32_t)rawData[i] << "\n";
-  //   uint8_t *ptr = const_cast<uint8_t *>(rawData.data()) + i - count;
-  //   llvm::outs() << ptr << "\n";
-  //   llvm::outs() << (uint32_t)(*ptr) << "\n";
-  //   *ptr = rawData[i];
-  // }
-  
+
   memmove(const_cast<uint8_t *>(this->content_) + location - count, this->content_ + location, this->size - bytesDropped - location);
   bytesDropped += count;
 }

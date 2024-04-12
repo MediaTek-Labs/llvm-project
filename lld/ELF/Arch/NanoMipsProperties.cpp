@@ -151,22 +151,9 @@ NanoMipsRelocPropertyTable::NanoMipsRelocPropertyTable()
   #undef RELOC_PROPERTY
 }
 
-const NanoMipsRelocProperty *NanoMipsRelocPropertyTable::getRelocProperty(RelType rel) const {
-  assert(rel < RelocPropertyTableSize);
-  return table[rel];
-}
-
 NanoMipsRelocPropertyTable::~NanoMipsRelocPropertyTable()
 {
-  // C++ 14
   llvm::for_each(table, [](auto& elem){delete elem; elem = nullptr;});
-  // for(uint32_t i = 0; i < RelocPropertyTableSize; i++){
-  //   if(table[i] != nullptr)
-  //   {
-  //     delete table[i];
-  //     table[i] = nullptr;
-  //   }
-  // }
 }
 
 std::string NanoMipsRelocPropertyTable::toString() const
@@ -277,19 +264,19 @@ std::string NanoMipsInsProperty::toString() const
   << ", isValidSReg: "
   << (isValidSReg != nullptr ? 1 : 0);
 
-  SS << "\n\t\tTransforms:";
-  for(auto it = transformationMap.begin(); it != transformationMap.end(); it++)
-  {
-    uint32_t type = it->first;
-    const NanoMipsTransformTemplate *transformTemplate = it->second;
-    SS << "\n\t\t\t" << type << "\n" << transformTemplate->toString();
-  }
+  // SS << "\n\t\tTransforms:";
+  // for(auto it = transformationMap.begin(); it != transformationMap.end(); it++)
+  // {
+  //   uint32_t type = it->first;
+  //   const NanoMipsTransformTemplate *transformTemplate = it->second;
+  //   SS << "\n\t\t\t" << type << "\n" << transformTemplate->toString();
+  // }
 
-  SS << "\n\t\tRelocs:";
-  for(RelType rel : relocs)
-  {
-    SS << "\n\t\t\t" << rel << "\n";
-  }
+  // SS << "\n\t\tRelocs:";
+  // for(RelType rel : relocs)
+  // {
+  //   SS << "\n\t\t\t" << rel << "\n";
+  // }
   return SS.str();
 }
 
@@ -400,44 +387,6 @@ std::string NanoMipsTransform::getTypeAsString() const
 }
 
 void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t location, int32_t delta, bool align){
-  // FIXME: Don't like this, when allocating large object files
-  // mmap is used with only read rights but we need write as well
-  // so we are allocating memory for that file again
-  // Note: not using the reallocation, just changed priveleges from
-  // readonly to priveleged, this is not good as well should be changed
-
-  // uint32_t PageSize = sys::Process::getPageSizeEstimate();
-  // auto * objFile = isec->getFile<ELF32LE>();
-  // uint64_t FileSize = objFile->getObj().getBufSize();
-
-  // Taken from shouldUseMmap in MemoryBuffer.cpp
-  // FIXME: This doesn't work as is now, find another way
-  // if(FileSize >= 4 * 4096 && FileSize >= PageSize && llvm::find(reallocatedFiles, objFile->mb.getBufferIdentifier()) == reallocatedFiles.end())
-  // {
-  //   const uint8_t *currentObj = objFile->getObj().base();
-  //   // TODO: Don't know where this will be deleted? Find out where is the deletion 
-  //   char *reallocatedObj = bAlloc.Allocate<char>(FileSize);
-  //   memcpy(reallocatedObj, currentObj, FileSize);
-  //   StringRef r(const_cast<char *>(reallocatedObj), FileSize);
-  //   // FIXME: This may cause trouble somewhere else, but we'll see, as we haven't changed the memory in
-  //   // ELF32LEFile
-  //   objFile->mb = MemoryBufferRef(r, objFile->mb.getBufferIdentifier());
-  //   reallocatedFiles.push_back(objFile->mb.getBufferIdentifier());
-  //   for(uint32_t i = 0; i < objFile->getSections().size(); i++)
-  //   {
-  //     // TODO: See if you should only do this for specific sections
-  //     InputSectionBase *sec = objFile->getSections()[i];
-  //     auto expectedSec = objFile->getObj().getSection(i);
-  //     if(expectedSec)
-  //     {
-  //       sec->setData(reallocatedObj + expectedSec.get()->sh_offset, expectedSec.get()->sh_size);
-  //       LLVM_DEBUG(llvm::dbgs() << "Reallocated sec: " << sec->name << ", as it was allocaed with readonly mmap\n";);
-  //     }
-  //     else
-  //       llvm_unreachable("There should be a section!\n");
-  //   }
-  //   LLVM_DEBUG(llvm::dbgs() << "Reallocated obj: " << isec->getFile<ELF32LE>()->getName() << ", as it was allocated with readonly mmap\n";);
-  // }
   if(delta < 0)
     isec->deleteBytes(location, -delta);
   else
@@ -448,7 +397,7 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
   LLVM_DEBUG(llvm::dbgs() << "Changed size of input section " 
               << (isec->file ? isec->file->getName() : "None") 
               << ":" << isec->name
-              << " by " << delta << " on location 0x" << utohexstr(location) << "\n";);
+              << " by " << delta << " on location 0x" << utohexstr(location) << (align ? " due to alignment\n" : "\n"););
 
   // TODO: This is not efficient maybe sort relocs by offset, and just traverse  over the ones
   // which have offset larger or equal than the processed one 
@@ -464,10 +413,6 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
     if(reloc.offset >= location)
       reloc.offset += delta;
   }
-  // TODO: See if we should adjust conditional branches? That is a whole new structure
-
-  // Adjust symbols
-  // TODO: This is not that efficient, change it to be more efficient
 
   if(isec->file)
   {
@@ -593,9 +538,6 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
       return;
   }
 
-  // TODO: Conditional branches here, if added to implementation
-
-  // TODO: Check for 48bit instructions
   uint32_t offset = reloc->offset - (relocProperty->getInstSize() == 6 ? 2 : 0);
   
   // Whether we are inserting a new reloc, or just changing the existing one
@@ -635,7 +577,6 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
         // Because we add a relocation, it might invalidate our previous reloc!
         reloc = &isec->relocations[relNum - 1];
         LLVM_DEBUG(llvm::dbgs() << "Added new reloc " << newRelType << "\n";);
-        // TODO: Setting reloc strategy for finalizing relocs
       }
     }
 
@@ -649,14 +590,14 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
   // and the negative branch needs to skip bc32
   if((oldRelType == R_NANOMIPS_PC14_S1 || oldRelType == R_NANOMIPS_PC11_S1) && transformTemplate->getType() == TT_NANOMIPS_PCREL32_LONG)
   {
-    // TODO: Maybe optimize this writing to string?
-    std::stringstream SS;
-    SS << "__skip_bc__" << ++newSymCount;
-    // TODO: Do not make new strings like this
-    std::string &name = *make<std::string>(SS.str());
-    StringRef nameRef = name;
+    newSymCount++;
+    StringRef nameRef = saver().save(Twine("__skip_bc__") + Twine(newSymCount));
     Defined *s = dyn_cast<Defined>(symtab.addSymbol(Defined{isec->file, nameRef, STB_GLOBAL, STV_HIDDEN, STT_NOTYPE, offset, 0, isec}));
-    assert(s && "Didn't create needed symbol for relaxations/expansions!");
+    if(!s)
+    {
+      error("Can't create needed symbol for relaxations/expansions!");
+      exitLld(1);
+    }
     reloc->sym = s;
     isec->nanoMipsRelaxAux->anchors.push_back({s, false});
     in.symTab->addSymbol(s);
@@ -696,8 +637,7 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
          || (!insProperty->areRegsValid(insn) 
              && !(insProperty->hasTransform(TT_NANOMIPS_PCREL16_ZERO, reloc)
                  && insProperty->isTRegValid(insn)
-                 && sReg == 0 
-                )  
+                 && sReg == 0)  
             )
         )
         return nullptr;
@@ -739,8 +679,8 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
     {
       if(insProperty->hasTransform(TT_NANOMIPS_GPREL32, reloc) || insProperty->hasTransform(TT_NANOMIPS_GPREL32_WORD, reloc))
         return insProperty;
-      else
-        return nullptr;
+      
+      return nullptr;
     }
     default:
       // TODO: Should be just break, but after all relocs are processed
@@ -757,7 +697,7 @@ const NanoMipsTransformTemplate *NanoMipsTransformRelax::getTransformTemplate(co
   const uint32_t bits = config->wordsize * 8;
   uint64_t gpVal = SignExtend64(ElfSym::mipsGp->value, bits);
   // TODO: Maybe it is not possible to have val & 0x1 not equal to 0 at some cases
-  // check this
+  // check this, so this if case can be relaxed
   switch(reloc.type)
   {
     case R_NANOMIPS_PC14_S1:

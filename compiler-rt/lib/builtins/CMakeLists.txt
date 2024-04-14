@@ -267,7 +267,7 @@ if (HAVE_UNWIND_H)
   )
 endif ()
 
-if (NOT FUCHSIA)
+if (NOT FUCHSIA AND NOT COMPILER_RT_BAREMETAL_BUILD)
   set(GENERIC_SOURCES
     ${GENERIC_SOURCES}
     clear_cache.c

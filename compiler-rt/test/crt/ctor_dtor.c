@@ -2,6 +2,7 @@
 // RUN: %clang -o %t -no-pie -nostdlib %crt1 %crti %crtbegin %t.o -lc %libgcc %crtend %crtn
 // RUN: %run %t 2>&1 | FileCheck %s
 
+// UNSUPPORTED: target={{(nanomips).*}}
 #include <stdio.h>
 #include <stdlib.h>
 

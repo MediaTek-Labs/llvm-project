@@ -128,6 +128,21 @@ bool isForcedInsnLength(uint64_t offset, uint32_t relNum, InputSection *isec)
   return false;
 }
 
+inline bool areNanoMips32BitFlagsSet(uint32_t eflags)
+{
+  return ((eflags & EF_NANOMIPS_32BITMODE) != 0 ||
+          ((eflags & EF_NANOMIPS_ARCH) == E_NANOMIPS_ARCH_32R6));
+}
+
+inline bool doesNanoMipsMachExtend(uint32_t base, uint32_t extension)
+{
+  // Copied logic from gold, added changes
+  // TODO: Check this, NANOMIPS_MACH and NANOMIPS_ARCH are two different things
+  // TODO: Probably should be differently implemented, if we it should look like MIPS implementation,
+  // as now there is only 4 combinations, and one of them should only return false
+  return base != E_NANOMIPS_ARCH_64R6 || extension != E_NANOMIPS_ARCH_32R6;
+}
+
 //used for: R_NANOMIPS_HI20, R_NANOMIPS_PC_HI20 and R_NANOMIPS_GPREL_HI20
 template <endianness E>
 void writeValueHi20(uint8_t *loc, uint64_t val) {
@@ -209,7 +224,7 @@ public:
 
 
     // TODO:
-    // uint32_t calcEFlags() const override;
+    uint32_t calcEFlags() const override;
 private:
     NanoMipsRelocPropertyTable relocPropertyTable;
     NanoMipsInsPropertyTable insPropertyTable;
@@ -775,6 +790,101 @@ void NanoMips<ELFT>::relocateAlloc(InputSectionBase &sec, uint8_t *buf) const {
   }
 }
 
+template <class ELFT>
+uint32_t NanoMips<ELFT>::calcEFlags() const
+{
+// TODO: This function will need testing once dynamic linking is started
+  uint32_t retFlags = 0;
+  if(ctx.objectFiles.size() == 0) return retFlags;
+
+  // Set flags from first obj file
+  retFlags = cast<ObjFile<ELFT>>(ctx.objectFiles[0])->getObj().getHeader().e_flags;
+
+  // Second condition is for dynamic linking
+  if((retFlags & EF_NANOMIPS_PIC) == 0 && (config->pie || config->shared || ctx.sharedFiles.size() != 0) && !config->relocatable)
+      error(ctx.objectFiles[0]->getName() + ": non-PIC object found in dynamic link, recompile with -fpic\n");
+
+  // Iterate through others and merge
+  for(size_t i = 1; i < ctx.objectFiles.size(); i++)
+  { 
+    InputFile *f = ctx.objectFiles[i];
+    uint32_t newFlags = cast<ObjFile<ELFT>>(f)->getObj().getHeader().e_flags;
+    uint32_t oldFlags = retFlags;
+    // Second condition is for dynamic linking
+    if((newFlags & EF_NANOMIPS_PIC) == 0 && (config->pie || config->shared || ctx.sharedFiles.size() != 0) && !config->relocatable)
+      error(f->getName() + ": non-PIC object found in dynamic link, recompile with -fpic\n");
+
+    if(newFlags == oldFlags) continue;
+
+    // Mask to see if we should exclude some of the flags
+    uint32_t tmpMask = newFlags | ~(EF_NANOMIPS_PID | EF_NANOMIPS_PCREL | EF_NANOMIPS_LINKRELAX | EF_NANOMIPS_PIC);
+
+    retFlags &= tmpMask;
+
+    // Exclude the previous flags from old and new
+    oldFlags &= ~(EF_NANOMIPS_PID | EF_NANOMIPS_PCREL | EF_NANOMIPS_LINKRELAX | EF_NANOMIPS_PIC);
+    newFlags &= ~(EF_NANOMIPS_PID | EF_NANOMIPS_PCREL | EF_NANOMIPS_LINKRELAX | EF_NANOMIPS_PIC);
+
+    // Compare the ISAs
+    // TODO: Check NANOMIPS_MACH, also check when more 64bit arch is available
+    if(areNanoMips32BitFlagsSet(oldFlags) != areNanoMips32BitFlagsSet(newFlags))
+      error(f->getName() + ": Linking 32-bit code with 64-bit code\n");
+    
+    else if(!doesNanoMipsMachExtend(newFlags & EF_NANOMIPS_ARCH, oldFlags & EF_NANOMIPS_ARCH))
+    {
+
+      if(doesNanoMipsMachExtend(oldFlags & EF_NANOMIPS_ARCH, newFlags & EF_NANOMIPS_ARCH))
+      {
+        // Copy the architecture info from new object to ret.  Also copy
+        // the 32-bit flag (if set) so that we continue to recognise
+        // output as a 32-bit binary.
+        retFlags &= ~(EF_NANOMIPS_ARCH | EF_NANOMIPS_MACH);
+
+        retFlags |= (newFlags & (EF_NANOMIPS_ARCH | EF_NANOMIPS_MACH | EF_NANOMIPS_32BITMODE));
+
+      }
+      else {
+        // ISA's are incompatible
+        error(f->getName() + ": Linking incompatible machine modules than the previous ones!\n");
+      }
+
+    }
+
+    // Exlude the previous flags from old and new
+    newFlags &= ~(EF_NANOMIPS_ARCH | EF_NANOMIPS_MACH | EF_NANOMIPS_32BITMODE);
+
+    oldFlags &= ~(EF_NANOMIPS_ARCH | EF_NANOMIPS_MACH | EF_NANOMIPS_32BITMODE);
+
+    // Compare ABIs
+    if((newFlags & EF_NANOMIPS_ABI) != (oldFlags & EF_NANOMIPS_ABI))
+    {
+      // Error if both are set differently
+      if((newFlags & EF_NANOMIPS_ABI) != 0 && (oldFlags & EF_NANOMIPS_ABI) != 0)
+        error(f->getName() + ": ABI mismatch, different ABI than the previous ones!\n");
+
+      newFlags &= ~EF_NANOMIPS_ABI;
+      oldFlags &= ~EF_NANOMIPS_ABI;
+    }
+
+    // Other mismatches
+    if(newFlags != oldFlags)
+      error(f->getName() + ": uses different e_flags (0x" + utohexstr(newFlags, 8) +  ") than currently calculated (0x" + utohexstr(oldFlags, 8) + ")\n");
+  }
+
+  // Clear some flags, depending on the output
+  // TODO: relocatable + finalize relocs
+
+  if(!config->relocatable)
+  {
+    retFlags &= ~(EF_NANOMIPS_PID | EF_NANOMIPS_PCREL | EF_NANOMIPS_LINKRELAX);
+    
+    // Keep PIC bit only for position independent output
+    if(!config->pie && !config->shared)
+      retFlags &= ~EF_NANOMIPS_PIC;
+  }
+
+  return retFlags;
+}
 
 template TargetInfo *elf::getNanoMipsTargetInfo<ELF32LE>();
 template TargetInfo *elf::getNanoMipsTargetInfo<ELF32BE>();

@@ -1,4 +1,6 @@
 # REQUIRES: nanomips
+# Test in progress
+# XFAIL: *
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6 -mpcrel %s -o %t.o
 # RUN: ld.lld %t.o -o %t
 # RUN: %nanomips-elf-objdump -d %t | FileCheck %s

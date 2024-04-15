@@ -112,8 +112,9 @@ PreservedAnalyses KCFIPass::run(Function &F, FunctionAnalysisManager &AM) {
     Builder.SetInsertPoint(ThenTerm);
     auto DebugLoc = Builder.getCurrentDebugLocation();
     if (Trap) {
+      // TODO: Restore this to Intrinsic::trap
       CallInst *TrapCall =
-          Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::trap));
+          Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::debugtrap));
       TrapCall->setDoesNotReturn();
       TrapCall->setDoesNotThrow();
       TrapCall->setDebugLoc(DebugLoc);

@@ -79,8 +79,10 @@ void MipsTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("_MIPSEL");
   }
 
-  Builder.defineMacro("__mips__");
-  Builder.defineMacro("_mips");
+  if (!IsNanoMips) {
+    Builder.defineMacro("__mips__");
+    Builder.defineMacro("_mips");
+  }
   if (Opts.GNUMode)
     Builder.defineMacro("mips");
 

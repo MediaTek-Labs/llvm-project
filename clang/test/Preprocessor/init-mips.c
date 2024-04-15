@@ -2012,4 +2012,6 @@
 //NANOMIPS:#define __WCHAR_MAX__ 2147483647
 //NANOMIPS:#define __WCHAR_TYPE__ int
 //NANOMIPS:#define __mips 32
+//NANOMIPS-NOT:#define __mips__
+//NANOMIPS-NOT:#define _mips
 //NANOMIPS:#define mips 1

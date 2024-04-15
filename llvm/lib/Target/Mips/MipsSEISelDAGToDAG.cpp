@@ -37,6 +37,15 @@ using namespace llvm;
 
 #define DEBUG_TYPE "mips-isel"
 
+
+cl::opt<int> NMDebugTrapCode(
+    "nmips-debugtrap-code", cl::Hidden, cl::init(31),
+    cl::desc("Trap code for debugtrap instruction"));
+
+cl::opt<int> NMUBSanTrapCode(
+    "nmips-ubsantrap-code", cl::Hidden, cl::init(30),
+    cl::desc("Trap code for ubsantrap instruction"));
+
 bool MipsSEDAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
   Subtarget = &MF.getSubtarget<MipsSubtarget>();
   if (Subtarget->inMips16Mode())
@@ -978,6 +987,21 @@ bool MipsSEDAGToDAGISel::trySelect(SDNode *Node) {
     return true;
   }
 
+  case ISD::DEBUGTRAP:
+  case ISD::UBSANTRAP: {
+    if (!Subtarget->hasNanoMips())
+      return false;
+    ReplaceNode(Node, CurDAG->getMachineNode(
+                          Mips::BREAK_NM, DL, MVT::Other,
+                          CurDAG->getTargetConstant(
+                              (Opcode == ISD::DEBUGTRAP ? NMDebugTrapCode
+                                                        : NMUBSanTrapCode) &
+                                  maskTrailingOnes<uint32_t>(5),
+                              DL, MVT::i32),
+                          Node->getOperand(0)));
+    return true;
+  }
+
   case ISD::INTRINSIC_W_CHAIN: {
     const unsigned IntrinsicOpcode =
         cast<ConstantSDNode>(Node->getOperand(1))->getZExtValue();
@@ -1054,6 +1078,32 @@ bool MipsSEDAGToDAGISel::trySelect(SDNode *Node) {
     switch (IntrinsicOpcode) {
     default:
       break;
+    case Intrinsic::mips_condtrap: {
+      if (!Subtarget->hasNanoMips())
+        return false;
+      auto Left = Node->getOperand(2);
+      auto Right = CurDAG->getRegister(Mips::ZERO_NM, MVT::i32);
+      auto Opcode = Mips::TNE_NM;
+
+      if (Left->getOpcode() == ISD::XOR) {
+        Right = Left->getOperand(1);
+        Left =  Left->getOperand(0);
+      } else if (Left->getOpcode() == ISD::SETCC) {
+         auto CC = cast<CondCodeSDNode>(Left->getOperand(2))->get();
+         if (CC == ISD::SETNE || CC == ISD::SETEQ) {
+            Right = Left->getOperand(1);
+            Left =  Left->getOperand(0);
+            Opcode = (CC == ISD::SETNE) ? Mips::TNE_NM : Mips::TEQ_NM;
+         }
+      }
+
+      SmallVector<SDValue, 3> Ops{Left,
+                                  Right,
+                                  Node->getOperand(3)};
+      ReplaceNode(Node,
+                  CurDAG->getMachineNode(Opcode, DL, MVT::Other, Ops));
+      return true;
+    }
 
     case Intrinsic::mips_ctcmsa: {
       SDValue ChainIn = Node->getOperand(0);

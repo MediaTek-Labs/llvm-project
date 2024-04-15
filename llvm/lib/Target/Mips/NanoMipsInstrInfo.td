@@ -1980,8 +1980,6 @@ def : NMPat<(MipsFullAddrAdd GPRNM32:$rs, tglobaladdr:$in), (ADDIU48_NM GPRNM32:
 def : NMPat<(not (or GPRNM32:$rs, GPRNM32:$rt)),
             (NOR_NM GPRNM32:$rs, GPRNM32:$rt)>;
 
-def : NMPat<(trap), (TEQ_NM ZERO_NM, ZERO_NM, 0)>;
-
 // SetCC patterns.
 def : NMPat<(setne GPRNM32:$lhs, 0), (SLTU_NM ZERO_NM, GPRNM32:$lhs)>;
 def : NMPat<(seteq GPRNM32:$lhs, GPRNM32:$rhs),
@@ -2845,6 +2843,8 @@ def SYSCALL16_NM : InstNM<(outs), (ins uimm2_nm:$imm),
                        "syscall\t$imm", []>, IntExcpFlow16_Enc<0b01> {
   let Inst{2} = 0b0;
 }
+
+def : NMPat<(trap), (BREAK_NM 0)>;
 
 class ShadowRW_Enc<bits<5> isel>: _Pool_POOL32Axf_5_group3<isel> {
   bits<5> rs;

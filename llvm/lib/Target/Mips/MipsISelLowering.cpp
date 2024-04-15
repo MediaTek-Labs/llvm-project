@@ -507,7 +507,10 @@ MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
   }
 
   setOperationAction(ISD::TRAP, MVT::Other, Legal);
-
+  if (Subtarget.hasNanoMips()) {
+    setOperationAction(ISD::DEBUGTRAP, MVT::Other, Legal);
+    setOperationAction(ISD::UBSANTRAP, MVT::Other, Legal);
+  }
   setTargetDAGCombine({ISD::SDIVREM, ISD::UDIVREM, ISD::SELECT, ISD::AND,
                        ISD::OR, ISD::ADD, ISD::SUB, ISD::AssertZext, ISD::SHL});
 

@@ -101,9 +101,10 @@ PreservedAnalyses KCFIPass::run(Function &F, FunctionAnalysisManager &AM) {
     Value *Test = Builder.CreateICmpNE(Builder.CreateLoad(Int32Ty, HashPtr),
                                        ConstantInt::get(Int32Ty, ExpectedHash));
     Instruction *ThenTerm =
-        SplitBlockAndInsertIfThen(Test, Call, false, VeryUnlikelyWeights);
+        SplitBlockAndInsertIfThen(Test, Call, true, VeryUnlikelyWeights);
     Builder.SetInsertPoint(ThenTerm);
-    Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::trap));
+    // TODO: Restore this to Intrinsic::trap
+    Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::debugtrap));
     ++NumKCFIChecks;
   }
 

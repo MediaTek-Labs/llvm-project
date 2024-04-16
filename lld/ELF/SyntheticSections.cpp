@@ -204,51 +204,125 @@ uint32_t NanoMipsAbiFlagsSection<ELFT>::select_isa_ext(const StringRef filename,
   return isa_ext_out;
 }
 
+template<class ELFT>
+void NanoMipsAbiFlagsSection<ELFT>::getAbiFlagsISAFromEflags(const ObjFile<ELFT> *objFile, Elf_NanoMips_ABIFlags *inferredFlags)
+{
+  uint32_t eflags = objFile->getObj().getHeader().e_flags;
+  switch(eflags & EF_NANOMIPS_ARCH)
+  {
+    case E_NANOMIPS_ARCH_32R6:
+      inferredFlags->isa_level = 32;
+      inferredFlags->isa_rev = 6;
+      break;
+    case E_NANOMIPS_ARCH_64R6:
+      inferredFlags->isa_level = 64;
+      inferredFlags->isa_rev = 6;
+      break;
+    default:
+      error(objFile->getName() + ": Unknown architecture given!\n");
+  }
+}
+
+template<class ELFT>
+void NanoMipsAbiFlagsSection<ELFT>::inferAbiFlags(const ObjFile<ELFT> *objFile, Elf_NanoMips_ABIFlags *inferredFlags)
+{
+  // TODO: SHT_GNU_ATTRIBUTES, floating point can be derived from here as well
+  inferredFlags->fp_abi = llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_ANY;
+
+  uint32_t eflags = objFile->getObj().getHeader().e_flags;
+  // get abi flags isa from eflags
+  getAbiFlagsISAFromEflags(objFile, inferredFlags);
+  inferredFlags->cpr1_size = llvm::NanoMips::AFL_REG_NONE;
+  inferredFlags->cpr2_size = llvm::NanoMips::AFL_REG_NONE;
+  inferredFlags->gpr_size = (((eflags & EF_NANOMIPS_32BITMODE) != 0 
+                            || (eflags & EF_NANOMIPS_ARCH) == E_NANOMIPS_ARCH_32R6)
+                            ? llvm::NanoMips::AFL_REG_32
+                            : llvm::NanoMips::AFL_REG_64);
+  
+  // Doesn't happen until SHT_GNU_ATTRIBUTES section is implemented
+  if(inferredFlags->fp_abi == llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_SINGLE
+     || (inferredFlags->fp_abi == llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_DOUBLE
+        && inferredFlags->gpr_size == llvm::NanoMips::AFL_REG_32))
+        inferredFlags->cpr1_size = llvm::NanoMips::AFL_REG_32;
+  
+  else if(inferredFlags->fp_abi == llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_DOUBLE)
+    inferredFlags->cpr1_size = llvm::NanoMips::AFL_REG_64;
+
+
+}
 
 template <class ELFT>
 NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
-  Elf_NanoMips_ABIFlags flags = {};
+  Elf_NanoMips_ABIFlags flags{};
   bool create = false;
 
   llvm::DenseMap<ObjFile<ELFT> *, const Elf_NanoMips_ABIFlags *> tmpMap;
-
-  for(InputSectionBase *sec: ctx.inputSections)
+  // TODO: Test generating abi flags without nanoMIPS.abiflags.section
+  for(InputFile *f: ctx.objectFiles)
   {
-    if(sec->type != SHT_NANOMIPS_ABIFLAGS) continue;
-
-    sec->markDead();
-    create = true;
-    std::string filename = toString(sec->file);
-    const size_t size = sec->content().size();
-    if (size < sizeof(Elf_NanoMips_ABIFlags)) {
-      error(filename + ": invalid size of .nanoMIPS.abiflags section: got " +
-            Twine(size) + " instead of " + Twine(sizeof(Elf_NanoMips_ABIFlags)));
-      return nullptr;
-    }
-
-    auto *s = reinterpret_cast<const Elf_NanoMips_ABIFlags *>(sec->content().data());
-
-    tmpMap[sec->getFile<ELFT>()] = s;
-    if(s->version != 0)
+    const Elf_NanoMips_ABIFlags *s = nullptr;
+    ObjFile<ELFT> *obj = cast<ObjFile<ELFT>>(f);
+    Elf_NanoMips_ABIFlags headerFlags = {};
+    inferAbiFlags(obj, &headerFlags);
+    for(InputSectionBase *sec: obj->getSections())
     {
-      error(filename + ": unexpected .nanoMIPS.abiflags version " + Twine(s->version));
-      return nullptr;
+      if(sec == nullptr || sec->type != SHT_NANOMIPS_ABIFLAGS) continue;
+
+      sec->markDead();
+      create = true;
+      const size_t size = sec->content().size();
+      if (size < sizeof(Elf_NanoMips_ABIFlags)) {
+        error(f->getName() + ": invalid size of .nanoMIPS.abiflags section: got " +
+              Twine(size) + " instead of " + Twine(sizeof(Elf_NanoMips_ABIFlags)));
+        return nullptr;
+      }
+
+      s = reinterpret_cast<const Elf_NanoMips_ABIFlags *>(sec->content().data());
     }
 
-     
+      // Check compability between header and abiflags section 
+      if(s != nullptr)
+      {
+        if(s->isa_level != headerFlags.isa_level || s->isa_rev != headerFlags.isa_rev)
+          warn(f->getName() + ": Inconsistent ISA between e_flags and .nanoMIPS.abiflags");
+        
+        if(headerFlags.fp_abi != llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_ANY
+           && s->fp_abi != headerFlags.fp_abi)
+            warn(f->getName() + ": Inconsistent FP ABI between .gnu.attributes and .nanoMIPS.abiflags");
+        
+        // Shouldn't happen
+        if(LLVM_UNLIKELY((s->ases & headerFlags.ases) != headerFlags.ases))
+          warn(f->getName() + ": Inconsistent ASEs between e_flags and .nanoMIPS.abiflags");
+      }
+      // There is no abiflags section, so use headerFlags instead
+      // TODO: There is rarely a case where this is necessary
+      // as abiflags section is generated automatically, so this is left
+      // untested for now.
+      else
+      {
+        warn(f->getName() + ": Inherited abiflags from e_flags instead of .nanoMIPS.abiflags"); 
+        s = make<Elf_NanoMips_ABIFlags>(headerFlags);
+        create = true;
+      }
+      tmpMap[obj] = s;
+      if(s->version != 0)
+      {
+        error(f->getName() + ": unexpected .nanoMIPS.abiflags version " + Twine(s->version));
+        return nullptr;
+      }
 
-    flags.isa_level = std::max(flags.isa_level, s->isa_level);
-    flags.isa_rev = std::max(flags.isa_rev, s->isa_rev);
-    flags.gpr_size = std::max(flags.gpr_size, s->gpr_size);
-    flags.cpr1_size = std::max(flags.cpr1_size, s->cpr1_size);
-    flags.cpr2_size = std::max(flags.cpr2_size, s->cpr2_size);
-    flags.fp_abi = select_fp_abi(filename, s->fp_abi, flags.fp_abi);
-    flags.isa_ext = select_isa_ext(filename, s->isa_ext, flags.isa_ext);
-    flags.ases |= s->ases;
-    flags.flags1 |= s->flags1;
-    flags.flags2 |= s->flags2;
+      
 
-
+      flags.isa_level = std::max(flags.isa_level, s->isa_level);
+      flags.isa_rev = std::max(flags.isa_rev, s->isa_rev);
+      flags.gpr_size = std::max(flags.gpr_size, s->gpr_size);
+      flags.cpr1_size = std::max(flags.cpr1_size, s->cpr1_size);
+      flags.cpr2_size = std::max(flags.cpr2_size, s->cpr2_size);
+      flags.fp_abi = select_fp_abi(f->getName(), s->fp_abi, flags.fp_abi);
+      flags.isa_ext = select_isa_ext(f->getName(), s->isa_ext, flags.isa_ext);
+      flags.ases |= s->ases;
+      flags.flags1 |= s->flags1;
+      flags.flags2 |= s->flags2;
   }
 
   if(create)

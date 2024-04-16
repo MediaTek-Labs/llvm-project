@@ -196,7 +196,7 @@ void checkVal(uint8_t *loc, int64_t v, int n, const Relocation &rel, const Symbo
   // TODO: Make this function used by all Relocation with S in them
   if ((v & ((1 << shift) - 1)) != 0)
   {
-    error(getErrorLocation(loc) + "\tvalue: \t" + llvm::utohexstr(v) + "\tlast N bits have to be zero in all S{N} relocations \n");
+    error(getErrorLocation(loc) + "\tvalue: \t" + llvm::utohexstr(v) + "\tlast N bits have to be zero in all S{N} relocations");
   }
 
   if(sym.isUndefWeak()) return;
@@ -512,7 +512,13 @@ template <class ELFT>
 void NanoMips<ELFT>::transform(InputSection *sec) const 
 {
   NanoMipsContextProperties &contextProperties = this->currentTransformation.getContextProperties();
-  contextProperties.fullNanoMipsISA = NanoMipsAbiFlagsSection<ELFT>::get()->isFullNanoMipsISA(sec);
+  auto *abiFlagsSec = NanoMipsAbiFlagsSection<ELFT>::get();
+  contextProperties.fullNanoMipsISA = false;
+  if(!abiFlagsSec)
+    error("Abi flags section not created, it is needed to determine if full nanoMIPS ISA is used!");
+  else
+    contextProperties.fullNanoMipsISA = abiFlagsSec->isFullNanoMipsISA(sec);
+  
   auto *obj = sec->getFile<ELFT>();
 
   bool seenNoRelax = false;
@@ -802,7 +808,7 @@ uint32_t NanoMips<ELFT>::calcEFlags() const
 
   // Second condition is for dynamic linking
   if((retFlags & EF_NANOMIPS_PIC) == 0 && (config->pie || config->shared || ctx.sharedFiles.size() != 0) && !config->relocatable)
-      error(ctx.objectFiles[0]->getName() + ": non-PIC object found in dynamic link, recompile with -fpic\n");
+      error(ctx.objectFiles[0]->getName() + ": non-PIC object found in dynamic link, recompile with -fpic");
 
   // Iterate through others and merge
   for(size_t i = 1; i < ctx.objectFiles.size(); i++)
@@ -812,7 +818,7 @@ uint32_t NanoMips<ELFT>::calcEFlags() const
     uint32_t oldFlags = retFlags;
     // Second condition is for dynamic linking
     if((newFlags & EF_NANOMIPS_PIC) == 0 && (config->pie || config->shared || ctx.sharedFiles.size() != 0) && !config->relocatable)
-      error(f->getName() + ": non-PIC object found in dynamic link, recompile with -fpic\n");
+      error(f->getName() + ": non-PIC object found in dynamic link, recompile with -fpic");
 
     if(newFlags == oldFlags) continue;
 
@@ -828,7 +834,7 @@ uint32_t NanoMips<ELFT>::calcEFlags() const
     // Compare the ISAs
     // TODO: Check NANOMIPS_MACH, also check when more 64bit arch is available
     if(areNanoMips32BitFlagsSet(oldFlags) != areNanoMips32BitFlagsSet(newFlags))
-      error(f->getName() + ": Linking 32-bit code with 64-bit code\n");
+      error(f->getName() + ": Linking 32-bit code with 64-bit code");
     
     else if(!doesNanoMipsMachExtend(newFlags & EF_NANOMIPS_ARCH, oldFlags & EF_NANOMIPS_ARCH))
     {
@@ -845,7 +851,7 @@ uint32_t NanoMips<ELFT>::calcEFlags() const
       }
       else {
         // ISA's are incompatible
-        error(f->getName() + ": Linking incompatible machine modules than the previous ones!\n");
+        error(f->getName() + ": Linking incompatible machine modules than the previous ones!");
       }
 
     }
@@ -860,7 +866,7 @@ uint32_t NanoMips<ELFT>::calcEFlags() const
     {
       // Error if both are set differently
       if((newFlags & EF_NANOMIPS_ABI) != 0 && (oldFlags & EF_NANOMIPS_ABI) != 0)
-        error(f->getName() + ": ABI mismatch, different ABI than the previous ones!\n");
+        error(f->getName() + ": ABI mismatch, different ABI than the previous ones!");
 
       newFlags &= ~EF_NANOMIPS_ABI;
       oldFlags &= ~EF_NANOMIPS_ABI;
@@ -868,7 +874,7 @@ uint32_t NanoMips<ELFT>::calcEFlags() const
 
     // Other mismatches
     if(newFlags != oldFlags)
-      error(f->getName() + ": uses different e_flags (0x" + utohexstr(newFlags, 8) +  ") than currently calculated (0x" + utohexstr(oldFlags, 8) + ")\n");
+      error(f->getName() + ": uses different e_flags (0x" + utohexstr(newFlags, 8) +  ") than currently calculated (0x" + utohexstr(oldFlags, 8) + ")");
   }
 
   // Clear some flags, depending on the output

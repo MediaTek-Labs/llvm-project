@@ -809,6 +809,16 @@ template <class ELFT> struct Elf_NanoMips_ABIFlags {
   Elf_Word ases; // Mask of ASEs used
   Elf_Word flags1; // Mask of general flags
   Elf_Word flags2; // Mask of general flags
+
+  Elf_NanoMips_ABIFlags(): version(0), isa_level(0), isa_rev(0), gpr_size(0),
+                           cpr1_size(0), cpr2_size(0), fp_abi(0), isa_ext(0),
+                           ases(0), flags1(0), flags2(0) {}
+
+  Elf_NanoMips_ABIFlags(const Elf_NanoMips_ABIFlags &e) : version(e.version), isa_level(e.isa_level),
+                                                          isa_rev(e.isa_rev), gpr_size(e.gpr_size), 
+                                                          cpr1_size(e.cpr1_size), cpr2_size(e.cpr2_size),
+                                                          fp_abi(e.fp_abi), isa_ext(e.isa_ext),
+                                                          ases(e.ases), flags1(e.flags1), flags2(e.flags2){}
 };
 
 // Struct representing the BBAddrMap for one function.

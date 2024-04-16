@@ -1018,6 +1018,8 @@ public:
 
 private:
   static NanoMipsAbiFlagsSection *create();
+  static void inferAbiFlags(const ObjFile<ELFT> *objFile, Elf_NanoMips_ABIFlags *inferredABIFlags);
+  static void getAbiFlagsISAFromEflags(const ObjFile<ELFT> *objFile, Elf_NanoMips_ABIFlags *inferredFlags);
 
   // gold's way of selecing isa_ext, fp_abi
   static uint32_t select_isa_ext(const StringRef filename, uint32_t in_isa_ext, uint32_t out_isa_ext);

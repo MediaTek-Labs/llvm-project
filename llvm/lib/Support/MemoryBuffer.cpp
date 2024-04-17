@@ -178,12 +178,9 @@ namespace {
 template <typename MB>
 constexpr sys::fs::mapped_file_region::mapmode Mapmode =
     sys::fs::mapped_file_region::readonly;
-// FIXME: Changed it so I could write to mmapped sections, should find better solutions
-// nanomips
 template <>
 constexpr sys::fs::mapped_file_region::mapmode Mapmode<MemoryBuffer> =
-    // sys::fs::mapped_file_region::readonly;
-    sys::fs::mapped_file_region::priv;
+    sys::fs::mapped_file_region::readonly;
 template <>
 constexpr sys::fs::mapped_file_region::mapmode Mapmode<WritableMemoryBuffer> =
     sys::fs::mapped_file_region::priv;

@@ -511,19 +511,8 @@ bool NanoMips<ELFT>::relaxOnce(int pass) const
 template <class ELFT>
 void NanoMips<ELFT>::transform(InputSection *sec) const 
 {
-  NanoMipsContextProperties &contextProperties = this->currentTransformation.getContextProperties();
-  auto *abiFlagsSec = NanoMipsAbiFlagsSection<ELFT>::get();
-  contextProperties.fullNanoMipsISA = false;
-  if(!abiFlagsSec)
-    error("Abi flags section not created, it is needed to determine if full nanoMIPS ISA is used!");
-  else
-    contextProperties.fullNanoMipsISA = abiFlagsSec->isFullNanoMipsISA(sec);
-  
-  auto *obj = sec->getFile<ELFT>();
-
   bool seenNoRelax = false;
 
-  contextProperties.pcrel = obj ? isNanoMipsPcRel<ELFT>(obj) : true;
   const uint32_t bits = config->wordsize * 8;
   uint64_t secAddr = sec->getOutputSection()->addr + sec->outSecOff;
   // Need to traverse relocations this way because at transform we may invalidate the iterator
@@ -635,7 +624,21 @@ void NanoMips<ELFT>::initTransformAuxInfo() const
       if(!this->safeToModify(sec) || sec->relocations.size() == 0) continue;
       sec->nanoMipsRelaxAux = make<NanoMipsRelaxAux>();
       sec->nanoMipsRelaxAux->prevBytesDropped = sec->bytesDropped;
+      sec->nanoMipsRelaxAux->isAlreadyTransformed = false;
+      sec->nanoMipsRelaxAux->freeBytes = 0;
       sec->bytesDropped = 0;
+
+      auto *abiFlagsSec = NanoMipsAbiFlagsSection<ELFT>::get();
+  
+      auto *obj = sec->getFile<ELFT>();
+
+      sec->nanoMipsRelaxAux->pcrel = obj ? isNanoMipsPcRel<ELFT>(obj) : true;
+
+      sec->nanoMipsRelaxAux->fullNanoMipsISA = false;
+      if(!abiFlagsSec)
+        error("Abi flags section not created, it is needed to determine whether full nanoMIPS ISA is used!");
+      else
+        sec->nanoMipsRelaxAux->fullNanoMipsISA = abiFlagsSec->isFullNanoMipsISA(sec);
     }
   }
 
@@ -761,13 +764,6 @@ void NanoMips<ELFT>::finalizeRelaxations() const {
     for(InputSection *sec : getInputSections(*osec, storage))
     {
       if(!this->safeToModify(sec) || sec->relocations.size() == 0) continue;
-      // This means we have more bytes than needed, shorten the array ref
-      if(sec->bytesDropped)
-      {
-        // TODO: Check if bytesDropped should be a bigger value, uint16_t is maybe small
-        // sec->content_ = sec->content().drop_back(sec->bytesDropped).begin();
-        sec->size -= sec->bytesDropped;
-      }
       sec->bytesDropped = sec->nanoMipsRelaxAux->prevBytesDropped;
     }
   }

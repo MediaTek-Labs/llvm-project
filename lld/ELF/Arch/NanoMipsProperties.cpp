@@ -386,11 +386,53 @@ std::string NanoMipsTransform::getTypeAsString() const
   }
 }
 
+void NanoMipsTransform::changeBytes(InputSection *isec, uint64_t location, int32_t count)
+{
+  assert(location <= isec->size && "Location mustn't be larger than size of section");
+  assert((count > 0 || location >= static_cast<uint64_t>(-count)) && "Number of deleted bytes must be less than location");
+
+  if((count > 0 && static_cast<uint32_t>(count) > isec->nanoMipsRelaxAux->freeBytes) || !isec->nanoMipsRelaxAux->isAlreadyTransformed)
+  {
+    isec->nanoMipsRelaxAux->isAlreadyTransformed = true;
+    size_t newSize = isec->size + count;
+    uint8_t *newData;
+    // TODO: Check if the mutex is necessary as it is used only for nanoMIPS relaxations
+    // which shouldn't be concurrent
+    {
+      static std::mutex mu;
+      std::lock_guard<std::mutex> lock(mu);
+      // TODO: Check if this can eat up a lot of memory
+      // as bptr allocator only allocates, it doesn't free
+      // the memory
+      // Allocate more data just in case
+      // TODO: Probably shouldn't allocate twice as much, but leave it as is for now
+      newData = context().bAlloc.Allocate<uint8_t>(newSize * 2);
+    }
+    if(newData == nullptr) fatal(toString(isec) + " allocation of new size failed");
+    
+    memcpy(newData, isec->content_, location);
+    memcpy(newData + location + count, isec->content_ + location, isec->size - location);
+    isec->nanoMipsRelaxAux->freeBytes = newSize;
+    isec->content_ = newData;
+    isec->size = newSize;
+  }
+  else {
+    // TODO: See if this can be done backwards as well, maybe that is faster (use memcpy)
+    // Possible implementation
+    // uint8_t *beginSrc = const_cast<uint8_t *>(this->content_) + location;
+    // uint8_t *endSrc = beginSrc + this->size - bytesDropped - location;
+    // uint8_t *endDst = endSrc + count;
+    // std::reverse_copy<uint8_t *, uint8_t *>(beginSrc, endSrc, endDst);
+    memmove(const_cast<uint8_t *>(isec->content_) + location + count, isec->content_ + location, isec->size - location);
+    isec->nanoMipsRelaxAux->freeBytes -= count;
+    isec->size += count;
+  }
+}
+
+
 void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t location, int32_t delta, bool align){
-  if(delta < 0)
-    isec->deleteBytes(location, -delta);
-  else
-    isec->addBytes(location, delta);
+
+  changeBytes(isec, location, delta);
 
   this->changed = true;
   this->changedThisIteration = true;
@@ -633,7 +675,7 @@ const NanoMipsInsProperty *NanoMipsTransformRelax::getInsProperty(uint64_t insn,
     {
       uint32_t sReg = insProperty->getSReg(insn);
       if(!insProperty->hasTransform(TT_NANOMIPS_PCREL16, reloc) 
-         || !contextProperties.fullNanoMipsISA 
+         || !isec->nanoMipsRelaxAux->fullNanoMipsISA 
          || (!insProperty->areRegsValid(insn) 
              && !(insProperty->hasTransform(TT_NANOMIPS_PCREL16_ZERO, reloc)
                  && insProperty->isTRegValid(insn)
@@ -943,8 +985,8 @@ const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getTransform
 const NanoMipsTransformTemplate *lld::elf::NanoMipsTransformExpand::getExpandTransformTemplate(const NanoMipsInsProperty * insProperty, const Relocation & reloc, uint64_t insn, const InputSection * isec) const
 {
   // TODO: Test all versions
-  bool nanoMipsFullAbi = contextProperties.fullNanoMipsISA;
-  bool pcrel = contextProperties.pcrel;
+  bool nanoMipsFullAbi = isec->nanoMipsRelaxAux->fullNanoMipsISA;
+  bool pcrel = isec->nanoMipsRelaxAux->pcrel;
   switch(reloc.type)
   {
     case R_NANOMIPS_PC21_S1:

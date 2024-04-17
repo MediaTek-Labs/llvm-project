@@ -40,7 +40,21 @@ namespace lld {
 namespace elf{
 
   struct NanoMipsRelaxAux {
-    uint32_t prevBytesDropped;
+    // We'll allocate more bytes during transformations, just in case
+    // this field is used to save the number of those freeBytes, as
+    // dropped bytes is uint16_t which is too small some time.
+    uint32_t freeBytes;
+    uint16_t prevBytesDropped;
+
+    // Note: This is needed, as if transformation hasn't happened yet
+    // and if mmap is used to map sections from files to memory, than
+    // that section will be readonly, thus unviable for transformations.
+    // When we transform the section for the first time, we'll copy its content
+    // to a newly allocated memory chunk. 
+    // Check out: getOpenFileImpl in llvm/lib/Support/MemoryBuffer.cpp
+    bool isAlreadyTransformed;
+    bool fullNanoMipsISA;
+    bool pcrel;
     SmallVector<SymbolAnchor, 0> anchors;
   };
   
@@ -274,15 +288,14 @@ namespace elf{
     NANOMIPS_EXPAND_STATE
   };
 
-  struct NanoMipsContextProperties {
-    bool fullNanoMipsISA;
-    bool pcrel;      
-  };
+  // struct NanoMipsContextProperties {
+  //   bool fullNanoMipsISA;
+  //   bool pcrel;      
+  // };
   class NanoMipsTransform {
     // !NanoMipsAbiFlagsSection<ELF32LE>::get()->isFullNanoMipsISA(isec)
     // bool pcrel = isNanoMipsPcRel<ELF32LE>(obj);
     public:
-      NanoMipsContextProperties contextProperties;
       enum TransformKind {
         TransformNone = 0,
         TransformRelax = 1,
@@ -313,6 +326,7 @@ namespace elf{
       bool changed;
     
     private:
+      void changeBytes(InputSection *isec, uint64_t location, int32_t count);
       mutable SmallVector<NewInsnToWrite, 3> newInsns;
       // Storage for new symbol names
       mutable SmallVector<std::string ,0> newSymNames;
@@ -362,9 +376,7 @@ namespace elf{
 
       void initState();
       void changeState(int pass);
-
-      NanoMipsContextProperties& getContextProperties() const { return this->currentState->contextProperties; }
-
+      
       NanoMipsTransform::TransformKind getType() const { return this->currentState->getType(); }
       // should be called before change state
       bool shouldRunAgain() const { return this->currentState->getChanged(); }

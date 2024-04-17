@@ -151,56 +151,6 @@ template <class ELFT> RelsOrRelas<ELFT> InputSectionBase::relsOrRelas() const {
   return ret;
 }
 
-void InputSectionBase::addBytes(uint64_t location, uint32_t count)
-{
-  assert(location <= this->size - bytesDropped && "Location mustn't be larger than size of section");
-  assert(count > 0 && "Number of new bytes must be larger than 0");
-  if(count > bytesDropped)
-  {
-    // Allocate more data just in case
-    size_t size = (this->size + count - bytesDropped) * 2;
-    uint8_t *increasedData;
-    // TODO: Check if the mutex is necessary as it is used only for nanoMIPS relaxations
-    // which shouldn't be concurrent
-    {
-      static std::mutex mu;
-      std::lock_guard<std::mutex> lock(mu);
-      // TODO: Check if this can eat up a lot of memory
-      // as bptr allocator only allocates, it doesn't free
-      // the memory
-      increasedData = context().bAlloc.Allocate<uint8_t>(size);
-    }
-
-    if(increasedData == nullptr) fatal(toString(this) + " allocation of new size failed");
-    
-    memcpy(increasedData, this->content_, location);
-    memcpy(increasedData + location + count, this->content_ + location, this->size - bytesDropped - location);
-
-    bytesDropped = this->size + count - bytesDropped;
-    this->content_ = increasedData;
-    this->size = size;
-  }
-  else {
-    // TODO: See if this can be done backwards as well, maybe that is faster (use memcpy)
-    // Possible implementation
-    // uint8_t *beginSrc = const_cast<uint8_t *>(this->content_) + location;
-    // uint8_t *endSrc = beginSrc + this->size - bytesDropped - location;
-    // uint8_t *endDst = endSrc + count;
-    // std::reverse_copy<uint8_t *, uint8_t *>(beginSrc, endSrc, endDst);
-    memmove(const_cast<uint8_t *>(this->content_) + location + count, this->content_ + location, this->size - bytesDropped - location);
-    bytesDropped -= count;
-  }
-}
-
-void InputSectionBase::deleteBytes(uint64_t location, uint32_t count)
-{
-  assert(location <= this->size - bytesDropped && "Location mustn't be larger than size of section");
-  assert(count > 0 && count <= location && "Number of deleted bytes must be larger than 0 and less than location");
-
-  memmove(const_cast<uint8_t *>(this->content_) + location - count, this->content_ + location, this->size - bytesDropped - location);
-  bytesDropped += count;
-}
-
 // uint64_t InputSectionBase::getOffsetInFile() const {
 //   const uint8_t *fileStart = (const uint8_t *)file->mb.getBufferStart();
 //   const uint8_t *secStart = data().begin();

@@ -443,7 +443,7 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec, uint64_t locati
 
   // TODO: This is not efficient maybe sort relocs by offset, and just traverse  over the ones
   // which have offset larger or equal than the processed one 
-  for(auto &reloc: isec->relocations)
+  for(auto &reloc: isec->relocs())
   {
     // TODO: Need to make this different for align, fill and max reloc
     // but that will be done after they are implemented
@@ -615,6 +615,7 @@ void NanoMipsTransform::transform(Relocation *reloc, const NanoMipsTransformTemp
         newRelocation.sym = reloc->sym;
         newRelocation.type = newRelType;
         relNum++;
+        // TODO: See how you will insert relocations later, as relocations won't be SmallVector anymore
         isec->relocations.insert(isec->relocations.begin() + relNum, newRelocation);
         // Because we add a relocation, it might invalidate our previous reloc!
         reloc = &isec->relocations[relNum - 1];

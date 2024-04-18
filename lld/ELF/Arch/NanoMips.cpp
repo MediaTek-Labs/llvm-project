@@ -116,9 +116,9 @@ inline bool isOutputSecTransformable(const OutputSection *osec)
 
 bool isForcedInsnLength(uint64_t offset, uint32_t relNum, InputSection *isec)
 {
-  for(uint32_t curRelNum = relNum + 1; curRelNum < isec->relocations.size(); curRelNum++)
+  for(uint32_t curRelNum = relNum + 1; curRelNum < isec->relocs().size(); curRelNum++)
   {
-    Relocation &rel = isec->relocations[curRelNum];
+    Relocation &rel = isec->relocs()[curRelNum];
     if(offset != rel.offset)
       break;
     // TODO: Check if this is correct, insn32 and insn16 shouldn't ban all transformations
@@ -490,7 +490,7 @@ bool NanoMips<ELFT>::relaxOnce(int pass) const
       for(InputSection *sec : getInputSections(*osec, storage))
       {
         if(!this->safeToModify(sec)) continue;
-        if(sec->relocations.size()) this->transform(sec);
+        if(sec->relocs().size()) this->transform(sec);
 
       }
     }
@@ -519,9 +519,9 @@ void NanoMips<ELFT>::transform(InputSection *sec) const
   // TODO: Relocs are not sorted by offset, check if they should be?
   // TODO: GP setup from gold is different than lld, probably should change it
   // also probably should make ElfSym::nanoMipsGp - as it represents this better
-  for(uint32_t relNum = 0; relNum < sec->relocations.size(); relNum++)
+  for(uint32_t relNum = 0; relNum < sec->relocs().size(); relNum++)
   {
-    Relocation &reloc = sec->relocations[relNum];
+    Relocation &reloc = sec->relocs()[relNum];
 
     // TODO: Check out if relocation with the same offset as R_NANOMIPS_NORELAX should or shouldn't be relaxed
     if(reloc.type == R_NANOMIPS_NORELAX)
@@ -621,7 +621,7 @@ void NanoMips<ELFT>::initTransformAuxInfo() const
     
     for(InputSection *sec : getInputSections(*osec, storage))
     {
-      if(!this->safeToModify(sec) || sec->relocations.size() == 0) continue;
+      if(!this->safeToModify(sec) || sec->relocs().size() == 0) continue;
       sec->nanoMipsRelaxAux = make<NanoMipsRelaxAux>();
       sec->nanoMipsRelaxAux->prevBytesDropped = sec->bytesDropped;
       sec->nanoMipsRelaxAux->isAlreadyTransformed = false;
@@ -652,7 +652,7 @@ void NanoMips<ELFT>::initTransformAuxInfo() const
       {
         if((sec->flags & (SHF_EXECINSTR | SHF_ALLOC)) != (SHF_EXECINSTR | SHF_ALLOC) ||
           !(sec->type & SHT_PROGBITS) || !sec->nanoMipsRelaxAux || !this->safeToModify(sec) ||
-          sec->relocations.size() == 0) continue;
+          sec->relocs().size() == 0) continue;
         
         sec->nanoMipsRelaxAux->anchors.push_back({d, false});
         if(d->size > 0)
@@ -684,9 +684,9 @@ void NanoMips<ELFT>::align(InputSection *sec, Relocation &reloc, uint32_t relNum
   uint64_t max = ELFT::Is64Bits ? (uint64_t)(0) - 1 : (uint32_t)(0) - 1;
   size_t fillSize = 2;
 
-  for(uint32_t i = relNum + 1; i < sec->relocations.size(); i++)
+  for(uint32_t i = relNum + 1; i < sec->relocs().size(); i++)
   {
-    Relocation &r = sec->relocations[i];
+    Relocation &r = sec->relocs()[i];
     if(r.offset != reloc.offset)
       break;
 
@@ -763,7 +763,7 @@ void NanoMips<ELFT>::finalizeRelaxations() const {
     
     for(InputSection *sec : getInputSections(*osec, storage))
     {
-      if(!this->safeToModify(sec) || sec->relocations.size() == 0) continue;
+      if(!this->safeToModify(sec) || sec->relocs().size() == 0) continue;
       sec->bytesDropped = sec->nanoMipsRelaxAux->prevBytesDropped;
     }
   }

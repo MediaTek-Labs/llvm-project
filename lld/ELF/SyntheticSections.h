@@ -1006,7 +1006,7 @@ using Elf_NanoMips_ABIFlags = llvm::object::Elf_NanoMips_ABIFlags<ELFT>;
 
 public:
   static NanoMipsAbiFlagsSection *get();
-  
+
   NanoMipsAbiFlagsSection(Elf_NanoMips_ABIFlags flags);
   size_t getSize() const override { return sizeof(Elf_NanoMips_ABIFlags); }
   const Elf_NanoMips_ABIFlags *getFlags() const { return &flags; };
@@ -1018,22 +1018,26 @@ public:
 
 private:
   static NanoMipsAbiFlagsSection *create();
-  static void inferAbiFlags(const ObjFile<ELFT> *objFile, Elf_NanoMips_ABIFlags *inferredABIFlags);
-  static void getAbiFlagsISAFromEflags(const ObjFile<ELFT> *objFile, Elf_NanoMips_ABIFlags *inferredFlags);
+  static void inferAbiFlags(const ObjFile<ELFT> *objFile,
+                            Elf_NanoMips_ABIFlags *inferredABIFlags);
+  static void getAbiFlagsISAFromEflags(const ObjFile<ELFT> *objFile,
+                                       Elf_NanoMips_ABIFlags *inferredFlags);
 
   // gold's way of selecing isa_ext, fp_abi
-  static uint32_t select_isa_ext(const StringRef filename, uint32_t in_isa_ext, uint32_t out_isa_ext);
-  static uint32_t select_fp_abi(const StringRef filename, uint32_t in_fp, uint32_t out_fp);
+  static uint32_t select_isa_ext(const StringRef filename, uint32_t in_isa_ext,
+                                 uint32_t out_isa_ext);
+  static uint32_t select_fp_abi(const StringRef filename, uint32_t in_fp,
+                                uint32_t out_fp);
   static std::string fp_abi_string(uint32_t fp);
   Elf_NanoMips_ABIFlags flags;
   static NanoMipsAbiFlagsSection *abiFlagsUnique;
 
   llvm::DenseMap<ObjFile<ELFT> *, const Elf_NanoMips_ABIFlags *> mapOfAbiFlags;
-
 };
 
 template <class ELFT>
-NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::abiFlagsUnique = nullptr;
+NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::abiFlagsUnique =
+    nullptr;
 
 // .MIPS.options section.
 template <class ELFT> class MipsOptionsSection final : public SyntheticSection {

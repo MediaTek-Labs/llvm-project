@@ -852,7 +852,7 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
       break;
     }
 
-  for(auto it = rels.begin(), end = rels.end(); it != end; it++) {  
+  for (auto it = rels.begin(), end = rels.end(); it != end; it++) {
     const RelTy &rel = *it;
     RelType type = rel.getType(config->isMips64EL);
 
@@ -869,7 +869,7 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
     if (auto *sec = dyn_cast<InputSection>(this))
       secAddr += sec->outSecOff;
     const uint64_t addrLoc = secAddr + offset;
-    
+
     uint8_t *bufLoc = buf + offset;
     int64_t addend = getAddend<ELFT>(rel);
     if (!RelTy::IsRela)
@@ -938,10 +938,11 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
       continue;
     }
 
-    if (expr == R_NANOMIPS_NEG_COMPOSITE){
-        uint64_t data = getNanoMipsNegCompositeRelDataNonAlloc<ELFT, RelTy>(it, end, bufLoc, buf, this, file, addrLoc, &target);
-        target.relocateNoSym(bufLoc, (*it).getType(config->isMips64EL), data);
-        continue;
+    if (expr == R_NANOMIPS_NEG_COMPOSITE) {
+      uint64_t data = getNanoMipsNegCompositeRelDataNonAlloc<ELFT, RelTy>(
+          it, end, bufLoc, buf, this, file, addrLoc, &target);
+      target.relocateNoSym(bufLoc, (*it).getType(config->isMips64EL), data);
+      continue;
     }
 
     std::string msg = getLocation(offset) + ": has non-ABS relocation " +

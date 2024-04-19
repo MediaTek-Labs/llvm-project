@@ -318,8 +318,8 @@ template <class ELFT> void elf::createSyntheticSections() {
   }
 
   // Add nanoMIPS-specific sections.
-  if(config->emachine == EM_NANOMIPS) {
-    if(auto *sec = NanoMipsAbiFlagsSection<ELFT>::get())
+  if (config->emachine == EM_NANOMIPS) {
+    if (auto *sec = NanoMipsAbiFlagsSection<ELFT>::get())
       add(*sec);
   }
 
@@ -2048,8 +2048,9 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
         addPhdrForSection(part, SHT_MIPS_ABIFLAGS, PT_MIPS_ABIFLAGS, PF_R);
       }
 
-      if(config->emachine == EM_NANOMIPS) {
-        addPhdrForSection(part, SHT_NANOMIPS_ABIFLAGS, PT_NANOMIPS_ABIFLAGS, PF_R);
+      if (config->emachine == EM_NANOMIPS) {
+        addPhdrForSection(part, SHT_NANOMIPS_ABIFLAGS, PT_NANOMIPS_ABIFLAGS,
+                          PF_R);
       }
     }
     Out::programHeaders->size = sizeof(Elf_Phdr) * mainPart->phdrs.size();

@@ -817,7 +817,8 @@ static bool maybeReportUndefined(Undefined &sym, InputSectionBase &sec,
   // PPC32 .got2 is similar but cannot be fixed. Multiple .got2 is infeasible
   // because .LC0-.LTOC is not representable if the two labels are in different
   // .got2
-  if (sym.discardedSecIdx != 0 && (sec.name == ".got2" || sec.name == ".toc" || sec.name == ".eh_frame"))
+  if (sym.discardedSecIdx != 0 && 
+      (sec.name == ".got2" || sec.name == ".toc" || sec.name == ".eh_frame"))
     return false;
   bool isWarning =
       (config->unresolvedSymbols == UnresolvedPolicy::Warn && canBeExternal) ||

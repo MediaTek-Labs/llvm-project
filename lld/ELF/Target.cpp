@@ -88,24 +88,23 @@ TargetInfo *elf::getTarget() {
   case EM_X86_64:
     return getX86_64TargetInfo();
   case EM_NANOMIPS:
-    switch (config->ekind)
-    {
-      case ELF32LEKind:
-        return getNanoMipsTargetInfo<ELF32LE>();
-      // TODO: When these architectures are fully supported
-      // this may be uncommented, for now only little endian 32bit
-      // is supported
-      // case ELF32BEKind:
-      //   return getNanoMipsTargetInfo<ELF32BE>();
-      // case ELF64LEKind:
-      //   return getNanoMipsTargetInfo<ELF64LE>();
-      // case ELF64BEKind:
-      //   return getNanoMipsTargetInfo<ELF64BE>();
-      default:
-        llvm_unreachable("unsupported nanoMIPS target");
+    switch (config->ekind) {
+    case ELF32LEKind:
+      return getNanoMipsTargetInfo<ELF32LE>();
+    // TODO: When these architectures are fully supported
+    // this may be uncommented, for now only little endian 32bit
+    // is supported
+    // case ELF32BEKind:
+    //   return getNanoMipsTargetInfo<ELF32BE>();
+    // case ELF64LEKind:
+    //   return getNanoMipsTargetInfo<ELF64LE>();
+    // case ELF64BEKind:
+    //   return getNanoMipsTargetInfo<ELF64BE>();
+    default:
+      llvm_unreachable("unsupported nanoMIPS target");
     }
   }
-  
+
   llvm_unreachable("unknown target machine");
 }
 
@@ -175,15 +174,14 @@ void TargetInfo::relocateAlloc(InputSectionBase &sec, uint8_t *buf) const {
   uint64_t secAddr = sec.getOutputSection()->addr;
   if (auto *s = dyn_cast<InputSection>(&sec))
     secAddr += s->outSecOff;
-  for(auto it = sec.relocs().begin(), end = sec.relocs().end(); it != end; it++) {  
-    const Relocation &rel = *it;
+  for (const Relocation &rel : sec.relocs()) {
     uint8_t *loc = buf + rel.offset;
     const uint64_t val = SignExtend64(
         sec.getRelocTargetVA(sec.file, rel.type, rel.addend,
                              secAddr + rel.offset, *rel.sym, rel.expr),
         bits);
-    
-    relocate(loc, rel, val);
+    if (rel.expr != R_RELAX_HINT)
+      relocate(loc, rel, val);
   }
 }
 

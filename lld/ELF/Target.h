@@ -81,8 +81,7 @@ public:
                                                 uint8_t stOther) const;
 
   // Return true if we can reach dst from src with RelType type.
-  virtual bool inBranchRange(RelType type, uint64_t src,
-                             uint64_t dst) const;
+  virtual bool inBranchRange(RelType type, uint64_t src, uint64_t dst) const;
 
   virtual void relocate(uint8_t *loc, const Relocation &rel,
                         uint64_t val) const = 0;
@@ -108,7 +107,6 @@ public:
                                      InputSection *nextIS) const {
     return false;
   }
-
 
   unsigned defaultCommonPageSize = 4096;
   unsigned defaultMaxPageSize = 4096;
@@ -181,8 +179,7 @@ TargetInfo *getSPARCV9TargetInfo();
 TargetInfo *getX86TargetInfo();
 TargetInfo *getX86_64TargetInfo();
 template <class ELFT> TargetInfo *getMipsTargetInfo();
-template <class ELFT>
-TargetInfo *getNanoMipsTargetInfo();
+template <class ELFT> TargetInfo *getNanoMipsTargetInfo();
 
 struct ErrorPlace {
   InputSectionBase *isec;
@@ -199,9 +196,17 @@ static inline std::string getErrorLocation(const uint8_t *loc) {
 
 void writePPC32GlinkSection(uint8_t *buf, size_t numEntries);
 
-template<class ELFT, class RelTy> 
-uint64_t getNanoMipsNegCompositeRelDataNonAlloc(typename ArrayRef<RelTy>::iterator &it, typename ArrayRef<RelTy>::iterator &end, uint8_t *bufLoc, uint8_t *buf, InputSectionBase *sec, const InputFile *file, uint64_t addrLoc, const TargetInfo *target);
-uint64_t getNanoMipsNegCompositeRelDataAlloc(Relocation *&it, Relocation *&end, uint8_t *bufLoc, uint8_t *buf, InputSectionBase *sec, const InputFile *file, uint64_t addrLoc);
+template <class ELFT, class RelTy>
+uint64_t getNanoMipsNegCompositeRelDataNonAlloc(
+    typename ArrayRef<RelTy>::iterator &it,
+    typename ArrayRef<RelTy>::iterator &end, uint8_t *bufLoc, uint8_t *buf,
+    InputSectionBase *sec, const InputFile *file, uint64_t addrLoc,
+    const TargetInfo *target);
+uint64_t getNanoMipsNegCompositeRelDataAlloc(Relocation *&it, Relocation *&end,
+                                             uint8_t *bufLoc, uint8_t *buf,
+                                             InputSectionBase *sec,
+                                             const InputFile *file,
+                                             uint64_t addrLoc);
 unsigned getPPCDFormOp(unsigned secondaryOp);
 
 // In the PowerPC64 Elf V2 abi a function can have 2 entry points.  The first

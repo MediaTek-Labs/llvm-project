@@ -1523,7 +1523,8 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
                                       const llvm::Triple &TargetTriple,
                                       StringRef Path, const ArgList &Args,
                                       DetectedMultilibs &Result) {
-  FilterNonExistent NonExistent(Path, "/crtbegin.o", D.getVFS());
+  FilterNonExistent NonExistent(Path, (TargetTriple.isNanoMips() ? "/crti.o" : "/crtbegin.o"),
+				D.getVFS());
 
   StringRef CPUName;
   StringRef ABIName;

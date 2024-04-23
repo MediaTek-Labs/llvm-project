@@ -139,6 +139,8 @@ bool NMOptimizeJumpTables::optimizeRedundantEntries(
     auto I = MBB->getFirstNonDebugInstr();
     while (I == MBB->end() || I->isUnconditionalBranch()) {
       // Empty block. Forward.
+      if(MBB->succ_empty())
+        break;
       MBB = *MBB->successors().begin();
       I = MBB->getFirstNonDebugInstr();
     }

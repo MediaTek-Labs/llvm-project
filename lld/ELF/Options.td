@@ -730,6 +730,11 @@ defm relax_lo12: BB<"relax-lo12",
     "(nanoMIPS only) Do not relax R_NANOMIPS_LO12 relocation (default)"
 >;
 
+defm relax_balc_trampolines: BB<"relax-balc-trampolines",
+    "(nanoMIPS only) Generate BALC trampolines during relaxations (default)",
+    "(nanoMIPS only) Do not generate BALC trampolines during relaxations"
+>;
+
 defm fix_nmips_hw110880: BB<"fix-nmips-hw110880",
     "(nanoMIPS only) Rewrite instructions to avoid hw110880 issue",
     "(nanoMIPS only) Do not rewrite instructions to avoid hw110880 issue (default)"

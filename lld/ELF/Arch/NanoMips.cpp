@@ -264,7 +264,9 @@ NanoMips<ELFT>::NanoMips() : currentTransformation(&insPropertyTable) {
                    << "\n";
       llvm::dbgs() << "expand_reg: " << config->nanoMipsExpandReg << "\n";
       llvm::dbgs() << "strict_address_modes: "
-                   << config->nanoMipsStrictAddressModes << "\n";);
+                   << config->nanoMipsStrictAddressModes << "\n";
+      llvm::dbgs() << "relax_balc_trampolines: "
+                   << config->nanoMipsRelaxBalcTrampolines << "\n";);
   this->currentTransformation.initState();
 }
 
@@ -455,7 +457,7 @@ template <class ELFT> TargetInfo *elf::getNanoMipsTargetInfo() {
 template <class ELFT> bool NanoMips<ELFT>::mayRelax() const {
   // TODO: When the finalize-relocs option is added, change this expression
   // also goes for sort-by-reference option
-  return (!config->relocatable && (config->relax || config->expand));
+  return (!config->relocatable && (config->relax || config->expand || config->nanoMipsRelaxBalcTrampolines));
 }
 
 template <class ELFT>
@@ -496,7 +498,7 @@ template <class ELFT> bool NanoMips<ELFT>::relaxOnce(int pass) const {
     }
 
     const_cast<NanoMipsTransformController &>(this->currentTransformation)
-        .changeState(pass);
+        .changeAndFinalizeState(pass);
     if (!this->currentTransformation.isNone())
       changed = true;
 
@@ -519,6 +521,7 @@ template <class ELFT> void NanoMips<ELFT>::transform(InputSection *sec) const {
   // TODO: Relocs are not sorted by offset, check if they should be?
   // TODO: GP setup from gold is different than lld, probably should change it
   // also probably should make ElfSym::nanoMipsGp - as it represents this better
+  // Note: Size changes sometimes due to adding of new relocations
   for (uint32_t relNum = 0; relNum < sec->relocs().size(); relNum++) {
     Relocation &reloc = sec->relocs()[relNum];
 
@@ -537,7 +540,9 @@ template <class ELFT> void NanoMips<ELFT>::transform(InputSection *sec) const {
     if (seenNoRelax)
       continue;
 
-    if (reloc.type == R_NANOMIPS_ALIGN) {
+    // We don't want to align in scanning trampolines, as we can surely do it in TrampolinesGenerate,
+    // and scan is used only to go through the sections not change them
+    if (reloc.type == R_NANOMIPS_ALIGN && currentTransformation.getType() != NanoMipsTransform::TransformTrampolinesScan) {
       this->align(sec, reloc, relNum);
       continue;
     }
@@ -590,8 +595,10 @@ template <class ELFT> void NanoMips<ELFT>::transform(InputSection *sec) const {
 
     const NanoMipsTransformTemplate *transformTemplate =
         this->currentTransformation.getTransformTemplate(
-            insProperty, reloc, valueToRelocate, insn, sec);
+            insProperty, relNum, valueToRelocate, insn, sec);
 
+    // if(this->currentTransformation.getType() == NanoMipsTransform::TransformTrampolinesGenerate && transformTemplate)
+    //   llvm::outs() << sec->name << ": " << transformTemplate->getType() << ": " << transformTemplate->getSizeOfTransform() << "\n";
     if (!transformTemplate)
       continue;
     LLVM_DEBUG(llvm::dbgs() << "Chosen transform template:\n"

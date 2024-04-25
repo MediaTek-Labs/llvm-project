@@ -445,6 +445,9 @@ def TT_ABS32: TransformationType;
 
 def TT_GPREL32: TransformationType;
 
+def TT_BALC_TRAMP: TransformationType;
+def TT_BALC_CALL: TransformationType;
+
 // -------------------------- End TransformationType ---------------------------
 
 
@@ -556,6 +559,8 @@ def : TransformationTemplate<TT_ABS32_LONG, BALC32_P, (relocs PC25_S1), (insns L
 def : TransformationTemplate<TT_PCREL_NMF, BALC32_P, (relocs PC25_S1), (insns LAPC48_T<TREG>, JALRC16_T<SREG>)>;
 def : TransformationTemplate<TT_PCREL16_LONG, BALC32_P, (relocs PC25_S1), (insns ALUIPC_T<PC_HI20, SREG>, ORI_T<LO12, SREG, SREG>, JALRC16_T<SREG>)>;
 def : TransformationTemplate<TT_PCREL32_LONG, BALC32_P, (relocs PC25_S1), (insns ALUIPC_T<PC_HI20, SREG>, ORI_T<LO12, SREG, SREG>, JALRC32_T<>)>;
+def : TransformationTemplate<TT_BALC_TRAMP, BALC32_P, (relocs PC25_S1), (insns BALC16_T<>, BC16_T<>, BC32_T<>)>;
+def : TransformationTemplate<TT_BALC_CALL, BALC32_P, (relocs PC25_S1), (insns BALC16_T<>)>;
 
 def : TransformationTemplate<TT_PCREL32, BEQZC16_P, (relocs PC7_S1), (insns BEQC32_T<>)>;
 

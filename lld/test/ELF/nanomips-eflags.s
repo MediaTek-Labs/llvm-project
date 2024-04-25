@@ -1,5 +1,4 @@
 # REQUIRES: nanomips
-# A test in progress
 # Only 32bit little endian is tested, as it is the only one supported for now
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6 %s -o %t1.o
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6 %S/Inputs/nanomips-eflags-sup.s -o %t2.o

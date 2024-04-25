@@ -27,13 +27,33 @@
 // using namespace lld;
 // Used for relaxation purposes
 
+// TODO: Move this anonymous namespace out of header, or not use it at all
 namespace {
+
+using namespace lld::elf;
 struct SymbolAnchor {
   // uint64_t offset;
-  lld::elf::Defined *d;
+  Defined *d;
   bool end;
 
-  SymbolAnchor(lld::elf::Defined *defined, bool e) : d(defined), end(e) {}
+  SymbolAnchor(Defined *defined, bool e) : d(defined), end(e) {}
+};
+struct BalcTrampCandidate {
+
+  const InputSection *isec = nullptr;
+  // Calculated address of the jump
+  uint64_t jumpTarget = -1;
+  // Index to the balc representing the trampoline
+  uint32_t trampIdx = -1;
+  // Num of rel in section
+  // Note: we add relocations to the end of the relocation vector
+  // so it is safe to remember the relocationNumber
+  uint32_t relNum = -1;
+  // Check if this one is a trampoline
+  // bool isTramp = false;
+  // Tramp symbol determines if this is a trampoline
+  Symbol *trampSymbol = nullptr;
+  bool ignore = false;
 };
 } // namespace
 
@@ -321,11 +341,6 @@ struct NewInsnToWrite {
   NewInsnToWrite(uint64_t i, uint32_t off, uint32_t sz)
       : insn(i), offset(off), size(sz) {}
 };
-enum NanoMipsTransformationEnum {
-  NANOMIPS_NONE_STATE,
-  NANOMIPS_RELAX_STATE,
-  NANOMIPS_EXPAND_STATE
-};
 
 // struct NanoMipsContextProperties {
 //   bool fullNanoMipsISA;
@@ -338,7 +353,9 @@ public:
   enum TransformKind {
     TransformNone = 0,
     TransformRelax = 1,
-    TransformExpand = 2
+    TransformExpand = 2,
+    TransformTrampolinesScan = 3,
+    TransformTrampolinesGenerate = 4
   };
   virtual TransformKind getType() const = 0;
   NanoMipsTransform(const NanoMipsInsPropertyTable *tbl)
@@ -349,7 +366,7 @@ public:
                  InputSectionBase *isec) const = 0;
   virtual const NanoMipsTransformTemplate *
   getTransformTemplate(const NanoMipsInsProperty *insProperty,
-                       const Relocation &reloc, uint64_t valueToRelocate,
+                       uint32_t relNum, uint64_t valueToRelocate,
                        uint64_t insn, const InputSection *isec) const = 0;
   virtual void updateSectionContent(InputSection *isec, uint64_t location,
                                     int32_t delta, bool align = false);
@@ -357,7 +374,8 @@ public:
   bool getChangedThisIteration() { return changedThisIteration; }
   void resetChanged() { changed = false; }
   void resetChangedThisIteration() { changedThisIteration = false; }
-  // Relnum is changed in transform as it is passed by reference
+  // Relnum is changed in transform as it is passed by reference, also we pass
+  // current reloc as a pointer so we can change it if we insert relocations
   virtual void transform(Relocation *reloc,
                          const NanoMipsTransformTemplate *transformTemplate,
                          const NanoMipsInsProperty *insProperty,
@@ -369,19 +387,21 @@ public:
   std::string getTypeAsString() const;
   auto &getNewInsns() const { return newInsns; }
 
+  static uint32_t getNewBalcTrampSymCount() { return newBalcTrampSymCount; }
+  static void increaseNewBalcTrampSymCount() { newBalcTrampSymCount++; }
+
 protected:
   const NanoMipsInsPropertyTable *insPropertyTable;
   // if the code size has been changed in this state
   bool changedThisIteration;
   // if the code size has been changed during this iteration
   bool changed;
+  static uint32_t newSkipBcSymCount;
 
 private:
   void changeBytes(InputSection *isec, uint64_t location, int32_t count);
   mutable SmallVector<NewInsnToWrite, 3> newInsns;
-  // Storage for new symbol names
-  mutable SmallVector<std::string, 0> newSymNames;
-  mutable uint32_t newSymCount = 0;
+  static uint32_t newBalcTrampSymCount;
 };
 
 class NanoMipsTransformExpand : public NanoMipsTransform {
@@ -396,7 +416,7 @@ public:
                  InputSectionBase *isec) const override;
   const NanoMipsTransformTemplate *
   getTransformTemplate(const NanoMipsInsProperty *insProperty,
-                       const Relocation &reloc, uint64_t valueToRelocate,
+                       uint32_t relNum, uint64_t valueToRelocate,
                        uint64_t insn, const InputSection *isec) const override;
 
 private:
@@ -408,12 +428,9 @@ private:
 
 class NanoMipsTransformRelax : public NanoMipsTransform {
 public:
-  NanoMipsTransformRelax(const NanoMipsInsPropertyTable *tbl)
+  NanoMipsTransformRelax(const NanoMipsInsPropertyTable *tbl, SmallVector<BalcTrampCandidate, 0> &balcTramps)
       : NanoMipsTransform(tbl) {
     assert(insPropertyTable);
-    // This is done so that after first relaxation pass, we do expansion
-    // regardless of the pass changing or not changing code size
-    this->changed = true;
   }
   TransformKind getType() const override { return TransformRelax; }
   const NanoMipsInsProperty *
@@ -421,8 +438,71 @@ public:
                  InputSectionBase *isec) const override;
   const NanoMipsTransformTemplate *
   getTransformTemplate(const NanoMipsInsProperty *insProperty,
-                       const Relocation &reloc, uint64_t valueToRelocate,
+                       uint32_t relNum, uint64_t valueToRelocate,
                        uint64_t insn, const InputSection *isec) const override;
+  
+};
+
+class NanoMipsTransformTrampolinesScan : public NanoMipsTransform {
+
+public:
+  NanoMipsTransformTrampolinesScan(const NanoMipsInsPropertyTable *tbl, SmallVector<BalcTrampCandidate, 0> &balcTramps)
+      : NanoMipsTransform(tbl), balcTrampCandidates(balcTramps) {
+    assert(insPropertyTable);
+
+  }
+
+  TransformKind getType() const override { return TransformTrampolinesScan; }
+
+  const NanoMipsInsProperty *
+  getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc,
+                 InputSectionBase *isec) const override;
+  
+  const NanoMipsTransformTemplate *
+  getTransformTemplate(const NanoMipsInsProperty *insProperty,
+                       uint32_t relNum, uint64_t valueToRelocate,
+                       uint64_t insn, const InputSection *isec) const override;
+  
+private:
+  SmallVector<BalcTrampCandidate, 0> &balcTrampCandidates;
+
+};
+
+class NanoMipsTransformTrampolinesGenerate : public NanoMipsTransform {
+
+public:
+  NanoMipsTransformTrampolinesGenerate(const NanoMipsInsPropertyTable *tbl, SmallVector<BalcTrampCandidate, 0> &balcTramps)
+      : NanoMipsTransform(tbl), balcTrampCandidates(balcTramps) {
+        assert(insPropertyTable);
+  }
+
+  TransformKind getType() const override { return TransformTrampolinesGenerate; }
+
+  const NanoMipsInsProperty *
+  getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc,
+                 InputSectionBase *isec) const override;
+  
+  const NanoMipsTransformTemplate *
+  getTransformTemplate(const NanoMipsInsProperty *insProperty,
+                       uint32_t relNum, uint64_t valueToRelocate,
+                       uint64_t insn, const InputSection *isec) const override;
+
+  void transform(Relocation *reloc,
+                 const NanoMipsTransformTemplate *transformTemplate,
+                 const NanoMipsInsProperty *insProperty,
+                 const NanoMipsRelocProperty *relocProperty,
+                 InputSection *isec, uint64_t insn,
+                 uint32_t &relNum) const override;
+
+private:
+  const BalcTrampCandidate *findBalcTrampoline(const InputSection *isec, uint32_t relNum) const;
+  // Used to remember until which balcTramp we've come in findBalcTrampoline
+  mutable uint32_t balcTrampPos = 0;
+  SmallVector<BalcTrampCandidate, 0> &balcTrampCandidates;
+  mutable const BalcTrampCandidate *curBalcTrampCandidate;
+
+
+
 };
 
 class NanoMipsTransformNone : public NanoMipsTransform {
@@ -438,7 +518,7 @@ public:
   }
   const NanoMipsTransformTemplate *
   getTransformTemplate(const NanoMipsInsProperty *insProperty,
-                       const Relocation &reloc, uint64_t valueToRelocate,
+                       uint32_t relNum, uint64_t valueToRelocate,
                        uint64_t insn, const InputSection *isec) const override {
     return nullptr;
   }
@@ -447,11 +527,12 @@ public:
 class NanoMipsTransformController {
 public:
   NanoMipsTransformController(const NanoMipsInsPropertyTable *tbl)
-      : transformRelax(tbl), transformExpand(tbl), transformNone(tbl),
+      : transformRelax(tbl, balcTrampCandidates), transformExpand(tbl), transformNone(tbl),
+        transformTrampolinesScan(tbl, balcTrampCandidates), transformTrampolinesGenerate(tbl, balcTrampCandidates),
         currentState(&transformNone) {}
 
   void initState();
-  void changeState(int pass);
+  void changeAndFinalizeState(int pass);
 
   NanoMipsTransform::TransformKind getType() const {
     return this->currentState->getType();
@@ -465,10 +546,10 @@ public:
   }
   const NanoMipsTransformTemplate *
   getTransformTemplate(const NanoMipsInsProperty *insProperty,
-                       const Relocation &reloc, uint64_t valueToRelocate,
+                       uint32_t relNum, uint64_t valueToRelocate,
                        uint64_t insn, const InputSection *isec) const {
     return this->currentState->getTransformTemplate(
-        insProperty, reloc, valueToRelocate, insn, isec);
+        insProperty, relNum, valueToRelocate, insn, isec);
   }
 
   void updateSectionContent(InputSection *isec, uint64_t location,
@@ -492,12 +573,19 @@ private:
   NanoMipsTransformRelax transformRelax;
   NanoMipsTransformExpand transformExpand;
   NanoMipsTransformNone transformNone;
+  NanoMipsTransformTrampolinesScan transformTrampolinesScan;
+  NanoMipsTransformTrampolinesGenerate transformTrampolinesGenerate;
   // This should be declared after transforms
   NanoMipsTransform *currentState;
   // There can be an infinite loop between relax and expand
-  // so relaxations are limited to only work up until 10 passes total
-  const int relaxPassLimit = 10;
+  // so relaxations are limited to only work up until 15 passes total
+  const int relaxPassLimit = 15;
   bool notExpandedYet = true;
+  bool doneWithTrampolines = false;
+
+  // Reference to this is passed to Trampolines Scan and Generate,
+  // so they use the same vector, this member is not used in the controller
+  SmallVector<BalcTrampCandidate, 0> balcTrampCandidates;
 };
 
 } // namespace elf

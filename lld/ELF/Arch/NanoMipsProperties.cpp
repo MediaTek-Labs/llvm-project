@@ -1297,7 +1297,7 @@ void NanoMipsTransformController::changeAndFinalizeState(int pass) {
         BalcTrampolineTarget &balcTarget = targets[targetIter->second];
         const Relocation &relCur = trampCandidate.isec->relocs()[trampCandidate.relNum];
         const Relocation &relFirst = balcTrampCandidates[balcTarget.idxFirst].isec->relocs()[balcTrampCandidates[balcTarget.idxFirst].relNum];
-        // TODO: We can use balc16, as in this place there will be balc[16]
+        // TODO: We can use balc16Size, as in this place there will be balc[16]
         uint64_t curAddress = relCur.offset + trampCandidate.isec->getVA() + balc32Size;
         uint64_t potentialTrampAddress = relFirst.offset + balcTrampCandidates[balcTarget.idxFirst].isec->getVA() + trampOffsetToBc;
         // potentialTrampAddress is the same as the address of end of first balc instruction
@@ -1380,28 +1380,6 @@ void NanoMipsTransformController::changeAndFinalizeState(int pass) {
         }
       }
     }
-
-    // llvm::outs() << "*****Pass num: " << pass << "*****\n\n\n";
-
-    // for(auto [i, t] : llvm::enumerate(targets))
-    // {
-    //   llvm::outs() << i << ": target: 0x" << utohexstr(t.address) <<
-    //       ", idxFirst: " << t.idxFirst << ", idxLast: " << t.idxLast
-    //       << ", idxTrampoline: " << t.idxTrampoline << ", count: " 
-    //       << t.count << "\n";
-    // }
-
-    // llvm::outs() << "\n\n";
-    // for(uint32_t i = 0; i < balcTrampCandidates.size(); i++)
-    // {
-    //   llvm::outs() << i << ": relNum: " << balcTrampCandidates[i].relNum << ", sec name: " << balcTrampCandidates[i].isec->name
-    //       << ", jumpTarget: 0x" << utohexstr(balcTrampCandidates[i].jumpTarget, 8) 
-    //       << ", ignore: " << balcTrampCandidates[i].ignore 
-    //       <<", trampSymbol: " << (balcTrampCandidates[i].trampSymbol ? balcTrampCandidates[i].trampSymbol->getName() : "None") 
-    //       << ", trampIdx: " << balcTrampCandidates[i].trampIdx << "\n";
-    // }
-    // llvm::outs() << "****************************" << "\n\n\n";
-
 
     this->currentState = &this->transformTrampolinesGenerate;
     LLVM_DEBUG(llvm::dbgs() << "Changed transform state to Generate Trampolines\n");

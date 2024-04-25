@@ -9,6 +9,8 @@ SECTIONS {
     .tramp_expansion : { *(.tramp_expansion) }
     . = 0x4000;
     .align_section : { *(.align_section) }
+    . = 0x5000;
+    .candidate_calculation_sec : { *(.candidate_calculation_sec) }
     . = 0x20100e;
     .a_section : { *(.a_section) }
     . = 0x203408;

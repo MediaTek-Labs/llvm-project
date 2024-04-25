@@ -597,8 +597,6 @@ template <class ELFT> void NanoMips<ELFT>::transform(InputSection *sec) const {
         this->currentTransformation.getTransformTemplate(
             insProperty, relNum, valueToRelocate, insn, sec);
 
-    // if(this->currentTransformation.getType() == NanoMipsTransform::TransformTrampolinesGenerate && transformTemplate)
-    //   llvm::outs() << sec->name << ": " << transformTemplate->getType() << ": " << transformTemplate->getSizeOfTransform() << "\n";
     if (!transformTemplate)
       continue;
     LLVM_DEBUG(llvm::dbgs() << "Chosen transform template:\n"

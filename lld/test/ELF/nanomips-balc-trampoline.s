@@ -61,6 +61,27 @@
 # CHECK-NEXT: 29{{.*}} bc {{.*}} <fun>
 # CHECK: <__skip_bc__[[BC_NUM]]>
 
+# CHECK: <candidate_calculation>
+# CHECK-NEXT: 2b{{.*}} balc {{.*}} <fun2>
+# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM:[0-9]*]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc__[[BC_NUM:[0-9]*]]>
+# CHECK: <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 29{{.*}} bc {{.*}} <fun2>
+
+# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM:[0-9]*]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc__[[BC_NUM:[0-9]*]]>
+# CHECK: <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 29{{.*}} bc {{.*}} <fun2>
+
+
+
+
 # CHECK: <transform_bc_fun>
 # CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM:[0-9]*]]>
 # CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
@@ -134,6 +155,14 @@ fun:
     .end fun
     .size fun, .-fun
 
+    .globl fun2
+    .ent fun2
+
+fun2:
+    jrc $r31
+    .end fun2
+    .size fun2, .-fun2
+
 
     .section .tramp_expansion, "ax", @progbits
     .align 1
@@ -170,6 +199,30 @@ align_fun:
 
     .end align_fun
     .size align_fun, .-align_fun
+
+    .section .candidate_calculation_sec, "ax", @progbits
+    .align 1
+
+    .globl candidate_calculation
+    .ent candidate_calculation
+
+candidate_calculation:
+
+    balc fun2 # Shouldn't be relaxed
+    .skip 0x400 # 1024
+    balc fun2
+    balc fun2
+    balc fun2
+    balc fun2
+    .skip 0x400 # 1024
+    balc fun2
+    balc fun2
+    balc fun2
+    balc fun2
+
+    .end candidate_calculation
+    .size candidate_calculation, .-candidate_calculation
+
 
     .section .a_section, "ax", @progbits
     .align 1

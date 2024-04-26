@@ -9,6 +9,9 @@
 namespace llvm {
 namespace VNCoercion {
 
+cl::opt<bool> EvalLoadOfMemset("vn-eval-loads-memset",	cl::init(true), cl::Hidden,
+			       cl::desc("Evaluate loads from memset as constant, even if index varies"));
+
 static bool isFirstClassAggregateOrScalableType(Type *Ty) {
   return Ty->isStructTy() || Ty->isArrayTy() || isa<ScalableVectorType>(Ty);
 }
@@ -263,6 +266,48 @@ int analyzeLoadFromClobberingMemInst(Type *LoadTy, Value *LoadPtr,
       if (!CI || !CI->isZero())
         return -1;
     }
+
+    // Loads from non-constant indices within a memset's output will
+    // all read the same values, since memset writes all bytes the
+    // same. If arrays are indexed out of bounds, the result is
+    // unspecified, so we can assume here that indices are in bounds.
+    if (EvalLoadOfMemset) {
+      auto GEP = dyn_cast<GetElementPtrInst>(LoadPtr);
+      if (GEP && !GEP->hasAllConstantIndices()) {
+
+	// If the loaded/stored value is a first class array/struct, or scalable type,
+	// don't try to transform them. We need to be able to bitcast to integer.
+	if (isFirstClassAggregateOrScalableType(LoadTy))
+	  return -1;
+
+	// Make sure that the read is really from within the destination of the memset:
+	//   - same base pointer as the memset
+	//   - memset writes complete element
+	//   - load is from the first element
+	int64_t StoreOffset = 0;
+	Value *StoreBase = GetPointerBaseWithConstantOffset(MI->getDest(), StoreOffset, DL);
+
+	if (StoreBase != GEP->getPointerOperand() || StoreOffset != 0)
+	  return -1;
+
+	// Ensure that the first element is dereferenced directly (first index of
+	// GEP is 0) by the load.
+	if (!GEP->hasIndices())
+	  return -1;
+
+	Value *FirstIdx = *GEP->idx_begin();
+	ConstantInt *FirstIdxConst = dyn_cast<ConstantInt>(FirstIdx);
+	if (!FirstIdxConst || !FirstIdxConst->isZero())
+	  return -1;
+
+	uint64_t SourceElementSize = DL.getTypeSizeInBits(GEP->getSourceElementType());
+	if (MemSizeInBits >= SourceElementSize)
+	  return 0;
+
+	return -1;
+      }
+    }
+
     return analyzeLoadFromClobberingWrite(LoadTy, LoadPtr, MI->getDest(),
                                           MemSizeInBits, DL);
   }

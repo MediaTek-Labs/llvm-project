@@ -297,8 +297,10 @@ void NanoMips::AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
     // std::string Install = getDriver().getInstalledDir();
     std::string LibDir = GCCInstallation.getParentLibPath().str();
     std::string Install = GCCInstallation.getInstallPath().str();
-    addSystemInclude(DriverArgs, CC1Args, Install + "/include");
-    addSystemInclude(DriverArgs, CC1Args, Install + "/include-fixed");
+    if (GetRuntimeLibType(DriverArgs) == ToolChain::RLT_Libgcc) {
+      addSystemInclude(DriverArgs, CC1Args, Install + "/include");
+      addSystemInclude(DriverArgs, CC1Args, Install + "/include-fixed");
+    }
     addSystemInclude(DriverArgs, CC1Args, LibDir + "/../" + Triple.str() + "/include");
     CC1Args.push_back("-nostdsysteminc");
   }
@@ -309,6 +311,7 @@ void NanoMips::AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
   if (GetCXXStdlibType(DriverArgs) == ToolChain::CST_Libcxx) {
     SmallString<128> Dir(getDriver().SysRoot);
     llvm::sys::path::append(Dir, "include", "c++", "v1");
-    addSystemInclude(DriverArgs, CC1Args, Dir.str());
+    if (!getDriver().SysRoot.empty())
+      addSystemInclude(DriverArgs, CC1Args, Dir.str());
   }
 }

@@ -158,10 +158,10 @@ static bool requiresFixups(MCContext &C, const MCExpr *Value,
   if (isDebugSym(A) || isDebugSym(B))
     return false;
 
-  LHS =
-    MCBinaryExpr::create(MCBinaryExpr::Add, MCSymbolRefExpr::create(&A, C),
+  LHS = E.getSymA();
+  RHS =
+    MCBinaryExpr::create(MCBinaryExpr::Add, MCSymbolRefExpr::create(&B, C),
 			 MCConstantExpr::create(E.getConstant(), C), C);
-  RHS = E.getSymB();
 
   return (A.isInSection() ? A.getSection().hasInstructions()
 	  : !A.getName().empty()) ||

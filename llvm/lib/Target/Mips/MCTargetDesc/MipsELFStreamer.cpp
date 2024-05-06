@@ -126,6 +126,18 @@ static bool isLabelAshr1(const MCExpr *Value) {
     return false;
 }
 
+// Note: this is a quick fix to catch a known issue based on
+// observed symbol names from debug sections. Ideally, we'd skip
+// these relocations based on the type of the containing section
+// which is not always known at this point.  This means creating
+// the relocations here and then applying/resolving them at a
+// later point in the control flow, before emitting the object.
+static bool isDebugSym(const MCSymbol &Sym) {
+  StringRef SymName = Sym.getName();
+  return (SymName.starts_with(".Ldebug") ||
+	  SymName.starts_with(".Lprologue"));
+}
+
 static bool requiresFixups(MCContext &C, const MCExpr *Value,
 			   const MCExpr *&LHS, const MCExpr *&RHS) {
   const auto *MBE = dyn_cast<MCBinaryExpr>(Value);
@@ -143,6 +155,8 @@ static bool requiresFixups(MCContext &C, const MCExpr *Value,
 
   const auto &A = E.getSymA()->getSymbol();
   const auto &B = E.getSymB()->getSymbol();
+  if (isDebugSym(A) || isDebugSym(B))
+    return false;
 
   LHS =
     MCBinaryExpr::create(MCBinaryExpr::Add, MCSymbolRefExpr::create(&A, C),

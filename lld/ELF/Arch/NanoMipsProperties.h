@@ -465,6 +465,9 @@ public:
   
 private:
   SmallVector<BalcTrampCandidate, 0> &balcTrampCandidates;
+  bool hasNoTrampReloc(const InputSection *isec, uint32_t relNum) const;
+  // Next balc shouldn't be transformed to trampoline
+  mutable bool noTramp = false;
 
 };
 
@@ -532,9 +535,10 @@ public:
         currentState(&transformNone) {}
 
   void initState();
-  void changeAndFinalizeState(int pass);
+  void finalizeState();
+  void changeState(int pass);
 
-  NanoMipsTransform::TransformKind getType() const {
+  NanoMipsTransform::TransformKind getType() const{
     return this->currentState->getType();
   }
   // should be called before change state
@@ -568,6 +572,8 @@ public:
   auto &getNewInsns() const { return this->currentState->getNewInsns(); }
 
   bool isNone() const { return &transformNone == currentState; }
+
+  bool doesNotChangeSection() const { return &transformTrampolinesScan == currentState; }
 
 private:
   NanoMipsTransformRelax transformRelax;

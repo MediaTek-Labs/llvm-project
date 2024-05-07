@@ -52,6 +52,8 @@ def GPREL_HI20: RelocProperty32NoMask<20>;
 def GPREL_LO12: RelocProperty32NoMask<12>;
 def GPREL_I32: RelocProperty48HI6LO5<32>;
 // Currently doing
+// Goes only with PC25_S1, so that's why the mask is the same
+def NOTRAMP: RelocProperty32<26, 0xfe000000>;
 def SAVERESTORE: RelocProperty32<32, 0xfc10f007>;
 // The next need to be worked on
 
@@ -447,6 +449,7 @@ def TT_GPREL32: TransformationType;
 
 def TT_BALC_TRAMP: TransformationType;
 def TT_BALC_CALL: TransformationType;
+def TT_BALC_NOTRAMP: TransformationType;
 
 // -------------------------- End TransformationType ---------------------------
 
@@ -561,6 +564,9 @@ def : TransformationTemplate<TT_PCREL16_LONG, BALC32_P, (relocs PC25_S1), (insns
 def : TransformationTemplate<TT_PCREL32_LONG, BALC32_P, (relocs PC25_S1), (insns ALUIPC_T<PC_HI20, SREG>, ORI_T<LO12, SREG, SREG>, JALRC32_T<>)>;
 def : TransformationTemplate<TT_BALC_TRAMP, BALC32_P, (relocs PC25_S1), (insns BALC16_T<>, BC16_T<>, BC32_T<>)>;
 def : TransformationTemplate<TT_BALC_CALL, BALC32_P, (relocs PC25_S1), (insns BALC16_T<>)>;
+// Used for trampoline scan, only to see if it is really balc32 instruction and to set the
+// notramp flag for the next one
+def : TransformationTemplate<TT_BALC_NOTRAMP, BALC32_P, (relocs NOTRAMP), (insns NOINS_T<>)>;
 
 def : TransformationTemplate<TT_PCREL32, BEQZC16_P, (relocs PC7_S1), (insns BEQC32_T<>)>;
 

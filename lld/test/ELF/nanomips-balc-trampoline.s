@@ -79,6 +79,12 @@
 # CHECK: <__balc_tramp__[[TRAMP_NUM]]>
 # CHECK-NEXT: 29{{.*}} bc {{.*}} <fun2>
 
+# CHECK: <notramp_reloc>
+# CHECK-NEXT: 2b{{.*}} balc {{.*}} <fun2>
+# CHECK-NEXT: 2b{{.*}} balc {{.*}} <fun2>
+# CHECK-NEXT: 2b{{.*}} balc {{.*}} <fun2>
+# CHECK-NEXT: 2b{{.*}} balc {{.*}} <fun2>
+
 
 
 
@@ -222,6 +228,26 @@ candidate_calculation:
 
     .end candidate_calculation
     .size candidate_calculation, .-candidate_calculation
+
+
+    .section .notramp_reloc_sec, "ax", @progbits
+    .align 1
+
+    .globl notramp_reloc
+    .ent notramp_reloc
+
+notramp_reloc:
+
+    balc fun2
+    balc fun2
+    balc fun2
+
+    .reloc 1f, R_NANOMIPS_NOTRAMP
+1:
+    balc fun2
+
+    .end notramp_reloc
+    .size notramp_reloc, .-notramp_reloc
 
 
     .section .a_section, "ax", @progbits

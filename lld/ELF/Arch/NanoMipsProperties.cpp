@@ -1095,18 +1095,47 @@ const NanoMipsInsProperty *NanoMipsTransformTrampolinesScan::getInsProperty(uint
   
   switch(reloc)
   {
+    case R_NANOMIPS_NOTRAMP:
+      if(insPropertyTable->findInsProperty(insn, insnMask, reloc) != nullptr)
+        noTramp = true;
+      return nullptr;
     case R_NANOMIPS_PC25_S1:
+      if(noTramp)
+      {
+        noTramp = false;
+        return nullptr;
+      }
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
       return nullptr;
   }
 }
 
+// FIXME: NOTRAMP relocations are generated before the R_NANOMIPS_PC_25_S1 
+// (if generated through assembler's .reloc directive), and therefore are useless like this
+inline bool NanoMipsTransformTrampolinesScan::hasNoTrampReloc(const InputSection *isec, uint32_t relNum) const {
+
+  // This is called from getTransformTemplate of NanoMipsTransformTrampolinesScan,
+  // we are sure that the relocation is on balc instruction
+  uint64_t relOffset = isec->relocs()[relNum].offset;
+  for(uint32_t i = relNum + 1; i < isec->relocs().size(); i++)
+  {
+    const Relocation &curRel = isec->relocs()[i];
+    if(curRel.offset != relOffset)
+      break;
+
+    if(curRel.type == R_NANOMIPS_NOTRAMP)
+      return true;  
+
+  }
+  return false;
+}
+
 const NanoMipsTransformTemplate *NanoMipsTransformTrampolinesScan::getTransformTemplate(const NanoMipsInsProperty *insProperty, uint32_t relNum, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const {
-  
+
   const Relocation &reloc = isec->relocs()[relNum];
 
-  if(reloc.type != R_NANOMIPS_PC25_S1 || insProperty->getName().compare("balc") != 0)
+  if(reloc.type != R_NANOMIPS_PC25_S1 || insProperty->getName().compare("balc") != 0 || hasNoTrampReloc(isec, relNum))
     return nullptr;
   
   BalcTrampCandidate trampCandidate;
@@ -1244,7 +1273,123 @@ namespace {
   };
 }
 
-void NanoMipsTransformController::changeAndFinalizeState(int pass) {
+void NanoMipsTransformController::finalizeState() {
+  // Only needed for TransformTrampolinesScan
+  if ((this->currentState->getType() == NanoMipsTransform::TransformTrampolinesScan)) {
+  // Temporary data structures for determining which balc should be converted
+  // to trampolines
+
+  // Map of target indexes tied to their addresses, over iterations, when we sort balc instructions
+  // some trampolines for the given target will be out of range so we'll change the map accordingly
+  DenseMap<uint64_t, uint32_t> targetMap;
+  SmallVector<BalcTrampolineTarget, 0> targets;
+
+  // Sort balc instructions by offset
+  llvm::sort(balcTrampCandidates, [](BalcTrampCandidate &a, BalcTrampCandidate &b) {
+    const Relocation &relA = a.isec->relocs()[a.relNum];
+    const Relocation &relB = b.isec->relocs()[b.relNum];
+    return a.isec->getVA() + relA.offset < b.isec->getVA() + relB.offset;
+  });
+
+  for (auto [i, trampCandidate] : llvm::enumerate(balcTrampCandidates))
+  {
+    auto targetIter = targetMap.find(trampCandidate.jumpTarget);
+    // If the current jump target is unreachable or not
+    // present in map, start a new area
+    bool startNewArea = targetIter == targetMap.end();
+
+    if(!startNewArea)
+    {
+      BalcTrampolineTarget &balcTarget = targets[targetIter->second];
+      const Relocation &relCur = trampCandidate.isec->relocs()[trampCandidate.relNum];
+      const Relocation &relFirst = balcTrampCandidates[balcTarget.idxFirst].isec->relocs()[balcTrampCandidates[balcTarget.idxFirst].relNum];
+      // TODO: We can use balc16Size, as in this place there will be balc[16]
+      uint64_t curAddress = relCur.offset + trampCandidate.isec->getVA() + balc32Size;
+      uint64_t potentialTrampAddress = relFirst.offset + balcTrampCandidates[balcTarget.idxFirst].isec->getVA() + trampOffsetToBc;
+      // potentialTrampAddress is the same as the address of end of first balc instruction
+      if(balcTarget.idxTrampoline == -1U && (curAddress - balc16Range >= potentialTrampAddress))
+      {
+        if(balcTarget.count < 2)
+          startNewArea = true;
+        else
+          balcTarget.idxTrampoline = balcTarget.idxLast;
+      }
+      if(balcTarget.idxTrampoline != -1U)
+      {
+        const Relocation &relTramp = balcTrampCandidates[balcTarget.idxTrampoline].isec->relocs()[balcTrampCandidates[balcTarget.idxTrampoline].relNum];
+        uint64_t trampAddress = relTramp.offset + balcTrampCandidates[balcTarget.idxTrampoline].isec->getVA() + trampOffsetToBc;
+        startNewArea = (curAddress - balc16Range > trampAddress);
+      }
+
+    }
+
+    if(startNewArea)
+    {
+      BalcTrampolineTarget balcTarget;
+      balcTarget.idxFirst = i;
+      balcTarget.idxLast = i;
+      balcTarget.count = 1;
+      balcTarget.idxTrampoline = -1;
+      balcTarget.address = trampCandidate.jumpTarget;
+      targetMap[balcTarget.address] = targets.size();
+      targets.push_back(balcTarget);
+    }
+    else
+    {
+      BalcTrampolineTarget &balcTarget = targets[targetIter->second];
+      balcTarget.count++;
+      balcTarget.idxLast = i;
+    }
+  }
+
+  // TODO: Do this a little faster
+  for(auto &balcTarget : targets)
+  {
+    if(balcTarget.idxTrampoline == -1U)
+    {
+      balcTarget.idxTrampoline = balcTarget.idxLast;
+    }
+    for(uint32_t i = balcTarget.idxFirst; i <= balcTarget.idxLast; i++)
+    {
+      if(balcTarget.address == balcTrampCandidates[i].jumpTarget)
+      {
+        BalcTrampCandidate &trampCandidate = balcTrampCandidates[i];
+        trampCandidate.ignore = balcTarget.count < 4;
+        if(i == balcTarget.idxTrampoline && !trampCandidate.ignore)
+        {
+          // TODO: Find out how to generate unique linker symbols
+          StringRef nameRef = saver().save(Twine("__balc_tramp__") + Twine(NanoMipsTransform::getNewBalcTrampSymCount()));
+          NanoMipsTransform::increaseNewBalcTrampSymCount();
+          // TODO: Check out if we should define this symbol some other way, see if putting
+          // the file to Defined symbol is necessary, probably not
+          // Note: We'll set the offset and input section to 0 and nullptr for now,
+          // and later we'll add them 
+          Defined *s = dyn_cast<Defined>(
+              symtab.addSymbol(Defined{nullptr, nameRef, STB_GLOBAL, STV_HIDDEN,
+                                      STT_NOTYPE, 0, 0, nullptr}));
+          
+          if (!s) {
+            error("Can't create needed symbol for relaxations/expansions!");
+            exitLld(1);
+          }
+
+          in.symTab->addSymbol(s);
+          trampCandidate.trampSymbol = s;
+          LLVM_DEBUG(llvm::dbgs() << "New symbol " << s->getName() << "initialized\n");
+
+        }
+
+        if(!trampCandidate.ignore && !trampCandidate.trampSymbol)
+        {
+          trampCandidate.trampIdx = balcTarget.idxTrampoline;
+        }
+      }
+    }
+  }
+  }
+}
+
+void NanoMipsTransformController::changeState(int pass) {
 
   if (this->currentState->getChangedThisIteration()) {
     // We want to repeat the transformation until it doesn't change anything in
@@ -1270,117 +1415,6 @@ void NanoMipsTransformController::changeAndFinalizeState(int pass) {
   }
 
   if ((this->currentState->getType() == NanoMipsTransform::TransformTrampolinesScan)) {
-    // Temporary data structures for determining which balc should be converted
-    // to trampolines
-
-    // Map of target indexes tied to their addresses, over iterations, when we sort balc instructions
-    // some trampolines for the given target will be out of range so we'll change the map accordingly
-    DenseMap<uint64_t, uint32_t> targetMap;
-    SmallVector<BalcTrampolineTarget, 0> targets;
-
-    // Sort balc instructions by offset
-    llvm::sort(balcTrampCandidates, [](BalcTrampCandidate &a, BalcTrampCandidate &b) {
-      const Relocation &relA = a.isec->relocs()[a.relNum];
-      const Relocation &relB = b.isec->relocs()[b.relNum];
-      return a.isec->getVA() + relA.offset < b.isec->getVA() + relB.offset;
-    });
-
-    for (auto [i, trampCandidate] : llvm::enumerate(balcTrampCandidates))
-    {
-      auto targetIter = targetMap.find(trampCandidate.jumpTarget);
-      // If the current jump target is unreachable or not
-      // present in map, start a new area
-      bool startNewArea = targetIter == targetMap.end();
-
-      if(!startNewArea)
-      {
-        BalcTrampolineTarget &balcTarget = targets[targetIter->second];
-        const Relocation &relCur = trampCandidate.isec->relocs()[trampCandidate.relNum];
-        const Relocation &relFirst = balcTrampCandidates[balcTarget.idxFirst].isec->relocs()[balcTrampCandidates[balcTarget.idxFirst].relNum];
-        // TODO: We can use balc16Size, as in this place there will be balc[16]
-        uint64_t curAddress = relCur.offset + trampCandidate.isec->getVA() + balc32Size;
-        uint64_t potentialTrampAddress = relFirst.offset + balcTrampCandidates[balcTarget.idxFirst].isec->getVA() + trampOffsetToBc;
-        // potentialTrampAddress is the same as the address of end of first balc instruction
-        if(balcTarget.idxTrampoline == -1U && (curAddress - balc16Range >= potentialTrampAddress))
-        {
-          if(balcTarget.count < 2)
-            startNewArea = true;
-          else
-            balcTarget.idxTrampoline = balcTarget.idxLast;
-        }
-        if(balcTarget.idxTrampoline != -1U)
-        {
-          const Relocation &relTramp = balcTrampCandidates[balcTarget.idxTrampoline].isec->relocs()[balcTrampCandidates[balcTarget.idxTrampoline].relNum];
-          uint64_t trampAddress = relTramp.offset + balcTrampCandidates[balcTarget.idxTrampoline].isec->getVA() + trampOffsetToBc;
-          startNewArea = (curAddress - balc16Range > trampAddress);
-        }
-
-      }
-
-      if(startNewArea)
-      {
-        BalcTrampolineTarget balcTarget;
-        balcTarget.idxFirst = i;
-        balcTarget.idxLast = i;
-        balcTarget.count = 1;
-        balcTarget.idxTrampoline = -1;
-        balcTarget.address = trampCandidate.jumpTarget;
-        targetMap[balcTarget.address] = targets.size();
-        targets.push_back(balcTarget);
-      }
-      else
-      {
-        BalcTrampolineTarget &balcTarget = targets[targetIter->second];
-        balcTarget.count++;
-        balcTarget.idxLast = i;
-      }
-    }
-
-    // TODO: Do this a little faster, for loops are missing
-    for(auto &balcTarget : targets)
-    {
-      if(balcTarget.idxTrampoline == -1U)
-      {
-        balcTarget.idxTrampoline = balcTarget.idxLast;
-      }
-      for(uint32_t i = balcTarget.idxFirst; i <= balcTarget.idxLast; i++)
-      {
-        if(balcTarget.address == balcTrampCandidates[i].jumpTarget)
-        {
-          BalcTrampCandidate &trampCandidate = balcTrampCandidates[i];
-          trampCandidate.ignore = balcTarget.count < 4;
-          if(i == balcTarget.idxTrampoline && !trampCandidate.ignore)
-          {
-            // TODO: Find out how to generate unique linker symbols
-            StringRef nameRef = saver().save(Twine("__balc_tramp__") + Twine(NanoMipsTransform::getNewBalcTrampSymCount()));
-            NanoMipsTransform::increaseNewBalcTrampSymCount();
-            // TODO: Check out if we should define this symbol some other way, see if putting
-            // the file to Defined symbol is necessary, probably not
-            // Note: We'll set the offset and input section to 0 and nullptr for now,
-            // and later we'll add them 
-            Defined *s = dyn_cast<Defined>(
-                symtab.addSymbol(Defined{nullptr, nameRef, STB_GLOBAL, STV_HIDDEN,
-                                        STT_NOTYPE, 0, 0, nullptr}));
-            
-            if (!s) {
-              error("Can't create needed symbol for relaxations/expansions!");
-              exitLld(1);
-            }
-
-            in.symTab->addSymbol(s);
-            trampCandidate.trampSymbol = s;
-            LLVM_DEBUG(llvm::dbgs() << "New symbol " << s->getName() << "initialized\n");
-
-          }
-
-          if(!trampCandidate.ignore && !trampCandidate.trampSymbol)
-          {
-            trampCandidate.trampIdx = balcTarget.idxTrampoline;
-          }
-        }
-      }
-    }
-
     this->currentState = &this->transformTrampolinesGenerate;
     LLVM_DEBUG(llvm::dbgs() << "Changed transform state to Generate Trampolines\n");
     return;

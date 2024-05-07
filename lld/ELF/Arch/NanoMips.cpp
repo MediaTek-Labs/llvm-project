@@ -319,10 +319,11 @@ RelExpr NanoMips<ELFT>::getRelExpr(RelType type, const Symbol &s,
   case R_NANOMIPS_FIXED:
   case R_NANOMIPS_INSN32:
   case R_NANOMIPS_INSN16:
+  case R_NANOMIPS_NOTRAMP:
     // Used to save R_NANOMIPS_ALIGN, R_NANOMIPS_SAVERESTORE and others in
     // relocation vector
     // TODO: See if this is only needed for relaxations and expansions
-    // so maybe it could be relaxed to R_NONE in that case
+    // so maybe it could be reduced to R_NONE in that case
     return R_RELAX_HINT;
   default:
     error(getErrorLocation(loc) + "unknown relocation (" + Twine(type) +
@@ -362,6 +363,7 @@ void NanoMips<ELFT>::relocate(uint8_t *loc, const Relocation &rel,
   case R_NANOMIPS_SAVERESTORE:
   case R_NANOMIPS_RELAX:
   case R_NANOMIPS_NORELAX:
+  case R_NANOMIPS_NOTRAMP:
     break;
   case R_NANOMIPS_UNSIGNED_16:
     checkUInt(loc, val, 16, rel);
@@ -498,7 +500,9 @@ template <class ELFT> bool NanoMips<ELFT>::relaxOnce(int pass) const {
     }
 
     const_cast<NanoMipsTransformController &>(this->currentTransformation)
-        .changeAndFinalizeState(pass);
+        .finalizeState();
+    const_cast<NanoMipsTransformController &>(this->currentTransformation)
+        .changeState(pass);
     if (!this->currentTransformation.isNone())
       changed = true;
 
@@ -519,6 +523,7 @@ template <class ELFT> void NanoMips<ELFT>::transform(InputSection *sec) const {
   // Need to traverse relocations this way because at transform we may
   // invalidate the iterator
   // TODO: Relocs are not sorted by offset, check if they should be?
+  // Note: Relocs are sorted if as is build from nmips/binutils branch
   // TODO: GP setup from gold is different than lld, probably should change it
   // also probably should make ElfSym::nanoMipsGp - as it represents this better
   // Note: Size changes sometimes due to adding of new relocations
@@ -542,7 +547,7 @@ template <class ELFT> void NanoMips<ELFT>::transform(InputSection *sec) const {
 
     // We don't want to align in scanning trampolines, as we can surely do it in TrampolinesGenerate,
     // and scan is used only to go through the sections not change them
-    if (reloc.type == R_NANOMIPS_ALIGN && currentTransformation.getType() != NanoMipsTransform::TransformTrampolinesScan) {
+    if (reloc.type == R_NANOMIPS_ALIGN && !currentTransformation.doesNotChangeSection()) {
       this->align(sec, reloc, relNum);
       continue;
     }

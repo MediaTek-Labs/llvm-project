@@ -11,6 +11,8 @@ SECTIONS {
     .align_section : { *(.align_section) }
     . = 0x5000;
     .candidate_calculation_sec : { *(.candidate_calculation_sec) }
+    . = 0x6000;
+    .notramp_reloc_sec : { *(.notramp_reloc_sec) }
     . = 0x20100e;
     .a_section : { *(.a_section) }
     . = 0x203408;

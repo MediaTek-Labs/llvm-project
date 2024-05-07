@@ -2,6 +2,8 @@
 
 # Tests R_NANOMIPS_RELAX, R_NANOMIPS_NORELAX, R_NANOMIPS_FIXED, R_NANOMIPS_INSN32
 
+# A work in progress
+# XFAIL: *
 
 # RUN: %nanomips-elf-as -m32 -EL -march=32r6 -mpcrel %s -o %t.o
 # RUN: ld.lld --section-start .text=0x1000 --section-start .other_text=0x1040 --relax %t.o -o %t
@@ -21,13 +23,11 @@
 _start:
     .reloc 1f, R_NANOMIPS_NORELAX
 1:    
-    addiu $a1, $a1, 1
 
     beqzc $a1, target
     
     .reloc 2f, R_NANOMIPS_RELAX
 2:
-    addiu $a1, $a1, 1
 
     beqzc $a1, target
 

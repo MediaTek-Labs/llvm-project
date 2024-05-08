@@ -239,7 +239,6 @@ private:
   void initTransformAuxInfo() const;
   void align(InputSection *sec, Relocation &reloc, uint32_t relNum) const;
   bool mayRelax() const;
-  void finalizeRelaxations() const;
 };
 } // namespace
 
@@ -506,10 +505,6 @@ template <class ELFT> bool NanoMips<ELFT>::relaxOnce(int pass) const {
     if (!this->currentTransformation.isNone())
       changed = true;
 
-    // The end of relaxation algorithm, we should finalize and cleanup
-    if (!changed) {
-      finalizeRelaxations();
-    }
   }
 
   return changed;
@@ -640,10 +635,8 @@ template <class ELFT> void NanoMips<ELFT>::initTransformAuxInfo() const {
       if (!this->safeToModify(sec) || sec->relocs().size() == 0)
         continue;
       sec->nanoMipsRelaxAux = make<NanoMipsRelaxAux>();
-      sec->nanoMipsRelaxAux->prevBytesDropped = sec->bytesDropped;
       sec->nanoMipsRelaxAux->isAlreadyTransformed = false;
       sec->nanoMipsRelaxAux->freeBytes = 0;
-      sec->bytesDropped = 0;
 
       auto *abiFlagsSec = NanoMipsAbiFlagsSection<ELFT>::get();
 
@@ -765,22 +758,6 @@ void NanoMips<ELFT>::align(InputSection *sec, Relocation &reloc,
       else
         writeInsn<ELFT::TargetEndianness>(
             fill, sec->content(), reloc.offset + oldPadding + i, fillSize);
-    }
-  }
-}
-
-template <class ELFT> void NanoMips<ELFT>::finalizeRelaxations() const {
-  // Return previous bytesDropped values
-  // and change array ref sizes
-  SmallVector<InputSection *, 0> storage;
-  for (OutputSection *osec : outputSections) {
-    if (!isOutputSecTransformable(osec))
-      continue;
-
-    for (InputSection *sec : getInputSections(*osec, storage)) {
-      if (!this->safeToModify(sec) || sec->relocs().size() == 0)
-        continue;
-      sec->bytesDropped = sec->nanoMipsRelaxAux->prevBytesDropped;
     }
   }
 }

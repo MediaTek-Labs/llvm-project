@@ -9,74 +9,74 @@
 # TODO: Change exact opcode with a symbol later
 
 # CHECK: <sup_before>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM:[0-9]*]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM:[0-9]*]]>
 
 # CHECK: <before_start>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 
 # CHECK: <with_start>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 
 # CHECK: <sup_fun>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 
 # CHECK: <_start>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 # CHECK-NEXT: 60a3 {{.*}} lapc {{.*}} <a>
-# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc__[[BC_NUM:[0-9]*]]>
-# CHECK: <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc_{{.}}_[[BC_NUM:[0-9]*]]>
+# CHECK: <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 # CHECK-NEXT: 28{{.*}} bc {{.*}} <fun>
-# CHECK: <__skip_bc__[[BC_NUM]]>
+# CHECK: <__skip_bc_{{.}}_[[BC_NUM]]>
 
-# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 
 # CHECK: <with_start_after>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 
 # CHECK: <expand>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM:[0-9]*]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc__[[BC_NUM:[0-9]*]]>
-# CHECK: <__balc_tramp__[[BC_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM:[0-9]*]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc_{{.}}_[[BC_NUM:[0-9]*]]>
+# CHECK: <__balc_tramp_{{.}}_[[BC_NUM]]>
 # CHECK-NEXT: 29{{.*}} bc {{.*}} <fun>
-# CHECK: <__skip_bc__[[BC_NUM]]>
-# CHECK: 2b{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK: <__skip_bc_{{.}}_[[BC_NUM]]>
+# CHECK: 2b{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 
 # CHECK: <align_fun>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM:[0-9]*]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM:[0-9]*]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]
 # CHECK-NEXT: 8000 c000 nop
 # CHECK-NEXT: 8000 c000 nop
 # CHECK-NEXT: 9008 nop
 # CHECK-NEXT: 9008 nop
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc__[[BC_NUM:[0-9]*]]>
-# CHECK: <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc_{{.}}_[[BC_NUM:[0-9]*]]>
+# CHECK: <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 # CHECK-NEXT: 29{{.*}} bc {{.*}} <fun>
-# CHECK: <__skip_bc__[[BC_NUM]]>
+# CHECK: <__skip_bc_{{.}}_[[BC_NUM]]>
 
 # CHECK: <candidate_calculation>
 # CHECK-NEXT: 2b{{.*}} balc {{.*}} <fun2>
-# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM:[0-9]*]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc__[[BC_NUM:[0-9]*]]>
-# CHECK: <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM:[0-9]*]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc_{{.}}_[[BC_NUM:[0-9]*]]>
+# CHECK: <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 # CHECK-NEXT: 29{{.*}} bc {{.*}} <fun2>
 
-# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM:[0-9]*]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc__[[BC_NUM:[0-9]*]]>
-# CHECK: <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM:[0-9]*]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc_{{.}}_[[BC_NUM:[0-9]*]]>
+# CHECK: <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 # CHECK-NEXT: 29{{.*}} bc {{.*}} <fun2>
 
 # CHECK: <notramp_reloc>
@@ -89,12 +89,12 @@
 
 
 # CHECK: <transform_bc_fun>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM:[0-9]*]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp__[[TRAMP_NUM]]>
-# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc__[[BC_NUM:[0-9]*]]>
-# CHECK: <__balc_tramp__[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM:[0-9]*]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK: 3{{.*}} balc {{.*}} <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
+# CHECK-NEXT: 1{{.*}} bc {{.*}} <__skip_bc_{{.}}_[[BC_NUM:[0-9]*]]>
+# CHECK: <__balc_tramp_{{.}}_[[TRAMP_NUM]]>
 # CHECK-NEXT: 6023 {{.*}} lapc
 # CHECK: d820 jrc at
 

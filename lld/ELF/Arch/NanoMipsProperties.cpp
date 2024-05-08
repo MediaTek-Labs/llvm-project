@@ -31,15 +31,19 @@ using namespace llvm::ELF;
 using namespace llvm::object;
 using namespace llvm::support::endian;
 
-constexpr uint32_t balc16Range = 1024;
-constexpr uint32_t balc32Size = 4;
-constexpr uint32_t balc16Size = 2;
+static constexpr uint32_t balc16Range = 1024;
+static constexpr uint32_t balc32Size = 4;
+static constexpr uint32_t balc16Size = 2;
 // When we generate trampolines balc[32] is converted into:
 // balc[16], bc[16], bc[32]. We want to jump to bc[32], as it
 // jumps to the wanted target
-constexpr uint32_t trampOffsetToBc = 4;
-constexpr uint32_t bc16Size = 2;
-constexpr uint32_t bc32Size = 4;
+static constexpr uint32_t trampOffsetToBc = 4;
+static constexpr uint32_t bc16Size = 2;
+static constexpr uint32_t bc32Size = 4;
+// Note: \2 copied from binutils
+// \2 is used to ensure that the symbol is unique
+static constexpr const char *skipBcSymPrefix = "__skip_bc_\2_";
+static constexpr const char *balcTrampSymPrefix = "__balc_tramp_\2_";
 
 
 // Function templates for insert, extract, convert and isValid Reg
@@ -131,6 +135,24 @@ uint64_t insertSaveRes16Fields(uint32_t treg, uint32_t sreg, uint64_t data) {
   uint32_t rt = ((sreg & 0x3e00) >> 9);
   uint32_t rt1 = (rt == 30) ? 0 : (1U << 9);
   return (data | rt1 | u);
+}
+
+// Function for adding new defined synthetic linker symbol
+Defined *addSyntheticLinkerSymbol(const Twine &name, uint64_t val, uint64_t size, SectionBase *sec)
+{
+  StringRef symName = saver().save(name);
+  Defined *s = dyn_cast<Defined>(
+    symtab.addSymbol(Defined{nullptr, symName, STB_GLOBAL, STV_HIDDEN,
+                             STT_NOTYPE, val, size, sec})
+  );
+
+  if (!s) {
+    error("Can't create needed symbol for relaxations/expansions!");
+    exitLld(1);
+  }
+
+  in.symTab->addSymbol(s);
+  return s;
 }
 
 // NanoMipsRelocPropertyTable
@@ -574,7 +596,6 @@ void NanoMipsTransform::transform(
 
   // Whether we are inserting a new reloc, or just changing the existing one
   bool newReloc = false;
-  RelType oldRelType = reloc->type;
   auto instructionList =
       ArrayRef(transformTemplate->getInsns(), transformTemplate->getInsCount());
   for (auto &insTemplate : instructionList) {
@@ -623,32 +644,6 @@ void NanoMipsTransform::transform(
                             << ": 0x" << utohexstr(newInsn) << " to offset: 0x"
                             << utohexstr(offset) << "\n");
     offset += insTemplate.getSize();
-  }
-
-  // We are adding a symbol for branch over the bc instruction, as this
-  // generates a negative branch + bc32 and the negative branch needs to skip
-  // bc32
-  if ((oldRelType == R_NANOMIPS_PC14_S1 || oldRelType == R_NANOMIPS_PC11_S1) &&
-      transformTemplate->getType() == TT_NANOMIPS_PCREL32_LONG) {
-    // TODO: Find out how to generate unique linker symbols
-    StringRef nameRef = saver().save(Twine("__skip_bc__") + Twine(newSkipBcSymCount));
-    newSkipBcSymCount++;
-    // TODO: Check out if we should define this symbol some other way, see if putting
-    // the file to Defined symbol is necessary, probably not
-    Defined *s = dyn_cast<Defined>(
-        symtab.addSymbol(Defined{nullptr, nameRef, STB_GLOBAL, STV_HIDDEN,
-                                 STT_NOTYPE, offset, 0, isec}));
-    if (!s) {
-      error("Can't create needed symbol for relaxations/expansions!");
-      exitLld(1);
-    }
-    reloc->sym = s;
-    isec->nanoMipsRelaxAux->anchors.push_back({s, false});
-    in.symTab->addSymbol(s);
-    LLVM_DEBUG(llvm::dbgs()
-                   << "New symbol " << s->getName() << " in section "
-                   << (isec->file ? isec->file->getName() : "no file") << ":"
-                   << isec->name << " on offset " << s->value << "\n";);
   }
 }
 
@@ -1089,16 +1084,47 @@ lld::elf::NanoMipsTransformExpand::getExpandTransformTemplate(
   }
 }
 
+void NanoMipsTransformExpand::transform(Relocation *reloc,
+                         const NanoMipsTransformTemplate *transformTemplate,
+                         const NanoMipsInsProperty *insProperty,
+                         const NanoMipsRelocProperty *relocProperty,
+                         InputSection *isec, uint64_t insn,
+                         uint32_t &relNum) const {
+  
+  RelType oldRelType = reloc->type;
+  NanoMipsTransform::transform(reloc, transformTemplate, insProperty,
+                        relocProperty, isec, insn, relNum);
+
+  // We are adding a symbol for branch over the bc instruction, as this
+  // generates a negative branch + bc32 and the negative branch needs to skip
+  // bc32
+  if ((oldRelType == R_NANOMIPS_PC14_S1 || oldRelType == R_NANOMIPS_PC11_S1) &&
+      transformTemplate->getType() == TT_NANOMIPS_PCREL32_LONG) {
+    // We changed the reloc array, so we need to get our reloc from the reloc vector
+    reloc = &isec->relocations[relNum];
+    // The last reloc added is the new relocation, which is the reloc to bc32
+    const Relocation &newReloc = isec->relocations.back();
+
+    Defined *s = addSyntheticLinkerSymbol(Twine(skipBcSymPrefix) + Twine(newSkipBcSymCount), 
+                                          newReloc.offset + bc32Size, 0, isec);
+    newSkipBcSymCount++;
+    reloc->sym = s;
+    isec->nanoMipsRelaxAux->anchors.push_back({s, false});
+    LLVM_DEBUG(llvm::dbgs()
+                   << "New symbol " << s->getName() << " in section "
+                   << (isec->file ? isec->file->getName() : "no file") << ":"
+                   << isec->name << " on offset " << s->value << "\n";);
+  }
+
+}
+
 // NanoMipsTransformTrampolinesScan
 
 const NanoMipsInsProperty *NanoMipsTransformTrampolinesScan::getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const {
   
+  NanoMipsInsProperty *insProperty = nullptr;
   switch(reloc)
   {
-    case R_NANOMIPS_NOTRAMP:
-      if(insPropertyTable->findInsProperty(insn, insnMask, reloc) != nullptr)
-        noTramp = true;
-      return nullptr;
     case R_NANOMIPS_PC25_S1:
       if(noTramp)
       {
@@ -1106,36 +1132,23 @@ const NanoMipsInsProperty *NanoMipsTransformTrampolinesScan::getInsProperty(uint
         return nullptr;
       }
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
+    case R_NANOMIPS_NOTRAMP:
+      if((insProperty = insPropertyTable->findInsProperty(insn, insnMask, reloc)) != nullptr)
+        if(insProperty->getName().compare("balc") == 0)
+          noTramp = true;
+      return nullptr;
+    
     default:
       return nullptr;
-  }
-}
-
-// FIXME: NOTRAMP relocations are generated before the R_NANOMIPS_PC_25_S1 
-// (if generated through assembler's .reloc directive), and therefore are useless like this
-inline bool NanoMipsTransformTrampolinesScan::hasNoTrampReloc(const InputSection *isec, uint32_t relNum) const {
-
-  // This is called from getTransformTemplate of NanoMipsTransformTrampolinesScan,
-  // we are sure that the relocation is on balc instruction
-  uint64_t relOffset = isec->relocs()[relNum].offset;
-  for(uint32_t i = relNum + 1; i < isec->relocs().size(); i++)
-  {
-    const Relocation &curRel = isec->relocs()[i];
-    if(curRel.offset != relOffset)
-      break;
-
-    if(curRel.type == R_NANOMIPS_NOTRAMP)
-      return true;  
 
   }
-  return false;
 }
 
 const NanoMipsTransformTemplate *NanoMipsTransformTrampolinesScan::getTransformTemplate(const NanoMipsInsProperty *insProperty, uint32_t relNum, uint64_t valueToRelocate, uint64_t insn, const InputSection *isec) const {
 
   const Relocation &reloc = isec->relocs()[relNum];
 
-  if(reloc.type != R_NANOMIPS_PC25_S1 || insProperty->getName().compare("balc") != 0 || hasNoTrampReloc(isec, relNum))
+  if(reloc.type != R_NANOMIPS_PC25_S1 || insProperty->getName().compare("balc") != 0)
     return nullptr;
   
   BalcTrampCandidate trampCandidate;
@@ -1152,6 +1165,7 @@ const NanoMipsTransformTemplate *NanoMipsTransformTrampolinesScan::getTransformT
 const NanoMipsInsProperty *NanoMipsTransformTrampolinesGenerate::getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const {
   switch(reloc)
   {
+    // TODO: Put no tramp logic here as well, it will add to performance in that case
     case R_NANOMIPS_PC25_S1:
       return insPropertyTable->findInsProperty(insn, insnMask, reloc);
     default:
@@ -1210,27 +1224,17 @@ const NanoMipsTransformTemplate *NanoMipsTransformTrampolinesGenerate::getTransf
       // Add the symbol to be updated later
       isec->nanoMipsRelaxAux->anchors.push_back({trampSym, false});
       // Generate a symbol for bc16 to jump over bc32
-      StringRef nameRef = saver().save(Twine("__skip_bc__") + Twine(newSkipBcSymCount));
-      newSkipBcSymCount++;
-      // TODO: Check out if we should define this symbol some other way, see if putting
-      // the file to Defined symbol is necessary, probably not
       // bc16Reloc is the penultimate reloc, as the relocs are added to the end of reloc vector
       Relocation &bc16Reloc = isec->relocs()[isec->relocs().size() - 2];
-      Defined *s = dyn_cast<Defined>(
-        symtab.addSymbol(Defined{nullptr, nameRef, STB_GLOBAL, STV_HIDDEN,
-                                 STT_NOTYPE, bc16Reloc.offset + bc16Size + bc32Size, 0, isec}));
-      
-    if (!s) {
-      error("Can't create needed symbol for relaxations/expansions!");
-      exitLld(1);
-    }
-    bc16Reloc.sym = s;
-    isec->nanoMipsRelaxAux->anchors.push_back({s, false});
-    in.symTab->addSymbol(s);
-    LLVM_DEBUG(llvm::dbgs()
-                   << "New symbol " << s->getName() << " in section "
-                   << (isec->file ? isec->file->getName() : "no file") << ":"
-                   << isec->name << " on offset " << s->value << "\n";);
+      Defined *s = addSyntheticLinkerSymbol(Twine(skipBcSymPrefix) + Twine(newSkipBcSymCount),
+                                            bc16Reloc.offset + bc16Size + bc32Size, 0, isec);
+      newSkipBcSymCount++;
+      bc16Reloc.sym = s;
+      isec->nanoMipsRelaxAux->anchors.push_back({s, false});
+      LLVM_DEBUG(llvm::dbgs()
+                    << "New symbol " << s->getName() << " in section "
+                    << (isec->file ? isec->file->getName() : "no file") << ":"
+                    << isec->name << " on offset " << s->value << "\n";);
       
     }
     else {
@@ -1357,23 +1361,12 @@ void NanoMipsTransformController::finalizeState() {
         trampCandidate.ignore = balcTarget.count < 4;
         if(i == balcTarget.idxTrampoline && !trampCandidate.ignore)
         {
-          // TODO: Find out how to generate unique linker symbols
-          StringRef nameRef = saver().save(Twine("__balc_tramp__") + Twine(NanoMipsTransform::getNewBalcTrampSymCount()));
-          NanoMipsTransform::increaseNewBalcTrampSymCount();
-          // TODO: Check out if we should define this symbol some other way, see if putting
-          // the file to Defined symbol is necessary, probably not
           // Note: We'll set the offset and input section to 0 and nullptr for now,
           // and later we'll add them 
-          Defined *s = dyn_cast<Defined>(
-              symtab.addSymbol(Defined{nullptr, nameRef, STB_GLOBAL, STV_HIDDEN,
-                                      STT_NOTYPE, 0, 0, nullptr}));
-          
-          if (!s) {
-            error("Can't create needed symbol for relaxations/expansions!");
-            exitLld(1);
-          }
+          Defined *s = addSyntheticLinkerSymbol(Twine(balcTrampSymPrefix) + Twine(NanoMipsTransform::getNewBalcTrampSymCount()),
+                                                0, 0, nullptr );
+          NanoMipsTransform::increaseNewBalcTrampSymCount();
 
-          in.symTab->addSymbol(s);
           trampCandidate.trampSymbol = s;
           LLVM_DEBUG(llvm::dbgs() << "New symbol " << s->getName() << "initialized\n");
 

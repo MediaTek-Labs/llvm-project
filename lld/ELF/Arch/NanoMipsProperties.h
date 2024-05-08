@@ -65,7 +65,6 @@ struct NanoMipsRelaxAux {
   // this field is used to save the number of those freeBytes, as
   // dropped bytes is uint16_t which is too small some time.
   uint32_t freeBytes;
-  uint16_t prevBytesDropped;
 
   // Note: This is needed, as if transformation hasn't happened yet
   // and if mmap is used to map sections from files to memory, than
@@ -396,6 +395,8 @@ protected:
   bool changedThisIteration;
   // if the code size has been changed during this iteration
   bool changed;
+  // Used for generating symbols for opposite branches
+  // Doesn't need to be static as there is only one, transformExpand object 
   static uint32_t newSkipBcSymCount;
 
 private:
@@ -418,6 +419,13 @@ public:
   getTransformTemplate(const NanoMipsInsProperty *insProperty,
                        uint32_t relNum, uint64_t valueToRelocate,
                        uint64_t insn, const InputSection *isec) const override;
+  
+  void transform(Relocation *reloc,
+                         const NanoMipsTransformTemplate *transformTemplate,
+                         const NanoMipsInsProperty *insProperty,
+                         const NanoMipsRelocProperty *relocProperty,
+                         InputSection *isec, uint64_t insn,
+                         uint32_t &relNum) const override;
 
 private:
   const NanoMipsTransformTemplate *
@@ -428,7 +436,7 @@ private:
 
 class NanoMipsTransformRelax : public NanoMipsTransform {
 public:
-  NanoMipsTransformRelax(const NanoMipsInsPropertyTable *tbl, SmallVector<BalcTrampCandidate, 0> &balcTramps)
+  NanoMipsTransformRelax(const NanoMipsInsPropertyTable *tbl)
       : NanoMipsTransform(tbl) {
     assert(insPropertyTable);
   }
@@ -462,13 +470,11 @@ public:
   getTransformTemplate(const NanoMipsInsProperty *insProperty,
                        uint32_t relNum, uint64_t valueToRelocate,
                        uint64_t insn, const InputSection *isec) const override;
-  
+
 private:
   SmallVector<BalcTrampCandidate, 0> &balcTrampCandidates;
-  bool hasNoTrampReloc(const InputSection *isec, uint32_t relNum) const;
   // Next balc shouldn't be transformed to trampoline
   mutable bool noTramp = false;
-
 };
 
 class NanoMipsTransformTrampolinesGenerate : public NanoMipsTransform {
@@ -530,7 +536,7 @@ public:
 class NanoMipsTransformController {
 public:
   NanoMipsTransformController(const NanoMipsInsPropertyTable *tbl)
-      : transformRelax(tbl, balcTrampCandidates), transformExpand(tbl), transformNone(tbl),
+      : transformRelax(tbl), transformExpand(tbl), transformNone(tbl),
         transformTrampolinesScan(tbl, balcTrampCandidates), transformTrampolinesGenerate(tbl, balcTrampCandidates),
         currentState(&transformNone) {}
 

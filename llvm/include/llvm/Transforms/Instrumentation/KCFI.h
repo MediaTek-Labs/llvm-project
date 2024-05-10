@@ -19,8 +19,12 @@
 namespace llvm {
 class KCFIPass : public PassInfoMixin<KCFIPass> {
 public:
+  KCFIPass(bool Trap = true) : Trap(Trap) {}
   static bool isRequired() { return true; }
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+
+private:
+  bool Trap;
 };
 } // namespace llvm
 #endif // LLVM_TRANSFORMS_INSTRUMENTATION_KCFI_H

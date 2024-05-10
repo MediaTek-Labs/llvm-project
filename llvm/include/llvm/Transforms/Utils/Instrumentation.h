@@ -59,6 +59,47 @@ Comdat *getOrCreateFunctionComdat(Function &F, Triple &T);
 void setGlobalVariableLargeSection(const Triple &TargetTriple,
                                    GlobalVariable &GV);
 
+// Emit and generate a pointer to be passed to trap handler:
+//  typedef struct {
+//    char *Filename;
+//    unsigned Line;
+//    unsigned Col;
+//  };
+template <typename T>
+Value *emitDebugLocData(DebugLoc Loc, Module &M, IRBuilder<T> &Builder) {
+  GlobalVariable *Filename = nullptr;
+  int Line, Column;
+  if (Loc) {
+    auto *Scope = cast<DIScope>(Loc.getScope());
+    while (Scope && !isa<DIFile>(Scope)) {
+      Scope = Scope->getScope();
+      Scope->resolve();
+    }
+    if (Scope) {
+      auto *File = cast<DIFile>(Scope);
+      auto *FilenameArray =
+          ConstantDataArray::getString(M.getContext(), File->getFilename());
+      Filename =
+          new GlobalVariable(M, FilenameArray->getType(), true,
+                             GlobalVariable::PrivateLinkage, FilenameArray);
+    }
+    Line = Loc.getLine();
+    Column = Loc.getCol();
+  } else {
+    Line = Column = 0;
+  }
+  if (!Filename) {
+    auto *Null = Constant::getNullValue(PointerType::get(Type::getInt8Ty(Builder.getContext()), 0));
+    Filename = new GlobalVariable(M, Null->getType(), true,
+                                  GlobalVariable::PrivateLinkage, Null);
+  }
+  Constant *Data[] = {Filename, Builder.getInt32(Line),
+                      Builder.getInt32(Column)};
+  Constant *Struct = llvm::ConstantStruct::getAnon(Data);
+  return new GlobalVariable(M, Struct->getType(), true,
+                            GlobalVariable::PrivateLinkage, Struct);
+}
+
 // Insert GCOV profiling instrumentation
 struct GCOVOptions {
   static GCOVOptions getDefault();

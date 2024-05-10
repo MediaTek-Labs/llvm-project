@@ -391,7 +391,6 @@ FUNCTION_PASS("invalidate<all>", InvalidateAllAnalysesPass())
 FUNCTION_PASS("irce", IRCEPass())
 FUNCTION_PASS("jump-threading", JumpThreadingPass())
 FUNCTION_PASS("jump-table-to-switch", JumpTableToSwitchPass());
-FUNCTION_PASS("kcfi", KCFIPass())
 FUNCTION_PASS("lcssa", LCSSAPass())
 FUNCTION_PASS("libcalls-shrinkwrap", LibCallsShrinkWrapPass())
 FUNCTION_PASS("lint", LintPass())
@@ -631,6 +630,12 @@ FUNCTION_PASS_WITH_PARAMS(
       return BoundsCheckingPass(Options);
     },
     parseBoundsCheckingOptions, "trap")
+FUNCTION_PASS_WITH_PARAMS(
+    "kcfi", "KCFIPass",
+    [](bool Trap) {
+      return KCFIPass(Trap);
+    },
+    parseKCFIPassOptions, "trap")
 #undef FUNCTION_PASS_WITH_PARAMS
 
 #ifndef LOOPNEST_PASS

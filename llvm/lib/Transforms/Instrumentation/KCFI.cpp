@@ -25,6 +25,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Transforms/Utils/Instrumentation.h"
 
 using namespace llvm;
 
@@ -109,7 +110,24 @@ PreservedAnalyses KCFIPass::run(Function &F, FunctionAnalysisManager &AM) {
     Instruction *ThenTerm =
         SplitBlockAndInsertIfThen(Test, Call, false, VeryUnlikelyWeights);
     Builder.SetInsertPoint(ThenTerm);
-    Builder.CreateIntrinsic(Intrinsic::debugtrap, {}, {});
+    auto DebugLoc = Builder.getCurrentDebugLocation();
+    if (Trap) {
+      CallInst *TrapCall =
+          Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::trap));
+      TrapCall->setDoesNotReturn();
+      TrapCall->setDoesNotThrow();
+      TrapCall->setDebugLoc(DebugLoc);
+      Builder.CreateUnreachable();
+      TrapCall->getParent()->getTerminator()->eraseFromParent();
+    } else {
+      FunctionCallee WarningFn;
+      WarningFn = M.getOrInsertFunction(
+          "__ubsan_handle_kcfi", Builder.getVoidTy(), PointerType::get(Type::getInt8Ty(Builder.getContext()), 0));
+      Value *Data = emitDebugLocData(DebugLoc, M, Builder);
+      CallInst *Call = Builder.CreateCall(WarningFn, Data);
+      Call->setDebugLoc(DebugLoc);
+      Call->setCannotMerge();
+    }
     ++NumKCFIChecks;
   }
 

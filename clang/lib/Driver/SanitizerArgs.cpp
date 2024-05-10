@@ -67,7 +67,7 @@ static const SanitizerMask NeedsLTO = SanitizerKind::CFI;
 static const SanitizerMask TrappingSupported =
     (SanitizerKind::Undefined & ~SanitizerKind::Vptr) | SanitizerKind::Integer |
     SanitizerKind::ImplicitConversion | SanitizerKind::Nullability |
-    SanitizerKind::LocalBounds | SanitizerKind::CFI |
+    SanitizerKind::LocalBounds | SanitizerKind::CFI | SanitizerKind::KCFI |
     SanitizerKind::FloatDivideByZero | SanitizerKind::ObjCCast;
 static const SanitizerMask MergeDefault = SanitizerKind::Undefined;
 static const SanitizerMask TrappingDefault =

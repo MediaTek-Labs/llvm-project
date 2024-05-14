@@ -336,6 +336,16 @@ cross-DSO function address equality. These properties make KCFI easier to
 adopt in low-level software. KCFI is limited to checking only function
 pointers, and isn't compatible with executable-only memory.
 
+``-fsanitize-kcfi-disable-check``
+---------------------------------
+
+This option disables KCFI checks on calls, while still generating
+the necessary typeids for defined functions which may be called
+dynamically. This is useful for compiling known and trusted libraries
+(or external libraries with known, and understood, type signature
+mismatches) while still allowing KCFI signature checks on calls to the
+library from outside
+
 Member Function Pointer Call Checking
 =====================================
 

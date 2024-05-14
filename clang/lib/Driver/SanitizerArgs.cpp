@@ -838,6 +838,12 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
           << lastArgumentForMask(D, Args, SanitizerKind::CFI);
   }
 
+  if (AllAddedKinds & SanitizerKind::KCFI) {
+    KCfiDisableCheck =
+      Args.hasFlag(options::OPT_fsanitize_kcfi_disable_check,
+		   options::OPT_fno_sanitize_kcfi_disable_check, false);
+  }
+
   Stats = Args.hasFlag(options::OPT_fsanitize_stats,
                        options::OPT_fno_sanitize_stats, false);
 
@@ -1388,6 +1394,9 @@ void SanitizerArgs::addArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
 
   if (CfiCanonicalJumpTables)
     CmdArgs.push_back("-fsanitize-cfi-canonical-jump-tables");
+
+  if (KCfiDisableCheck)
+    CmdArgs.push_back("-fsanitize-kcfi-disable-check");
 
   if (Stats)
     CmdArgs.push_back("-fsanitize-stats");

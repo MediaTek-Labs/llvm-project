@@ -5746,7 +5746,8 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
       getBundlesForFunclet(CalleePtr);
 
   if (SanOpts.has(SanitizerKind::KCFI) &&
-      !isa_and_nonnull<FunctionDecl>(TargetDecl))
+      !isa_and_nonnull<FunctionDecl>(TargetDecl) &&
+      !CGM.getCodeGenOpts().KCFIDisableCheck)
     EmitKCFIOperandBundle(ConcreteCallee, BundleList);
 
   // Add the pointer-authentication bundle.

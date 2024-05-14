@@ -2618,6 +2618,12 @@ def fsanitize_cfi_icall_normalize_integers : Flag<["-"], "fsanitize-cfi-icall-ex
                                              Group<f_clang_Group>,
                                              HelpText<"Normalize integers in CFI indirect call type signature checks">,
                                              MarshallingInfoFlag<CodeGenOpts<"SanitizeCfiICallNormalizeIntegers">>;
+defm sanitize_kcfi_disable_check : BoolOption<"f", "sanitize-kcfi-disable-check",
+  CodeGenOpts<"KCFIDisableCheck">, DefaultFalse,
+  PosFlag<SetTrue, [], [ClangOption], "Disable">, 
+  NegFlag<SetFalse, [], [ClangOption], "Do not disable">,
+  BothFlags<[], [ClangOption], " KCFI checks on calls in compilation unit">>,
+  Group<f_clang_Group>;
 defm sanitize_cfi_canonical_jump_tables : BoolOption<"f", "sanitize-cfi-canonical-jump-tables",
   CodeGenOpts<"SanitizeCfiCanonicalJumpTables">, DefaultFalse,
   PosFlag<SetTrue, [], [ClangOption], "Make">,

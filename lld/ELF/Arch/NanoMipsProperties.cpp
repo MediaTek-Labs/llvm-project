@@ -1121,7 +1121,7 @@ void NanoMipsTransformExpand::transform(Relocation *reloc,
 // NanoMipsTransformTrampolinesScan
 
 const NanoMipsInsProperty *NanoMipsTransformTrampolinesScan::getInsProperty(uint64_t insn, uint64_t insnMask, RelType reloc, InputSectionBase *isec) const {
-  
+  // TODO: No need for getTransformTemplate function, as we can do the calculation here
   NanoMipsInsProperty *insProperty = nullptr;
   switch(reloc)
   {
@@ -1173,17 +1173,20 @@ const NanoMipsInsProperty *NanoMipsTransformTrampolinesGenerate::getInsProperty(
   }
 }
 
-const BalcTrampCandidate *NanoMipsTransformTrampolinesGenerate::findBalcTrampoline(const InputSection *isec, uint32_t relNum) const {
+inline const BalcTrampCandidate *NanoMipsTransformTrampolinesGenerate::findBalcTrampoline(const InputSection *isec, uint32_t relNum) const {
+  // Note: Relocations are in the same order as they were in scan trampolines so this should work, as long as new relocs
+  // are inserted at the end of the vector
   uint32_t sz = static_cast<uint32_t>(balcTrampCandidates.size());
 
-  for(uint32_t i = 0; i < sz; i++, balcTrampPos++)
-  {
-    uint32_t idx = balcTrampPos % sz;
-
-    // Should be able to compare section pointers as they come from the same origin, and are not invalidated anyhow
-    if(balcTrampCandidates[idx].isec == isec && balcTrampCandidates[idx].relNum == relNum)
-      return &balcTrampCandidates[idx];
+  // for(uint32_t i = 0; i < sz; i++, balcTrampPos++)
+  // {
+  uint32_t idx = balcTrampPos;
+  // Should be able to compare section pointers as they come from the same origin, and are not invalidated anyhow
+  if(balcTrampCandidates[idx].isec == isec && balcTrampCandidates[idx].relNum == relNum) {
+    balcTrampPos = (balcTrampPos + 1) % sz;
+    return &balcTrampCandidates[idx];
   }
+  // }
   return nullptr;
 
 }
@@ -1199,7 +1202,7 @@ const NanoMipsTransformTemplate *NanoMipsTransformTrampolinesGenerate::getTransf
     return insProperty->getTransformTemplate(TT_NANOMIPS_BALC_CALL, reloc.type);
 }
 
-  void NanoMipsTransformTrampolinesGenerate::transform(
+void NanoMipsTransformTrampolinesGenerate::transform(
                  Relocation *reloc,
                  const NanoMipsTransformTemplate *transformTemplate,
                  const NanoMipsInsProperty *insProperty,
@@ -1208,43 +1211,43 @@ const NanoMipsTransformTemplate *NanoMipsTransformTrampolinesGenerate::getTransf
                  uint32_t &relNum) const {
 
     
-    NanoMipsTransform::transform(reloc, transformTemplate, insProperty, relocProperty, isec, insn, relNum);
-    reloc = &isec->relocs()[relNum];
-    Defined *trampSym = nullptr;
-    if(transformTemplate->getType() == TT_NANOMIPS_BALC_TRAMP)
-    {
-      // Trampoline is generated
-      // Update the tramp symbol
-      trampSym = cast<Defined>(curBalcTrampCandidate->trampSymbol);
-      trampSym->value = reloc->offset + balc16Size + bc16Size;
-      trampSym->section = isec;
-      LLVM_DEBUG(llvm::dbgs() << "Updated value of the tramp symbol " << trampSym->getName() << ", value: " << trampSym->value
-                              << ", section: (" << (isec->file ? isec->file->getName() : "no file") << "): "
-                              << isec->name << "\n";);
-      // Add the symbol to be updated later
-      isec->nanoMipsRelaxAux->anchors.push_back({trampSym, false});
-      // Generate a symbol for bc16 to jump over bc32
-      // bc16Reloc is the penultimate reloc, as the relocs are added to the end of reloc vector
-      Relocation &bc16Reloc = isec->relocs()[isec->relocs().size() - 2];
-      Defined *s = addSyntheticLinkerSymbol(Twine(skipBcSymPrefix) + Twine(newSkipBcSymCount),
-                                            bc16Reloc.offset + bc16Size + bc32Size, 0, isec);
-      newSkipBcSymCount++;
-      bc16Reloc.sym = s;
-      isec->nanoMipsRelaxAux->anchors.push_back({s, false});
-      LLVM_DEBUG(llvm::dbgs()
-                    << "New symbol " << s->getName() << " in section "
-                    << (isec->file ? isec->file->getName() : "no file") << ":"
-                    << isec->name << " on offset " << s->value << "\n";);
-      
-    }
-    else {
-      trampSym = cast<Defined>(balcTrampCandidates[curBalcTrampCandidate->trampIdx].trampSymbol);
-    }
-
-    // Update the balc relocation
-    reloc->sym = trampSym;
-
+  NanoMipsTransform::transform(reloc, transformTemplate, insProperty, relocProperty, isec, insn, relNum);
+  reloc = &isec->relocs()[relNum];
+  Defined *trampSym = nullptr;
+  if(transformTemplate->getType() == TT_NANOMIPS_BALC_TRAMP)
+  {
+    // Trampoline is generated
+    // Update the tramp symbol
+    trampSym = cast<Defined>(curBalcTrampCandidate->trampSymbol);
+    trampSym->value = reloc->offset + balc16Size + bc16Size;
+    trampSym->section = isec;
+    LLVM_DEBUG(llvm::dbgs() << "Updated value of the tramp symbol " << trampSym->getName() << ", value: " << trampSym->value
+                            << ", section: (" << (isec->file ? isec->file->getName() : "no file") << "): "
+                            << isec->name << "\n";);
+    // Add the symbol to be updated later
+    isec->nanoMipsRelaxAux->anchors.push_back({trampSym, false});
+    // Generate a symbol for bc16 to jump over bc32
+    // bc16Reloc is the penultimate reloc, as the relocs are added to the end of reloc vector
+    Relocation &bc16Reloc = isec->relocs()[isec->relocs().size() - 2];
+    Defined *s = addSyntheticLinkerSymbol(Twine(skipBcSymPrefix) + Twine(newSkipBcSymCount),
+                                          bc16Reloc.offset + bc16Size + bc32Size, 0, isec);
+    newSkipBcSymCount++;
+    bc16Reloc.sym = s;
+    isec->nanoMipsRelaxAux->anchors.push_back({s, false});
+    LLVM_DEBUG(llvm::dbgs()
+                  << "New symbol " << s->getName() << " in section "
+                  << (isec->file ? isec->file->getName() : "no file") << ":"
+                  << isec->name << " on offset " << s->value << "\n";);
+    
   }
+  else {
+    trampSym = cast<Defined>(balcTrampCandidates[curBalcTrampCandidate->trampIdx].trampSymbol);
+  }
+
+  // Update the balc relocation
+  reloc->sym = trampSym;
+
+}
 
 // NanoMipsTransformController
 

@@ -52,11 +52,12 @@ struct NMOptimizeJumpTables : public MachineFunctionPass {
   MachineFunction *MF;
   SmallVector<int, 8> BlockInfo;
   SmallVector<int, 8> BrOffsets;
+  SmallPtrSet<MachineInstr *, 16> InstrsToDelete;
 
   int computeBlockSize(MachineBasicBlock &MBB);
   void scanFunction();
   bool compressJumpTable(MachineInstr &MI);
-  bool optimizeRedundantEntries(MachineBasicBlock::iterator &I);
+  bool optimizeRedundantEntries(MachineInstr &MI);
 
   NMOptimizeJumpTables() : MachineFunctionPass(ID) {
     initializeNMOptimizeJumpTablesPass(*PassRegistry::getPassRegistry());
@@ -121,12 +122,16 @@ void NMOptimizeJumpTables::scanFunction() {
 }
 
 bool NMOptimizeJumpTables::optimizeRedundantEntries(
-    MachineBasicBlock::iterator &I) {
-  auto JTOp = (*I).getOperand(3);
+    MachineInstr &MI) {
+  auto JTOp = MI.getOperand(3);
   int JTIdx = JTOp.getIndex();
   auto &JTInfo = *MF->getJumpTableInfo();
   const MachineJumpTableEntry &JT = JTInfo.getJumpTables()[JTIdx];
   llvm::SmallPtrSet<MachineBasicBlock *, 16> JTMBBS;
+
+  // The jump-table might have been optimized away.
+  if (JT.MBBs.empty())
+    return false;
 
   // Collect all different JT MBBs.
   for (auto MBB : JT.MBBs)
@@ -153,31 +158,28 @@ bool NMOptimizeJumpTables::optimizeRedundantEntries(
   // If we are not able to find a block to jump to, it implies JT with empty
   // MBBs - an error in this case.
   assert(MBBToJumpTo && "Empty Jump Table.");
-
-  // Optimize JT and corresponding instructions. First, we want to replace
+  // Optimize JT and corresponding instructions. First, we want to replace every
   // LoadJumpTableOffset and BRSC_NM with an unconditional jump to MBBToJumpTo.
   // MBBToJumpTo would be the only nonempty block.
-  // Insert new BC_NM instruction after LoadJumpTableOffset.
-  BuildMI(*CurrBB, I, JTOp.getParent()->getDebugLoc(), TII->get(Mips::BC_NM))
-      .addMBB(MBBToJumpTo);
-  --I;
-  SmallVector<MachineInstr *, 3> InstrsToDelete;
-
-  // We want to delete all unnecessary instructions after removing
-  // LoadJumpTableOffset.
+  // We want to replace every BRSC_NM with a new BC_NM instruction, and to
+  // delete all unnecessary instructions.
   for (auto &MBB : *(CurrBB->getParent()))
    for (auto &I : MBB) {  
     for (llvm::MachineInstr::mop_iterator OpI = I.operands_begin(),
                                           OpEnd = I.operands_end();
          OpI != OpEnd; ++OpI) {
       llvm::MachineOperand &Operand = *OpI;
-      if (Operand.isIdenticalTo(JTOp))
-        InstrsToDelete.push_back(&I);
+      if (Operand.isIdenticalTo(JTOp)) {
+	if (MI.getOpcode() == Mips::BRSC_NM)
+	  BuildMI(MBB, I, Operand.getParent()->getDebugLoc(), TII->get(Mips::BC_NM))
+              .addMBB(MBBToJumpTo);
+        InstrsToDelete.insert(&I);
+      }
     }
    }
 
-  for (auto Instr : InstrsToDelete)
-    Instr->removeFromParent();
+  // Mark JT as dead.
+  JTInfo.RemoveJumpTable(JTIdx);
   return true;
 }
 
@@ -231,16 +233,15 @@ bool NMOptimizeJumpTables::runOnMachineFunction(MachineFunction &Fn) {
   bool Modified = false;
   MF = &Fn;
 
+  InstrsToDelete.clear();
   scanFunction();
 
   bool CleanUpNeeded = false;
   for (MachineBasicBlock &MBB : *MF) {
-    for (MachineBasicBlock::iterator I = MBB.begin(), E = MBB.end(); I != E;
-         ++I) {
-      MachineInstr &MI = *I;
+    for (auto &MI : MBB) {
       if (MI.getOpcode() != Mips::LoadJumpTableOffset)
         continue;
-      bool OptimizedJT = optimizeRedundantEntries(I);
+      bool OptimizedJT = optimizeRedundantEntries(MI);
       CleanUpNeeded |= OptimizedJT;
       Modified |= OptimizedJT;
       if (!OptimizedJT)
@@ -250,12 +251,14 @@ bool NMOptimizeJumpTables::runOnMachineFunction(MachineFunction &Fn) {
   if (CleanUpNeeded) {
     MBFIWrapper MBFI(getAnalysis<MachineBlockFrequencyInfoWrapperPass>().getMBFI());
 
+    // Now is safe to remove marked instructions.
+    for (auto Instr : InstrsToDelete)
+      Instr->eraseFromParent();
+
     const MachineBranchProbabilityInfo *MBPI =
         &getAnalysis<MachineBranchProbabilityInfoWrapperPass>().getMBPI();
-
     ProfileSummaryInfo *PSI =
         &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
-
     auto MLI = &getAnalysis<MachineLoopInfoWrapperPass>().getLI();
 
     BranchFolder BF(true, false, MBFI, *MBPI, PSI);

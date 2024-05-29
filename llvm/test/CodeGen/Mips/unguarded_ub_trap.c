@@ -373,3 +373,12 @@ int foo(AA *a) {
     a->length--;
   return 1;
 }
+
+// regression test: was not detected
+#define GET_LSB(mask) (31 - __builtin_clz((mask) & -(mask)))
+TYPE unary_minus(TYPE a) {
+// WARN-64-DAG: {{.*}}/unguarded_ub_trap.c:180:10: in function unary_minus i64 (i64): Operation overflow is not guarded
+// WARN-32-DAG: {{.*}}/unguarded_ub_trap.c:180:10: in function unary_minus i32 (i32): Operation overflow is not guarded
+#line 180
+  return GET_LSB(a);
+}

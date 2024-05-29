@@ -57,8 +57,8 @@ using namespace clang::ast_matchers;
 using llvm::Value;
 
 namespace {
-using ExprInsPair = std::pair<const Expr *, Value *>;
-using OverflowIter = SmallVector<ExprInsPair, 4>::const_iterator;
+using ExprTrapPair = std::pair<const Expr *, llvm::CallInst *>;
+using OverflowIter = SmallVector<ExprTrapPair, 4>::const_iterator;
 
 class UBSanTrapWarnFilter : public MatchFinder::MatchCallback {
 protected:
@@ -68,7 +68,7 @@ protected:
   uint64_t getExprTypeMax(const Expr *E, ASTContext &Context);
   uint64_t evalAllConstantsArithExpr(const Expr *E, ASTContext &Context,
                                      bool &Valid);
-  void eliminateWarning(Value *OverflowLoc);
+  void replaceWithRegularTrap(llvm::CallInst *);
   void removeWarningFromList(const Expr *GuardedExpr);
   bool isBoundMax(const MatchFinder::MatchResult &Result);
 
@@ -141,32 +141,20 @@ uint64_t UBSanTrapWarnFilter::evalAllConstantsArithExpr(const Expr *E,
   return TypeMax & Val;
 }
 
-// OverflowLoc is a MetaData, containing the source location
-// of a possibly overflowing expression.
-// OverflowLoc is used by the triggered ubsantrap_unique instrinsic
-// and about to be used for emitting a warning for that trap.
-// To eliminate the warning, this function replaces the ubsantrap_unique
-// with a regular ubsantrap, and discards OverflowLoc
-void UBSanTrapWarnFilter::eliminateWarning(Value *OverflowLoc) {
-  for (llvm::User *U : OverflowLoc->users()) {
-    if (llvm::IntrinsicInst *Intr = dyn_cast<llvm::IntrinsicInst>(U)) {
-      if (Intr->getIntrinsicID() == llvm::Intrinsic::ubsantrap_unique) {
-        llvm::Function *Fn = Intr->getParent()->getParent();
-        if (TrapWarningTrace) {
-          llvm::errs() << "Found guarding precondition for overflow trap: "
-                       << Fn->getName() << " : " << *Intr << "\n";
-        }
-        llvm::Module *M = Fn->getParent();
-        llvm::Function *IntrinsicFunc =
-            llvm::Intrinsic::getDeclaration(M, llvm::Intrinsic::ubsantrap);
-        Value *TrapOp = Intr->getOperand(0);
-        llvm::CallInst *NewCall =
-            llvm::CallInst::Create(IntrinsicFunc, {TrapOp}, "", Intr);
-        Intr->replaceAllUsesWith(NewCall);
-        Intr->eraseFromParent();
-      }
-    }
+void UBSanTrapWarnFilter::replaceWithRegularTrap(llvm::CallInst *Intr) {
+  llvm::Function *Fn = Intr->getFunction();
+  if (TrapWarningTrace) {
+    llvm::errs() << "Found guarding precondition for overflow trap: "
+                 << Fn->getName() << " : " << *Intr << "\n";
   }
+  llvm::Module *M = Fn->getParent();
+  llvm::Function *IntrinsicFunc =
+      llvm::Intrinsic::getDeclaration(M, llvm::Intrinsic::ubsantrap);
+  Value *TrapOp = Intr->getOperand(0);
+  llvm::CallInst *NewCall =
+      llvm::CallInst::Create(IntrinsicFunc, {TrapOp}, "", Intr);
+  Intr->replaceAllUsesWith(NewCall);
+  Intr->eraseFromParent();
 }
 
 void UBSanTrapWarnFilter::removeWarningFromList(const Expr *GuardedExpr) {
@@ -175,7 +163,7 @@ void UBSanTrapWarnFilter::removeWarningFromList(const Expr *GuardedExpr) {
     for (I = CGM->OverflowExpr.begin(); I != CGM->OverflowExpr.end(); I++) {
       const Expr *E = I->first;
       if (E == GuardedExpr) {
-        eliminateWarning(I->second);
+        replaceWithRegularTrap(I->second);
         break;
       }
     }

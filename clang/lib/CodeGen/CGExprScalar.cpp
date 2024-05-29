@@ -410,10 +410,6 @@ public:
   /// EmitNullValue - Emit a value that corresponds to null for the given type.
   Value *EmitNullValue(QualType Ty);
 
-  /// Emit a MetaData node containing the source location of E.
-  /// Return an object llvm:Value referring this MetaData node
-  Value *sourceLocMetadataValue(const Expr *E);
-
   /// EmitFloatToBoolConversion - Perform an FP to boolean conversion.
   Value *EmitFloatToBoolConversion(Value *V) {
     // Compare against 0.0 for fp scalars.
@@ -1782,26 +1778,6 @@ Value *ScalarExprEmitter::EmitNullValue(QualType Ty) {
   return CGF.EmitFromMemory(CGF.CGM.EmitNullConstant(Ty), Ty);
 }
 
-/// Emit a MetaData node containing the source location of E.
-/// Return an object llvm:Value referring this MetaData node
-Value *ScalarExprEmitter::sourceLocMetadataValue(const Expr *E) {
-  llvm::DebugLoc DL;
-  SourceLocation Loc = E->getExprLoc();
-  const CodeGenOptions &CGO = CGF.CGM.getCodeGenOpts();
-  if (Loc.isInvalid() ||
-      CGO.getDebugInfo() == llvm::codegenoptions::DebugInfoKind::NoDebugInfo) {
-    // TODO: even invalid Loc can still have filename, line and column
-    // should we implement extraction and DILocation generation?
-    llvm::DIBuilder DIB(CGF.CGM.getModule());
-    llvm::DIFile *DummyFile = DIB.createFile("", "");
-    DL = llvm::DILocation::get(VMContext, 0, 0, DummyFile);
-    DIB.finalize();
-  } else {
-    DL = CGF.getDebugInfo()->SourceLocToDebugLoc(Loc);
-  }
-  return llvm::MetadataAsValue::get(VMContext, DL);
-}
-
 /// Emit a sanitization check for the given "binary" operation (which
 /// might actually be a unary increment which has been lowered to a binary
 /// operation). The check passes if all values in \p Checks (which are \c i1),
@@ -1813,7 +1789,7 @@ void ScalarExprEmitter::EmitBinOpCheck(
   SanitizerHandler Check;
   SmallVector<llvm::Constant *, 4> StaticData;
   SmallVector<llvm::Value *, 2> DynamicData;
-  bool WarnCandidate = false;
+  QualType WarnType = QualType();
 
   BinaryOperatorKind Opcode = Info.Opcode;
   if (BinaryOperator::isCompoundAssignmentOp(Opcode))
@@ -1825,6 +1801,7 @@ void ScalarExprEmitter::EmitBinOpCheck(
     Check = SanitizerHandler::NegateOverflow;
     StaticData.push_back(CGF.EmitCheckTypeDescriptor(UO->getType()));
     DynamicData.push_back(Info.RHS);
+    WarnType = UO->getType();
   } else {
     if (BinaryOperator::isShiftOp(Opcode)) {
       // Shift LHS negative or too large, or RHS out of bounds.
@@ -1846,21 +1823,17 @@ void ScalarExprEmitter::EmitBinOpCheck(
       case BO_Mul: Check = SanitizerHandler::MulOverflow; break;
       default: llvm_unreachable("unexpected opcode for bin op check");
       }
-      WarnCandidate = true;
       StaticData.push_back(CGF.EmitCheckTypeDescriptor(Info.Ty));
+      WarnType = Info.Ty;
     }
     DynamicData.push_back(Info.LHS);
     DynamicData.push_back(Info.RHS);
   }
   // store now, to be checked later if we need to warn
   // about this
-  if (CGF.CGM.getCodeGenOpts().WarnUBSanTraps && WarnCandidate &&
-      !Info.Ty->isSignedIntegerOrEnumerationType()) {
-    Value *LocMDVal = sourceLocMetadataValue(Info.E);
-    CGF.UBSanTrapUniqueParam = LocMDVal;
-    // TODO: check if storing the generated trap is
-    // better than storing LocMDVal and retrieving the trap from it
-    CGF.CGM.OverflowExpr.push_back(std::make_pair(Info.E, LocMDVal));
+  if (CGF.CGM.getCodeGenOpts().WarnUBSanTraps && !WarnType.isNull() &&
+      !WarnType->isSignedIntegerOrEnumerationType()) {
+    CGF.UBSanTrapExpr = Info.E;
   }
   CGF.EmitCheck(Checks, Check, StaticData, DynamicData);
 }

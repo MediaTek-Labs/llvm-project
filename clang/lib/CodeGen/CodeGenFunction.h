@@ -583,9 +583,14 @@ public:
     ~SanitizerScope();
   };
 
-  /// Parameter for next ubsantrap, if not null,
-  /// we should emit ubsantrap_unique and use that value as operand
-  llvm::Value *UBSanTrapUniqueParam = nullptr;
+  /// Emit a MetaData node containing the source location of E.
+  /// Return an object referring this MetaData node
+  llvm::Value *sourceLocMetadataValue(const Expr *E);
+
+  /// A triggering Expr for next ubsantrap, if not null,
+  /// we should emit ubsantrap_unique and map the relation
+  /// between the two in a data structure to be used if filtering occurs
+  const Expr *UBSanTrapExpr = nullptr;
 
   /// In C++, whether we are code generating a thunk.  This controls whether we
   /// should emit cleanups.

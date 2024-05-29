@@ -3908,6 +3908,16 @@ void CodeGenFunction::EmitUnreachable(SourceLocation Loc) {
   Builder.CreateUnreachable();
 }
 
+/// Emit a MetaData node containing the source location of E.
+/// Return an object referring this MetaData node
+llvm::Value *CodeGenFunction::sourceLocMetadataValue(const Expr *E) {
+  SourceLocation Loc = E->getExprLoc();
+  // TODO: even invalid Loc can still have filename, line and column
+  // should we implement extraction and DILocation generation?
+  llvm::DebugLoc DL = getDebugInfo()->SourceLocToDebugLoc(Loc);
+  return llvm::MetadataAsValue::get(getLLVMContext(), DL.getAsMDNode());
+}
+
 void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
                                     SanitizerHandler CheckHandlerID,
                                     bool NoMerge) {
@@ -3922,7 +3932,7 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
 
   NoMerge = NoMerge || !CGM.getCodeGenOpts().OptimizationLevel ||
             (CurCodeDecl && CurCodeDecl->hasAttr<OptimizeNoneAttr>()) ||
-            UBSanTrapUniqueParam;
+            UBSanTrapExpr;
 
   if (TrapBB && !NoMerge) {
     auto Call = TrapBB->begin();
@@ -3937,13 +3947,14 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
     EmitBlock(TrapBB);
 
     llvm::CallInst *TrapCall;
-    if (UBSanTrapUniqueParam) {
+    if (UBSanTrapExpr) {
+      llvm::Value *LocMDVal = sourceLocMetadataValue(UBSanTrapExpr);
       TrapCall = Builder.CreateCall(
           CGM.getIntrinsic(llvm::Intrinsic::ubsantrap_unique),
-          {llvm::ConstantInt::get(CGM.Int8Ty, CheckHandlerID),
-           UBSanTrapUniqueParam});
-      // reset value for next time
-      UBSanTrapUniqueParam = nullptr;
+          {llvm::ConstantInt::get(CGM.Int8Ty, CheckHandlerID), LocMDVal});
+      // clear value for next time
+      CGM.OverflowExpr.push_back(std::make_pair(UBSanTrapExpr, TrapCall));
+      UBSanTrapExpr = nullptr;
     } else {
       TrapCall = Builder.CreateCall(
           CGM.getIntrinsic(llvm::Intrinsic::ubsantrap),

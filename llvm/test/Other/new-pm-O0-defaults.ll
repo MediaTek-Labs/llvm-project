@@ -40,6 +40,7 @@
 ; CHECK-DEFAULT-NEXT: Running analysis: ProfileSummaryAnalysis
 ; CHECK-MATRIX: Running pass: LowerMatrixIntrinsicsPass
 ; CHECK-MATRIX-NEXT: Running analysis: TargetIRAnalysis
+; CHECK-CORO-NEXT: Running pass: WarnUBSanTrapPass
 ; CHECK-CORO-NEXT: Running pass: CoroConditionalWrapper
 ; CHECK-PRE-LINK: Running pass: CanonicalizeAliasesPass
 ; CHECK-PRE-LINK-NEXT: Running pass: NameAnonGlobalPass

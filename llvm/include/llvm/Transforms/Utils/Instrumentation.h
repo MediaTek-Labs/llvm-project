@@ -67,32 +67,24 @@ void setGlobalVariableLargeSection(const Triple &TargetTriple,
 //  };
 template <typename T>
 Value *emitDebugLocData(DebugLoc Loc, Module &M, IRBuilder<T> &Builder) {
-  GlobalVariable *Filename = nullptr;
   int Line, Column;
+  Constant *FilenameArray = nullptr;
   if (Loc) {
-    auto *Scope = cast<DIScope>(Loc.getScope());
-    while (Scope && !isa<DIFile>(Scope)) {
-      Scope = Scope->getScope();
-      Scope->resolve();
+    DIFile *File = Loc->getFile();
+    if (File) {
+      StringRef FilenameStr = File->getFilename();
+      FilenameArray = ConstantDataArray::getString(M.getContext(), FilenameStr);
     }
-    if (Scope) {
-      auto *File = cast<DIFile>(Scope);
-      auto *FilenameArray =
-          ConstantDataArray::getString(M.getContext(), File->getFilename());
-      Filename =
-          new GlobalVariable(M, FilenameArray->getType(), true,
-                             GlobalVariable::PrivateLinkage, FilenameArray);
-    }
-    Line = Loc.getLine();
-    Column = Loc.getCol();
+    Line = Loc->getLine();
+    Column = Loc->getColumn();
   } else {
     Line = Column = 0;
   }
-  if (!Filename) {
-    auto *Null = Constant::getNullValue(PointerType::get(Type::getInt8Ty(Builder.getContext()), 0));
-    Filename = new GlobalVariable(M, Null->getType(), true,
-                                  GlobalVariable::PrivateLinkage, Null);
-  }
+  if (!FilenameArray)
+    FilenameArray = Constant::getNullValue(PointerType::get(Type::getInt8Ty(Builder.getContext()), 0));
+  auto *Filename =
+      new GlobalVariable(M, FilenameArray->getType(), true,
+                         GlobalVariable::PrivateLinkage, FilenameArray);
   Constant *Data[] = {Filename, Builder.getInt32(Line),
                       Builder.getInt32(Column)};
   Constant *Struct = llvm::ConstantStruct::getAnon(Data);

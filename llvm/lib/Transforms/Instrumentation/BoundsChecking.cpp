@@ -141,9 +141,10 @@ static CallInst *InsertCall(BuilderTy &IRB, bool MayReturn, StringRef Name) {
 ///
 /// \p Or is the condition that should guard the trap.
 ///
-/// \p GetTrapBB is a callable that returns the trap BB to use on failure.
-template <typename GetTrapBBT>
-static void insertBoundsCheck(Value *Or, BuilderTy &IRB, GetTrapBBT GetTrapBB) {
+/// \p GetHandlerBB is a callable that returns the trap BB to use on failure.
+template <typename GetHandlerBBT>
+static void insertBoundsCheck(Value *Or, BuilderTy &IRB,
+                              GetHandlerBBT GetHandlerBB) {
   // check if the comparison is always false
   ConstantInt *C = dyn_cast_or_null<ConstantInt>(Or);
   if (C) {
@@ -159,7 +160,7 @@ static void insertBoundsCheck(Value *Or, BuilderTy &IRB, GetTrapBBT GetTrapBB) {
   BasicBlock *Cont = OldBB->splitBasicBlock(SplitI);
   OldBB->getTerminator()->eraseFromParent();
 
-  BasicBlock *TrapBB = GetTrapBB(IRB, Cont);
+  BasicBlock *TrapBB = GetHandlerBB(IRB, Cont);
 
   if (C) {
     // If we have a constant zero, unconditionally branch.
@@ -238,7 +239,7 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
   // flags, this will either create a single block for the entire function or
   // will create a fresh block every time it is called.
   BasicBlock *ReuseTrapBB = nullptr;
-  auto GetTrapBB = [&ReuseTrapBB, &Opts, &Name](BuilderTy &IRB,
+  auto GetHandlerBB = [&ReuseTrapBB, &Opts, &Name](BuilderTy &IRB,
                                                 BasicBlock *Cont) {
     Function *Fn = IRB.GetInsertBlock()->getParent();
     auto DebugLoc = IRB.getCurrentDebugLocation();
@@ -279,7 +280,7 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
   for (const auto &Entry : TrapInfo) {
     Instruction *Inst = Entry.first;
     BuilderTy IRB(Inst->getParent(), BasicBlock::iterator(Inst), TargetFolder(DL));
-    insertBoundsCheck(Entry.second, IRB, GetTrapBB);
+    insertBoundsCheck(Entry.second, IRB, GetHandlerBB);
   }
 
   return !TrapInfo.empty();

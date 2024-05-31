@@ -661,8 +661,9 @@ static OptimizationLevel mapToLevel(const CodeGenOptions &Opts) {
   }
 }
 
-static void addKCFIPass(const Triple &TargetTriple, const LangOptions &LangOpts,
-                        PassBuilder &PB, const CodeGenOptions &CodeGenOpts) {
+static void addKCFIPass(const Triple &TargetTriple,
+                        const CodeGenOptions &CodeGenOpts,
+                        const LangOptions &LangOpts, PassBuilder &PB) {
   // If the back-end supports KCFI operand bundle lowering, skip KCFIPass.
   if (TargetTriple.getArch() == llvm::Triple::x86_64 ||
       TargetTriple.isAArch64(64) || TargetTriple.isRISCV())
@@ -1059,7 +1060,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
     // done on PreLink stage.
     if (!IsThinLTOPostLink) {
       addSanitizers(TargetTriple, CodeGenOpts, LangOpts, PB);
-      addKCFIPass(TargetTriple, LangOpts, PB, CodeGenOpts);
+      addKCFIPass(TargetTriple, CodeGenOpts, LangOpts, PB);
     }
 
     if (std::optional<GCOVOptions> Options =

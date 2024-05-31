@@ -1,4 +1,4 @@
-; RUN: opt -S -passes=kcfi %s | FileCheck --check-prefixes=CHECK,NOARM %s
+; RUN: opt -S -passes='kcfi<trap>' %s | FileCheck --check-prefixes=CHECK,NOARM %s
 ; RUN: %if arm-registered-target %{ opt -S -passes=kcfi -mtriple=thumbv7m-unknown-linux-gnu %s | FileCheck --check-prefixes=CHECK,ARM %s %}
 
 ; CHECK-LABEL: define void @f1(
@@ -13,7 +13,7 @@ define void @f1(ptr noundef %x) {
   ; CHECK-NEXT: br i1 %[[#ICMP]], label %[[#TRAP:]], label %[[#CALL:]], !prof ![[#WEIGHTS:]]
   ; CHECK:      [[#TRAP]]:
   ; CHECK-NEXT: call void @llvm.debugtrap()
-  ; CHECK-NEXT: br label %[[#CALL]]
+  ; CHECK-NEXT: unreachable
   ; CHECK:      [[#CALL]]:
   ; CHECK-NEXT: call void %x()
   ; CHECK-NOT:  [ "kcfi"(i32 12345678) ]

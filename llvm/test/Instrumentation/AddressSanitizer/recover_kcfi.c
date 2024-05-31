@@ -15,6 +15,10 @@
 // RUN: clang %s -S -fsanitize=kcfi -fsanitize-trap -emit-llvm -o - | \
 // RUN:   FileCheck %s --check-prefix TRAP
 
+// RUN: clang %s -S -fsanitize=kcfi -emit-llvm -o - | \
+// RUN:   FileCheck %s --check-prefix TRAP
+
+
 // TRAP: call void @llvm.debugtrap()
 // TRAP-NEXT: unreachable
 // RECOVER: [[VAR1:@[0-9]+]] = private constant {{.*}}c"{{.*}}/recover_kcfi.c\00"

@@ -749,6 +749,15 @@ void MipsSEFrameLowering::emitEpilogue(MachineFunction &MF,
 
   // Adjust stack.
   TII.adjustStackPtr(SP, StackSize, MBB, MBBI);
+
+  // emit ".cfi_def_cfa_offset StackSize"
+  MCSymbol *FrameLabel = MF.getContext().createTempSymbol();
+  unsigned CFIIndex =
+    MF.addFrameInst(MCCFIInstruction::cfiDefCfaOffset(FrameLabel, 0));
+  BuildMI(MBB, MBBI, DL, TII.get(TargetOpcode::CFI_INSTRUCTION))
+    .addCFIIndex(CFIIndex)
+    .setMIFlags(MachineInstr::FrameSetup);
+
 }
 
 void MipsSEFrameLowering::emitInterruptEpilogueStub(

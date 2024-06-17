@@ -121,6 +121,7 @@ public:
   bool useIPRA() const override {
     return true;
   }
+  void registerPassBuilderCallbacks(PassBuilder &PB) override;
 };
 
 } // end namespace llvm

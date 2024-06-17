@@ -1008,6 +1008,16 @@ bool MipsSEDAGToDAGISel::trySelect(SDNode *Node) {
 
       return true;
     }
+    case Intrinsic::mips_sadd_trap_on_overflow:
+    case Intrinsic::mips_ssub_trap_on_overflow:
+      CurDAG->SelectNodeTo(
+          Node,
+          IntrinsicOpcode == Intrinsic::mips_sadd_trap_on_overflow
+              ? Mips::ADD_NM
+              : Mips::SUB_NM,
+          Node->getValueType(0), MVT::Other,
+          {Node->getOperand(2), Node->getOperand(3), Node->getOperand(0)});
+      return true;
     }
     break;
   }

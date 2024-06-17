@@ -1786,4 +1786,11 @@ def int_mips_hide: Intrinsic<[llvm_any_ty], [LLVMMatchType<0>], [IntrNoMem]>;
 def int_mips_condtrap: Intrinsic<[], [llvm_i32_ty, llvm_i8_ty],
                               [IntrInaccessibleMemOnly, IntrWillReturn, ImmArg<ArgIndex<1>>]>;
 
+def int_mips_sadd_trap_on_overflow : Intrinsic<[llvm_anyint_ty],
+                                            [LLVMMatchType<0>, LLVMMatchType<0>],
+                                            [IntrNoMem, IntrHasSideEffects, Commutative]>;
+def int_mips_ssub_trap_on_overflow : Intrinsic<[llvm_anyint_ty],
+                                            [LLVMMatchType<0>, LLVMMatchType<0>],
+                                            [IntrNoMem, IntrHasSideEffects]>;
+
 }

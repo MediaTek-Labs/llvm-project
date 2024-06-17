@@ -37,14 +37,6 @@ static cl::opt<bool> DisableCodeGenPrepare(
   "disable-nmips-codegen-prepare", cl::Hidden, cl::init(false),
   cl::desc("Disable nanoMIPS CodeGenPrepare"));
 
-static cl::opt<bool> DisableCondtrap(
-  "disable-nmips-condtrap", cl::Hidden, cl::init(true),
-  cl::desc("Disable nanoMIPS CodeGenPrepare"));
-
-extern cl::opt<int> NMDebugTrapCode;
-
-extern cl::opt<int> NMUBSanTrapCode;
-
 STATISTIC(NumGEPSplit, "Number of GEP instructions split");
 
 namespace {
@@ -63,10 +55,7 @@ public:
   StringRef getPassName() const override { return PASS_NAME; }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
-    //TODO(draganm) Make this conditional on ubsan trap presence
-    if (DisableCondtrap) {
-      AU.setPreservesCFG();
-    }
+    AU.setPreservesCFG();
   }
 
   bool visitInstruction(Instruction &I) { return false; }
@@ -137,53 +126,6 @@ bool NanoMipsCodeGenPrepare::runOnFunction(Function &F) {
     return false;
 
   bool MadeChange = false;
-
-  if (!DisableCondtrap) {
-    SmallVector<IntrinsicInst *, 4> Traps;
-    for (auto &BB : F) {
-      if (auto *II = dyn_cast<IntrinsicInst>(BB.getFirstNonPHIOrDbg())) {
-        Intrinsic::ID ID = II->getIntrinsicID();
-        if (ID == Intrinsic::ubsantrap || ID == Intrinsic::debugtrap) {
-          Traps.push_back(II);
-        }
-      }
-    }
-
-    for (auto TI : Traps) {
-      for (auto BB :
-           llvm::make_early_inc_range(predecessors(TI->getParent()))) {
-        BranchInst *BI = dyn_cast<BranchInst>(BB->getTerminator());
-        if (!BI || !BI->isConditional())
-          continue;
-
-        bool IsTrue = BI->getSuccessor(0) == TI->getParent();
-        TI->getParent()->removePredecessor(BB);
-
-        auto Cond = BI->getCondition();
-
-        if (!IsTrue) {
-          Cond = BinaryOperator::CreateXor(
-              Cond, ConstantInt::getTrue(Cond->getContext()), "", BI);
-        }
-
-        Cond = CastInst::CreateZExtOrBitCast(
-            Cond, Type::getInt32Ty(Cond->getContext()), "", BI);
-
-        Value *Args[2] = {
-            Cond, ConstantInt::get(Type::getInt8Ty(Cond->getContext()),
-                                   (TI->getIntrinsicID() == Intrinsic::debugtrap
-                                        ? NMDebugTrapCode
-                                        : NMUBSanTrapCode) &
-                                       maskTrailingOnes<uint32_t>(5))};
-        CallInst::Create(
-            Intrinsic::getDeclaration(F.getParent(), Intrinsic::mips_condtrap),
-            Args, "", BI);
-        BranchInst::Create(BI->getSuccessor(IsTrue), BI);
-        BI->eraseFromParent();
-        MadeChange = true;
-      }
-    }
-  }
 
   for (auto &BB : F) {
     GVMap.clear();

@@ -2,6 +2,7 @@
 // section in XCOFF yet.
 // UNSUPPORTED: target={{.*}}-aix{{.*}}
 
+// REQUIRES: object-emission
 // RUN: rm -rf %t && mkdir %t
 // RUN: cp %S/Inputs/modules-pch/* %t
 

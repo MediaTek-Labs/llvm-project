@@ -64,6 +64,13 @@ add_llvm_target(MipsCodeGen
   MipsTargetTransformInfo.cpp
   MicroMipsSizeReduction.cpp
   MipsMulMulBugPass.cpp
+  NanoMipsCompressJumpTables.cpp
+  NanoMipsLoadStoreOptimizer.cpp
+  NanoMipsMoveOptimizer.cpp
+  NanoMipsRegisterReAllocation.cpp
+  NanoMipsRedundantCopyElimination.cpp
+  NanoMipsTargetTransformInfo.cpp
+  NanoMipsCodeGenPrepare.cpp
 
   LINK_COMPONENTS
   Analysis
@@ -78,6 +85,7 @@ add_llvm_target(MipsCodeGen
   Target
   TargetParser
   GlobalISel
+  Scalar
 
   ADD_TO_COMPONENT
   Mips

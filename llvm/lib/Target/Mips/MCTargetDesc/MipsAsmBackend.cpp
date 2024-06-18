@@ -210,6 +210,85 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value,
       return 0;
     }
     break;
+  case Mips::fixup_NANOMIPS_PC25_S1:
+    // Forcing a signed division because Value can be negative.
+    Value = (int64_t)Value / 2;
+    // We now check if Value can be encoded as a 25-bit signed immediate.
+    if (!isInt<25>(Value)) {
+      Ctx.reportError(Fixup.getLoc(), "out of range PC25 fixup");
+      return 0;
+    }
+    break;
+  case Mips::fixup_NANOMIPS_PC21_S1:
+    // Forcing a signed division because Value can be negative.
+    Value = (int64_t)Value / 2;
+    // We now check if Value can be encoded as a 21-bit signed immediate.
+    if (!isInt<21>(Value)) {
+      Ctx.reportError(Fixup.getLoc(), "out of range PC21 fixup");
+      return 0;
+    }
+    break;
+  case Mips::fixup_NANOMIPS_PC14_S1:
+    // Forcing a signed division because Value can be negative.
+    Value = (int64_t)Value / 2;
+    // We now check if Value can be encoded as a 14-bit signed immediate.
+    if (!isInt<14>(Value)) {
+      Ctx.reportError(Fixup.getLoc(), "out of range PC14 fixup");
+      return 0;
+    }
+    break;
+  case Mips::fixup_NANOMIPS_PC11_S1:
+    // Forcing a signed division because Value can be negative.
+    Value = (int64_t)Value / 2;
+    // We now check if Value can be encoded as a 11-bit signed immediate.
+    if (!isInt<11>(Value)) {
+      Ctx.reportError(Fixup.getLoc(), "out of range PC11 fixup");
+      return 0;
+    }
+    break;
+  case Mips::fixup_NANOMIPS_PC10_S1:
+    // Forcing a signed division because Value can be negative.
+    Value = (int64_t)Value / 2;
+    // We now check if Value can be encoded as a 10-bit signed immediate.
+    if (!isInt<10>(Value)) {
+      Ctx.reportError(Fixup.getLoc(), "out of range PC10 fixup");
+      return 0;
+    }
+    break;
+  case Mips::fixup_NANOMIPS_PC7_S1:
+    // Forcing a signed division because Value can be negative.
+    Value = (int64_t)Value / 2;
+    // We now check if Value can be encoded as a 7-bit signed immediate.
+    if (!isInt<7>(Value)) {
+      Ctx.reportError(Fixup.getLoc(), "out of range PC7 fixup");
+      return 0;
+    }
+    break;
+  case Mips::fixup_NANOMIPS_PC4_S1:
+    // Needs to be encoded as non-zero, per the ISA.
+    // Force a value of 0xf (all-ones), if necessary.
+    if (Value == 0)
+      Value = 0xf;
+    else
+      Value = Value / 2;
+    if (!isUInt<4>(Value)) {
+      Ctx.reportError(Fixup.getLoc(), "out of range PC4 fixup");
+      return 0;
+    }
+    break;
+  case Mips::fixup_NANOMIPS_HI20:
+  case Mips::fixup_NANOMIPS_GPREL_HI20:
+  case Mips::fixup_NANOMIPS_PCHI20:
+  case Mips::fixup_NANOMIPS_GOTPC_HI20:
+    // nanoMIPS uses a 20-bit high part to construct 32-bit values
+    Value = (Value >> 12) & 0xfffff;
+    break;
+  case Mips::fixup_NANOMIPS_LO12:
+  case Mips::fixup_NANOMIPS_GPREL_LO12:
+  case Mips::fixup_NANOMIPS_GOT_LO12:
+    // 12-bit low part of a 32-bit value.
+    Value = Value & 0xfff;
+    break;
   }
 
   return Value;
@@ -222,11 +301,14 @@ MipsAsmBackend::createObjectTargetWriter() const {
 
 // Little-endian fixup data byte ordering:
 //   mips32r2:   a | b | x | x
-//   microMIPS:  x | x | a | b
+//   microMIPS/nanoMIPS:  x | x | a | b
 
 static bool needsMMLEByteOrder(unsigned Kind) {
   return Kind != Mips::fixup_MICROMIPS_PC10_S1 &&
          Kind >= Mips::fixup_MICROMIPS_26_S1 &&
+         Kind != Mips::fixup_NANOMIPS_PC4_S1 &&
+         Kind != Mips::fixup_NANOMIPS_PC7_S1 &&
+         Kind != Mips::fixup_NANOMIPS_PC10_S1 &&
          Kind < Mips::LastTargetFixupKind;
 }
 
@@ -263,6 +345,9 @@ void MipsAsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
   case FK_Data_2:
   case Mips::fixup_Mips_16:
   case Mips::fixup_MICROMIPS_PC10_S1:
+  case Mips::fixup_NANOMIPS_PC4_S1:
+  case Mips::fixup_NANOMIPS_PC7_S1:
+  case Mips::fixup_NANOMIPS_PC10_S1:
     FullSize = 2;
     break;
   case FK_Data_8:
@@ -348,6 +433,20 @@ std::optional<MCFixupKind> MipsAsmBackend::getFixupKind(StringRef Name) const {
             (MCFixupKind)Mips::fixup_MICROMIPS_TLS_TPREL_LO16)
       .Case("R_MIPS_JALR", (MCFixupKind)Mips::fixup_Mips_JALR)
       .Case("R_MICROMIPS_JALR", (MCFixupKind)Mips::fixup_MICROMIPS_JALR)
+      .Case("R_NANOMIPS_ALIGN", (MCFixupKind)Mips::fixup_NANOMIPS_ALIGN)
+      .Case("R_NANOMIPS_FILL", (MCFixupKind)Mips::fixup_NANOMIPS_FILL)
+      .Case("R_NANOMIPS_MAX", (MCFixupKind)Mips::fixup_NANOMIPS_MAX)
+      .Case("R_NANOMIPS_INSN32", (MCFixupKind)Mips::fixup_NANOMIPS_INSN32)
+      .Case("R_NANOMIPS_FIXED", (MCFixupKind)Mips::fixup_NANOMIPS_FIXED)
+      // FIXME: Unsupported
+      // .Case("R_NANOMIPS_RELAX", (MCFixupKind)Mips::fixup_NANOMIPS_RELAX)
+      // .Case("R_NANOMIPS_NORELAX", (MCFixupKind)Mips::fixup_NANOMIPS_NORELAX)
+      .Case("R_NANOMIPS_SAVERESTORE", (MCFixupKind)Mips::fixup_NANOMIPS_SAVERESTORE)
+      .Case("R_NANOMIPS_INSN16", (MCFixupKind)Mips::fixup_NANOMIPS_INSN16)
+      .Case("R_NANOMIPS_JALR16", (MCFixupKind)Mips::fixup_NANOMIPS_JALR16)
+      .Case("R_NANOMIPS_JALR32", (MCFixupKind)Mips::fixup_NANOMIPS_JALR32)
+      .Case("R_NANOMIPS_NOTRAMP", (MCFixupKind)Mips::fixup_NANOMIPS_NOTRAMP)
+      .Case("R_NANOMIPS_JUMPTABLE_LOAD", (MCFixupKind)Mips::fixup_NANOMIPS_JUMPTABLE_LOAD)
       .Default(MCAsmBackend::getFixupKind(Name));
 }
 
@@ -427,7 +526,81 @@ getFixupKindInfo(MCFixupKind Kind) const {
     { "fixup_Mips_SUB",                  0,     64,   0 },
     { "fixup_MICROMIPS_SUB",             0,     64,   0 },
     { "fixup_Mips_JALR",                 0,     32,   0 },
-    { "fixup_MICROMIPS_JALR",            0,     32,   0 }
+    { "fixup_MICROMIPS_JALR",            0,     32,   0 },
+    { "fixup_NANOMIPS_NONE",            0,     32,   0 },
+    { "fixup_NANOMIPS_32",	0,	32,	0 },
+    { "fixup_NANOMIPS_64",	0,	64,	0 },
+    { "fixup_NANOMIPS_NEG",	0,	32,	0 },
+    { "fixup_NANOMIPS_ASHIFTR_1",	0,	32,	0 },
+    { "fixup_NANOMIPS_UNSIGNED_8",	0,	8,	0 },
+    { "fixup_NANOMIPS_SIGNED_8",	0,	8,	0 },
+    { "fixup_NANOMIPS_UNSIGNED_16",	0,	16,	0 },
+    { "fixup_NANOMIPS_SIGNED_16",	0,	16,	0 },
+    { "fixup_NANOMIPS_RELATIVE",	0,	32,	0 },
+    { "fixup_NANOMIPS_GLOBAL",	0,	32,	0 },
+    { "fixup_NANOMIPS_JUMP_SLOT",	0,	32,	0 },
+    { "fixup_NANOMIPS_IRELATIVE",	0,	32,	0 },
+    { "fixup_NANOMIPS_PC25_S1",	0,	25,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_PC21_S1",	0,	21,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_PC14_S1",	0,	14,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_PC11_S1",	0,	11,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_PC10_S1",	0,	10,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_PC7_S1",	0,	7,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_PC4_S1",	0,	4,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_GPREL19_S2",	0,	19,	0 },
+    { "fixup_NANOMIPS_GPREL18_S3",	0,	18,	0 },
+    { "fixup_NANOMIPS_GPREL18",	0,	18,	0 },
+    { "fixup_NANOMIPS_GPREL17_S1",	0,	17,	0 },
+    { "fixup_NANOMIPS_GPREL16_S2",	0,	16,	0 },
+    { "fixup_NANOMIPS_GPREL7_S2",	0,	7,	0 },
+    { "fixup_NANOMIPS_GPREL_HI20",	20,	32,	0 },
+    { "fixup_NANOMIPS_PCHI20",	0,	20,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_HI20",	0,	20,	0 },
+    { "fixup_NANOMIPS_LO12",	0,	12,	0 },
+    { "fixup_NANOMIPS_GPREL_I32",	0,	32,	0 },
+    { "fixup_NANOMIPS_PC_I32",	0,	32,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_I32",	0,	32,	0 },
+    { "fixup_NANOMIPS_GOT_DISP",	0,	32,	0 },
+    { "fixup_NANOMIPS_GOTPC_I32",	0,	32,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_GOTPC_HI20",	0,	32,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_GOT_LO12",	0,	32,	0 },
+    { "fixup_NANOMIPS_GOT_CALL",	0,	32,	0 },
+    { "fixup_NANOMIPS_GOT_PAGE",	0,	32,	0 },
+    { "fixup_NANOMIPS_GOT_OFST",	0,	32,	0 },
+    { "fixup_NANOMIPS_LO4_S2",		0,	4,	0 },
+    { "fixup_NANOMIPS_RESERVED1",	0,	32,	0 },
+    { "fixup_NANOMIPS_GPREL_LO12",	0,	12,	0 },
+    { "fixup_NANOMIPS_SCN_DISP",	0,	32,	0 },
+    { "fixup_NANOMIPS_COPY",	0,	32,	0 },
+    { "fixup_NANOMIPS_ALIGN",	0,	0,	0 },
+    { "fixup_NANOMIPS_FILL",	0,	0,	0 },
+    { "fixup_NANOMIPS_MAX",	0,	0,	0 },
+    { "fixup_NANOMIPS_INSN32",	0,	0,	0 },
+    { "fixup_NANOMIPS_FIXED",	0,	0,	0 },
+    { "fixup_NANOMIPS_NORELAX",	0,	0,	0 },
+    { "fixup_NANOMIPS_RELAX",	0,	0,	0 },
+    { "fixup_NANOMIPS_SAVERESTORE",	0,	0,	0 },
+    { "fixup_NANOMIPS_INSN16",	0,	0,	0 },
+    { "fixup_NANOMIPS_JALR32",	0,	32,	0 },
+    { "fixup_NANOMIPS_JALR16",	0,	32,	0 },
+    { "fixup_NANOMIPS_JUMPTABLE_LOAD",	0,	32,	MCFixupKindInfo::FKF_IsTarget },
+    { "fixup_NANOMIPS_FRAME_REG",	0,	32,	0 },
+    { "fixup_NANOMIPS_NOTRAMP",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_DTPMOD",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_DTPREL",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_TPREL",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_GD",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_GD_I32",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_LD",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_LD_I32",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_DTPREL12",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_DTPREL16",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_DTPREL_I32",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_GOTTPREL",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_GOTTPREL_PC_I32",	0,	32,	MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_NANOMIPS_TLS_TPREL12",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_TPREL16",	0,	32,	0 },
+    { "fixup_NANOMIPS_TLS_TPREL_I32",	0,	32,	0 },
   };
   static_assert(std::size(LittleEndianInfos) == Mips::NumTargetFixupKinds,
                 "Not all MIPS little endian fixup kinds added!");
@@ -508,7 +681,8 @@ getFixupKindInfo(MCFixupKind Kind) const {
     { "fixup_Mips_JALR",                  0,     32,   0 },
     { "fixup_MICROMIPS_JALR",             0,     32,   0 }
   };
-  static_assert(std::size(BigEndianInfos) == Mips::NumTargetFixupKinds,
+  static_assert(std::size(BigEndianInfos) ==
+		Mips::FirstNanoMipsFixupKind - FirstTargetFixupKind,
                 "Not all MIPS big endian fixup kinds added!");
 
   if (Kind >= FirstLiteralRelocationKind)
@@ -531,14 +705,29 @@ getFixupKindInfo(MCFixupKind Kind) const {
 /// \return - True on success.
 bool MipsAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
                                   const MCSubtargetInfo *STI) const {
-  // Check for a less than instruction size number of bytes
-  // FIXME: 16 bit instructions are not handled yet here.
-  // We shouldn't be using a hard coded number for instruction size.
+  if (TheTriple.isNanoMips()) {
+    const char nop16[] = {'\x08', '\x90'};
+    const char nop32[] = {0, '\x80', 0, '\xc0'};
+    // Emit one 16-bit NOP, followed by as many 32-bit NOPs
+    // as required for desired alignment.
+    if (Count % 4)
+      OS.write(nop16, 2);
+    Count -= (Count % 4);
+    while (Count > 0) {
+      OS.write(nop32, 4);
+      Count -= 4;
+    }
+  }
+  else {
+    // Check for a less than instruction size number of bytes
+    // FIXME: 16 bit instructions are not handled yet here.
+    // We shouldn't be using a hard coded number for instruction size.
 
-  // If the count is not 4-byte aligned, we must be writing data into the text
-  // section (otherwise we have unaligned instructions, and thus have far
-  // bigger problems), so just write zeros instead.
-  OS.write_zeros(Count);
+    // If the count is not 4-byte aligned, we must be writing data into the text
+    // section (otherwise we have unaligned instructions, and thus have far
+    // bigger problems), so just write zeros instead.
+    OS.write_zeros(Count);
+  }
   return true;
 }
 
@@ -583,6 +772,35 @@ bool MipsAsmBackend::shouldForceRelocation(const MCAssembler &Asm,
   case Mips::fixup_MICROMIPS_TLS_TPREL_HI16:
   case Mips::fixup_MICROMIPS_TLS_TPREL_LO16:
   case Mips::fixup_MICROMIPS_JALR:
+  case Mips::fixup_NANOMIPS_PC_I32:
+  case Mips::fixup_NANOMIPS_PC25_S1:
+  case Mips::fixup_NANOMIPS_PC21_S1:
+  case Mips::fixup_NANOMIPS_PC14_S1:
+  case Mips::fixup_NANOMIPS_PC11_S1:
+  case Mips::fixup_NANOMIPS_PC10_S1:
+  case Mips::fixup_NANOMIPS_PC7_S1:
+  case Mips::fixup_NANOMIPS_PC4_S1:
+  case Mips::fixup_NANOMIPS_PCHI20:
+  case Mips::fixup_NANOMIPS_GOTPC_I32:
+  case Mips::fixup_NANOMIPS_GOTPC_HI20:
+  case Mips::fixup_NANOMIPS_TLS_GOTTPREL_PC_I32:
+  case Mips::fixup_NANOMIPS_COPY:
+  case Mips::fixup_NANOMIPS_ALIGN:
+  case Mips::fixup_NANOMIPS_FILL:
+  case Mips::fixup_NANOMIPS_MAX:
+  case Mips::fixup_NANOMIPS_INSN32:
+  case Mips::fixup_NANOMIPS_FIXED:
+  case Mips::fixup_NANOMIPS_NORELAX:
+  case Mips::fixup_NANOMIPS_SAVERESTORE:
+  case Mips::fixup_NANOMIPS_INSN16:
+  case Mips::fixup_NANOMIPS_JALR32:
+  case Mips::fixup_NANOMIPS_JALR16:
+  case Mips::fixup_NANOMIPS_NOTRAMP:
+  case Mips::fixup_NANOMIPS_ASHIFTR_1:
+  case Mips::fixup_NANOMIPS_UNSIGNED_16:
+  case Mips::fixup_NANOMIPS_UNSIGNED_8:
+  case Mips::fixup_NANOMIPS_SIGNED_16:
+  case Mips::fixup_NANOMIPS_SIGNED_8:
     return true;
   }
 }
@@ -593,6 +811,46 @@ bool MipsAsmBackend::isMicroMips(const MCSymbol *Sym) const {
       return true;
   }
   return false;
+}
+
+// We need to insert R_NANOMIPS_ALIGN relocation type to indicate the
+// position of Nops and the total bytes of the Nops have been inserted
+// when linker relaxation enabled.
+bool MipsAsmBackend::shouldInsertFixupForCodeAlign(MCAssembler &Asm,
+						   const MCAsmLayout &Layout,
+						   MCAlignFragment &AF) {
+  MCContext &Ctx = Asm.getContext();
+  // Insert the fixup only when alignment is greater than 2.
+  // FIXME: skip when linker relaxation is disabled.
+  if (!Ctx.getTargetTriple().isNanoMips() || AF.getAlignment() == 2)
+    return false;
+
+  const MCExpr *Dummy = MCConstantExpr::create(0, Ctx);
+  // Create fixup
+  MCFixup Fixup =
+      MCFixup::create(0, Dummy, MCFixupKind(Mips::fixup_NANOMIPS_ALIGN), SMLoc());
+
+  uint64_t FixedValue = 0;
+  MCValue NopBytes = MCValue::get(AF.getAlignment().value());
+
+  Asm.getWriter().recordRelocation(Asm, Layout, &AF, Fixup, NopBytes,
+                                   FixedValue);
+  return true;
+}
+
+bool MipsAsmBackend::evaluateTargetFixup(
+    const MCAssembler &Asm, const MCAsmLayout &Layout, const MCFixup &Fixup,
+    const MCFragment *DF, const MCValue &Target, uint64_t &Value,
+    bool &WasForced) {
+  switch (Fixup.getTargetKind()) {
+  default:
+    llvm_unreachable("Unexpected fixup kind!");
+  case Mips::fixup_NANOMIPS_JUMPTABLE_LOAD:
+    // Eat the fixup so it does not get emitted to output
+    break;
+  }
+
+  return true;
 }
 
 MCAsmBackend *llvm::createMipsAsmBackend(const Target &T,

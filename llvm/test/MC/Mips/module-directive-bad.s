@@ -1,5 +1,6 @@
 # RUN: not llvm-mc -triple mips-unknown-unknown %s 2>%t1
 # RUN: FileCheck %s < %t1
+# UNSUPPORTED: nanomips
 
     .set mips0
     .module fp=64

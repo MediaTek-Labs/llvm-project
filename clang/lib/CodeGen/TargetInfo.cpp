@@ -8009,6 +8009,8 @@ public:
   void computeInfo(CGFunctionInfo &FI) const override;
   Address EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
                     QualType Ty) const override;
+  Address EmitVAArgNanoMips(CodeGenFunction &CGF, Address VAListAddr,
+                            QualType Ty) const;
   ABIArgInfo extendType(QualType Ty) const;
 };
 
@@ -8180,6 +8182,12 @@ MipsABIInfo::classifyArgumentType(QualType Ty, uint64_t &Offset) const {
     if (TySize == 0)
       return ABIArgInfo::getIgnore();
 
+    bool IsNanoMips = getTarget().getTriple().isNanoMips();
+    if (TySize > 64 && IsNanoMips) {
+      Offset = OrigOffset + MinABIStackAlignInBytes;
+      return getNaturalAlignIndirect(Ty, false);
+    }
+
     if (CGCXXABI::RecordArgABI RAA = getRecordArgABI(Ty, getCXXABI())) {
       Offset = OrigOffset + MinABIStackAlignInBytes;
       return getNaturalAlignIndirect(Ty, RAA == CGCXXABI::RAA_DirectInMemory);
@@ -8268,7 +8276,17 @@ ABIArgInfo MipsABIInfo::classifyReturnType(QualType RetTy) const {
     return ABIArgInfo::getIgnore();
 
   if (isAggregateTypeForABI(RetTy) || RetTy->isVectorType()) {
-    if (Size <= 128) {
+    bool IsNanoMips = getTarget().getTriple().isNanoMips();
+    if (IsNanoMips && Size <= 64) {
+      if (RetTy->isAnyComplexType())
+        return ABIArgInfo::getDirect();
+
+      auto RetInfo = ABIArgInfo::getDirect(returnAggregateInRegs(RetTy, Size));
+      RetInfo.setInReg(true);
+      return RetInfo;
+    }
+
+    if (!IsNanoMips && Size <= 128) {
       if (RetTy->isAnyComplexType())
         return ABIArgInfo::getDirect();
 
@@ -8282,7 +8300,6 @@ ABIArgInfo MipsABIInfo::classifyReturnType(QualType RetTy) const {
         return ArgInfo;
       }
     }
-
     return getNaturalAlignIndirect(RetTy);
   }
 
@@ -8319,8 +8336,141 @@ void MipsABIInfo::computeInfo(CGFunctionInfo &FI) const {
     I.info = classifyArgumentType(I.type, Offset);
 }
 
+
+Address MipsABIInfo::EmitVAArgNanoMips(CodeGenFunction &CGF,
+                                       Address VAListAddr,
+                                       QualType OrigTy) const {
+  QualType Ty = OrigTy.getCanonicalType();
+  llvm::Type *AddressTy = CGF.ConvertTypeForMem(OrigTy)->getPointerTo();
+  CharUnits Align = CGF.getContext().getTypeAlignInChars(Ty);
+  CharUnits Size = CGF.getContext().getTypeSizeInChars(Ty);
+  // Types larger than 8 bytes are passed by reference.
+  bool IsIndirect = (Size.getQuantity() > 8) ? true : false;
+  if (IsIndirect) {
+    Align = Size = CharUnits::fromQuantity(4);
+    AddressTy = AddressTy->getPointerTo();
+  }
+  uint64_t OSize, RSize;
+  CGBuilderTy &Builder = CGF.Builder;
+  CharUnits RegWidth = CharUnits::fromQuantity(4);
+  uint64_t RegBits = 32;
+  llvm::Type *PtrArithTy = llvm::Type::getInt32Ty(getVMContext());
+
+  // Control flow structure we want:
+  // if (offset > 0) {
+  //   OffsetGtZeroBB:
+  //   // Original offset is within GPR area.
+  //   // Update offset and align.
+  //   if (new_off >= 0) {
+  //     // Updated offset is in the GPR area. Use it.
+  //     // (this is the normal expected case)
+  //     OffsetGeZeroBB: // -> ContinueBB
+  //     goto ContinueBB;
+  //   }
+  // }
+  // OverflowBB:
+  // // Use pointer in overflow area
+  // // update pointer
+  // ContinueBB:
+  //
+
+  // We only handle GPRs and not FPRs since NanoMips has no hardware FP support
+  Address GPRTopAddr = Builder.CreateStructGEP(VAListAddr, 1, "__gpr_top");
+  llvm::Value *GPRTop = Builder.CreateLoad(GPRTopAddr, "gpr_top");
+
+  Address OffsetAddr = Builder.CreateStructGEP(VAListAddr, 3, "__gpr_offset");
+  llvm::Value *Offset = Builder.CreateLoad(OffsetAddr, "off");
+  llvm::Type *OffsetTy = Offset->getType();
+  Offset = Builder.CreateSExtOrBitCast(Offset, PtrArithTy);
+
+  Size = Size.alignTo(RegWidth);
+  OSize = RSize = Size.getQuantity();
+
+  llvm::BasicBlock *OffsetGtZeroBB = CGF.createBasicBlock("va_arg_offset_ok");
+  llvm::BasicBlock *ContinueBB = CGF.createBasicBlock("va_arg_continue");
+  llvm::BasicBlock *OverflowBB = CGF.createBasicBlock("va_arg_use_overflow");
+  llvm::BasicBlock *OffsetGEZeroBB =
+    CGF.createBasicBlock("va_arg_use_gpr_area");
+
+  // If offset > 0 (else use overflow area)
+  llvm::Value *CC = Builder.CreateICmpSGT(Offset, Builder.getIntN(RegBits, 0));
+  Builder.CreateCondBr(CC, OffsetGtZeroBB, OverflowBB);
+
+  CGF.EmitBlock(OffsetGtZeroBB);
+  // Align if necessary before moving offset down
+  if (Align > RegWidth) {
+    Offset = Builder.CreateAnd(Offset, Builder.getIntN(RegBits,
+                                                       -Align.getQuantity()));
+  }
+  llvm::Value *CurOff = Offset;
+
+  // Post-decrement offset
+  Offset = Builder.CreateSub(Offset, Builder.getIntN(RegBits, RSize));
+
+  // Store offset back to va_list structure
+  Builder.CreateStore(Builder.CreateTrunc(Offset, OffsetTy), OffsetAddr);
+
+  // If offset >= 0 use normal GPR area, else use overflow area
+  Builder.CreateCondBr(Builder.CreateICmpSGE(Offset,
+                                             Builder.getIntN(RegBits, 0)),
+                       OffsetGEZeroBB, OverflowBB);
+
+  CGF.EmitBlock(OffsetGEZeroBB);
+  // Subtract offset from the top of the GPR area
+  llvm::Value *NegativeOff = Builder.CreateSub(Builder.getIntN(RegBits, 0),
+                                               CurOff);
+  llvm::Value *Addr = Builder.CreateGEP(GPRTop->getType()->getScalarType(),
+                                        GPRTop, NegativeOff);
+  Addr = Builder.CreatePointerCast(Addr, AddressTy);
+  Builder.CreateBr(ContinueBB);
+
+  CGF.EmitBlock(OverflowBB);
+  // Find address in the overflow area
+  Address OverflowPtrAddress = Builder.CreateStructGEP(VAListAddr, 0,
+                                                       "__overflow_argptr");
+  llvm::Value *Ovfl = Builder.CreateLoad(OverflowPtrAddress);
+  llvm::Type *OvflTy = Ovfl->getType();
+  Ovfl = Builder.CreateBitOrPointerCast(Ovfl, PtrArithTy);
+  if (Align > RegWidth) {
+    // Type has alignment requirements, so align to that.
+    Ovfl = Builder.CreateAdd(Ovfl,
+                             Builder.getIntN(RegBits,
+                                             RegWidth.getQuantity() * 2 -1));
+    Ovfl = Builder.CreateAnd(Ovfl,
+                             Builder.getIntN(RegBits,
+                                             -2 * RegWidth.getQuantity()));
+  }
+  llvm::Value *AddrOverflow = Builder.CreateBitOrPointerCast(Ovfl, AddressTy);
+
+  // Increment overflow area pointer
+  Ovfl = Builder.CreateAdd(Ovfl, Builder.getIntN(RegBits, OSize));
+  Builder.CreateStore(Builder.CreateBitOrPointerCast(Ovfl, OvflTy),
+                      OverflowPtrAddress);
+
+  CGF.EmitBlock(ContinueBB);
+  if (!IsIndirect) {
+    // Create a phi for address to return
+    Address ArgAddress = emitMergePHI(
+        CGF, Address(Addr, CGF.ConvertTypeForMem(OrigTy), Align),
+        OffsetGEZeroBB,
+        Address(AddrOverflow, CGF.ConvertTypeForMem(OrigTy), Align), OverflowBB,
+        "addr");
+    return ArgAddress;
+  }
+  Address ArgAddress =
+      emitMergePHI(CGF, Address(Addr, AddressTy, Align), OffsetGEZeroBB,
+                   Address(AddrOverflow, AddressTy, Align), OverflowBB, "addr");
+  ArgAddress =
+      Address(CGF.Builder.CreateLoad(ArgAddress), Addr->getType(), Align);
+
+  return ArgAddress;
+}
+
 Address MipsABIInfo::EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
                                QualType OrigTy) const {
+  if (getTarget().getTriple().isNanoMips())
+    return EmitVAArgNanoMips(CGF, VAListAddr, OrigTy);
+
   QualType Ty = OrigTy;
 
   // Integer arguments are promoted to 32-bit on O32 and 64-bit on N32/N64.
@@ -12208,6 +12358,7 @@ const TargetCodeGenInfo &CodeGenModule::getTargetCodeGenInfo() {
     return SetCGInfo(new M68kTargetCodeGenInfo(Types));
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
+  case llvm::Triple::nanomips:
     if (Triple.getOS() == llvm::Triple::NaCl)
       return SetCGInfo(new PNaClTargetCodeGenInfo(Types));
     return SetCGInfo(new MIPSTargetCodeGenInfo(Types, true));

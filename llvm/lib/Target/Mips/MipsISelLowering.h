@@ -78,6 +78,11 @@ class TargetRegisterClass;
       // No relation with Mips Lo register
       Lo,
 
+      // Get all bits from 32-bit address.
+      FullAddr,
+
+      FullAddrAdd,
+
       // Get the High 16 bits from a 32 bit immediate for accessing the GOT.
       GotHi,
 
@@ -244,6 +249,9 @@ class TargetRegisterClass;
       VEXTRACT_SEXT_ELT,
       VEXTRACT_ZEXT_ELT,
 
+      // nanoMIPS br_jt.
+      BR_JT,
+
       // Load/Store Left/Right nodes.
       LWL = ISD::FIRST_TARGET_MEMORY_OPCODE,
       LWR,
@@ -252,7 +260,13 @@ class TargetRegisterClass;
       LDL,
       LDR,
       SDL,
-      SDR
+      SDR,
+
+      // Unaligned nanoMIPS loads/stores.
+      UALW,
+      UALH,
+      UASW,
+      UASH
     };
 
   } // ene namespace MipsISD
@@ -353,14 +367,14 @@ class TargetRegisterClass;
     /// exception address on entry to an EH pad.
     Register
     getExceptionPointerRegister(const Constant *PersonalityFn) const override {
-      return ABI.IsN64() ? Mips::A0_64 : Mips::A0;
+      return ABI.IsN64() ? Mips::A0_64 : ABI.IsP32() ? Mips::A3_NM : Mips::A0;
     }
 
     /// If a physical register, this returns the register that receives the
     /// exception typeid on entry to a landing pad.
     Register
     getExceptionSelectorRegister(const Constant *PersonalityFn) const override {
-      return ABI.IsN64() ? Mips::A1_64 : Mips::A1;
+      return ABI.IsN64() ? Mips::A1_64 : ABI.IsP32() ? Mips::A2_NM : Mips::A1;
     }
 
     bool isJumpTableRelative() const override {
@@ -439,6 +453,13 @@ class TargetRegisterClass;
                          DAG.getNode(MipsISD::Lo, DL, Ty, Lo));
    }
 
+   template <class NodeTy>
+   SDValue getNMAddrNonPIC(NodeTy *N, const SDLoc &DL, EVT Ty,
+                           SelectionDAG &DAG) const {
+      SDValue Addr = getTargetNode(N, Ty, DAG, MipsII::MO_NO_FLAG);
+      return DAG.getNode(MipsISD::FullAddr, DL, Ty, Addr);
+   }
+
    // This method creates the following nodes, which are necessary for
    // computing a symbol's address in non-PIC mode for N64.
    //
@@ -469,19 +490,18 @@ class TargetRegisterClass;
                          DAG.getNode(MipsISD::Lo, DL, Ty, Lo));
    }
 
-    // This method creates the following nodes, which are necessary for
-    // computing a symbol's address using gp-relative addressing:
-    //
-    // (add $gp, %gp_rel(sym))
-    template <class NodeTy>
-    SDValue getAddrGPRel(NodeTy *N, const SDLoc &DL, EVT Ty,
-                         SelectionDAG &DAG, bool IsN64) const {
-      SDValue GPRel = getTargetNode(N, Ty, DAG, MipsII::MO_GPREL);
-      return DAG.getNode(
-          ISD::ADD, DL, Ty,
-          DAG.getRegister(IsN64 ? Mips::GP_64 : Mips::GP, Ty),
-          DAG.getNode(MipsISD::GPRel, DL, DAG.getVTList(Ty), GPRel));
-    }
+   // This method creates the following nodes, which are necessary for
+   // computing a symbol's address using gp-relative addressing:
+   //
+   // (add $gp, %gp_rel(sym))
+   template <class NodeTy>
+   SDValue getAddrGPRel(NodeTy *N, const SDLoc &DL, EVT Ty,
+                        SelectionDAG &DAG) const {
+     SDValue GPRel = getTargetNode(N, Ty, DAG, MipsII::MO_GPREL);
+     return DAG.getNode(
+         ISD::ADD, DL, Ty, DAG.getRegister(ABI.GetGlobalPtr(), Ty),
+         DAG.getNode(MipsISD::GPRel, DL, DAG.getVTList(Ty), GPRel));
+   }
 
     /// This function fills Ops, which is the list of operands that will later
     /// be used when a function call node is created. It also generates
@@ -537,11 +557,14 @@ class TargetRegisterClass;
     SDValue lowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerBlockAddress(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const;
+    SDValue lowerBR_JT(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerJumpTable(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerSELECT(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerSETCC(SDValue Op, SelectionDAG &DAG) const;
+    SDValue lowerNM_VASTART(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerVASTART(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerVAARG(SDValue Op, SelectionDAG &DAG) const;
+    SDValue lowerVACOPY(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerFCOPYSIGN(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerFABS(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerFABS32(SDValue Op, SelectionDAG &DAG,
@@ -557,6 +580,7 @@ class TargetRegisterClass;
                                  bool IsSRA) const;
     SDValue lowerEH_DWARF_CFA(SDValue Op, SelectionDAG &DAG) const;
     SDValue lowerFP_TO_SINT(SDValue Op, SelectionDAG &DAG) const;
+    SDValue lowerCTTZ(SDValue Op, SelectionDAG &DAG) const;
 
     /// isEligibleForTailCallOptimization - Check whether the call is eligible
     /// for tail call optimization.
@@ -678,6 +702,11 @@ class TargetRegisterClass;
     bool shouldInsertFencesForAtomic(const Instruction *I) const override {
       return true;
     }
+
+    ShiftLegalizationStrategy
+    preferredShiftLegalizationStrategy(SelectionDAG &DAG, SDNode *N,
+                                     unsigned ExpansionFactor) const override;
+    bool shouldConsiderGEPOffsetSplit() const override;
 
     /// Emit a sign-extension using sll/sra, seb, or seh appropriately.
     MachineBasicBlock *emitSignExtendToI32InReg(MachineInstr &MI,

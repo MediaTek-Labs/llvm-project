@@ -92,7 +92,11 @@ namespace MipsII {
     MO_CALL_LO16,
 
     /// Helper operand used to generate R_MIPS_JALR
-    MO_JALR
+    MO_JALR,
+
+    /// MO_PCREL_HI - Represents the high 20 bits of offset from the current pc
+    /// value to be used for the relocatable object file being produced.
+    MO_PCREL_HI
   };
 
   enum {
@@ -135,6 +139,18 @@ namespace MipsII {
     OPERAND_LAST_MIPS_MEM_IMM = OPERAND_MEM_SIMM9
   };
 }
+
+  namespace NanoMips {
+  enum OperandType : unsigned {
+    OPERAND_FIRST_NM_MEM_IMM = MipsII::OPERAND_LAST_MIPS_MEM_IMM+1,
+    OPERAND_NM_SPREL7 = OPERAND_FIRST_NM_MEM_IMM,
+    OPERAND_NM_GPREL9,
+    OPERAND_NM_GPREL18,
+    OPERAND_NM_GPREL21,
+    OPERAND_NM_SAVE_REGLIST,
+    OPERAND_LAST_NM_MEM_IMM = OPERAND_NM_SAVE_REGLIST
+  };
+  }
 }
 
 #endif

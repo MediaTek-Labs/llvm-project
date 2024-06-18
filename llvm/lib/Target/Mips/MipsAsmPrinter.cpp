@@ -58,6 +58,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
 #include <cassert>
 #include <cstdint>
 #include <map>
@@ -71,6 +72,56 @@ using namespace llvm;
 
 extern cl::opt<bool> EmitJalrReloc;
 
+void MipsAsmPrinter::emitJumpTableInfo() {
+  if (!Subtarget->hasNanoMips() || Subtarget->useAbsoluteJumpTables() ) {
+    AsmPrinter::emitJumpTableInfo();
+    return;
+  }
+
+  const MachineJumpTableInfo *MJTI = MF->getJumpTableInfo();
+  if (!MJTI)
+    return;
+
+  const std::vector<MachineJumpTableEntry> &JT = MJTI->getJumpTables();
+  if (JT.empty())
+    return;
+
+  const Function &F = MF->getFunction();
+  const TargetLoweringObjectFile &TLOF = getObjFileLowering();
+
+  MCSection *ReadOnlySection = TLOF.getSectionForJumpTable(F, TM);
+  OutStreamer->switchSection(ReadOnlySection);
+
+  auto MFI = MF->getInfo<MipsFunctionInfo>();
+  for (unsigned JTI = 0, e = JT.size(); JTI != e; ++JTI) {
+    const std::vector<MachineBasicBlock *> &JTBBs = JT[JTI].MBBs;
+
+    // If this jump table was deleted, ignore it.
+    if (JTBBs.empty())
+      continue;
+
+    unsigned EntrySize = MFI->getJumpTableEntrySize(JTI);
+    bool Signed = MFI->getJumpTableIsSigned(JTI);
+    emitJumpTableDir(*OutStreamer, EntrySize, JTBBs.size(), Signed);
+    emitAlignment(Align(std::max(2u, EntrySize)));
+    OutStreamer->emitLabel(GetJTISymbol(JTI));
+
+    MCSymbol *DiffLbl = MFI->getJumpTableSymbol(JTI);
+    for (auto *JTBB : JTBBs) {
+      const MCExpr *Value =
+          MCSymbolRefExpr::create(JTBB->getSymbol(), OutContext);
+      const MCExpr *DiffExpr = MCSymbolRefExpr::create(DiffLbl, OutContext);
+
+      // Each entry is:
+      //     .byte/.hword/...   (LBB - LBR) >> 1
+      Value = MCBinaryExpr::createSub(Value, DiffExpr, OutContext);
+      Value = MCBinaryExpr::createLShr(
+          Value, MCConstantExpr::create(1, OutContext), OutContext);
+      emitJumpTableEntry(*OutStreamer, EntrySize, Value, Signed);
+    }
+  }
+}
+
 MipsTargetStreamer &MipsAsmPrinter::getTargetStreamer() const {
   return static_cast<MipsTargetStreamer &>(*OutStreamer->getTargetStreamer());
 }
@@ -79,6 +130,7 @@ bool MipsAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
   Subtarget = &MF.getSubtarget<MipsSubtarget>();
 
   MipsFI = MF.getInfo<MipsFunctionInfo>();
+  MFI = MF.getInfo<MipsFunctionInfo>();
   if (Subtarget->inMips16Mode())
     for (const auto &I : MipsFI->StubsNeeded) {
       const char *Symbol = I.first;
@@ -129,7 +181,9 @@ void MipsAsmPrinter::emitPseudoIndirectBranch(MCStreamer &OutStreamer,
   } else if (Subtarget->inMicroMipsMode())
     // microMIPS should use (JR_MM $rs)
     TmpInst0.setOpcode(Mips::JR_MM);
-  else {
+  else if (Subtarget->hasNanoMips()) {
+    TmpInst0.setOpcode(Mips::JRC_NM);
+  } else {
     // Everything else should use (JR $rs)
     TmpInst0.setOpcode(Mips::JR);
   }
@@ -145,6 +199,96 @@ void MipsAsmPrinter::emitPseudoIndirectBranch(MCStreamer &OutStreamer,
   TmpInst0.addOperand(MCOp);
 
   EmitToStreamer(OutStreamer, TmpInst0);
+}
+
+void MipsAsmPrinter::emitJumpTableDest(MCStreamer &OutStreamer,
+                                       const MachineInstr *MI) {
+  Register DestReg = MI->getOperand(0).getReg();
+  Register TableReg = MI->getOperand(1).getReg();
+  Register EntryReg = MI->getOperand(2).getReg();
+  int JTIdx = MI->getOperand(3).getIndex();
+  unsigned Size = MFI->getJumpTableEntrySize(JTIdx);
+  unsigned Signed = MFI->getJumpTableIsSigned(JTIdx) ? 1 : 0;
+
+  // Mark each load instruction that loads from the table with a
+  // R_NANOMIPS_JUMPTABLE_LOAD relocation, referring to the start of the table.
+  MCSymbol *JTLabel = MF->getJTISymbol(JTIdx, OutContext);
+  MCSymbol *OffsetLabel = OutContext.createTempSymbol();
+  const MCExpr *OffsetExpr = MCSymbolRefExpr::create(OffsetLabel, OutContext);
+  const MCExpr *JTLabelExpr = MCSymbolRefExpr::create(JTLabel, OutContext);
+  OutStreamer.emitRelocDirective(*OffsetExpr, "R_NANOMIPS_JUMPTABLE_LOAD",
+                                 JTLabelExpr, SMLoc(),
+                                 *TM.getMCSubtargetInfo());
+  OutStreamer.emitLabel(OffsetLabel);
+
+  MCInst LoadI;
+  // Choose appropriate load instruction based on the entry size and signess.
+  switch (Size) {
+  case 1:
+    LoadI.setOpcode(Signed ? Mips::LBX_NM : Mips::LBUX_NM);
+    break;
+  case 2:
+    LoadI.setOpcode(Signed ? Mips::LHXS_NM : Mips::LHUXS_NM);
+    break;
+  case 4:
+    LoadI.setOpcode(Mips::LWXS_NM);
+    break;
+
+  default:
+    llvm_unreachable("unallowed jump table entry size");
+    break;
+  }
+
+  LoadI.addOperand(MCOperand::createReg(DestReg));
+  LoadI.addOperand(MCOperand::createReg(TableReg));
+  LoadI.addOperand(MCOperand::createReg(EntryReg));
+  EmitToStreamer(OutStreamer, LoadI);
+}
+
+// Each table starts with the following directive:
+//
+// .jumptable esize, nsize [, unsigned]
+//
+// esize: size of each element 8/16/32
+// nsize: number of elements in table
+// unsigned: optional token, assume signed if not specified.
+void MipsAsmPrinter::emitJumpTableDir(MCStreamer &OutStreamer,
+                                      unsigned int EntrySize,
+                                      unsigned int EntryNum, bool Signed) {
+  auto JTDir = Twine(".jumptable ");
+  OutStreamer.emitRawText(JTDir.concat(std::to_string(EntrySize))
+                              .concat(",")
+                              .concat(std::to_string(EntryNum))
+                              .concat(Signed ? "" : ",1"));
+}
+
+void MipsAsmPrinter::emitJumpTableEntry(MCStreamer &OutStreamer,
+                                      unsigned int EntrySize,
+                                      const MCExpr *Entry, bool Signed) {
+  static const char* const Directives[6] = {".byte ", ".sbyte ",
+                                            ".hword ", ".shword ",
+                                            ".word ", ".word "};
+
+  assert(EntrySize == 1 || EntrySize == 2 || EntrySize == 4);
+
+  SmallString<128> Str;
+  raw_svector_ostream OS(Str);
+  OS << Directives[(EntrySize / 2) * 2 + Signed];
+  Entry->print(OS, MAI);
+  OutStreamer.emitRawText(Str);
+}
+
+
+void MipsAsmPrinter::emitBrsc(MCStreamer &OutStreamer, const MachineInstr *MI) {
+  int JTIdx = MI->getOperand(1).getIndex();
+  int Size = MFI->getJumpTableEntrySize(JTIdx);
+  bool Signed = MFI->getJumpTableIsSigned(JTIdx);
+  MCSymbol *BRSCLabel = OutContext.createTempSymbol("BRSC");
+  MCInst TmpInst0;
+  MCInstLowering.Lower(MI, TmpInst0);
+  EmitToStreamer(OutStreamer, TmpInst0);
+  OutStreamer.emitLabel(BRSCLabel);
+  MFI->setJumpTableEntryInfo(JTIdx, Size, BRSCLabel, Signed);
 }
 
 // If there is an MO_JALR operand, insert:
@@ -178,6 +322,92 @@ static void emitDirectiveRelocJalr(const MachineInstr &MI,
       }
     }
   }
+}
+
+void MipsAsmPrinter::emitPseudoAndiNM(MCStreamer &OutStreamer,
+				      const MachineInstr *MI) {
+  MCInst Inst;
+  MCOperand Imm;
+  unsigned Mask;
+  const TargetRegisterClass *RC = MF->getSubtarget().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
+  Register Rt = MI->getOperand(0).getReg();
+  Register Rs;
+
+  Inst.addOperand(MCOperand::createReg(Rt));
+
+  if (MI->getNumOperands() == 3) {
+    Rs = MI->getOperand(1).getReg();
+    Inst.addOperand(MCOperand::createReg(Rs));
+    lowerOperand(MI->getOperand(2), Imm);
+  }
+  else {
+    Rs = Rt;
+    lowerOperand(MI->getOperand(1), Imm);
+  }
+
+  Mask = Imm.getImm();
+  if (RC->contains(Rt) && RC->contains(Rs)
+      && (Mask <= 11 || Mask == 0xff || Mask == 0xffff || Mask == 14 || Mask == 15)) {
+    Inst.addOperand(Imm);
+    Inst.setOpcode(Mips::ANDI16_NM);
+  }
+  else if (isUInt<12>(Mask)) {
+    Inst.addOperand(Imm);
+    Inst.setOpcode(Mips::ANDI_NM);
+  }
+  else if (Mask == 0xffff) {
+    // FIXME: add EXT_NM expansion for any contiguous mask pattern
+    Inst.addOperand(MCOperand::createImm(0));
+    Inst.addOperand(MCOperand::createImm(16));
+    Inst.setOpcode(Mips::EXT_NM);
+  }
+  EmitToStreamer(OutStreamer, Inst);
+}
+
+// FIXME: This is deliberately conservative for now, knowing that the
+// assembler will pick the most optimal form.
+void MipsAsmPrinter::emitLoadImmediateNM(MCStreamer &OutStreamer,
+					 const MachineInstr *MI) {
+  MCInst Inst;
+  MCOperand Imm;
+  const TargetRegisterClass *RC = MF->getSubtarget().getRegisterInfo()->getRegClass(Mips::GPRNM3RegClassID);
+  Register Rt = MI->getOperand(0).getReg();
+  lowerOperand(MI->getOperand(1), Imm);
+  int32_t ImmVal = Imm.getImm();
+
+  Inst.addOperand(MCOperand::createReg(Rt));
+  if (RC->contains(Rt) && ImmVal >= -1 && ImmVal <= 126)
+    Inst.setOpcode(Mips::LI16_NM);
+  else if (Rt != Mips::ZERO_NM && ImmVal > 0 && ImmVal <= 65535) {
+    Inst.setOpcode(Mips::ADDIU_NM);
+    Inst.addOperand(MCOperand::createReg(Mips::ZERO_NM));
+  }
+  else if (ImmVal < 0 && ImmVal >= -4095) {
+    Inst.setOpcode(Mips::ADDIUNEG_NM);
+    Inst.addOperand(MCOperand::createReg(Mips::ZERO_NM));
+  }
+  else
+    Inst.setOpcode(Mips::LI48_NM);
+
+  Inst.addOperand(Imm);
+  EmitToStreamer(OutStreamer, Inst);
+}
+
+void MipsAsmPrinter::emitLoadAddressNM(MCStreamer &OutStreamer,
+                                       const MachineInstr *MI) {
+  Register Reg = MI->getOperand(0).getReg();
+  MCInst LA;
+  MCOperand Addr;
+
+   if (Subtarget->usePCRel())
+    LA.setOpcode(Mips::LAPC48_NM);
+  else
+    LA.setOpcode(Mips::LI48_NM);
+
+  lowerOperand(MI->getOperand(1), Addr);
+  LA.addOperand(MCOperand::createReg(Reg));
+  LA.addOperand(Addr);
+  EmitToStreamer(OutStreamer, LA);
 }
 
 void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
@@ -262,11 +492,36 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
 
     if (I->getOpcode() == Mips::PseudoReturn ||
         I->getOpcode() == Mips::PseudoReturn64 ||
+        I->getOpcode() == Mips::PseudoReturnNM ||
         I->getOpcode() == Mips::PseudoIndirectBranch ||
         I->getOpcode() == Mips::PseudoIndirectBranch64 ||
+        I->getOpcode() == Mips::PseudoIndirectBranchNM ||
         I->getOpcode() == Mips::TAILCALLREG ||
         I->getOpcode() == Mips::TAILCALLREG64) {
       emitPseudoIndirectBranch(*OutStreamer, &*I);
+      continue;
+    }
+
+    if (Subtarget->hasNanoMips() &&
+        (I->getOpcode() == Mips::LoadJumpTableOffset)) {
+      emitJumpTableDest(*OutStreamer, &*I);
+      continue;
+    }
+
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::BRSC_NM) {
+      emitBrsc(*OutStreamer, &*I);
+      continue;
+    }
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoANDI_NM) {
+      emitPseudoAndiNM(*OutStreamer, &*I);
+      continue;
+    }
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoLI_NM) {
+      emitLoadImmediateNM(*OutStreamer, &*I);
+      continue;
+    }
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoLA_NM) {
+      emitLoadAddressNM(*OutStreamer, &*I);
       continue;
     }
 
@@ -393,6 +648,7 @@ const char *MipsAsmPrinter::getCurrentABIString() const {
   case MipsABIInfo::ABI::O32:  return "abi32";
   case MipsABIInfo::ABI::N32:  return "abiN32";
   case MipsABIInfo::ABI::N64:  return "abi64";
+  case MipsABIInfo::ABI::P32:  return "abiP32";
   default: llvm_unreachable("Unknown Mips ABI");
   }
 }
@@ -409,12 +665,13 @@ void MipsAsmPrinter::emitFunctionEntryLabel() {
     TS.emitDirectiveSetMicroMips();
     TS.setUsesMicroMips();
     TS.updateABIInfo(*Subtarget);
-  } else
+  } else if (!Subtarget->hasNanoMips()) {
     TS.emitDirectiveSetNoMicroMips();
+  }
 
   if (Subtarget->inMips16Mode())
     TS.emitDirectiveSetMips16();
-  else
+  else if (!Subtarget->hasNanoMips())
     TS.emitDirectiveSetNoMips16();
 
   TS.emitDirectiveEnt(*CurrentFnSym);
@@ -555,7 +812,10 @@ bool MipsAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNum,
     case 'z':
       // $0 if zero, regular printing otherwise
       if (MO.isImm() && MO.getImm() == 0) {
-        O << "$0";
+        if (Subtarget->hasNanoMips())
+          O << "$zero";
+        else
+          O << "$0";
         return false;
       }
       // If not, call printOperand as normal.
@@ -682,6 +942,7 @@ void MipsAsmPrinter::printOperand(const MachineInstr *MI, int opNum,
   case MipsII::MO_GOT_DISP: O << "%got_disp("; break;
   case MipsII::MO_GOT_PAGE: O << "%got_page("; break;
   case MipsII::MO_GOT_OFST: O << "%got_ofst("; break;
+  case MipsII::MO_PCREL_HI: O << "%pcrel_hi("; break;
   }
 
   switch (MO.getType()) {
@@ -789,6 +1050,7 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
   const MipsSubtarget STI(TT, CPU, FS, MTM.isLittleEndian(), MTM, std::nullopt);
 
   bool IsABICalls = STI.isABICalls();
+  bool IsNanoMips = STI.hasNanoMips();
   const MipsABIInfo &ABI = MTM.getABI();
   if (IsABICalls) {
     TS.emitDirectiveAbiCalls();
@@ -800,16 +1062,22 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
       TS.emitDirectiveOptionPic0();
   }
 
-  // Tell the assembler which ABI we are using
-  std::string SectionName = std::string(".mdebug.") + getCurrentABIString();
-  OutStreamer->switchSection(
-      OutContext.getELFSection(SectionName, ELF::SHT_PROGBITS, 0));
+  if (!IsNanoMips) {
+    // Tell the assembler which ABI we are using
+    std::string SectionName = std::string(".mdebug.") + getCurrentABIString();
+    OutStreamer->switchSection(
+        OutContext.getELFSection(SectionName, ELF::SHT_PROGBITS, 0));
+  }
 
-  // NaN: At the moment we only support:
-  // 1. .nan legacy (default)
-  // 2. .nan 2008
-  STI.isNaN2008() ? TS.emitDirectiveNaN2008()
-                  : TS.emitDirectiveNaNLegacy();
+  if (IsNanoMips && STI.useLinkerRelax())
+    TS.emitDirectiveLinkRelax();
+
+  if (!IsNanoMips)
+    // NaN: At the moment we only support:
+    // 1. .nan legacy (default)
+    // 2. .nan 2008
+    STI.isNaN2008() ? TS.emitDirectiveNaN2008()
+                    : TS.emitDirectiveNaNLegacy();
 
   // TODO: handle O64 ABI
 
@@ -821,6 +1089,8 @@ void MipsAsmPrinter::emitStartOfAsmFile(Module &M) {
   if ((ABI.IsO32() && (STI.isABI_FPXX() || STI.isFP64bit())) ||
       STI.useSoftFloat())
     TS.emitDirectiveModuleFP();
+  if (ABI.IsP32() && STI.usePCRel())
+    TS.emitDirectiveModulePcRel();
 
   // We should always emit a '.module [no]oddspreg' but binutils 2.24 does not
   // accept it. We therefore emit it when it contradicts the default or an
@@ -1310,4 +1580,5 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsAsmPrinter() {
   RegisterAsmPrinter<MipsAsmPrinter> Y(getTheMipselTarget());
   RegisterAsmPrinter<MipsAsmPrinter> A(getTheMips64Target());
   RegisterAsmPrinter<MipsAsmPrinter> B(getTheMips64elTarget());
+  RegisterAsmPrinter<MipsAsmPrinter> C(getTheNanoMipsTarget());
 }

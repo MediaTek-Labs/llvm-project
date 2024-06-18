@@ -59,6 +59,10 @@ static cl::opt<bool>
     GPOpt("mgpopt", cl::Hidden,
           cl::desc("Enable gp-relative addressing of mips small data items"));
 
+static cl::opt<bool>
+    UnalignedLS("mload-store-unaligned", cl::Hidden,
+                cl::desc("Enable unaligned loads and stores (nanoMIPS only)"));
+
 bool MipsSubtarget::DspWarningPrinted = false;
 bool MipsSubtarget::MSAWarningPrinted = false;
 bool MipsSubtarget::VirtWarningPrinted = false;
@@ -83,6 +87,7 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
       Os16(Mips_Os16), HasMSA(false), UseTCCInDIV(false), HasSym32(false),
       HasEVA(false), DisableMadd4(false), HasMT(false), HasCRC(false),
       HasVirt(false), HasGINV(false), UseIndirectJumpsHazard(false),
+      UseUnalignedLoadStore(UnalignedLS), HasNMS(false), UsePCRel(true),
       StackAlignOverride(StackAlignOverride), TM(TM), TargetTriple(TT),
       TSInfo(), InstrInfo(MipsInstrInfo::create(
                     initializeSubtargetDependencies(CPU, FS, TM))),
@@ -104,7 +109,7 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
     report_fatal_error("Code generation for MIPS-V is not implemented", false);
 
   // Check if Architecture and ABI are compatible.
-  assert(((!isGP64bit() && isABI_O32()) ||
+  assert(((!isGP64bit() && (isABI_O32() || isABI_P32())) ||
           (isGP64bit() && (isABI_N32() || isABI_N64()))) &&
          "Invalid  Arch & ABI pair.");
 
@@ -154,11 +159,19 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
       report_fatal_error(ISA + " is not compatible with the DSP ASE", false);
   }
 
-  if (NoABICalls && TM.isPositionIndependent())
-    report_fatal_error("position-independent code requires '-mabicalls'");
-
-  if (isABI_N64() && !TM.isPositionIndependent() && !hasSym32())
+  if (hasNanoMips())
     NoABICalls = true;
+  else {
+    if (UnalignedLS)
+      errs() << "warning: '-mload-store-unaligned' is supported only for nanoMIPS"
+	     << "\n";
+
+    if (NoABICalls && TM.isPositionIndependent())
+      report_fatal_error("position-independent code requires '-mabicalls'");
+
+    if (isABI_N64() && !TM.isPositionIndependent() && !hasSym32())
+      NoABICalls = true;
+  }
 
   // Set UseSmallSection.
   UseSmallSection = GPOpt;
@@ -167,6 +180,7 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
            << "\n";
     UseSmallSection = false;
   }
+
 
   if (hasDSPR2() && !DspWarningPrinted) {
     if (hasMips64() && !hasMips64r2()) {
@@ -254,7 +268,7 @@ MipsSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS,
 
   if (StackAlignOverride)
     stackAlignment = *StackAlignOverride;
-  else if (isABI_N32() || isABI_N64())
+  else if (isABI_N32() || isABI_N64() || isABI_P32())
     stackAlignment = Align(16);
   else {
     assert(isABI_O32() && "Unknown ABI for stack alignment!");
@@ -281,6 +295,7 @@ Reloc::Model MipsSubtarget::getRelocationModel() const {
 bool MipsSubtarget::isABI_N64() const { return getABI().IsN64(); }
 bool MipsSubtarget::isABI_N32() const { return getABI().IsN32(); }
 bool MipsSubtarget::isABI_O32() const { return getABI().IsO32(); }
+bool MipsSubtarget::isABI_P32() const { return getABI().IsP32(); }
 const MipsABIInfo &MipsSubtarget::getABI() const { return TM.getABI(); }
 
 const CallLowering *MipsSubtarget::getCallLowering() const {

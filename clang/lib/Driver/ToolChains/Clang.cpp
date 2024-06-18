@@ -434,6 +434,7 @@ static bool useFramePointerForTargetByDefault(const ArgList &Args,
     return true;
 
   switch (Triple.getArch()) {
+  case llvm::Triple::nanomips:
   case llvm::Triple::xcore:
   case llvm::Triple::wasm32:
   case llvm::Triple::wasm64:
@@ -1405,6 +1406,7 @@ static bool isSignedCharDefault(const llvm::Triple &Triple) {
       return true;
     return false;
 
+  case llvm::Triple::nanomips:
   case llvm::Triple::hexagon:
   case llvm::Triple::ppcle:
   case llvm::Triple::ppc64le:
@@ -1696,6 +1698,7 @@ void Clang::RenderTargetOptions(const llvm::Triple &EffectiveTriple,
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
   case llvm::Triple::mips64el:
+  case llvm::Triple::nanomips:
     AddMIPSTargetArgs(Args, CmdArgs);
     break;
 
@@ -1885,10 +1888,13 @@ void Clang::AddMIPSTargetArgs(const ArgList &Args,
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_G)) {
-    StringRef v = A->getValue();
-    CmdArgs.push_back("-mllvm");
-    CmdArgs.push_back(Args.MakeArgString("-mips-ssection-threshold=" + v));
-    A->claim();
+    // TODO: Emit an error when `v` is not `0` instead of this.
+    if (!Triple.isNanoMips()) {
+      StringRef v = A->getValue();
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back(Args.MakeArgString("-mips-ssection-threshold=" + v));
+      A->claim();
+    }
   }
 
   Arg *GPOpt = Args.getLastArg(options::OPT_mgpopt, options::OPT_mno_gpopt);
@@ -1907,6 +1913,9 @@ void Clang::AddMIPSTargetArgs(const ArgList &Args,
   // is in use, as -fno-pic for N64 implies -mno-abicalls.
   bool NoABICalls =
       ABICalls && ABICalls->getOption().matches(options::OPT_mno_abicalls);
+  if (Triple.isNanoMips() &&
+      Args.getLastArg(options::OPT_mload_store_unaligned))
+    CmdArgs.push_back("-mload-store-unaligned");
 
   llvm::Reloc::Model RelocationModel;
   unsigned PICLevel;
@@ -1915,11 +1924,12 @@ void Clang::AddMIPSTargetArgs(const ArgList &Args,
       ParsePICArgs(getToolChain(), Args);
 
   NoABICalls = NoABICalls ||
-               (RelocationModel == llvm::Reloc::Static && ABIName == "n64");
+               (RelocationModel == llvm::Reloc::Static && ABIName == "n64") ||
+               (ABIName == "p32");
 
   bool WantGPOpt = GPOpt && GPOpt->getOption().matches(options::OPT_mgpopt);
   // We quietly ignore -mno-gpopt as the backend defaults to -mno-gpopt.
-  if (NoABICalls && (!GPOpt || WantGPOpt)) {
+  if (NoABICalls && ((!GPOpt && !Triple.isNanoMips()) || WantGPOpt)) {
     CmdArgs.push_back("-mllvm");
     CmdArgs.push_back("-mgpopt");
 
@@ -1983,6 +1993,111 @@ void Clang::AddMIPSTargetArgs(const ArgList &Args,
     if (A->getOption().matches(options::OPT_mno_relax_pic_calls)) {
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-mips-jalr-reloc=0");
+    }
+  }
+
+  // Enable interprocedural register allocation by default on NanoMips
+  if (Triple.isNanoMips()) {
+    // Change inlining thresholds.
+    if (Arg *A = Args.getLastArg(options::OPT_O_Group)) {
+      if (A->getOption().matches(options::OPT_O)) {
+        char C = A->getValue()[0];
+        if (C == 's' || C == 'z') {
+          CmdArgs.push_back("-mllvm");
+          CmdArgs.push_back("-inline-threshold=0");
+        }
+      }
+    }
+  }
+
+  // NanoMips does not support SmallData, so force it to 0, since the default is
+  // 8 for Mips architectures.
+  if (Triple.isNanoMips()) {
+    CmdArgs.push_back("-msmall-data-limit");
+    CmdArgs.push_back("0");
+
+    CmdArgs.push_back("-mllvm");
+    CmdArgs.push_back("-mips-ssection-threshold=0");
+  }
+
+  // In the case of NanoMips, warn about using all MIPS legacy options that are
+  // supported by LLVM.
+  if (Triple.isNanoMips()) {
+    // -mabicalls option.
+    if (auto *A = Args.getLastArg(options::OPT_mabicalls,
+                                  options::OPT_mno_abicalls)) {
+      if (A->getOption().matches(options::OPT_mabicalls)) {
+        D.Diag(diag::err_opt_not_valid_on_target)
+            << A->getOption().getName() << CPUName;
+      }
+    }
+
+    // -mbranch-likely option.
+    if (auto *A = Args.getLastArg(options::OPT_mbranch_likely,
+                                  options::OPT_mno_branch_likely)) {
+      if (A->getOption().matches(options::OPT_mbranch_likely)) {
+        D.Diag(diag::err_opt_not_valid_on_target)
+            << A->getOption().getName() << CPUName;
+      }
+    }
+
+    // -mfp32, mfpxx and mfp64 options.
+    if (auto *A = Args.getLastArg(options::OPT_mfp32, options::OPT_mfpxx,
+                                  options::OPT_mfp64)) {
+      D.Diag(diag::err_opt_not_valid_on_target)
+          << A->getOption().getName() << CPUName;
+    }
+
+    // -mabs= option.
+    if (auto *A = Args.getLastArg(options::OPT_mabs_EQ)) {
+      D.Diag(diag::err_opt_not_valid_on_target)
+          << A->getOption().getName() << CPUName;
+    }
+
+    // -mnan= option.
+    if (auto *A = Args.getLastArg(options::OPT_mnan_EQ)) {
+      D.Diag(diag::err_opt_not_valid_on_target)
+          << A->getOption().getName() << CPUName;
+    }
+
+    // -mips16 option.
+    if (auto *A =
+            Args.getLastArg(options::OPT_mips16, options::OPT_mno_mips16)) {
+      D.Diag(diag::err_opt_not_valid_on_target)
+          << A->getOption().getName() << CPUName;
+    }
+
+    // -mmicromips option.
+    if (auto *A = Args.getLastArg(options::OPT_mmicromips,
+                                  options::OPT_mno_micromips)) {
+      D.Diag(diag::err_opt_not_valid_on_target)
+          << A->getOption().getName() << CPUName;
+    }
+
+    // -mrelax-pic-calls option.
+    if (auto *A = Args.getLastArg(options::OPT_mrelax_pic_calls,
+                                  options::OPT_mno_relax_pic_calls)) {
+      D.Diag(diag::err_opt_not_valid_on_target)
+          << A->getOption().getName() << CPUName;
+    }
+
+    // -mxgot option.
+    if (auto *A = Args.getLastArg(options::OPT_mxgot, options::OPT_mno_xgot)) {
+      D.Diag(diag::err_opt_not_valid_on_target)
+          << A->getOption().getName() << CPUName;
+    }
+
+    // -modd-spreg option.
+    if (auto *A = Args.getLastArg(options::OPT_modd_spreg,
+                                  options::OPT_mno_odd_spreg)) {
+      D.Diag(diag::err_opt_not_valid_on_target)
+          << A->getOption().getName() << CPUName;
+    }
+
+    // -mcompact-branches= option.
+    if (auto *A = Args.getLastArg(options::OPT_mcompact_branches_EQ)) {
+      D.Diag(diag::err_opt_not_valid_on_target)
+          << A->getOption().getName() << CPUName;
     }
   }
 }
@@ -2516,6 +2631,7 @@ static void CollectArgsForIntegratedAssembler(Compilation &C,
       case llvm::Triple::mipsel:
       case llvm::Triple::mips64:
       case llvm::Triple::mips64el:
+      case llvm::Triple::nanomips:
         if (Value == "--trap") {
           CmdArgs.push_back("-target-feature");
           CmdArgs.push_back("+use-tcc-in-div");
@@ -8024,6 +8140,7 @@ void ClangAs::ConstructJob(Compilation &C, const JobAction &JA,
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
   case llvm::Triple::mips64el:
+  case llvm::Triple::nanomips:
     AddMIPSTargetArgs(Args, CmdArgs);
     break;
 

@@ -145,7 +145,9 @@ public:
   InstructionCost getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
                                      CmpInst::Predicate VecPred,
                                      TTI::TargetCostKind CostKind,
-                                     const Instruction *I = nullptr);
+                                     const Instruction *I = nullptr,
+                                     ArrayRef<const Value *> Operands =
+                                       ArrayRef<const Value *>());
   InstructionCost getArithmeticInstrCost(
       unsigned Opcode, Type *Ty, TTI::TargetCostKind CostKind,
       TTI::OperandValueInfo Op1Info = {TTI::OK_AnyValue, TTI::OP_None},

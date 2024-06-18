@@ -298,6 +298,8 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
         T.getEnvironment() == llvm::Triple::GNUABIN32)
       return "elf32ltsmipn32";
     return "elf64ltsmip";
+  case llvm::Triple::nanomips:
+    return "elf32ltsmipn32";
   case llvm::Triple::systemz:
     return "elf64_s390";
   case llvm::Triple::x86_64:
@@ -858,27 +860,49 @@ void tools::gnutools::Assembler::ConstructJob(Compilation &C,
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
-  case llvm::Triple::mips64el: {
+  case llvm::Triple::mips64el:
+  case llvm::Triple::nanomips: {
     StringRef CPUName;
     StringRef ABIName;
     mips::getMipsCPUAndABI(Args, getToolChain().getTriple(), CPUName, ABIName);
     ABIName = mips::getGnuCompatibleMipsABIName(ABIName);
 
+    // Use call-stub optimisation in the NanoMips assembler if optimising for
+    // code size.
+    if (getToolChain().getArch() == llvm::Triple::nanomips) {
+      if (Arg *A = Args.getLastArg(options::OPT_O_Group)) {
+        if (A->getOption().matches(options::OPT_O)) {
+          char C = A->getValue()[0];
+          if (C == 's' || C == 'z') {
+            CmdArgs.push_back("-mbalc-stubs");
+          }
+        }
+      }
+      // Pass -G0 unless gpopt is enabled
+      Arg *GPOpt = Args.getLastArg(options::OPT_mgpopt, options::OPT_mno_gpopt);
+      bool WantGPOpt = GPOpt && GPOpt->getOption().matches(options::OPT_mgpopt);
+      if (!WantGPOpt) {
+        CmdArgs.push_back("-G0");
+      }
+    }
+
     CmdArgs.push_back("-march");
     CmdArgs.push_back(CPUName.data());
 
-    CmdArgs.push_back("-mabi");
-    CmdArgs.push_back(ABIName.data());
+    if (ABIName != "p32") {
+      CmdArgs.push_back("-mabi");
+      CmdArgs.push_back(ABIName.data());
 
-    // -mno-shared should be emitted unless -fpic, -fpie, -fPIC, -fPIE,
-    // or -mshared (not implemented) is in effect.
-    if (RelocationModel == llvm::Reloc::Static)
-      CmdArgs.push_back("-mno-shared");
+      // -mno-shared should be emitted unless -fpic, -fpie, -fPIC, -fPIE,
+      // or -mshared (not implemented) is in effect.
+      if (RelocationModel == llvm::Reloc::Static)
+        CmdArgs.push_back("-mno-shared");
 
-    // LLVM doesn't support -mplt yet and acts as if it is always given.
-    // However, -mplt has no effect with the N64 ABI.
-    if (ABIName != "64" && !Args.hasArg(options::OPT_mno_abicalls))
-      CmdArgs.push_back("-call_nonpic");
+      // LLVM doesn't support -mplt yet and acts as if it is always given.
+      // However, -mplt has no effect with the N64 ABI.
+      if (ABIName != "64" && !Args.hasArg(options::OPT_mno_abicalls))
+        CmdArgs.push_back("-call_nonpic");
+    }
 
     if (getToolChain().getTriple().isLittleEndian())
       CmdArgs.push_back("-EL");
@@ -1012,7 +1036,10 @@ public:
 };
 } // end anonymous namespace
 
-static bool isSoftFloatABI(const ArgList &Args) {
+static bool isSoftFloatABI(const ArgList &Args, const llvm::Triple &TargetTriple) {
+  // NanoMips always uses soft float
+  if (TargetTriple.isNanoMips())
+    return true;
   Arg *A = Args.getLastArg(options::OPT_msoft_float, options::OPT_mhard_float,
                            options::OPT_mfloat_abi_EQ);
   if (!A)
@@ -1028,7 +1055,8 @@ static bool isArmOrThumbArch(llvm::Triple::ArchType Arch) {
 }
 
 static bool isMipsEL(llvm::Triple::ArchType Arch) {
-  return Arch == llvm::Triple::mipsel || Arch == llvm::Triple::mips64el;
+  return (Arch == llvm::Triple::mipsel || Arch == llvm::Triple::mips64el
+          || Arch == llvm::Triple::nanomips);
 }
 
 static bool isMips16(const ArgList &Args) {
@@ -1350,20 +1378,27 @@ static bool findMipsMtiMultilibs(const Multilib::flags_list &Flags,
                            .flag("+msoft-float")
                            .flag("-mnan=2008")
                            .flag("+mmicromips");
+    auto ElNanoSoft = makeMultilib("/nanomips-r6-soft-newlib")
+                          .flag("+EL")
+                          .flag("+msoft-float")
+                          .flag("-mnan=2008")
+                          .flag("+mnanomips");
 
     auto O32 =
-        makeMultilib("/lib").osSuffix("").flag("-mabi=n32").flag("-mabi=n64");
+        makeMultilib("/lib").osSuffix("").flag("-mabi=n32").flag("-mabi=n64").flag("-mabi=p32");
     auto N32 =
-        makeMultilib("/lib32").osSuffix("").flag("+mabi=n32").flag("-mabi=n64");
+        makeMultilib("/lib32").osSuffix("").flag("+mabi=n32").flag("-mabi=n64").flag("-mabi=p32");
     auto N64 =
-        makeMultilib("/lib64").osSuffix("").flag("-mabi=n32").flag("+mabi=n64");
+        makeMultilib("/lib64").osSuffix("").flag("-mabi=n32").flag("+mabi=n64").flag("-mabi=p32");
+    auto P32 =
+        makeMultilib("/lib").osSuffix("").flag("-mabi=n32").flag("-mabi=n64").flag("+mabi=p32");
 
     MtiMipsMultilibsV2 =
         MultilibSet()
             .Either({BeHard, BeSoft, ElHard, ElSoft, BeHardNan, ElHardNan,
                      BeHardNanUclibc, ElHardNanUclibc, BeHardUclibc,
-                     ElHardUclibc, ElMicroHardNan, ElMicroSoft})
-            .Either(O32, N32, N64)
+                     ElHardUclibc, ElMicroHardNan, ElMicroSoft, ElNanoSoft})
+            .Either(O32, N32, N64, P32)
             .FilterOut(NonExistent)
             .setIncludeDirsCallback([](const Multilib &M) {
               return std::vector<std::string>({"/../../../../sysroot" +
@@ -1510,8 +1545,9 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
                   Flags);
   addMultilibFlag(ABIName == "n32", "mabi=n32", Flags);
   addMultilibFlag(ABIName == "n64", "mabi=n64", Flags);
-  addMultilibFlag(isSoftFloatABI(Args), "msoft-float", Flags);
-  addMultilibFlag(!isSoftFloatABI(Args), "mhard-float", Flags);
+  addMultilibFlag(ABIName == "p32", "mabi=p32", Flags);
+  addMultilibFlag(isSoftFloatABI(Args, TargetTriple), "msoft-float", Flags);
+  addMultilibFlag(!isSoftFloatABI(Args, TargetTriple), "mhard-float", Flags);
   addMultilibFlag(isMipsEL(TargetArch), "EL", Flags);
   addMultilibFlag(!isMipsEL(TargetArch), "EB", Flags);
 
@@ -1528,6 +1564,10 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
       TargetTriple.getOS() == llvm::Triple::Linux &&
       TargetTriple.isGNUEnvironment())
     return findMipsMtiMultilibs(Flags, NonExistent, Result);
+
+  if (TargetTriple.isNanoMips()) {
+    return findMipsMtiMultilibs(Flags, NonExistent, Result);
+  }
 
   if (TargetTriple.getVendor() == llvm::Triple::ImaginationTechnologies &&
       TargetTriple.getOS() == llvm::Triple::Linux &&
@@ -2036,6 +2076,7 @@ void Generic_GCC::GCCInstallationDetector::init(
   // Compute the set of prefixes for our search.
   SmallVector<std::string, 8> Prefixes;
   StringRef GCCToolchainDir = getGCCToolchainDir(Args, D.SysRoot);
+
   if (GCCToolchainDir != "") {
     if (GCCToolchainDir.back() == '/')
       GCCToolchainDir = GCCToolchainDir.drop_back(); // remove the /
@@ -2292,6 +2333,8 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
   static const char *const MIPSN32ELLibDirs[] = {"/lib32"};
   static const char *const MIPSN32ELTriples[] = {
       "mips64el-linux-gnuabin32", "mipsisa64r6el-linux-gnuabin32"};
+  static const char *const MIPSP32ELLibDirs[] = {"/lib"};
+  static const char *const MIPSP32ELTriples[] = { "nanomips-elf" };
 
   static const char *const MSP430LibDirs[] = {"/lib"};
   static const char *const MSP430Triples[] = {"msp430-elf"};
@@ -2553,6 +2596,11 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
     BiarchTripleAliases.append(begin(MIPSN32ELTriples), end(MIPSN32ELTriples));
     BiarchTripleAliases.append(begin(MIPSTriples), end(MIPSTriples));
     break;
+  case llvm::Triple::nanomips:
+    LibDirs.append(begin(MIPSP32ELLibDirs), end(MIPSP32ELLibDirs));
+    TripleAliases.append(begin(MIPSP32ELTriples), end(MIPSP32ELTriples));
+    TripleAliases.append(begin(MIPSTriples), end(MIPSTriples));
+    break;
   case llvm::Triple::msp430:
     LibDirs.append(begin(MSP430LibDirs), end(MSP430LibDirs));
     TripleAliases.append(begin(MSP430Triples), end(MSP430Triples));
@@ -2692,7 +2740,6 @@ void Generic_GCC::GCCInstallationDetector::ScanLibDirForGCCTriple(
   for (auto &Suffix : Suffixes) {
     if (!Suffix.Active)
       continue;
-
     StringRef LibSuffix = Suffix.LibSuffix;
     std::error_code EC;
     for (llvm::vfs::directory_iterator
@@ -2712,7 +2759,6 @@ void Generic_GCC::GCCInstallationDetector::ScanLibDirForGCCTriple(
       if (!ScanGCCForMultilibs(TargetTriple, Args, LI->path(),
                                NeedsBiarchSuffix))
         continue;
-
       Version = CandidateVersion;
       GCCTriple.setTriple(CandidateTriple);
       // FIXME: We hack together the directory name here instead of
@@ -2917,6 +2963,7 @@ bool Generic_GCC::IsIntegratedAssemblerDefault() const {
   case llvm::Triple::r600:
   case llvm::Triple::riscv32:
   case llvm::Triple::riscv64:
+  case llvm::Triple::nanomips:
   case llvm::Triple::sparc:
   case llvm::Triple::sparcel:
   case llvm::Triple::sparcv9:

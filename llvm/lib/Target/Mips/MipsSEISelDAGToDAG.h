@@ -53,6 +53,10 @@ private:
   bool selectAddrDefault(SDValue Addr, SDValue &Base,
                          SDValue &Offset) const override;
 
+  bool selectAddrSym(SDValue Addr, SDValue &Base) const override;
+
+  bool selectAddrSymGPRel(SDValue Addr, SDValue &Base) const override;
+
   bool selectIntAddr(SDValue Addr, SDValue &Base,
                      SDValue &Offset) const override;
 
@@ -80,6 +84,9 @@ private:
   bool selectIntAddrLSL2MM(SDValue Addr, SDValue &Base,
                            SDValue &Offset) const override;
 
+  bool selectIntAddrSImm9(SDValue Addr, SDValue &Base,
+                          SDValue &Offset) const override;
+
   bool selectIntAddrSImm10(SDValue Addr, SDValue &Base,
                            SDValue &Offset) const override;
 
@@ -91,6 +98,25 @@ private:
 
   bool selectIntAddrSImm10Lsl3(SDValue Addr, SDValue &Base,
                                SDValue &Offset) const override;
+
+  bool selectAddrFrameIndexUOffset(SDValue Addr, SDValue &Base, SDValue &Offset,
+                                   unsigned OffsetBits,
+                                   unsigned ShiftAmount) const override;
+
+  bool selectIntAddrUImm12(SDValue Addr, SDValue &Base,
+                           SDValue &Offset) const override;
+
+  bool selectIntAddrIndexed(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
+
+  bool selectIntAddrIndexedLsl1(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
+
+  bool selectIntAddrIndexedLsl2(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
+
+  bool selectIntAddrUImm19s2(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
+
+  bool selectIntAddrUImm18(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
+
+  bool selectIntAddrUImm17s1(SDValue Addr, SDValue &Base, SDValue &Offset) const override;
 
   /// Select constant vector splats.
   bool selectVSplat(SDNode *N, APInt &Imm,
@@ -137,6 +163,15 @@ private:
   bool SelectInlineAsmMemoryOperand(const SDValue &Op,
                                     unsigned ConstraintID,
                                     std::vector<SDValue> &OutOps) override;
+
+  void NanoMipsDAGPeepholes();
+
+  void PostprocessISelDAG() override;
+
+  // Select a GP-relative offset expressions
+  bool selectOffsetGP18(SDValue Addr, SDValue &Offset) const override;
+
+  bool selectOffsetGP19s2(SDValue Addr, SDValue &Offset) const override;
 };
 
 FunctionPass *createMipsSEISelDag(MipsTargetMachine &TM,

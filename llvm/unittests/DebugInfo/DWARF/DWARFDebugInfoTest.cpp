@@ -389,6 +389,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version2Addr4AllForms) {
   typedef uint32_t AddrType;
   // DW_FORM_ref_addr are the same as the address type in DWARF32 version 2.
   typedef AddrType RefAddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestAllForms<2, AddrType, RefAddrType>();
 }
 
@@ -411,6 +414,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version3Addr4AllForms) {
   typedef uint32_t AddrType;
   // DW_FORM_ref_addr are 4 bytes in DWARF32 for version 3 and later.
   typedef uint32_t RefAddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestAllForms<3, AddrType, RefAddrType>();
 }
 
@@ -433,6 +439,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version4Addr4AllForms) {
   typedef uint32_t AddrType;
   // DW_FORM_ref_addr are 4 bytes in DWARF32 for version 3 and later
   typedef uint32_t RefAddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestAllForms<4, AddrType, RefAddrType>();
 }
 
@@ -459,6 +468,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version5Addr4AllForms) {
   typedef uint32_t AddrType;
   // DW_FORM_ref_addr are 4 bytes in DWARF32 for version 3 and later
   typedef uint32_t RefAddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestAllForms<5, AddrType, RefAddrType>();
 }
 
@@ -567,6 +579,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version2Addr4Children) {
   // Test that we can decode all forms for DWARF32, version 2, with 4 byte
   // addresses.
   typedef uint32_t AddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestChildren<2, AddrType>();
 }
 
@@ -585,6 +600,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version3Addr4Children) {
   // Test that we can decode all forms for DWARF32, version 3, with 4 byte
   // addresses.
   typedef uint32_t AddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestChildren<3, AddrType>();
 }
 
@@ -603,6 +621,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version4Addr4Children) {
   // Test that we can decode all forms for DWARF32, version 4, with 4 byte
   // addresses.
   typedef uint32_t AddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestChildren<4, AddrType>();
 }
 
@@ -829,6 +850,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version2Addr4References) {
   // Test that we can decode all forms for DWARF32, version 2, with 4 byte
   // addresses.
   typedef uint32_t AddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestReferences<2, AddrType>();
 }
 
@@ -847,6 +871,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version3Addr4References) {
   // Test that we can decode all forms for DWARF32, version 3, with 4 byte
   // addresses.
   typedef uint32_t AddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestReferences<3, AddrType>();
 }
 
@@ -865,6 +892,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version4Addr4References) {
   // Test that we can decode all forms for DWARF32, version 4, with 4 byte
   // addresses.
   typedef uint32_t AddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestReferences<4, AddrType>();
 }
 
@@ -1013,6 +1043,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version2Addr4Addresses) {
   // Test that we can decode address values in DWARF32, version 2, with 4 byte
   // addresses.
   typedef uint32_t AddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestAddresses<2, AddrType>();
 }
 
@@ -1031,6 +1064,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version3Addr4Addresses) {
   // Test that we can decode address values in DWARF32, version 3, with 4 byte
   // addresses.
   typedef uint32_t AddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestAddresses<3, AddrType>();
 }
 
@@ -1049,6 +1085,9 @@ TEST(DWARFDebugInfo, TestDWARF32Version4Addr4Addresses) {
   // Test that we can decode address values in DWARF32, version 4, with 4 byte
   // addresses.
   typedef uint32_t AddrType;
+  Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
   TestAddresses<4, AddrType>();
 }
 
@@ -1070,6 +1109,8 @@ TEST(DWARFDebugInfo, TestStringOffsets) {
 #endif
   Triple Triple = getNormalizedDefaultTargetTriple();
   if (!isConfigurationSupported(Triple))
+    GTEST_SKIP();
+  if (Triple.isNanoMips())
     GTEST_SKIP();
 
   const char *String1 = "Hello";
@@ -1140,6 +1181,8 @@ TEST(DWARFDebugInfo, TestEmptyStringOffsets) {
   Triple Triple = getNormalizedDefaultTargetTriple();
   if (!isConfigurationSupported(Triple))
     GTEST_SKIP();
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
 
   const char *String1 = "Hello";
 
@@ -1172,6 +1215,8 @@ TEST(DWARFDebugInfo, TestRelations) {
 #endif
   Triple Triple = getNormalizedDefaultTargetTriple();
   if (!isConfigurationSupported(Triple))
+    GTEST_SKIP();
+  if (Triple.isNanoMips())
     GTEST_SKIP();
 
   // Test the DWARF APIs related to accessing the DW_AT_low_pc and
@@ -1364,6 +1409,8 @@ TEST(DWARFDebugInfo, TestChildIterators) {
   Triple Triple = getNormalizedDefaultTargetTriple();
   if (!isConfigurationSupported(Triple))
     GTEST_SKIP();
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
 
   // Test the DWARF APIs related to iterating across the children of a DIE using
   // the DWARFDie::iterator class.
@@ -1477,6 +1524,8 @@ TEST(DWARFDebugInfo, TestAttributeIterators) {
   Triple Triple = getNormalizedDefaultTargetTriple();
   if (!isConfigurationSupported(Triple))
     GTEST_SKIP();
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
 
   // Test the DWARF APIs related to iterating across all attribute values in a
   // a DWARFDie.
@@ -1542,6 +1591,8 @@ TEST(DWARFDebugInfo, TestFindRecurse) {
 #endif
   Triple Triple = getNormalizedDefaultTargetTriple();
   if (!isConfigurationSupported(Triple))
+    GTEST_SKIP();
+  if (Triple.isNanoMips())
     GTEST_SKIP();
 
   uint16_t Version = 4;
@@ -1761,6 +1812,8 @@ TEST(DWARFDebugInfo, TestFindAttrs) {
   Triple Triple = getNormalizedDefaultTargetTriple();
   if (!isConfigurationSupported(Triple))
     GTEST_SKIP();
+  if (Triple.isNanoMips())
+    GTEST_SKIP();
 
   // Test the DWARFDie::find() and DWARFDie::findRecursively() that take an
   // ArrayRef<dwarf::Attribute> value to make sure they work correctly.
@@ -1827,6 +1880,8 @@ TEST(DWARFDebugInfo, TestImplicitConstAbbrevs) {
 #endif
   Triple Triple = getNormalizedDefaultTargetTriple();
   if (!isConfigurationSupported(Triple))
+    GTEST_SKIP();
+  if (Triple.isNanoMips())
     GTEST_SKIP();
 
   uint16_t Version = 5;

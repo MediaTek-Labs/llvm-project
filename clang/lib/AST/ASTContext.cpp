@@ -9073,6 +9073,51 @@ static TypedefDecl *CreateHexagonBuiltinVaListDecl(const ASTContext *Context) {
   return Context->buildImplicitTypedef(VaListTagArrayType, "__builtin_va_list");
 }
 
+static TypedefDecl *
+CreateNanoMipsBuiltinVaListdecl(const ASTContext *Context) {
+  RecordDecl *VaListTagDecl = Context->buildImplicitRecord("__va_list");
+  VaListTagDecl->startDefinition();
+
+  if (Context->getLangOpts().CPlusPlus) {
+    NamespaceDecl *NS;
+    NS = NamespaceDecl::Create(const_cast<ASTContext &>(*Context),
+                               Context->getTranslationUnitDecl(),
+                               /*Inline*/ false, SourceLocation(),
+                               SourceLocation(), &Context->Idents.get("std"),
+                               /*PrevDecl*/ nullptr, /*Nested=*/false);
+    NS->setImplicit();
+    VaListTagDecl->setDeclContext(NS);
+  }
+
+  std::pair<QualType, const char *> Fields[5] = {
+    { Context->getPointerType(Context->VoidTy), "__overflow_argptr" },
+    { Context->getPointerType(Context->VoidTy), "__gpr_top" },
+    { Context->getPointerType(Context->VoidTy), "__fpr_top" },
+    { Context->SignedCharTy, "__gpr_offset" },
+    { Context->SignedCharTy, "__fpr_offset" }
+  };
+
+  for (auto F : Fields) {
+    FieldDecl *Field = FieldDecl::Create(const_cast<ASTContext &>(*Context),
+                                         VaListTagDecl,
+                                         SourceLocation(),
+                                         SourceLocation(),
+                                         &Context->Idents.get(F.second),
+                                         F.first, /*TInfo=*/nullptr,
+                                         /*BitWidth=*/nullptr,
+                                         /*Mutable=*/false,
+                                         ICIS_NoInit);
+    Field->setAccess(AS_public);
+    VaListTagDecl->addDecl(Field);
+  }
+
+  VaListTagDecl->completeDefinition();
+  Context->VaListTagDecl = VaListTagDecl;
+  QualType VaListTagType = Context->getRecordType(VaListTagDecl);
+
+  return Context->buildImplicitTypedef(VaListTagType, "__builtin_va_list");
+}
+
 static TypedefDecl *CreateVaListDecl(const ASTContext *Context,
                                      TargetInfo::BuiltinVaListKind Kind) {
   switch (Kind) {
@@ -9094,6 +9139,8 @@ static TypedefDecl *CreateVaListDecl(const ASTContext *Context,
     return CreateSystemZBuiltinVaListDecl(Context);
   case TargetInfo::HexagonBuiltinVaList:
     return CreateHexagonBuiltinVaListDecl(Context);
+  case TargetInfo::NanoMipsBuiltinVaList:
+    return CreateNanoMipsBuiltinVaListdecl(Context);
   }
 
   llvm_unreachable("Unhandled __builtin_va_list type kind");

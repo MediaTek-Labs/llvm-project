@@ -76,10 +76,14 @@ void MipsTargetStreamer::emitDirectiveEnd(StringRef Name) {}
 void MipsTargetStreamer::emitDirectiveEnt(const MCSymbol &Symbol) {}
 void MipsTargetStreamer::emitDirectiveAbiCalls() {}
 void MipsTargetStreamer::emitDirectiveNaN2008() {}
+void MipsTargetStreamer::emitDirectiveLinkRelax() {}
+void MipsTargetStreamer::emitDirectiveNoLinkRelax() {}
 void MipsTargetStreamer::emitDirectiveNaNLegacy() {}
 void MipsTargetStreamer::emitDirectiveOptionPic0() {}
 void MipsTargetStreamer::emitDirectiveOptionPic2() {}
 void MipsTargetStreamer::emitDirectiveInsn() { forbidModuleDirective(); }
+void MipsTargetStreamer::emitSignedValue(
+	const MCExpr *Value, unsigned Size, SMLoc Loc) {}
 void MipsTargetStreamer::emitFrame(unsigned StackReg, unsigned StackSize,
                                    unsigned ReturnReg) {}
 void MipsTargetStreamer::emitMask(unsigned CPUBitmask, int CPUTopSavedRegOff) {}
@@ -147,6 +151,8 @@ void MipsTargetStreamer::emitDirectiveCpsetup(unsigned RegNo, int RegOrOffset,
 }
 void MipsTargetStreamer::emitDirectiveCpreturn(unsigned SaveLocation,
                                                bool SaveLocationIsRegister) {}
+
+void MipsTargetStreamer::emitDirectiveModulePcRel() {}
 
 void MipsTargetStreamer::emitDirectiveModuleFP() {}
 
@@ -246,6 +252,25 @@ void MipsTargetStreamer::emitRRI(unsigned Opcode, unsigned Reg0, unsigned Reg1,
                                  int16_t Imm, SMLoc IDLoc,
                                  const MCSubtargetInfo *STI) {
   emitRRX(Opcode, Reg0, Reg1, MCOperand::createImm(Imm), IDLoc, STI);
+}
+
+void MipsTargetStreamer::emitRRRI(unsigned Opcode, unsigned Reg0, unsigned Reg1,
+                                 unsigned Reg2, int16_t Imm, SMLoc IDLoc,
+                                 const MCSubtargetInfo *STI) {
+  emitRRRX(Opcode, Reg0, Reg1, Reg2, MCOperand::createImm(Imm), IDLoc, STI);
+}
+
+void MipsTargetStreamer::emitRRII(unsigned Opcode, unsigned Reg0,
+                                  unsigned Reg1, int16_t Imm0, int16_t Imm1,
+                                  SMLoc IDLoc, const MCSubtargetInfo *STI) {
+  MCInst TmpInst;
+  TmpInst.setOpcode(Opcode);
+  TmpInst.addOperand(MCOperand::createReg(Reg0));
+  TmpInst.addOperand(MCOperand::createReg(Reg1));
+  TmpInst.addOperand(MCOperand::createImm(Imm0));
+  TmpInst.addOperand(MCOperand::createImm(Imm1));
+  TmpInst.setLoc(IDLoc);
+  getStreamer().emitInstruction(TmpInst, *STI);
 }
 
 void MipsTargetStreamer::emitRRIII(unsigned Opcode, unsigned Reg0,
@@ -500,6 +525,8 @@ void MipsTargetAsmStreamer::emitDirectiveEnt(const MCSymbol &Symbol) {
 void MipsTargetAsmStreamer::emitDirectiveAbiCalls() { OS << "\t.abicalls\n"; }
 
 void MipsTargetAsmStreamer::emitDirectiveNaN2008() { OS << "\t.nan\t2008\n"; }
+void MipsTargetAsmStreamer::emitDirectiveLinkRelax() { OS << "\t.linkrelax\n"; }
+void MipsTargetAsmStreamer::emitDirectiveNoLinkRelax() { OS << "\t.set nolinkrelax\n"; }
 
 void MipsTargetAsmStreamer::emitDirectiveNaNLegacy() {
   OS << "\t.nan\tlegacy\n";
@@ -728,6 +755,10 @@ void MipsTargetAsmStreamer::emitDirectiveCpreturn(unsigned SaveLocation,
   forbidModuleDirective();
 }
 
+void MipsTargetAsmStreamer::emitDirectiveModulePcRel() {
+  OS << "\t.module\tpcrel\n";
+}
+
 void MipsTargetAsmStreamer::emitDirectiveModuleFP() {
   MipsABIFlagsSection::FpABIKind FpABI = ABIFlagsSection.getFpABI();
   if (FpABI == MipsABIFlagsSection::FpABIKind::SOFT)
@@ -799,7 +830,8 @@ void MipsTargetAsmStreamer::emitDirectiveModuleNoGINV() {
 // This part is for ELF object output.
 MipsTargetELFStreamer::MipsTargetELFStreamer(MCStreamer &S,
                                              const MCSubtargetInfo &STI)
-    : MipsTargetStreamer(S), MicroMipsEnabled(false), STI(STI) {
+    : MipsTargetStreamer(S), MicroMipsEnabled(false), NanoMipsEnabled(false),
+      STI(STI) {
   MCAssembler &MCA = getStreamer().getAssembler();
 
   // It's possible that MCObjectFileInfo isn't fully initialized at this point
@@ -833,7 +865,8 @@ MipsTargetELFStreamer::MipsTargetELFStreamer(MCStreamer &S,
 
   ABI = MipsABIInfo(
       STI.getTargetTriple().getArch() == Triple::ArchType::mipsel ||
-              STI.getTargetTriple().getArch() == Triple::ArchType::mips
+              STI.getTargetTriple().getArch() == Triple::ArchType::mips ||
+              STI.getTargetTriple().getArch() == Triple::ArchType::nanomips
           ? MipsABIInfo::O32()
           : MipsABIInfo::N64());
 
@@ -873,6 +906,13 @@ MipsTargetELFStreamer::MipsTargetELFStreamer(MCStreamer &S,
   if (Features[Mips::FeatureNaN2008])
     EFlags |= ELF::EF_MIPS_NAN2008;
 
+  // Pid is only relevant for nanoMIPS, but not yet fully supported.
+  Pid = false;
+  if (STI.getTargetTriple().getArch() == Triple::ArchType::nanomips) {
+    NanoMipsEnabled = true;
+    Pic = false;
+  }
+
   MCA.setELFHeaderEFlags(EFlags);
 }
 
@@ -898,16 +938,22 @@ void MipsTargetELFStreamer::finish() {
   MCA.registerSection(DataSection);
   MCSection &BSSSection = *OFI.getBSSSection();
   MCA.registerSection(BSSSection);
+  if (isNanoMipsEnabled()) {
+    TextSection.ensureMinAlignment(Align(2u));
+    DataSection.ensureMinAlignment(Align(4u));
+    BSSSection.ensureMinAlignment(Align(4u));
+  }
+  else {
+    TextSection.ensureMinAlignment(Align(16u));
+    DataSection.ensureMinAlignment(Align(16u));
+    BSSSection.ensureMinAlignment(Align(16u));
+  }
 
-  TextSection.ensureMinAlignment(Align(16));
-  DataSection.ensureMinAlignment(Align(16));
-  BSSSection.ensureMinAlignment(Align(16));
-
-  if (RoundSectionSizes) {
+  if (RoundSectionSizes || isNanoMipsEnabled()) {
     // Make sections sizes a multiple of the alignment. This is useful for
     // verifying the output of IAS against the output of other assemblers but
     // it's not necessary to produce a correct object and increases section
-    // size.
+    // size. Do this by default for nanoMIPS code sections.
     MCStreamer &OS = getStreamer();
     for (MCSection &S : MCA) {
       MCSectionELF &Section = static_cast<MCSectionELF &>(S);
@@ -916,7 +962,7 @@ void MipsTargetELFStreamer::finish() {
       OS.switchSection(&Section);
       if (Section.useCodeAlign())
         OS.emitCodeAlignment(Alignment, &STI, Alignment.value());
-      else
+      else if (RoundSectionSizes)
         OS.emitValueToAlignment(Alignment, 0, 1, Alignment.value());
     }
   }
@@ -933,6 +979,8 @@ void MipsTargetELFStreamer::finish() {
     EFlags |= ELF::EF_MIPS_ABI_O32;
   else if (getABI().IsN32())
     EFlags |= ELF::EF_MIPS_ABI2;
+  else if (getABI().IsP32())
+    EFlags |= ELF::E_NANOMIPS_ABI_P32;
 
   if (Features[Mips::FeatureGP64Bit]) {
     if (getABI().IsO32())
@@ -940,21 +988,35 @@ void MipsTargetELFStreamer::finish() {
   } else if (Features[Mips::FeatureMips64r2] || Features[Mips::FeatureMips64])
     EFlags |= ELF::EF_MIPS_32BITMODE;
 
-  // -mplt is not implemented but we should act as if it was
-  // given.
-  if (!Features[Mips::FeatureNoABICalls])
-    EFlags |= ELF::EF_MIPS_CPIC;
+  if (STI.getTargetTriple().getArch() != Triple::ArchType::nanomips) {
+    // -mplt is not implemented but we should act as if it was
+    // given.
+    if (!Features[Mips::FeatureNoABICalls])
+      EFlags |= ELF::EF_MIPS_CPIC;
 
-  if (Pic)
-    EFlags |= ELF::EF_MIPS_PIC | ELF::EF_MIPS_CPIC;
+    if (Pic)
+      EFlags |= ELF::EF_MIPS_PIC | ELF::EF_MIPS_CPIC;
+  }
+  else {
+    if (Pic)
+      EFlags |= ELF::EF_NANOMIPS_PIC;
+    if (Pid)
+      EFlags |= ELF::EF_NANOMIPS_PID;
+    if (Features[Mips::FeaturePCRel])
+      EFlags |= ELF::EF_NANOMIPS_PCREL;
+    if (Features[Mips::FeatureRelax])
+      EFlags |= ELF::EF_NANOMIPS_LINKRELAX;
+  }
 
   MCA.setELFHeaderEFlags(EFlags);
 
-  // Emit all the option records.
-  // At the moment we are only emitting .Mips.options (ODK_REGINFO) and
-  // .reginfo.
-  MipsELFStreamer &MEF = static_cast<MipsELFStreamer &>(Streamer);
-  MEF.EmitMipsOptionRecords();
+  if (!isNanoMipsEnabled()) {
+    // Emit all the option records.
+    // At the moment we are only emitting .Mips.options (ODK_REGINFO) and
+    // .reginfo.
+    MipsELFStreamer &MEF = static_cast<MipsELFStreamer &>(Streamer);
+    MEF.EmitMipsOptionRecords();
+  }
 
   emitMipsAbiFlags();
 }
@@ -1015,36 +1077,36 @@ void MipsTargetELFStreamer::emitDirectiveEnd(StringRef Name) {
   MCContext &Context = MCA.getContext();
   MCStreamer &OS = getStreamer();
 
-  MCSectionELF *Sec = Context.getELFSection(".pdr", ELF::SHT_PROGBITS, 0);
-
   MCSymbol *Sym = Context.getOrCreateSymbol(Name);
   const MCSymbolRefExpr *ExprRef =
       MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Context);
 
-  MCA.registerSection(*Sec);
-  Sec->setAlignment(Align(4));
+  if (!isNanoMipsEnabled()) {
+    MCSectionELF *Sec = Context.getELFSection(".pdr", ELF::SHT_PROGBITS, 0);
+    MCA.registerSection(*Sec);
+    Sec->setAlignment(Align(4));
 
-  OS.pushSection();
+    OS.pushSection();
 
-  OS.switchSection(Sec);
+    OS.switchSection(Sec);
 
-  OS.emitValueImpl(ExprRef, 4);
+    OS.emitValueImpl(ExprRef, 4);
 
-  OS.emitIntValue(GPRInfoSet ? GPRBitMask : 0, 4); // reg_mask
-  OS.emitIntValue(GPRInfoSet ? GPROffset : 0, 4);  // reg_offset
+    OS.emitIntValue(GPRInfoSet ? GPRBitMask : 0, 4); // reg_mask
+    OS.emitIntValue(GPRInfoSet ? GPROffset : 0, 4);  // reg_offset
 
-  OS.emitIntValue(FPRInfoSet ? FPRBitMask : 0, 4); // fpreg_mask
-  OS.emitIntValue(FPRInfoSet ? FPROffset : 0, 4);  // fpreg_offset
+    OS.emitIntValue(FPRInfoSet ? FPRBitMask : 0, 4); // fpreg_mask
+    OS.emitIntValue(FPRInfoSet ? FPROffset : 0, 4);  // fpreg_offset
 
-  OS.emitIntValue(FrameInfoSet ? FrameOffset : 0, 4); // frame_offset
-  OS.emitIntValue(FrameInfoSet ? FrameReg : 0, 4);    // frame_reg
-  OS.emitIntValue(FrameInfoSet ? ReturnReg : 0, 4);   // return_reg
+    OS.emitIntValue(FrameInfoSet ? FrameOffset : 0, 4); // frame_offset
+    OS.emitIntValue(FrameInfoSet ? FrameReg : 0, 4);    // frame_reg
+    OS.emitIntValue(FrameInfoSet ? ReturnReg : 0, 4);   // return_reg
+    OS.popSection();
+  }
 
   // The .end directive marks the end of a procedure. Invalidate
   // the information gathered up until this point.
   GPRInfoSet = FPRInfoSet = FrameInfoSet = false;
-
-  OS.popSection();
 
   // .end also implicitly sets the size.
   MCSymbol *CurPCSym = Context.createTempSymbol();
@@ -1108,10 +1170,38 @@ void MipsTargetELFStreamer::emitDirectiveOptionPic2() {
   MCA.setELFHeaderEFlags(Flags);
 }
 
+void MipsTargetELFStreamer::emitDirectiveLinkRelax() {
+  MCAssembler &MCA = getStreamer().getAssembler();
+  unsigned Flags = MCA.getELFHeaderEFlags();
+  Flags |= ELF::EF_NANOMIPS_LINKRELAX;
+  MCA.setELFHeaderEFlags(Flags);
+}
+
+void MipsTargetELFStreamer::emitDirectiveNoLinkRelax() {
+  MCAssembler &MCA = getStreamer().getAssembler();
+  unsigned Flags = MCA.getELFHeaderEFlags();
+  Flags &= ~ELF::EF_NANOMIPS_LINKRELAX;
+  MCA.setELFHeaderEFlags(Flags);
+}
+
+void MipsTargetELFStreamer::emitDirectiveModulePcRel() {
+  MCAssembler &MCA = getStreamer().getAssembler();
+  unsigned Flags = MCA.getELFHeaderEFlags();
+  Flags |= ELF::EF_NANOMIPS_PCREL;
+  MCA.setELFHeaderEFlags(Flags);
+}
+
 void MipsTargetELFStreamer::emitDirectiveInsn() {
   MipsTargetStreamer::emitDirectiveInsn();
   MipsELFStreamer &MEF = static_cast<MipsELFStreamer &>(Streamer);
   MEF.createPendingLabelRelocs();
+}
+
+void MipsTargetELFStreamer::emitSignedValue(const MCExpr *Value, unsigned Size,
+					    SMLoc Loc) {
+  MipsTargetStreamer::emitDirectiveInsn();
+  MipsELFStreamer &MEF = static_cast<MipsELFStreamer &>(Streamer);
+  MEF.emitValueImpl(Value, Size, Loc, true);
 }
 
 void MipsTargetELFStreamer::emitFrame(unsigned StackReg, unsigned StackSize,
@@ -1320,8 +1410,16 @@ void MipsTargetELFStreamer::emitMipsAbiFlags() {
   MCAssembler &MCA = getStreamer().getAssembler();
   MCContext &Context = MCA.getContext();
   MCStreamer &OS = getStreamer();
-  MCSectionELF *Sec = Context.getELFSection(
+  MCSectionELF *Sec;
+
+  if (isNanoMipsEnabled()) {
+  Sec = Context.getELFSection(
+      ".nanoMIPS.abiflags", ELF::SHT_NANOMIPS_ABIFLAGS, ELF::SHF_ALLOC, 24);
+  }
+  else {
+  Sec = Context.getELFSection(
       ".MIPS.abiflags", ELF::SHT_MIPS_ABIFLAGS, ELF::SHF_ALLOC, 24);
+  }
   MCA.registerSection(*Sec);
   Sec->setAlignment(Align(8));
   OS.switchSection(Sec);

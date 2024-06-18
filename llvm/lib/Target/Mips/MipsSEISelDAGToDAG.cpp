@@ -366,6 +366,30 @@ bool MipsSEDAGToDAGISel::selectAddrDefault(SDValue Addr, SDValue &Base,
   return true;
 }
 
+bool MipsSEDAGToDAGISel::selectAddrSym(SDValue Addr, SDValue &Base) const {
+  SDValue Opnd0 = Addr;
+  if (isa<ConstantPoolSDNode>(Opnd0) || isa<GlobalAddressSDNode>(Opnd0) ||
+      isa<JumpTableSDNode>(Opnd0) || isa<MCSymbolSDNode>(Opnd0) ||
+      isa<BasicBlockSDNode>(Opnd0) ||
+      isa<ExternalSymbolSDNode>(Opnd0)) {
+      Base = Addr;
+      return true;
+    }
+  else
+    return false;
+}
+
+bool MipsSEDAGToDAGISel::selectAddrSymGPRel(SDValue Addr, SDValue &Base) const {
+  SDValue Opnd0 = Addr;
+  if (isa<GlobalAddressSDNode>(Opnd0) ||
+      isa<ExternalSymbolSDNode>(Opnd0)) {
+      Base = Addr;
+      return true;
+    }
+  else
+    return false;
+}
+
 bool MipsSEDAGToDAGISel::selectIntAddr(SDValue Addr, SDValue &Base,
                                        SDValue &Offset) const {
   return selectAddrRegImm(Addr, Base, Offset) ||
@@ -458,6 +482,13 @@ bool MipsSEDAGToDAGISel::selectIntAddrLSL2MM(SDValue Addr, SDValue &Base,
   return selectAddrDefault(Addr, Base, Offset);
 }
 
+
+bool MipsSEDAGToDAGISel::selectIntAddrSImm9(SDValue Addr, SDValue &Base,
+                                            SDValue &Offset) const {
+  return selectAddrFrameIndex(Addr, Base, Offset) ||
+    selectAddrFrameIndexOffset(Addr, Base, Offset, 9);
+}
+
 bool MipsSEDAGToDAGISel::selectIntAddrSImm10(SDValue Addr, SDValue &Base,
                                              SDValue &Offset) const {
 
@@ -502,6 +533,121 @@ bool MipsSEDAGToDAGISel::selectIntAddrSImm10Lsl3(SDValue Addr, SDValue &Base,
 
   return selectAddrDefault(Addr, Base, Offset);
 }
+
+bool MipsSEDAGToDAGISel::selectAddrFrameIndexUOffset(
+    SDValue Addr, SDValue &Base, SDValue &Offset, unsigned OffsetBits,
+    unsigned ShiftAmount = 0) const {
+  if (CurDAG->isBaseWithConstantOffset(Addr)) {
+    ConstantSDNode *CN = dyn_cast<ConstantSDNode>(Addr.getOperand(1));
+    if (isUIntN(OffsetBits + ShiftAmount, CN->getZExtValue())) {
+      EVT ValTy = Addr.getValueType();
+
+      // If the first operand is a FI, get the TargetFI Node
+      if (FrameIndexSDNode *FIN =
+              dyn_cast<FrameIndexSDNode>(Addr.getOperand(0)))
+        Base = CurDAG->getTargetFrameIndex(FIN->getIndex(), ValTy);
+      else {
+        Base = Addr.getOperand(0);
+        // If base is a FI, additional offset calculation is done in
+        // eliminateFrameIndex, otherwise we need to check the alignment
+        const Align Alignment(1ULL << ShiftAmount);
+        if (!isAligned(Alignment, CN->getZExtValue()))
+          return false;
+      }
+
+      Offset =
+          CurDAG->getTargetConstant(CN->getZExtValue(), SDLoc(Addr), ValTy);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MipsSEDAGToDAGISel::selectIntAddrUImm12(SDValue Addr, SDValue &Base,
+                                             SDValue &Offset) const {
+  return selectAddrFrameIndexUOffset(Addr, Base, Offset, 12, 0);
+}
+
+bool MipsSEDAGToDAGISel::selectIntAddrUImm19s2(SDValue Addr, SDValue &Base,
+                                             SDValue &Offset) const {
+  // FIXME: 16-bit load/store selection disabled for DAG
+  return false;
+}
+
+bool MipsSEDAGToDAGISel::selectIntAddrUImm17s1(SDValue Addr, SDValue &Base,
+                                             SDValue &Offset) const {
+  // FIXME: 16-bit load/store selection disabled for DAG
+  return false;
+}
+
+bool MipsSEDAGToDAGISel::selectIntAddrUImm18(SDValue Addr, SDValue &Base,
+                                             SDValue &Offset) const {
+  // FIXME: 16-bit load/store selection disabled for DAG
+  return false;
+}
+
+// A load/store 'x' indexed (reg + reg)
+bool MipsSEDAGToDAGISel::selectIntAddrIndexed(SDValue Addr, SDValue &Base,
+                                              SDValue &Offset) const {
+  if (Addr.getOpcode() == ISD::ADD) {
+    // Register + register
+    SDValue Op0 = Addr.getOperand(0), Op1 = Addr.getOperand(1);
+    // Avoid absorbing a GPRel with an indexed addressing mode.
+    if (Op0.getOpcode() != ISD::TargetExternalSymbol &&
+        Op0.getOpcode() != ISD::TargetGlobalAddress &&
+        Op1.getOpcode() != ISD::TargetExternalSymbol &&
+        Op1.getOpcode() != ISD::TargetGlobalAddress &&
+        Op0.getOpcode() != MipsISD::GPRel &&
+        Op1.getOpcode() != MipsISD::GPRel &&
+        Op0.getOpcode() != ISD::Constant &&
+        Op0.getOpcode() != ISD::TargetConstant &&
+        Op1.getOpcode() != ISD::Constant &&
+        Op1.getOpcode() != ISD::TargetConstant) {
+      Base = Op0;
+      Offset = Op1;
+      return true;
+    }
+  }
+  return false;
+}
+
+// A load/store 'x' indexed (reg + reg)
+static bool selectIntAddrIndexedScaled(SDValue Addr, SDValue &Base,
+                                       SDValue &Offset,
+                                       int64_t Scale) {
+  if (Addr.getOpcode() == ISD::ADD) {
+    SDValue Op0 = Addr.getOperand(0), Op1 = Addr.getOperand(1);
+    ConstantSDNode *CN;
+
+    if (Op0.getOpcode() == ISD::SHL &&
+        (CN = dyn_cast<ConstantSDNode>(Op0.getOperand(1))) &&
+        CN->getSExtValue() == Scale) {
+      Base = Op1;
+      Offset = Op0.getOperand(0);
+    } else if (Op1.getOpcode() == ISD::SHL &&
+        (CN = dyn_cast<ConstantSDNode>(Op1.getOperand(1))) &&
+        CN->getSExtValue() == Scale) {
+      Base = Op0;
+      Offset = Op1.getOperand(0);
+    } else {
+      return false;
+    }
+
+    return true;
+  }
+  return false;
+}
+
+bool MipsSEDAGToDAGISel::selectIntAddrIndexedLsl1(SDValue Addr, SDValue &Base,
+                                                  SDValue &Offset) const {
+  return selectIntAddrIndexedScaled(Addr, Base, Offset, 1);
+}
+
+bool MipsSEDAGToDAGISel::selectIntAddrIndexedLsl2(SDValue Addr, SDValue &Base,
+                                                  SDValue &Offset) const {
+  return selectIntAddrIndexedScaled(Addr, Base, Offset, 2);
+}
+
 
 // Select constant vector splats.
 //
@@ -996,6 +1142,9 @@ bool MipsSEDAGToDAGISel::trySelect(SDNode *Node) {
   // match the instruction.
   case MipsISD::Ins: {
 
+    if (Subtarget->hasNanoMips())
+      return false;
+
     // Validating the node operands.
     if (Node->getValueType(0) != MVT::i32 && Node->getValueType(0) != MVT::i64)
       return false;
@@ -1051,8 +1200,15 @@ bool MipsSEDAGToDAGISel::trySelect(SDNode *Node) {
     unsigned RdhwrOpc, DestReg;
 
     if (PtrVT == MVT::i32) {
-      RdhwrOpc = Mips::RDHWR;
-      DestReg = Mips::V1;
+      const MipsABIInfo &ABI =
+          static_cast<const MipsTargetMachine &>(TM).getABI();
+      if (ABI.IsP32()) {
+        RdhwrOpc = Mips::RDHWR_NM;
+        DestReg = Mips::A1_NM;
+      } else {
+        RdhwrOpc = Mips::RDHWR;
+        DestReg = Mips::V1;
+      }
     } else {
       RdhwrOpc = Mips::RDHWR64;
       DestReg = Mips::V1_64;
@@ -1375,7 +1531,6 @@ bool MipsSEDAGToDAGISel::trySelect(SDNode *Node) {
   }
 
   }
-
   return false;
 }
 
@@ -1422,8 +1577,8 @@ SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
         OutOps.push_back(Offset);
         return false;
       }
-    } else if (Subtarget->hasMips32r6()) {
-      // On MIPS32r6/MIPS64r6, they can only handle 9-bit offsets.
+    } else if (Subtarget->hasMips32r6() || Subtarget->hasNanoMips()) {
+      // On MIPS32r6/MIPS64r6/nanoMIPS, they can only handle 9-bit offsets.
       if (selectAddrRegImm9(Op, Base, Offset)) {
         OutOps.push_back(Base);
         OutOps.push_back(Offset);
@@ -1443,7 +1598,180 @@ SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
   return true;
 }
 
+static bool isNot(const SDNode *N);
+static bool isBoolean(const SDNode *N)
+{
+  auto InstrNode = dyn_cast<MachineSDNode>(N);
+  if (InstrNode != nullptr) {
+    switch (InstrNode->getMachineOpcode()) {
+    case Mips::SLT_NM: case Mips::SLTI_NM:
+    case Mips::SLTU_NM: case Mips::SLTIU_NM:
+      return true;
+    case Mips::XORI_NM:
+      return isNot(N) && isBoolean(InstrNode->getOperand(0).getNode());
+    }
+  }
+  return false;
+}
+
+static bool isNot(const SDNode *N)
+{
+  auto XORInstr = dyn_cast<MachineSDNode>(N);
+
+  if (XORInstr != nullptr) {
+    if (XORInstr->getMachineOpcode() == Mips::XORI_NM && XORInstr->hasOneUse()) {
+      auto XOROperand1 = dyn_cast<ConstantSDNode>(XORInstr->getOperand(1));
+      if (XOROperand1 != nullptr && XOROperand1->getZExtValue() == 1) {
+        // This is a boolean 'not' only if the operand is also a boolean
+        return isBoolean(XORInstr->getOperand(0).getNode());
+      }
+    }
+  }
+  return false;
+}
+
+bool isCopyZero(const SDNode *N) {
+  if (N->getOpcode() == ISD::CopyFromReg) {
+    auto Operand = dyn_cast<RegisterSDNode>(N->getOperand(1));
+    return Operand->getReg() == Mips::ZERO_NM;
+  }
+  return false;
+}
+
+
+/// Postprocess the ISelDag to tidy up things created by the legalizer
+/// or by isolated instruction rules making sub-optimal decisions
+/// TODO: Refactor to NanoMips specific area, or generalise to other MIPS too.
+void MipsSEDAGToDAGISel::NanoMipsDAGPeepholes()
+{
+  bool IsModified;
+  do {
+    IsModified = false;
+
+    for (SDNode &N : CurDAG->allnodes()) {
+      if (N.use_empty() || !N.isMachineOpcode())
+        continue;
+
+      bool IsMovZ = false;
+      switch (N.getMachineOpcode()) {
+
+      case Mips::MOVZ_NM:
+        IsMovZ = true;
+        LLVM_FALLTHROUGH;
+      case Mips::MOVN_NM:
+
+        // (mov[nz] (not p) a b) -> (mov[zn] p b a)
+
+        assert(N.getNumOperands() == 3);
+        auto Cond = N.getOperand(1);
+        if (isNot(Cond.getNode())) {
+
+          // Morph to inverted conditional move
+          CurDAG->SelectNodeTo(&N, IsMovZ? Mips::MOVN_NM : Mips::MOVZ_NM,
+                               N.getValueType(0),
+                               N.getOperand(0), Cond.getOperand(0), N.getOperand(2));
+
+          IsModified = true;
+          LLVM_DEBUG(dbgs() << "Inverted cond move to avoid NOT of condition: ";
+                     N.dump(CurDAG));
+          break;
+        }
+
+        // (mov[nz] p (not a) (not b)) -> (not (mov[nz] p a b))
+        if (isNot(N.getOperand(0).getNode()) && isNot(N.getOperand(2).getNode())) {
+          SDLoc SL(&N);
+          MachineSDNode *NewMove =
+            CurDAG->getMachineNode(N.getMachineOpcode(),
+                                   SL, N.getValueType(0),
+                                   N.getOperand(0)->getOperand(0),
+                                   Cond,
+                                   N.getOperand(2)->getOperand(0));
+          MachineSDNode *NewNot =
+            CurDAG->getMachineNode(Mips::XORI_NM,
+                                   SL, N.getValueType(0),
+                                   SDValue(NewMove, 0),
+                                   CurDAG->getTargetConstant(1, SL, MVT::i32));
+          ReplaceUses(&N, NewNot);
+
+          IsModified = true;
+          LLVM_DEBUG(dbgs() << "Promoted cond move of 2 NOTS to NOT of cond move: ";
+                     NewMove->dump(CurDAG));
+          break;
+        }
+
+        // Commute (and invert) conditional move if the tied register
+        // operand has more than one use, but the non-tied operand has
+        // only a single use. This should eliminate the need for a
+        // deconstraining move.
+        // However, if either operand is a copy from the zero
+        // register, we always want that to be the unconstrained
+        // operand since it can always be trivially coalesced.
+        if (!isCopyZero(N.getOperand(0).getNode())) {
+          bool CommuteMove = false;
+          if (N.getOperand(0)->hasOneUse()
+              && !N.getOperand(2)->hasOneUse()) {
+            LLVM_DEBUG(dbgs() << "Commuting conditional move to avoid "
+                              << "potential copy: ";
+                       N.dump(CurDAG));
+            CommuteMove = true;
+          } else if (isCopyZero(N.getOperand(2).getNode())) {
+            LLVM_DEBUG(dbgs() << "Commuting conditional move to avoid potential"
+                              << " copy of zero register: ";
+                       N.dump(CurDAG));
+            CommuteMove = true;
+          }
+
+          if (CommuteMove) {
+            CurDAG->SelectNodeTo(&N, IsMovZ? Mips::MOVN_NM : Mips::MOVZ_NM,
+                                 N.getValueType(0),
+                                 N.getOperand(2), Cond,
+                                 N.getOperand(0));
+            IsModified = true;
+            break;
+          }
+        }
+        break;
+      }
+    }
+    if (IsModified)
+      CurDAG->RemoveDeadNodes();
+  } while (IsModified);
+}
+
+void MipsSEDAGToDAGISel::PostprocessISelDAG()
+{
+  if (Subtarget->hasNanoMips())
+    NanoMipsDAGPeepholes();
+}
+
+static bool selectOffsetGP(SelectionDAG *CurDAG, SDValue Addr, SDValue &Offset,
+			   unsigned OffsetBits, unsigned ShiftAmount = 0) {
+  if (Addr.getOpcode() == MipsISD::GPRel ||
+      isa<GlobalAddressSDNode>(Addr) ||
+      isa<ExternalSymbolSDNode>(Addr)) {
+    ConstantSDNode *CN = dyn_cast<ConstantSDNode>(Addr.getOperand(0));
+    if (CN != nullptr && isUIntN(OffsetBits + ShiftAmount, CN->getZExtValue())) {
+      EVT ValTy = Addr.getValueType();
+      Offset =
+          CurDAG->getTargetConstant(CN->getZExtValue(), SDLoc(Addr), ValTy);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MipsSEDAGToDAGISel::selectOffsetGP18(SDValue Addr,
+					  SDValue &Offset) const {
+  return selectOffsetGP(CurDAG, Addr, Offset, 18);
+}
+
+bool MipsSEDAGToDAGISel::selectOffsetGP19s2(SDValue Addr,
+					    SDValue &Offset) const {
+  return selectOffsetGP(CurDAG, Addr, Offset, 19, 2);
+}
+
 FunctionPass *llvm::createMipsSEISelDag(MipsTargetMachine &TM,
                                         CodeGenOpt::Level OptLevel) {
   return new MipsSEDAGToDAGISel(TM, OptLevel);
 }
+ 

@@ -54,10 +54,14 @@ public:
   virtual void emitDirectiveEnt(const MCSymbol &Symbol);
   virtual void emitDirectiveAbiCalls();
   virtual void emitDirectiveNaN2008();
+  virtual void emitDirectiveLinkRelax();
+  virtual void emitDirectiveNoLinkRelax();
   virtual void emitDirectiveNaNLegacy();
   virtual void emitDirectiveOptionPic0();
   virtual void emitDirectiveOptionPic2();
   virtual void emitDirectiveInsn();
+  virtual void emitSignedValue(const MCExpr *Value, unsigned Size,
+				  SMLoc Loc);
   virtual void emitFrame(unsigned StackReg, unsigned StackSize,
                          unsigned ReturnReg);
   virtual void emitMask(unsigned CPUBitmask, int CPUTopSavedRegOff);
@@ -102,6 +106,7 @@ public:
   virtual void emitDirectiveCpreturn(unsigned SaveLocation,
                                      bool SaveLocationIsRegister);
 
+  virtual void emitDirectiveModulePcRel();
   // FP abiflags directives
   virtual void emitDirectiveModuleFP();
   virtual void emitDirectiveModuleOddSPReg();
@@ -134,8 +139,12 @@ public:
                SMLoc IDLoc, const MCSubtargetInfo *STI);
   void emitRRRX(unsigned Opcode, unsigned Reg0, unsigned Reg1, unsigned Reg2,
                 MCOperand Op3, SMLoc IDLoc, const MCSubtargetInfo *STI);
+  void emitRRRI(unsigned Opcode, unsigned Reg0, unsigned Reg1, unsigned Reg2,
+		int16_t Imm, SMLoc IDLoc, const MCSubtargetInfo *STI);
   void emitRRI(unsigned Opcode, unsigned Reg0, unsigned Reg1, int16_t Imm,
                SMLoc IDLoc, const MCSubtargetInfo *STI);
+  void emitRRII(unsigned Opcode, unsigned Reg0, unsigned Reg1, int16_t Imm0,
+                int16_t Imm1, SMLoc IDLoc, const MCSubtargetInfo *STI);
   void emitRRIII(unsigned Opcode, unsigned Reg0, unsigned Reg1, int16_t Imm0,
                  int16_t Imm1, int16_t Imm2, SMLoc IDLoc,
                  const MCSubtargetInfo *STI);
@@ -236,6 +245,8 @@ public:
   void emitDirectiveEnt(const MCSymbol &Symbol) override;
   void emitDirectiveAbiCalls() override;
   void emitDirectiveNaN2008() override;
+  void emitDirectiveLinkRelax() override;
+  void emitDirectiveNoLinkRelax() override;
   void emitDirectiveNaNLegacy() override;
   void emitDirectiveOptionPic0() override;
   void emitDirectiveOptionPic2() override;
@@ -291,6 +302,7 @@ public:
   void emitDirectiveCpreturn(unsigned SaveLocation,
                              bool SaveLocationIsRegister) override;
 
+  void emitDirectiveModulePcRel() override;
   // FP abiflags directives
   void emitDirectiveModuleFP() override;
   void emitDirectiveModuleOddSPReg() override;
@@ -311,11 +323,14 @@ public:
 // This part is for ELF object output
 class MipsTargetELFStreamer : public MipsTargetStreamer {
   bool MicroMipsEnabled;
+  bool NanoMipsEnabled;
   const MCSubtargetInfo &STI;
   bool Pic;
+  bool Pid;
 
 public:
   bool isMicroMipsEnabled() const { return MicroMipsEnabled; }
+  bool isNanoMipsEnabled() const { return NanoMipsEnabled; }
   MCELFStreamer &getStreamer();
   MipsTargetELFStreamer(MCStreamer &S, const MCSubtargetInfo &STI);
 
@@ -340,6 +355,11 @@ public:
   void emitDirectiveOptionPic0() override;
   void emitDirectiveOptionPic2() override;
   void emitDirectiveInsn() override;
+  void emitSignedValue(const MCExpr *Value, unsigned Size,
+			  SMLoc Loc) override;
+  void emitDirectiveLinkRelax() override;
+  void emitDirectiveNoLinkRelax() override;
+  void emitDirectiveModulePcRel() override;
   void emitFrame(unsigned StackReg, unsigned StackSize,
                  unsigned ReturnReg) override;
   void emitMask(unsigned CPUBitmask, int CPUTopSavedRegOff) override;

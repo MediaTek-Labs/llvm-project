@@ -3934,6 +3934,8 @@ def mmicromips : Flag<["-"], "mmicromips">, Group<m_mips_Features_Group>;
 def mno_micromips : Flag<["-"], "mno-micromips">, Group<m_mips_Features_Group>;
 def mxgot : Flag<["-"], "mxgot">, Group<m_mips_Features_Group>;
 def mno_xgot : Flag<["-"], "mno-xgot">, Group<m_mips_Features_Group>;
+def mjump_table_opt : Flag<["-"], "mjump-table-opt">, Group<m_mips_Features_Group>;
+def mno_jump_table_opt : Flag<["-"], "mno-jump-table-opt">, Group<m_mips_Features_Group>;
 def mldc1_sdc1 : Flag<["-"], "mldc1-sdc1">, Group<m_mips_Features_Group>;
 def mno_ldc1_sdc1 : Flag<["-"], "mno-ldc1-sdc1">, Group<m_mips_Features_Group>;
 def mcheck_zero_division : Flag<["-"], "mcheck-zero-division">,
@@ -4006,6 +4008,9 @@ def mabicalls : Flag<["-"], "mabicalls">, Group<m_mips_Features_Group>,
   HelpText<"Enable SVR4-style position-independent code (Mips only)">;
 def mno_abicalls : Flag<["-"], "mno-abicalls">, Group<m_mips_Features_Group>,
   HelpText<"Disable SVR4-style position-independent code (Mips only)">;
+def mload_store_unaligned : Flag<["-"], "mload-store-unaligned">,
+  Group<m_mips_Features_Group>,
+  HelpText<"Allow unaligned loads and stores (Mips only)">;
 def mno_crc : Flag<["-"], "mno-crc">, Group<m_mips_Features_Group>,
   HelpText<"Disallow use of CRC instructions (Mips only)">;
 def mvirt : Flag<["-"], "mvirt">, Group<m_mips_Features_Group>;

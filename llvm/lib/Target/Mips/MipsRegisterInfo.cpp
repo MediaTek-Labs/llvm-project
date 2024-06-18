@@ -51,13 +51,17 @@ MipsRegisterInfo::getPointerRegClass(const MachineFunction &MF,
 
   switch (PtrClassKind) {
   case MipsPtrClass::Default:
-    return ABI.ArePtrs64bit() ? &Mips::GPR64RegClass : &Mips::GPR32RegClass;
+    return ABI.ArePtrs64bit()
+               ? &Mips::GPR64RegClass
+               : ABI.IsP32() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
   case MipsPtrClass::GPR16MM:
     return &Mips::GPRMM16RegClass;
   case MipsPtrClass::StackPointer:
     return ABI.ArePtrs64bit() ? &Mips::SP64RegClass : &Mips::SP32RegClass;
   case MipsPtrClass::GlobalPointer:
     return ABI.ArePtrs64bit() ? &Mips::GP64RegClass : &Mips::GP32RegClass;
+  case MipsPtrClass::GPR32_M_NM:
+    return ABI.IsP32() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
   }
 
   llvm_unreachable("Unknown pointer kind");
@@ -105,6 +109,9 @@ MipsRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   if (Subtarget.isSingleFloat())
     return CSR_SingleFloatOnly_SaveList;
 
+  if (Subtarget.isABI_P32())
+    return CSR_P32_SaveList;
+
   if (Subtarget.isABI_N64())
     return CSR_N64_SaveList;
 
@@ -133,6 +140,9 @@ MipsRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
   if (Subtarget.isABI_N32())
     return CSR_N32_RegMask;
 
+  if (Subtarget.isABI_P32())
+    return CSR_P32_RegMask;
+
   if (Subtarget.isFP64bit())
     return CSR_O32_FP64_RegMask;
 
@@ -140,6 +150,11 @@ MipsRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
     return CSR_O32_FPXX_RegMask;
 
   return CSR_O32_RegMask;
+}
+
+bool MipsRegisterInfo::isReservedReg(const MachineFunction &MF,
+                                     MCRegister Reg) const {
+  return getReservedRegs(MF)[Reg];
 }
 
 const uint32_t *MipsRegisterInfo::getMips16RetHelperMask() {
@@ -154,6 +169,10 @@ getReservedRegs(const MachineFunction &MF) const {
 
   static const MCPhysReg ReservedGPR64[] = {
     Mips::ZERO_64, Mips::K0_64, Mips::K1_64, Mips::SP_64
+  };
+
+  static const MCPhysReg ReservedGPRNM32[] = {
+    Mips::ZERO_NM, Mips::K0_NM, Mips::K1_NM, Mips::SP_NM, Mips::AT_NM
   };
 
   BitVector Reserved(getNumRegs());
@@ -172,10 +191,14 @@ getReservedRegs(const MachineFunction &MF) const {
   for (MCPhysReg R : ReservedGPR64)
     Reserved.set(R);
 
+  for (MCPhysReg R : ReservedGPRNM32)
+    Reserved.set(R);
+
   // For mno-abicalls, GP is a program invariant!
   if (!Subtarget.isABICalls()) {
     Reserved.set(Mips::GP);
     Reserved.set(Mips::GP_64);
+    Reserved.set(Mips::GP_NM);
   }
 
   if (Subtarget.isFP64bit()) {
@@ -194,6 +217,7 @@ getReservedRegs(const MachineFunction &MF) const {
     else {
       Reserved.set(Mips::FP);
       Reserved.set(Mips::FP_64);
+      Reserved.set(Mips::FP_NM);
 
       // Reserve the base register if we need to both realign the stack and
       // allocate variable-sized objects at runtime. This should test the
@@ -234,6 +258,7 @@ getReservedRegs(const MachineFunction &MF) const {
   if (Subtarget.useSmallSection()) {
     Reserved.set(Mips::GP);
     Reserved.set(Mips::GP_64);
+    Reserved.set(Mips::GP_NM);
   }
 
   return Reserved;
@@ -243,6 +268,11 @@ bool
 MipsRegisterInfo::requiresRegisterScavenging(const MachineFunction &MF) const {
   return true;
 }
+
+bool MipsRegisterInfo::isNeededForReturn(MCRegister PhysReg, const MachineFunction &MF) const {
+  return PhysReg == Mips::RA || PhysReg == Mips::RA_64 || PhysReg == Mips::RA_NM;
+}
+
 
 // FrameIndex represent objects inside a abstract stack.
 // We must replace FrameIndex with an stack/frame pointer
@@ -278,12 +308,14 @@ getFrameRegister(const MachineFunction &MF) const {
   const TargetFrameLowering *TFI = Subtarget.getFrameLowering();
   bool IsN64 =
       static_cast<const MipsTargetMachine &>(MF.getTarget()).getABI().IsN64();
+  bool IsP32 =
+      static_cast<const MipsTargetMachine &>(MF.getTarget()).getABI().IsP32();
 
   if (Subtarget.inMips16Mode())
     return TFI->hasFP(MF) ? Mips::S0 : Mips::SP;
   else
-    return TFI->hasFP(MF) ? (IsN64 ? Mips::FP_64 : Mips::FP) :
-                            (IsN64 ? Mips::SP_64 : Mips::SP);
+    return TFI->hasFP(MF) ? (IsN64 ? Mips::FP_64 : (IsP32 ? Mips::FP_NM : Mips::FP)) :
+                            (IsN64 ? Mips::SP_64 : (IsP32 ? Mips::SP_NM : Mips::SP));
 }
 
 bool MipsRegisterInfo::canRealignStack(const MachineFunction &MF) const {

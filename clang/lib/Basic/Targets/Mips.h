@@ -27,7 +27,7 @@ class LLVM_LIBRARY_VISIBILITY MipsTargetInfo : public TargetInfo {
 
     if (ABI == "o32")
       Layout = "m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64";
-    else if (ABI == "n32")
+    else if (ABI == "n32" || ABI == "p32")
       Layout = "m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S128";
     else if (ABI == "n64")
       Layout = "m:e-i8:8:32-i16:16:32-i64:64-n32:64-S128";
@@ -43,6 +43,7 @@ class LLVM_LIBRARY_VISIBILITY MipsTargetInfo : public TargetInfo {
   std::string CPU;
   bool IsMips16;
   bool IsMicromips;
+  bool IsNanoMips;
   bool IsNan2008;
   bool IsAbs2008;
   bool IsSingleFloat;
@@ -61,20 +62,24 @@ protected:
 public:
   MipsTargetInfo(const llvm::Triple &Triple, const TargetOptions &)
       : TargetInfo(Triple), IsMips16(false), IsMicromips(false),
-        IsNan2008(false), IsAbs2008(false), IsSingleFloat(false),
-        IsNoABICalls(false), CanUseBSDABICalls(false), FloatABI(HardFloat),
-        DspRev(NoDSP), HasMSA(false), DisableMadd4(false),
+        IsNanoMips(false), IsNan2008(false), IsAbs2008(false),
+        IsSingleFloat(false), IsNoABICalls(false), CanUseBSDABICalls(false),
+        FloatABI(HardFloat), DspRev(NoDSP), HasMSA(false), DisableMadd4(false),
         UseIndirectJumpHazard(false), FPMode(FPXX) {
     TheCXXABI.set(TargetCXXABI::GenericMIPS);
 
-    if (Triple.isMIPS32())
+    if (Triple.isMIPS32()) {
       setABI("o32");
-    else if (Triple.getEnvironment() == llvm::Triple::GNUABIN32)
+    } else if (Triple.isNanoMips()) {
+      setABI("p32");
+      IsNanoMips = true;
+    } else if (Triple.getEnvironment() == llvm::Triple::GNUABIN32) {
       setABI("n32");
-    else
+    } else {
       setABI("n64");
+    }
 
-    CPU = ABI == "o32" ? "mips32r2" : "mips64r2";
+    CPU = ABI == "p32" ? "nanomips" : ABI == "o32" ? "mips32r2" : "mips64r2";
 
     CanUseBSDABICalls = Triple.isOSFreeBSD() ||
                         Triple.isOSOpenBSD();
@@ -97,6 +102,12 @@ public:
   bool setABI(const std::string &Name) override {
     if (Name == "o32") {
       setO32ABITypes();
+      ABI = Name;
+      return true;
+    }
+
+    if (Name == "p32") {
+      setP32ABITypes();
       ABI = Name;
       return true;
     }
@@ -125,6 +136,20 @@ public:
     PtrDiffType = SignedInt;
     SizeType = UnsignedInt;
     SuitableAlign = 64;
+  }
+
+  void setP32ABITypes() {
+    Int64Type = SignedLongLong;
+    IntMaxType = Int64Type;
+    LongDoubleFormat = &llvm::APFloat::IEEEdouble();
+    LongDoubleWidth = LongDoubleAlign = 64;
+    LongWidth = LongAlign = 32;
+    MaxAtomicPromoteWidth = 32;
+    MaxAtomicInlineWidth = 64;
+    PointerWidth = PointerAlign = 32;
+    PtrDiffType = SignedInt;
+    SizeType = UnsignedInt;
+    SuitableAlign = 128;
   }
 
   void setN32N64ABITypes() {
@@ -196,7 +221,10 @@ public:
   bool hasFeature(StringRef Feature) const override;
 
   BuiltinVaListKind getBuiltinVaListKind() const override {
-    return TargetInfo::VoidPtrBuiltinVaList;
+    if (ABI == "p32")
+      return TargetInfo::NanoMipsBuiltinVaList;
+    else
+      return TargetInfo::VoidPtrBuiltinVaList;
   }
 
   ArrayRef<const char *> getGCCRegNames() const override {
@@ -310,10 +338,9 @@ public:
     IsNan2008 = isIEEE754_2008Default();
     IsAbs2008 = isIEEE754_2008Default();
     IsSingleFloat = false;
-    FloatABI = HardFloat;
+    FloatABI = IsNanoMips ? SoftFloat : HardFloat;
     DspRev = NoDSP;
     FPMode = isFP64Default() ? FP64 : FPXX;
-
     for (const auto &Feature : Features) {
       if (Feature == "+single-float")
         IsSingleFloat = true;
@@ -393,9 +420,24 @@ public:
         {{"gp"}, "$28"}, {{"sp", "$sp"}, "$29"}, {{"fp", "$fp"}, "$30"},
         {{"ra"}, "$31"}
     };
+    static const TargetInfo::GCCRegAlias P32RegAliases[] = {
+        {{"at", "$at"}, "$1"},  {{"t4", "$t4"}, "$2"},  {{"t5", "$t5"}, "$3"},
+        {{"a0", "$a0"}, "$4"},  {{"a1", "$a1"}, "$5"},  {{"a2", "$a2"}, "$6"},
+        {{"a3", "$a3"}, "$7"},  {{"a4", "$a4"}, "$8"},  {{"a5", "$a5"}, "$9"},
+        {{"a6", "$a6"}, "$10"}, {{"a7", "$a7"}, "$11"}, {{"t0", "$t0"}, "$12"},
+        {{"t1", "$t1"}, "$13"}, {{"t2", "$t2"}, "$14"}, {{"t3", "$t3"}, "$15"},
+        {{"s0", "$s0"}, "$16"}, {{"s1", "$s1"}, "$17"}, {{"s2", "$s2"}, "$18"},
+        {{"s3", "$s3"}, "$19"}, {{"s4", "$s4"}, "$20"}, {{"s5", "$s5"}, "$21"},
+        {{"s6", "$s6"}, "$22"}, {{"s7", "$s7"}, "$23"}, {{"t8", "$t8"}, "$24"},
+        {{"t9", "$t9"}, "$25"}, {{"k0", "$k0"}, "$26"}, {{"k1", "$k1"}, "$27"},
+        {{"gp", "$gp"}, "$28"}, {{"sp", "$sp"}, "$29"}, {{"fp", "$fp"}, "$30"},
+        {{"ra", "$ra"}, "$31"}, {{"$zero"},      "$0"}
+    };
     if (ABI == "o32")
-      return llvm::ArrayRef(O32RegAliases);
-    return llvm::ArrayRef(NewABIRegAliases);
+      return llvm::makeArrayRef(O32RegAliases);
+    if (ABI == "p32")
+      return llvm::makeArrayRef(P32RegAliases);
+    return llvm::makeArrayRef(NewABIRegAliases);
   }
 
   bool hasInt128Type() const override {
@@ -406,6 +448,11 @@ public:
 
   bool validateTarget(DiagnosticsEngine &Diags) const override;
   bool hasBitIntType() const override { return true; }
+  unsigned getMinGlobalAlign(uint64_t TypeSize) const override {
+    if (ABI != "p32" || TypeSize < 32)
+      return TargetInfo::getMinGlobalAlign(TypeSize);
+    return 32u;
+  }
 };
 } // namespace targets
 } // namespace clang

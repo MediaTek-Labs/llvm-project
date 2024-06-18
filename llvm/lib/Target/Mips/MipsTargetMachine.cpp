@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "NanoMipsTargetTransformInfo.h"
 #include "MipsTargetMachine.h"
 #include "MCTargetDesc/MipsABIInfo.h"
 #include "MCTargetDesc/MipsMCTargetDesc.h"
@@ -41,10 +42,29 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
 #include <optional>
+
 #include <string>
 
 using namespace llvm;
+
+static cl::opt<bool> EnableSplitGEP("mips-enable-split-gep",
+                                    cl::desc("Enable the late split GEP pass"),
+                                    cl::init(true), cl::Hidden);
+
+static cl::opt<bool> EnableSLSR("mips-enable-sls",
+                                cl::desc("Enable the SLSR pass"),
+                                cl::init(true), cl::Hidden);
+
+static cl::opt<bool> EnableReassoc("mips-enable-reassoc",
+                                   cl::desc("Enable the reassociate pass"),
+                                   cl::init(true), cl::Hidden);
+
+static cl::opt<bool> EnableLICM("mips-enable-licm",
+                                cl::desc("Enable the licm pass"),
+                                cl::init(false), cl::Hidden);
 
 #define DEBUG_TYPE "mips"
 
@@ -58,6 +78,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTarget() {
   RegisterTargetMachine<MipselTargetMachine> Y(getTheMipselTarget());
   RegisterTargetMachine<MipsebTargetMachine> A(getTheMips64Target());
   RegisterTargetMachine<MipselTargetMachine> B(getTheMips64elTarget());
+  RegisterTargetMachine<NanoMipsTargetMachine> C(getTheNanoMipsTarget());
 
   PassRegistry *PR = PassRegistry::getPassRegistry();
   initializeGlobalISel(*PR);
@@ -68,6 +89,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTarget() {
   initializeMipsPostLegalizerCombinerPass(*PR);
   initializeMipsMulMulBugFixPass(*PR);
   initializeMipsDAGToDAGISelPass(*PR);
+  initializeRedundantCopyEliminationPass(*PR);
 }
 
 static std::string computeDataLayout(const Triple &TT, StringRef CPU,
@@ -98,7 +120,7 @@ static std::string computeDataLayout(const Triple &TT, StringRef CPU,
   // 32 bit registers are always available and the stack is at least 64 bit
   // aligned. On N64 64 bit registers are also available and the stack is
   // 128 bit aligned.
-  if (ABI.IsN64() || ABI.IsN32())
+  if (ABI.IsN64() || ABI.IsN32() || ABI.IsP32())
     Ret += "-n32:64-S128";
   else
     Ret += "-n32-S64";
@@ -107,8 +129,13 @@ static std::string computeDataLayout(const Triple &TT, StringRef CPU,
 }
 
 static Reloc::Model getEffectiveRelocModel(bool JIT,
-                                           std::optional<Reloc::Model> RM) {
-  if (!RM || JIT)
+                                           std::optional<Reloc::Model> RM,
+                                           const Triple &TT) {
+  if (TT.isNanoMips()) {
+    // PIC not supported yet on NanoMips. Always use static.
+    return Reloc::Static;
+  }
+  if (!RM.has_value() || JIT)
     return Reloc::Static;
   return *RM;
 }
@@ -126,7 +153,7 @@ MipsTargetMachine::MipsTargetMachine(const Target &T, const Triple &TT,
                                      CodeGenOpt::Level OL, bool JIT,
                                      bool isLittle)
     : LLVMTargetMachine(T, computeDataLayout(TT, CPU, Options, isLittle), TT,
-                        CPU, FS, Options, getEffectiveRelocModel(JIT, RM),
+                        CPU, FS, Options, getEffectiveRelocModel(JIT, RM, TT),
                         getEffectiveCodeModel(CM, CodeModel::Small), OL),
       isLittle(isLittle), TLOF(std::make_unique<MipsTargetObjectFile>()),
       ABI(MipsABIInfo::computeTargetABI(TT, CPU, Options.MCOptions)),
@@ -138,6 +165,12 @@ MipsTargetMachine::MipsTargetMachine(const Target &T, const Triple &TT,
                       isLittle, *this, std::nullopt) {
   Subtarget = &DefaultSubtarget;
   initAsmInfo();
+
+  // Mips supports the MachineOutliner.
+  setMachineOutliner(true);
+
+  // Mips supports default outlining behaviour.
+  setSupportsDefaultOutlining(true);
 
   // Mips supports the debug entry values.
   setSupportsDebugEntryValues(true);
@@ -165,6 +198,16 @@ MipselTargetMachine::MipselTargetMachine(const Target &T, const Triple &TT,
                                          CodeGenOpt::Level OL, bool JIT)
     : MipsTargetMachine(T, TT, CPU, FS, Options, RM, CM, OL, JIT, true) {}
 
+void NanoMipsTargetMachine::anchor() {}
+
+NanoMipsTargetMachine::NanoMipsTargetMachine(const Target &T, const Triple &TT,
+                                             StringRef CPU, StringRef FS,
+                                             const TargetOptions &Options,
+                                             std::optional<Reloc::Model> RM,
+                                             std::optional<CodeModel::Model> CM,
+                                             CodeGenOpt::Level OL, bool JIT)
+    : MipsTargetMachine(T, TT, CPU, FS, Options, RM, CM, OL, JIT, true) {}
+
 const MipsSubtarget *
 MipsTargetMachine::getSubtargetImpl(const Function &F) const {
   Attribute CPUAttr = F.getFnAttribute("target-cpu");
@@ -183,7 +226,12 @@ MipsTargetMachine::getSubtargetImpl(const Function &F) const {
   // FIXME: This is related to the code below to reset the target options,
   // we need to know whether or not the soft float flag is set on the
   // function, so we can enable it as a subtarget feature.
-  bool softFloat = F.getFnAttribute("use-soft-float").getValueAsBool();
+  bool softFloat =
+      F.hasFnAttribute("use-soft-float") &&
+      F.getFnAttribute("use-soft-float").getValueAsBool();
+  if (getTargetTriple().isNanoMips()) {
+    softFloat = true;
+  }
 
   if (hasMips16Attr)
     FS += FS.empty() ? "+mips16" : ",+mips16";
@@ -240,13 +288,17 @@ public:
   void addIRPasses() override;
   bool addInstSelector() override;
   void addPreEmitPass() override;
+  void addPreEmitPass2() override;
   void addPreRegAlloc() override;
+  void addPostRegAlloc() override;
   bool addIRTranslator() override;
   void addPreLegalizeMachineIR() override;
   bool addLegalizeMachineIR() override;
   void addPreRegBankSelect() override;
   bool addRegBankSelect() override;
   bool addGlobalInstructionSelect() override;
+  void addPreSched2() override;
+  bool addPreRewrite() override;
 
   std::unique_ptr<CSEConfigBase> getCSEConfig() const override;
 };
@@ -261,6 +313,11 @@ std::unique_ptr<CSEConfigBase> MipsPassConfig::getCSEConfig() const {
   return getStandardCSEConfigForOpt(TM->getOptLevel());
 }
 
+void MipsPassConfig::addPreSched2() {
+  if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOpt::None)
+    addPass(createNanoMipsLoadStoreOptimizerPass());
+}
+
 void MipsPassConfig::addIRPasses() {
   TargetPassConfig::addIRPasses();
   addPass(createAtomicExpandPass());
@@ -268,6 +325,26 @@ void MipsPassConfig::addIRPasses() {
     addPass(createMipsOs16Pass());
   if (getMipsSubtarget().inMips16HardFloat())
     addPass(createMips16HardFloatPass());
+
+  if (getMipsSubtarget().hasNanoMips()) {
+    addPass(createNanoMipsCodeGenPreparePass());
+
+    if (EnableSplitGEP)
+      addPass(createSeparateConstOffsetFromGEPPass(/* LowerGEP */ true));
+    // ReassociateGEPs exposes more opportunites for SLSR.
+    if (EnableSLSR)
+      addPass(createStraightLineStrengthReducePass());
+
+    addPass(createGVNHoistPass());
+    // Run NaryReassociate after EarlyCSE/GVN to be more effective.
+    if (EnableReassoc)
+      addPass(createNaryReassociatePass());
+
+    addPass(createEarlyCSEPass());
+
+    if (EnableLICM)
+      addPass(createLICMPass());
+  }
 }
 // Install an instruction selector pass using
 // the ISelDag to gen Mips code.
@@ -282,8 +359,17 @@ void MipsPassConfig::addPreRegAlloc() {
   addPass(createMipsOptimizePICCallPass());
 }
 
+void MipsPassConfig::addPostRegAlloc() {
+  if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOpt::None)
+    addPass(createRedundantCopyEliminationPass());
+}
+
 TargetTransformInfo
 MipsTargetMachine::getTargetTransformInfo(const Function &F) const {
+   if (Subtarget->hasNanoMips()) {
+    LLVM_DEBUG(errs() << "nanoMips Target Transform Info Pass Added\n");
+    return TargetTransformInfo(NanoMipsTTIImpl(this, F));
+  }
   if (Subtarget->allowMixed16_32()) {
     LLVM_DEBUG(errs() << "No Target Transform Info Pass Added\n");
     // FIXME: This is no longer necessary as the TTI returned is per-function.
@@ -303,17 +389,24 @@ MachineFunctionInfo *MipsTargetMachine::createMachineFunctionInfo(
 // Implemented by targets that want to run passes immediately before
 // machine code is emitted.
 void MipsPassConfig::addPreEmitPass() {
+  if (getMipsSubtarget().hasNanoMips())
+    addPass(createNanoMipsCompressJumpTablesPass());
   // Expand pseudo instructions that are sensitive to register allocation.
   addPass(createMipsExpandPseudoPass());
 
   // The microMIPS size reduction pass performs instruction reselection for
   // instructions which can be remapped to a 16 bit instruction.
   addPass(createMicroMipsSizeReducePass());
+}
+
+void MipsPassConfig::addPreEmitPass2() {
 
   // This pass inserts a nop instruction between two back-to-back multiplication
   // instructions when the "mfix4300" flag is passed.
   if (EnableMulMulFix)
     addPass(createMipsMulMulBugPass());
+   if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOpt::None)
+    addPass(createNanoMipsMoveOptimizerPass());
 
   // The delay slot filler pass can potientially create forbidden slot hazards
   // for MIPSR6 and therefore it should go before MipsBranchExpansion pass.
@@ -327,9 +420,15 @@ void MipsPassConfig::addPreEmitPass() {
   // then we can be sure that all branches are expanded properly and no hazards
   // exists.
   // Any new pass should go before this pass.
-  addPass(createMipsBranchExpansion());
+  if (!getMipsSubtarget().hasNanoMips())
+    addPass(createMipsBranchExpansion());
 
   addPass(createMipsConstantIslandPass());
+}
+
+bool MipsPassConfig::addPreRewrite() {
+  addPass(createNanoMipsRegisterReAllocationPass());
+  return true;
 }
 
 bool MipsPassConfig::addIRTranslator() {

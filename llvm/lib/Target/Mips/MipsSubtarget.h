@@ -42,7 +42,8 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   enum MipsArchEnum {
     MipsDefault,
     Mips1, Mips2, Mips32, Mips32r2, Mips32r3, Mips32r5, Mips32r6, Mips32Max,
-    Mips3, Mips4, Mips5, Mips64, Mips64r2, Mips64r3, Mips64r5, Mips64r6
+    Mips3, Mips4, Mips5, Mips64, Mips64r2, Mips64r3, Mips64r5, Mips64r6, Mips64Max,
+    NanoMips
   };
 
   enum class CPU { P5600 };
@@ -191,6 +192,9 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   // HasGINV -- supports R6 Global INValidate ASE
   bool HasGINV;
 
+  // HasTLB -- supports TLB extension
+  bool HasTLB;
+
   // Use hazard variants of the jump register instructions for indirect
   // function calls and jump tables.
   bool UseIndirectJumpsHazard;
@@ -200,6 +204,20 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
 
   // Assume 32-bit GOT.
   bool UseXGOT = false;
+  
+  bool UseAbsoluteJumpTables = false;
+
+  // CPU supports NanoMips low-power subset (NMS)
+  bool HasNMS;
+
+  // Use unaliged loads and stores (nanoMIPS only).
+  bool UseUnalignedLoadStore = false;
+
+  // Use linker relaxation
+  bool UseLinkerRelax = false;
+
+  // PC-relative addressing mode (nanoMIPS only).
+  bool UsePCRel = false;
 
   /// The minimum alignment known to hold of the stack frame on
   /// entry to the function and which must be maintained by every function.
@@ -233,6 +251,7 @@ public:
   bool isABI_N64() const;
   bool isABI_N32() const;
   bool isABI_O32() const;
+  bool isABI_P32() const;
   const MipsABIInfo &getABI() const;
   bool isABI_FPXX() const { return isABI_O32() && IsFPXX; }
 
@@ -272,14 +291,16 @@ public:
     return (MipsArchVersion >= Mips32r6 && MipsArchVersion < Mips32Max) ||
            hasMips64r6();
   }
-  bool hasMips64() const { return MipsArchVersion >= Mips64; }
-  bool hasMips64r2() const { return MipsArchVersion >= Mips64r2; }
-  bool hasMips64r3() const { return MipsArchVersion >= Mips64r3; }
-  bool hasMips64r5() const { return MipsArchVersion >= Mips64r5; }
-  bool hasMips64r6() const { return MipsArchVersion >= Mips64r6; }
+  bool hasMips64() const { return MipsArchVersion >= Mips64 && MipsArchVersion < Mips64Max; }
+  bool hasMips64r2() const { return MipsArchVersion >= Mips64r2 && MipsArchVersion < Mips64Max; }
+  bool hasMips64r3() const { return MipsArchVersion >= Mips64r3 && MipsArchVersion < Mips64Max; }
+  bool hasMips64r5() const { return MipsArchVersion >= Mips64r5 && MipsArchVersion < Mips64Max; }
+  bool hasMips64r6() const { return MipsArchVersion >= Mips64r6 && MipsArchVersion < Mips64Max; }
+  bool hasNanoMips() const { return MipsArchVersion >= NanoMips; }
 
   bool hasCnMips() const { return HasCnMips; }
   bool hasCnMipsP() const { return HasCnMipsP; }
+  bool hasNMS() const { return HasNMS; }
 
   bool isLittle() const { return IsLittle; }
   bool isABICalls() const { return !NoABICalls; }
@@ -326,10 +347,11 @@ public:
   bool hasCRC() const { return HasCRC; }
   bool hasVirt() const { return HasVirt; }
   bool hasGINV() const { return HasGINV; }
+  bool hasTLB() const { return HasTLB; }
   bool useIndirectJumpsHazard() const {
     return UseIndirectJumpsHazard && hasMips32r2();
   }
-  bool useSmallSection() const { return UseSmallSection; }
+  bool useSmallSection() const { return UseSmallSection && !hasNanoMips(); }
 
   bool hasStandardEncoding() const { return !InMips16Mode && !InMicroMipsMode; }
 
@@ -339,12 +361,24 @@ public:
 
   bool useXGOT() const { return UseXGOT; }
 
-  bool enableLongBranchPass() const {
+  bool useAbsoluteJumpTables() const {
+    return UseAbsoluteJumpTables && hasNanoMips();
+  }
+
+  bool useUnalignedLoadStore() const { return UseUnalignedLoadStore; };
+
+  bool useLinkerRelax() const { return UseLinkerRelax; }
+
+  bool usePCRel() const { return UsePCRel; }
+
+ bool enableLongBranchPass() const {
     return hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32();
   }
 
   /// Features related to the presence of specific instructions.
-  bool hasExtractInsert() const { return !inMips16Mode() && hasMips32r2(); }
+  bool hasExtractInsert() const {
+    return (!inMips16Mode() && hasMips32r2()) || hasNanoMips();
+  }
   bool hasMTHC1() const { return hasMips32r2(); }
 
   bool allowMixed16_32() const { return inMips16ModeDefault() |

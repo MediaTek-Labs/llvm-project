@@ -393,7 +393,8 @@ std::string tools::getCPUName(const Driver &D, const ArgList &Args,
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
-  case llvm::Triple::mips64el: {
+  case llvm::Triple::mips64el:
+  case llvm::Triple::nanomips: {
     StringRef CPUName;
     StringRef ABIName;
     mips::getMipsCPUAndABI(Args, T, CPUName, ABIName);
@@ -474,6 +475,7 @@ void tools::getTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
   case llvm::Triple::mips64el:
+  case llvm::Triple::nanomips:
     mips::getMIPSTargetFeatures(D, Triple, Args, Features);
     break;
   case llvm::Triple::arm:
@@ -1389,6 +1391,7 @@ tools::ParsePICArgs(const ToolChain &ToolChain, const ArgList &Args) {
     case llvm::Triple::mipsel:
     case llvm::Triple::mips64:
     case llvm::Triple::mips64el:
+    case llvm::Triple::nanomips:
       PIC = true; // "-fpic"
       break;
 

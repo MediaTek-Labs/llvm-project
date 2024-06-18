@@ -92,10 +92,9 @@ void TargetFrameLowering::determineCalleeSaves(MachineFunction &MF,
 
   // When interprocedural register allocation is enabled caller saved registers
   // are preferred over callee saved registers.
-  if (MF.getTarget().Options.EnableIPRA &&
-      isSafeForNoCSROpt(MF.getFunction()) &&
-      isProfitableForNoCSROpt(MF.getFunction()))
-    return;
+  bool NoCSR = (MF.getTarget().Options.EnableIPRA &&
+                isSafeForNoCSROpt(MF.getFunction()) &&
+                isProfitableForNoCSROpt(MF.getFunction()));
 
   // Get the callee saved register list...
   const MCPhysReg *CSRegs = MF.getRegInfo().getCalleeSavedRegs();
@@ -124,10 +123,12 @@ void TargetFrameLowering::determineCalleeSaves(MachineFunction &MF,
   // Functions which call __builtin_unwind_init get all their registers saved.
   bool CallsUnwindInit = MF.callsUnwindInit();
   const MachineRegisterInfo &MRI = MF.getRegInfo();
+  const TargetRegisterInfo *RI = MF.getSubtarget().getRegisterInfo();
   for (unsigned i = 0; CSRegs[i]; ++i) {
     unsigned Reg = CSRegs[i];
     if (CallsUnwindInit || MRI.isPhysRegModified(Reg))
-      SavedRegs.set(Reg);
+      if (!NoCSR || !MRI.isAllocatable(Reg) || RI->isNeededForReturn(Reg, MF))
+        SavedRegs.set(Reg);
   }
 }
 

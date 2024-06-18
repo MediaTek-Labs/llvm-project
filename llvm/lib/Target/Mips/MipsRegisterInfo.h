@@ -36,6 +36,8 @@ public:
     StackPointer = 2,
     /// The global pointer only.
     GlobalPointer = 3,
+    /// The GPR32_NM on nanoMIPS, otherwise GPR32
+    GPR32_M_NM = 4,
   };
 
   MipsRegisterInfo();
@@ -43,6 +45,7 @@ public:
   /// Get PIC indirect call register
   static unsigned getPICCallReg();
 
+  bool isReservedReg(const MachineFunction &MF, MCRegister Reg) const;
   /// Code Generation virtual methods...
   const TargetRegisterClass *getPointerRegClass(const MachineFunction &MF,
                                                 unsigned Kind) const override;
@@ -71,6 +74,8 @@ public:
 
   /// Return GPR register class.
   virtual const TargetRegisterClass *intRegClass(unsigned Size) const = 0;
+
+  virtual bool isNeededForReturn(MCRegister PhysReg, const MachineFunction &MF) const override;
 
 private:
   virtual void eliminateFI(MachineBasicBlock::iterator II, unsigned OpNo,

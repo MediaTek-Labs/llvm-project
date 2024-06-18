@@ -39,6 +39,7 @@
 #include "ToolChains/MipsLinux.h"
 #include "ToolChains/Myriad.h"
 #include "ToolChains/NaCl.h"
+#include "ToolChains/NanoMips.h"
 #include "ToolChains/NetBSD.h"
 #include "ToolChains/OpenBSD.h"
 #include "ToolChains/PPCFreeBSD.h"
@@ -4990,7 +4991,8 @@ class ToolSelector final {
         return nullptr;
     }
 
-    if (!T->hasIntegratedAssembler())
+    if (!T->hasIntegratedAssembler() ||
+	(TC.getTriple().isNanoMips() && TC.useIntegratedAs()))
       return nullptr;
 
     Inputs = CJ->getInputs();
@@ -5013,7 +5015,8 @@ class ToolSelector final {
     if (!T)
       return nullptr;
 
-    if (!T->hasIntegratedAssembler())
+    if (!T->hasIntegratedAssembler() ||
+	(TC.getTriple().isNanoMips() && TC.useIntegratedAs()))
       return nullptr;
 
     Inputs = BJ->getInputs();
@@ -6149,6 +6152,9 @@ const ToolChain &Driver::getToolChain(const ArgList &Args,
         break;
       case llvm::Triple::csky:
         TC = std::make_unique<toolchains::CSKYToolChain>(*this, Target, Args);
+        break;
+      case llvm::Triple::nanomips:
+        TC = std::make_unique<toolchains::NanoMips>(*this, Target, Args);
         break;
       default:
         if (Target.getVendor() == llvm::Triple::Myriad)

@@ -64,8 +64,14 @@ static cl::opt<bool> NoDPLoadStore("mno-ldc1-sdc1", cl::init(false),
 MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
                                            const MipsSubtarget &STI)
     : MipsTargetLowering(TM, STI) {
+  if (Subtarget.hasNanoMips() && UseMipsTailCalls.getNumOccurrences() == 0)
+    UseMipsTailCalls = true;
+
   // Set up the register classes
-  addRegisterClass(MVT::i32, &Mips::GPR32RegClass);
+  if (STI.isABI_P32())
+    addRegisterClass(MVT::i32, &Mips::GPRNM32RegClass);
+  else
+    addRegisterClass(MVT::i32, &Mips::GPR32RegClass);
 
   if (Subtarget.isGP64bit())
     addRegisterClass(MVT::i64, &Mips::GPR64RegClass);
@@ -195,11 +201,25 @@ MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
   setOperationAction(ISD::INTRINSIC_WO_CHAIN, MVT::i64, Custom);
   setOperationAction(ISD::INTRINSIC_W_CHAIN,  MVT::i64, Custom);
 
-  setOperationAction(ISD::SDIVREM, MVT::i32, Custom);
-  setOperationAction(ISD::UDIVREM, MVT::i32, Custom);
+  if (!Subtarget.hasNanoMips()) {
+    setOperationAction(ISD::SDIVREM, MVT::i32, Custom);
+    setOperationAction(ISD::UDIVREM, MVT::i32, Custom);
+  }
+
   setOperationAction(ISD::ATOMIC_FENCE,       MVT::Other, Custom);
-  setOperationAction(ISD::LOAD,               MVT::i32, Custom);
-  setOperationAction(ISD::STORE,              MVT::i32, Custom);
+
+  if (Subtarget.hasNanoMips()) {
+    if (Subtarget.useUnalignedLoadStore()) {
+      setOperationAction(ISD::LOAD, MVT::i32, Custom);
+      setOperationAction(ISD::STORE, MVT::i32, Custom);
+      // TODO: Fix halfword unaligned loads and stores.
+      // setOperationAction(ISD::LOAD, MVT::i16, Custom);
+      // setOperationAction(ISD::STORE, MVT::i16, Custom);
+    }
+  } else {
+    setOperationAction(ISD::LOAD, MVT::i32, Custom);
+    setOperationAction(ISD::STORE, MVT::i32, Custom);
+  }
 
   setTargetDAGCombine(ISD::MUL);
 
@@ -287,6 +307,24 @@ MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
     setOperationAction(ISD::SETCC, MVT::i64, Legal);
     setOperationAction(ISD::SELECT, MVT::i64, Legal);
     setOperationAction(ISD::SELECT_CC, MVT::i64, Expand);
+  }
+
+  if (Subtarget.hasNanoMips()) {
+    setOperationAction(ISD::SMUL_LOHI, MVT::i32, Expand);
+    setOperationAction(ISD::UMUL_LOHI, MVT::i32, Expand);
+    setOperationAction(ISD::MUL, MVT::i32, Legal);
+    setOperationAction(ISD::MULHS, MVT::i32, Legal);
+    setOperationAction(ISD::MULHU, MVT::i32, Legal);
+
+    setOperationAction(ISD::SDIV, MVT::i32, Legal);
+    setOperationAction(ISD::SREM, MVT::i32, Legal);
+    setOperationAction(ISD::UDIV, MVT::i32, Legal);
+    setOperationAction(ISD::UREM, MVT::i32, Legal);
+
+    setLibcallName(RTLIB::UDIVREM_I64, "__udivmoddi4");
+    setOperationAction(ISD::UDIVREM, MVT::i64, Custom);
+    setOperationAction(ISD::UDIV, MVT::i64, Custom);
+    setOperationAction(ISD::UREM, MVT::i64, Custom);
   }
 
   computeRegisterProperties(Subtarget.getRegisterInfo());
@@ -418,6 +456,21 @@ bool MipsSETargetLowering::allowsMisalignedMemoryAccesses(
     EVT VT, unsigned, Align, MachineMemOperand::Flags, unsigned *Fast) const {
   MVT::SimpleValueType SVT = VT.getSimpleVT().SimpleTy;
 
+  if (Subtarget.hasNanoMips()) {
+    if (Subtarget.useUnalignedLoadStore())
+      switch (SVT) {
+      case MVT::i32:
+      // TODO: Fix halfword unaligned loads and stores.
+      // case MVT::i16:
+        if (Fast)
+          *Fast = true;
+        return true;
+      default:
+        return false;
+      }
+    return false;
+  }
+
   if (Subtarget.systemSupportsUnalignedAccess()) {
     // MIPS32r6/MIPS64r6 is required to support unaligned access. It's
     // implementation defined whether this is handled by hardware, software, or
@@ -452,6 +505,9 @@ SDValue MipsSETargetLowering::LowerOperation(SDValue Op,
   case ISD::SDIVREM:   return lowerMulDiv(Op, MipsISD::DivRem, true, true, DAG);
   case ISD::UDIVREM:   return lowerMulDiv(Op, MipsISD::DivRemU, true, true,
                                           DAG);
+  case ISD::UDIV:
+  case ISD::UREM:
+    return lowerRemOrDiv(Op, DAG);
   case ISD::INTRINSIC_WO_CHAIN: return lowerINTRINSIC_WO_CHAIN(Op, DAG);
   case ISD::INTRINSIC_W_CHAIN:  return lowerINTRINSIC_W_CHAIN(Op, DAG);
   case ISD::INTRINSIC_VOID:     return lowerINTRINSIC_VOID(Op, DAG);
@@ -823,6 +879,10 @@ static SDValue performMULCombine(SDNode *N, SelectionDAG &DAG,
                                  const TargetLowering::DAGCombinerInfo &DCI,
                                  const MipsSETargetLowering *TL,
                                  const MipsSubtarget &Subtarget) {
+  if (Subtarget.hasNanoMips() &&
+      DAG.getMachineFunction().getFunction().hasOptSize())
+    return SDValue();
+
   EVT VT = N->getValueType(0);
 
   if (ConstantSDNode *C = dyn_cast<ConstantSDNode>(N->getOperand(1)))
@@ -1258,6 +1318,59 @@ SDValue MipsSETargetLowering::lowerMulDiv(SDValue Op, unsigned NewOpc,
   // MIPS32r6/MIPS64r6 removed accumulator based multiplies.
   assert(!Subtarget.hasMips32r6());
 
+  unsigned Opcode = Op.getOpcode();
+  MVT SimpleVT = Op.getSimpleValueType().SimpleTy;
+  if (Subtarget.hasNanoMips() && Opcode == ISD::UDIVREM &&
+      SimpleVT == MVT::i64) {
+    bool isSigned = false;
+    RTLIB::Libcall LC = RTLIB::UDIVREM_I64;
+
+    SDValue InChain = DAG.getEntryNode();
+
+    EVT RetVT = Op.getValueType();
+    Type *RetTy = RetVT.getTypeForEVT(*DAG.getContext());
+
+    TargetLowering::ArgListTy Args;
+    TargetLowering::ArgListEntry Entry;
+    for (const SDValue &Operand : Op.getNode()->op_values()) {
+      EVT ArgVT = Operand.getValueType();
+      Type *ArgTy = ArgVT.getTypeForEVT(*DAG.getContext());
+      Entry.Node = Operand;
+      Entry.Ty = ArgTy;
+      Entry.IsSExt = isSigned;
+      Entry.IsZExt = !isSigned;
+      Args.push_back(Entry);
+    }
+
+    // Pass the return address of the remainder
+    SDValue FIPtr = DAG.CreateStackTemporary(RetVT);
+    Entry.Node = FIPtr;
+    Entry.Ty = RetTy->getPointerTo();
+    Entry.IsSExt = isSigned;
+    Entry.IsZExt = !isSigned;
+    Args.push_back(Entry);
+
+    SDValue Callee = DAG.getExternalSymbol(getLibcallName(LC),
+                                           getPointerTy(DAG.getDataLayout()));
+
+    SDLoc dl(Op);
+    TargetLowering::CallLoweringInfo CLI(DAG);
+    CLI.setDebugLoc(dl)
+        .setChain(InChain)
+        .setLibCallee(getLibcallCallingConv(LC), RetTy, Callee, std::move(Args))
+        .setSExtResult(isSigned)
+        .setZExtResult(!isSigned);
+
+    std::pair<SDValue, SDValue> CallInfo = LowerCallTo(CLI);
+
+    // Remainder is loaded back from the stack frame
+    SDValue Rem =
+        DAG.getLoad(RetVT, dl, CallInfo.second, FIPtr, MachinePointerInfo());
+
+    SDValue Vals[] = {CallInfo.first, Rem};
+    return DAG.getMergeValues(Vals, dl);
+  }
+
   EVT Ty = Op.getOperand(0).getValueType();
   SDLoc DL(Op);
   SDValue Mult = DAG.getNode(NewOpc, DL, MVT::Untyped,
@@ -1274,6 +1387,71 @@ SDValue MipsSETargetLowering::lowerMulDiv(SDValue Op, unsigned NewOpc,
 
   SDValue Vals[] = { Lo, Hi };
   return DAG.getMergeValues(Vals, DL);
+}
+
+// This custom lowering hook prevents expansion of DIV and REM nodes
+// with i64 value types into DIVREM node for NanoMips target and lowers them
+// into appropriate libcall instead.
+// During type legalization DIV and REM nodes are expanded into DIVREM node
+// because i64 is ilegal value type and the action for DIVREM node is set to be
+// "Custom" for NanoMips target. We want to lower DIV and REM nodes into
+// appropriate libcalls instead of expanding them to DIVREM. In order to
+// accomplish this we set the actions for DIV and REM nodes for MVT::i64 to be
+// "Custom" instead of "LibCall". This results in calling this hook before
+// expansion happens, bypassing the expansion but still lowering DIV and REM
+// into appropriate libcalls.
+SDValue MipsSETargetLowering::lowerRemOrDiv(SDValue Op,
+                                            SelectionDAG &DAG) const {
+
+  unsigned Opcode = Op.getOpcode();
+  MVT SimpleVT = Op.getSimpleValueType().SimpleTy;
+  if (Subtarget.hasNanoMips() && (Opcode == ISD::UDIV || Opcode == ISD::UREM) &&
+      SimpleVT == MVT::i64) {
+
+    SDLoc dl(Op.getNode());
+    EVT VT = Op.getNode()->getValueType(0);
+    SDValue Ops[2] = {Op.getNode()->getOperand(0), Op.getNode()->getOperand(1)};
+    SDValue Lo, Hi;
+    Lo = Hi = SDValue();
+
+    RTLIB::Libcall LC = Opcode == ISD::UDIV ? RTLIB::UDIV_I64 : RTLIB::UREM_I64;
+
+    TargetLowering::MakeLibCallOptions CallOptions;
+
+    SDValue LibcallOp = makeLibCall(DAG, LC, VT, Ops, CallOptions, dl).first;
+
+    EVT HalfVT = EVT::getIntegerVT(*DAG.getContext(),
+                                   LibcallOp.getValueSizeInBits() / 2);
+
+    EVT LoVT, HiVT;
+    LoVT = HalfVT;
+    HiVT = HalfVT;
+
+    SDLoc DL(LibcallOp);
+
+    assert(LoVT.getSizeInBits() + HiVT.getSizeInBits() ==
+               LibcallOp.getValueSizeInBits() &&
+           "Invalid integer splitting!");
+
+    Lo = DAG.getNode(ISD::TRUNCATE, DL, LoVT, LibcallOp);
+
+    unsigned ReqShiftAmountInBits =
+        Log2_32_Ceil(LibcallOp.getValueType().getSizeInBits());
+
+    MVT ShiftAmountTy =
+        getScalarShiftAmountTy(DAG.getDataLayout(), LibcallOp.getValueType());
+
+    assert(ReqShiftAmountInBits <= ShiftAmountTy.getSizeInBits());
+
+    Hi = DAG.getNode(ISD::SRL, DL, LibcallOp.getValueType(), LibcallOp,
+                     DAG.getConstant(LoVT.getSizeInBits(), DL, ShiftAmountTy));
+
+    Hi = DAG.getNode(ISD::TRUNCATE, DL, HiVT, Hi);
+
+    SDValue Vals[] = {LibcallOp, Lo, Hi};
+    return DAG.getMergeValues(Vals, dl);
+  }
+  return SDValue();
 }
 
 static SDValue initAccumulator(SDValue In, const SDLoc &DL, SelectionDAG &DAG) {
@@ -2279,6 +2457,8 @@ SDValue MipsSETargetLowering::lowerINTRINSIC_WO_CHAIN(SDValue Op,
     EVT PtrVT = getPointerTy(DAG.getDataLayout());
     return DAG.getNode(MipsISD::ThreadPointer, DL, PtrVT);
   }
+  case Intrinsic::mips_hide:
+    return Op->getOperand(1);
   }
 }
 

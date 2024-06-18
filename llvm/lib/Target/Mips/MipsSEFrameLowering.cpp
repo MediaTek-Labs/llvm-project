@@ -415,11 +415,12 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
   unsigned FP = ABI.GetFramePtr();
   unsigned ZERO = ABI.GetNullPtr();
   unsigned MOVE = ABI.GetGPRMoveOp();
-  unsigned ADDiu = ABI.GetPtrAddiuOp();
-  unsigned AND = ABI.IsN64() ? Mips::AND64 : Mips::AND;
+  unsigned AND = ABI.GetPtrAndOp();
 
-  const TargetRegisterClass *RC = ABI.ArePtrs64bit() ?
-        &Mips::GPR64RegClass : &Mips::GPR32RegClass;
+  const TargetRegisterClass *RC =
+      ABI.ArePtrs64bit()
+          ? &Mips::GPR64RegClass
+          : ABI.IsP32() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
 
   // First, compute final stack size.
   uint64_t StackSize = MFI.getStackSize();
@@ -542,16 +543,20 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
       assert((Log2(MFI.getMaxAlign()) < 16) &&
              "Function's alignment size requirement is not supported.");
       int64_t MaxAlign = -(int64_t)MFI.getMaxAlign().value();
+      unsigned ADDiu = ABI.GetPtrAddiuOp(MaxAlign);
 
-      BuildMI(MBB, MBBI, dl, TII.get(ADDiu), VR).addReg(ZERO).addImm(MaxAlign);
+      if (ABI.IsP32())
+        BuildMI(MBB, MBBI, dl, TII.get(Mips::PseudoLI_NM), VR).addImm(MaxAlign);
+      else
+        BuildMI(MBB, MBBI, dl, TII.get(ADDiu), VR)
+            .addReg(ZERO)
+            .addImm(MaxAlign);
       BuildMI(MBB, MBBI, dl, TII.get(AND), SP).addReg(SP).addReg(VR);
 
       if (hasBP(MF)) {
         // move $s7, $sp
-        unsigned BP = STI.isABI_N64() ? Mips::S7_64 : Mips::S7;
-        BuildMI(MBB, MBBI, dl, TII.get(MOVE), BP)
-          .addReg(SP)
-          .addReg(ZERO);
+        unsigned BP = ABI.GetBasePtr();
+        BuildMI(MBB, MBBI, dl, TII.get(MOVE), BP).addReg(SP).addReg(ZERO);
       }
     }
   }
@@ -717,7 +722,9 @@ void MipsSEFrameLowering::emitEpilogue(MachineFunction &MF,
 
   if (MipsFI->callsEhReturn()) {
     const TargetRegisterClass *RC =
-        ABI.ArePtrs64bit() ? &Mips::GPR64RegClass : &Mips::GPR32RegClass;
+        ABI.ArePtrs64bit()
+            ? &Mips::GPR64RegClass
+            : ABI.IsP32() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
 
     // Find first instruction that restores a callee-saved register.
     MachineBasicBlock::iterator I = MBBI;
@@ -750,6 +757,8 @@ void MipsSEFrameLowering::emitInterruptEpilogueStub(
   MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
   MipsFunctionInfo *MipsFI = MF.getInfo<MipsFunctionInfo>();
   DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
+
+  assert(!STI.isABI_P32() && "NYI for nanoMIPS");
 
   // Perform ISR handling like GCC
   const TargetRegisterClass *PtrRC = &Mips::GPR32RegClass;
@@ -865,9 +874,11 @@ void MipsSEFrameLowering::determineCalleeSaves(MachineFunction &MF,
   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
   MipsFunctionInfo *MipsFI = MF.getInfo<MipsFunctionInfo>();
   MipsABIInfo ABI = STI.getABI();
-  unsigned RA = ABI.IsN64() ? Mips::RA_64 : Mips::RA;
+  unsigned RA =
+      ABI.IsN64() ? Mips::RA_64 : ABI.IsP32() ? Mips::RA_NM : Mips::RA;
   unsigned FP = ABI.GetFramePtr();
-  unsigned BP = ABI.IsN64() ? Mips::S7_64 : Mips::S7;
+  unsigned BP =
+      ABI.IsN64() ? Mips::S7_64 : ABI.IsP32() ? Mips::S7_NM : Mips::S7;
 
   // Mark $ra and $fp as used if function has dedicated frame pointer.
   if (hasFP(MF)) {
@@ -902,17 +913,46 @@ void MipsSEFrameLowering::determineCalleeSaves(MachineFunction &MF,
   // Set scavenging frame index if necessary.
   uint64_t MaxSPOffset = estimateStackSize(MF);
 
+  // nanoMIPS has 9-bit signed offset for loads/stores.
   // MSA has a minimum offset of 10 bits signed. If there is a variable
   // sized object on the stack, the estimation cannot account for it.
-  if (isIntN(STI.hasMSA() ? 10 : 16, MaxSPOffset) &&
+  int SupportedSPOffsetSize = STI.hasMSA() ? 10 : ABI.IsP32() ? 9 : 16;
+  if (isIntN(SupportedSPOffsetSize, MaxSPOffset) &&
       !MF.getFrameInfo().hasVarSizedObjects())
     return;
 
   const TargetRegisterClass &RC =
-      ABI.ArePtrs64bit() ? Mips::GPR64RegClass : Mips::GPR32RegClass;
+      ABI.ArePtrs64bit()
+          ? Mips::GPR64RegClass
+          : ABI.IsP32() ? Mips::GPRNM32RegClass : Mips::GPR32RegClass;
   int FI = MF.getFrameInfo().CreateStackObject(TRI->getSpillSize(RC),
                                                TRI->getSpillAlign(RC), false);
   RS->addScavengingFrameIndex(FI);
+}
+
+bool MipsSEFrameLowering::assignCalleeSavedSpillSlots(
+    MachineFunction &MF, const TargetRegisterInfo *TRI,
+    std::vector<CalleeSavedInfo> &CSI) const {
+  if (!STI.hasNanoMips())
+    return false;
+
+  // nanoMIPS save and restore instructions require callee-saved registers to be
+  // saved in particular order on the stack.
+  auto SortCalleeSaves = [](CalleeSavedInfo First, CalleeSavedInfo Second) {
+    std::unordered_map<unsigned, unsigned> Regs{
+        {Mips::GP_NM, 0}, {Mips::FP_NM, 1}, {Mips::RA_NM, 2},  {Mips::S0_NM, 3},
+        {Mips::S1_NM, 4}, {Mips::S2_NM, 5}, {Mips::S3_NM, 6},  {Mips::S4_NM, 7},
+        {Mips::S5_NM, 8}, {Mips::S6_NM, 9}, {Mips::S7_NM, 10},
+    };
+
+    // There should be no callee-saved registers that are not part of the list.
+    assert(Regs.find(First.getReg()) != Regs.end() &&
+           Regs.find(Second.getReg()) != Regs.end());
+
+    return Regs[First.getReg()] < Regs[Second.getReg()];
+  };
+  std::sort(CSI.begin(), CSI.end(), SortCalleeSaves);
+  return false;
 }
 
 const MipsFrameLowering *

@@ -183,6 +183,10 @@ def HasMips32r6  :    Predicate<"Subtarget->hasMips32r6()">,
                       AssemblerPredicate<(all_of FeatureMips32r6)>;
 def NotMips32r6  :    Predicate<"!Subtarget->hasMips32r6()">,
                       AssemblerPredicate<(all_of (not FeatureMips32r6))>;
+def HasNanoMips  :    Predicate<"Subtarget->hasNanoMips()">,
+                      AssemblerPredicate<(all_of FeatureNanoMips)>;
+def NotNanoMips  :    Predicate<"!Subtarget->hasNanoMips()">,
+                      AssemblerPredicate<(all_of (not FeatureNanoMips))>;
 def IsGP64bit    :    Predicate<"Subtarget->isGP64bit()">,
                       AssemblerPredicate<(all_of FeatureGP64Bit)>;
 def IsGP32bit    :    Predicate<"!Subtarget->isGP64bit()">,
@@ -255,6 +259,8 @@ def HasVirt  : Predicate<"Subtarget->hasVirt()">,
                AssemblerPredicate<(all_of FeatureVirt)>;
 def HasGINV  : Predicate<"Subtarget->hasGINV()">,
                AssemblerPredicate<(all_of FeatureGINV)>;
+def HasTLB  : Predicate<"Subtarget->hasTLB()">,
+               AssemblerPredicate<(all_of FeatureTLB)>;
 // TODO: Add support for FPOpFusion::Standard
 def AllowFPOpFusion : Predicate<"TM.Options.AllowFPOpFusion =="
                                 " FPOpFusion::Fast">;
@@ -381,6 +387,9 @@ class ISA_MICROMIPS32_NOT_MIPS32R6 {
   list<Predicate> InsnPredicates = [NotMips32r6];
   list<Predicate> EncodingPredicates = [InMicroMips];
 }
+class ISA_NANOMIPS {
+  list<Predicate> InsnPredicates = [HasNanoMips];
+}
 class ASE_EVA { list<Predicate> ASEPredicate = [HasEVA]; }
 
 // The portions of MIPS-III that were also added to MIPS32
@@ -477,6 +486,10 @@ class ASE_CRC {
 
 class ASE_VIRT {
   list <Predicate> ASEPredicate = [HasVirt];
+}
+
+class ASE_TLB {
+  list <Predicate> ASEPredicate = [HasTLB];
 }
 
 class ASE_GINV {
@@ -1560,8 +1573,8 @@ class UncondBranch<Instruction BEQInst, DAGOperand opnd> :
 let isTerminator=1, isBarrier=1, hasDelaySlot = 1, isCTI = 1 in
 class JumpFR<string opstr, RegisterOperand RO,
              SDPatternOperator operator = null_frag>:
-  InstSE<(outs), (ins RO:$rs), "jr\t$rs", [(operator RO:$rs)], II_JR,
-         FrmR, opstr>;
+  InstSE<(outs), (ins RO:$rs), !strconcat(opstr, "\t$rs"), [(operator RO:$rs)],
+         II_JR, FrmR, opstr>;
 
 // Indirect branch
 class IndirectBranch<string opstr, RegisterOperand RO> : JumpFR<opstr, RO> {
@@ -1805,38 +1818,38 @@ class InsBase<string opstr, RegisterOperand RO, Operand PosOpnd,
 }
 
 // Atomic instructions with 2 source operands (ATOMIC_SWAP & ATOMIC_LOAD_*).
-class Atomic2Ops<PatFrag Op, RegisterClass DRC> :
+class Atomic2Ops<PatFrag Op, DAGOperand DRC> :
   PseudoSE<(outs DRC:$dst), (ins PtrRC:$ptr, DRC:$incr),
            [(set DRC:$dst, (Op iPTR:$ptr, DRC:$incr))]> {
   let hasNoSchedulingInfo = 1;
 }
 
-class Atomic2OpsPostRA<RegisterClass RC> :
+class Atomic2OpsPostRA<DAGOperand RC> :
   PseudoSE<(outs RC:$dst), (ins PtrRC:$ptr, RC:$incr), []> {
   let mayLoad = 1;
   let mayStore = 1;
 }
 
-class Atomic2OpsSubwordPostRA<RegisterClass RC> :
+class Atomic2OpsSubwordPostRA<DAGOperand RC> :
   PseudoSE<(outs RC:$dst), (ins PtrRC:$ptr, RC:$incr, RC:$mask, RC:$mask2,
                                 RC:$shiftamnt), []>;
 
 // Atomic Compare & Swap.
 // Atomic compare and swap is lowered into two stages. The first stage happens
 // during ISelLowering, which produces the PostRA version of this instruction.
-class AtomicCmpSwap<PatFrag Op, RegisterClass DRC> :
+class AtomicCmpSwap<PatFrag Op, DAGOperand DRC> :
   PseudoSE<(outs DRC:$dst), (ins PtrRC:$ptr, DRC:$cmp, DRC:$swap),
            [(set DRC:$dst, (Op iPTR:$ptr, DRC:$cmp, DRC:$swap))]> {
   let hasNoSchedulingInfo = 1;
 }
 
-class AtomicCmpSwapPostRA<RegisterClass RC> :
+class AtomicCmpSwapPostRA<DAGOperand RC> :
   PseudoSE<(outs RC:$dst), (ins PtrRC:$ptr, RC:$cmp, RC:$swap), []> {
   let mayLoad = 1;
   let mayStore = 1;
 }
 
-class AtomicCmpSwapSubwordPostRA<RegisterClass RC> :
+class AtomicCmpSwapSubwordPostRA<DAGOperand RC> :
   PseudoSE<(outs RC:$dst), (ins PtrRC:$ptr, RC:$mask, RC:$ShiftCmpVal,
                                 RC:$mask2, RC:$ShiftNewVal, RC:$ShiftAmt), []> {
   let mayLoad = 1;
@@ -1895,94 +1908,97 @@ let isReturn=1, isTerminator=1, isBarrier=1, hasCtrlDep=1, isCTI=1 in {
   def ERet : PseudoSE<(outs), (ins), [(MipsERet)]>;
 }
 
-let Defs = [SP], Uses = [SP], hasSideEffects = 1, hasNoSchedulingInfo = 1 in {
+let Defs = [SP], Uses = [SP], hasSideEffects = 1, hasNoSchedulingInfo = 1,
+    AdditionalPredicates = [NotNanoMips] in {
 def ADJCALLSTACKDOWN : MipsPseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
                                   [(callseq_start timm:$amt1, timm:$amt2)]>;
 def ADJCALLSTACKUP   : MipsPseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
                                   [(callseq_end timm:$amt1, timm:$amt2)]>;
 }
 
+def GPR32_M_NM : Operand<i32>, PointerLikeRegClass<4>;
+
 let usesCustomInserter = 1 in {
-  def ATOMIC_LOAD_ADD_I8   : Atomic2Ops<atomic_load_add_8, GPR32>;
-  def ATOMIC_LOAD_ADD_I16  : Atomic2Ops<atomic_load_add_16, GPR32>;
-  def ATOMIC_LOAD_ADD_I32  : Atomic2Ops<atomic_load_add_32, GPR32>;
-  def ATOMIC_LOAD_SUB_I8   : Atomic2Ops<atomic_load_sub_8, GPR32>;
-  def ATOMIC_LOAD_SUB_I16  : Atomic2Ops<atomic_load_sub_16, GPR32>;
-  def ATOMIC_LOAD_SUB_I32  : Atomic2Ops<atomic_load_sub_32, GPR32>;
-  def ATOMIC_LOAD_AND_I8   : Atomic2Ops<atomic_load_and_8, GPR32>;
-  def ATOMIC_LOAD_AND_I16  : Atomic2Ops<atomic_load_and_16, GPR32>;
-  def ATOMIC_LOAD_AND_I32  : Atomic2Ops<atomic_load_and_32, GPR32>;
-  def ATOMIC_LOAD_OR_I8    : Atomic2Ops<atomic_load_or_8, GPR32>;
-  def ATOMIC_LOAD_OR_I16   : Atomic2Ops<atomic_load_or_16, GPR32>;
-  def ATOMIC_LOAD_OR_I32   : Atomic2Ops<atomic_load_or_32, GPR32>;
-  def ATOMIC_LOAD_XOR_I8   : Atomic2Ops<atomic_load_xor_8, GPR32>;
-  def ATOMIC_LOAD_XOR_I16  : Atomic2Ops<atomic_load_xor_16, GPR32>;
-  def ATOMIC_LOAD_XOR_I32  : Atomic2Ops<atomic_load_xor_32, GPR32>;
-  def ATOMIC_LOAD_NAND_I8  : Atomic2Ops<atomic_load_nand_8, GPR32>;
-  def ATOMIC_LOAD_NAND_I16 : Atomic2Ops<atomic_load_nand_16, GPR32>;
-  def ATOMIC_LOAD_NAND_I32 : Atomic2Ops<atomic_load_nand_32, GPR32>;
+  def ATOMIC_LOAD_ADD_I8   : Atomic2Ops<atomic_load_add_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_ADD_I16  : Atomic2Ops<atomic_load_add_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_ADD_I32  : Atomic2Ops<atomic_load_add_32, GPR32_M_NM>;
+  def ATOMIC_LOAD_SUB_I8   : Atomic2Ops<atomic_load_sub_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_SUB_I16  : Atomic2Ops<atomic_load_sub_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_SUB_I32  : Atomic2Ops<atomic_load_sub_32, GPR32_M_NM>;
+  def ATOMIC_LOAD_AND_I8   : Atomic2Ops<atomic_load_and_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_AND_I16  : Atomic2Ops<atomic_load_and_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_AND_I32  : Atomic2Ops<atomic_load_and_32, GPR32_M_NM>;
+  def ATOMIC_LOAD_OR_I8    : Atomic2Ops<atomic_load_or_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_OR_I16   : Atomic2Ops<atomic_load_or_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_OR_I32   : Atomic2Ops<atomic_load_or_32, GPR32_M_NM>;
+  def ATOMIC_LOAD_XOR_I8   : Atomic2Ops<atomic_load_xor_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_XOR_I16  : Atomic2Ops<atomic_load_xor_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_XOR_I32  : Atomic2Ops<atomic_load_xor_32, GPR32_M_NM>;
+  def ATOMIC_LOAD_NAND_I8  : Atomic2Ops<atomic_load_nand_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_NAND_I16 : Atomic2Ops<atomic_load_nand_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_NAND_I32 : Atomic2Ops<atomic_load_nand_32, GPR32_M_NM>;
 
-  def ATOMIC_SWAP_I8       : Atomic2Ops<atomic_swap_8, GPR32>;
-  def ATOMIC_SWAP_I16      : Atomic2Ops<atomic_swap_16, GPR32>;
-  def ATOMIC_SWAP_I32      : Atomic2Ops<atomic_swap_32, GPR32>;
+  def ATOMIC_SWAP_I8       : Atomic2Ops<atomic_swap_8, GPR32_M_NM>;
+  def ATOMIC_SWAP_I16      : Atomic2Ops<atomic_swap_16, GPR32_M_NM>;
+  def ATOMIC_SWAP_I32      : Atomic2Ops<atomic_swap_32, GPR32_M_NM>;
 
-  def ATOMIC_CMP_SWAP_I8   : AtomicCmpSwap<atomic_cmp_swap_8, GPR32>;
-  def ATOMIC_CMP_SWAP_I16  : AtomicCmpSwap<atomic_cmp_swap_16, GPR32>;
-  def ATOMIC_CMP_SWAP_I32  : AtomicCmpSwap<atomic_cmp_swap_32, GPR32>;
+  def ATOMIC_CMP_SWAP_I8   : AtomicCmpSwap<atomic_cmp_swap_8, GPR32_M_NM>;
+  def ATOMIC_CMP_SWAP_I16  : AtomicCmpSwap<atomic_cmp_swap_16, GPR32_M_NM>;
+  def ATOMIC_CMP_SWAP_I32  : AtomicCmpSwap<atomic_cmp_swap_32, GPR32_M_NM>;
 
-  def ATOMIC_LOAD_MIN_I8   : Atomic2Ops<atomic_load_min_8, GPR32>;
-  def ATOMIC_LOAD_MIN_I16  : Atomic2Ops<atomic_load_min_16, GPR32>;
-  def ATOMIC_LOAD_MIN_I32  : Atomic2Ops<atomic_load_min_32, GPR32>;
-  def ATOMIC_LOAD_MAX_I8   : Atomic2Ops<atomic_load_max_8, GPR32>;
-  def ATOMIC_LOAD_MAX_I16  : Atomic2Ops<atomic_load_max_16, GPR32>;
-  def ATOMIC_LOAD_MAX_I32  : Atomic2Ops<atomic_load_max_32, GPR32>;
-  def ATOMIC_LOAD_UMIN_I8  : Atomic2Ops<atomic_load_umin_8, GPR32>;
-  def ATOMIC_LOAD_UMIN_I16 : Atomic2Ops<atomic_load_umin_16, GPR32>;
-  def ATOMIC_LOAD_UMIN_I32 : Atomic2Ops<atomic_load_umin_32, GPR32>;
-  def ATOMIC_LOAD_UMAX_I8  : Atomic2Ops<atomic_load_umax_8, GPR32>;
-  def ATOMIC_LOAD_UMAX_I16 : Atomic2Ops<atomic_load_umax_16, GPR32>;
-  def ATOMIC_LOAD_UMAX_I32 : Atomic2Ops<atomic_load_umax_32, GPR32>;
+  def ATOMIC_LOAD_MIN_I8   : Atomic2Ops<atomic_load_min_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_MIN_I16  : Atomic2Ops<atomic_load_min_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_MIN_I32  : Atomic2Ops<atomic_load_min_32, GPR32_M_NM>;
+  def ATOMIC_LOAD_MAX_I8   : Atomic2Ops<atomic_load_max_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_MAX_I16  : Atomic2Ops<atomic_load_max_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_MAX_I32  : Atomic2Ops<atomic_load_max_32, GPR32_M_NM>;
+  def ATOMIC_LOAD_UMIN_I8  : Atomic2Ops<atomic_load_umin_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_UMIN_I16 : Atomic2Ops<atomic_load_umin_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_UMIN_I32 : Atomic2Ops<atomic_load_umin_32, GPR32_M_NM>;
+  def ATOMIC_LOAD_UMAX_I8  : Atomic2Ops<atomic_load_umax_8, GPR32_M_NM>;
+  def ATOMIC_LOAD_UMAX_I16 : Atomic2Ops<atomic_load_umax_16, GPR32_M_NM>;
+  def ATOMIC_LOAD_UMAX_I32 : Atomic2Ops<atomic_load_umax_32, GPR32_M_NM>;
 }
 
-def ATOMIC_LOAD_ADD_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_ADD_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_ADD_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_SUB_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_SUB_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_SUB_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_AND_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_AND_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_AND_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_OR_I8_POSTRA    : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_OR_I16_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_OR_I32_POSTRA   : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_XOR_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_XOR_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_XOR_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_NAND_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_NAND_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_NAND_I32_POSTRA : Atomic2OpsPostRA<GPR32>;
+def ATOMIC_LOAD_ADD_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_ADD_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_ADD_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_SUB_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_SUB_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_SUB_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_AND_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_AND_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_AND_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_OR_I8_POSTRA    : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_OR_I16_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_OR_I32_POSTRA   : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_XOR_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_XOR_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_XOR_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_NAND_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_NAND_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_NAND_I32_POSTRA : Atomic2OpsPostRA<GPR32_M_NM>;
 
-def ATOMIC_SWAP_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_SWAP_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_SWAP_I32_POSTRA : Atomic2OpsPostRA<GPR32>;
+def ATOMIC_SWAP_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_SWAP_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_SWAP_I32_POSTRA : Atomic2OpsPostRA<GPR32_M_NM>;
 
-def ATOMIC_CMP_SWAP_I8_POSTRA : AtomicCmpSwapSubwordPostRA<GPR32>;
-def ATOMIC_CMP_SWAP_I16_POSTRA : AtomicCmpSwapSubwordPostRA<GPR32>;
-def ATOMIC_CMP_SWAP_I32_POSTRA : AtomicCmpSwapPostRA<GPR32>;
+def ATOMIC_CMP_SWAP_I8_POSTRA : AtomicCmpSwapSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_CMP_SWAP_I16_POSTRA : AtomicCmpSwapSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_CMP_SWAP_I32_POSTRA : AtomicCmpSwapPostRA<GPR32_M_NM>;
 
-def ATOMIC_LOAD_MIN_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_MIN_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_MIN_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_MAX_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_MAX_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_MAX_I32_POSTRA  : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_UMIN_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_UMIN_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_UMIN_I32_POSTRA : Atomic2OpsPostRA<GPR32>;
-def ATOMIC_LOAD_UMAX_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_UMAX_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32>;
-def ATOMIC_LOAD_UMAX_I32_POSTRA : Atomic2OpsPostRA<GPR32>;
+def ATOMIC_LOAD_MIN_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MIN_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MIN_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MAX_I8_POSTRA   : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MAX_I16_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_MAX_I32_POSTRA  : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMIN_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMIN_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMIN_I32_POSTRA : Atomic2OpsPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMAX_I8_POSTRA  : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMAX_I16_POSTRA : Atomic2OpsSubwordPostRA<GPR32_M_NM>;
+def ATOMIC_LOAD_UMAX_I32_POSTRA : Atomic2OpsPostRA<GPR32_M_NM>;
 
 /// Pseudo instructions for loading and storing accumulator registers.
 let isPseudo = 1, isCodeGenOnly = 1, hasNoSchedulingInfo = 1 in {
@@ -2024,7 +2040,7 @@ def LONG_BRANCH_ADDiu2Op : PseudoSE<(outs GPR32Opnd:$dst),
 //===----------------------------------------------------------------------===//
 
 /// Arithmetic Instructions (ALU Immediate)
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def ADDiu : MMRel, StdMMR6Rel, ArithLogicI<"addiu", simm16_relaxed, GPR32Opnd,
                                              II_ADDIU, imm32SExt16, add>,
               ADDI_FM<0x9>, IsAsCheapAsAMove, ISA_MIPS1;
@@ -2077,7 +2093,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
               ISA_MIPS1;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   /// Shift Instructions
   def SLL  : MMRel, shift_rotate_imm<"sll", uimm5, GPR32Opnd, II_SLL, shl,
                                      immZExt5>, SRA_FM<0, 0>, ISA_MIPS1;
@@ -2102,7 +2118,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
 
 /// Load and Store Instructions
 ///  aligned
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def LB  : LoadMemory<"lb", GPR32Opnd, mem_simmptr, sextloadi8, II_LB>, MMRel,
             LW_FM<0x20>, ISA_MIPS1;
   def LBu : LoadMemory<"lbu", GPR32Opnd, mem_simmptr, zextloadi8, II_LBU,
@@ -2122,7 +2138,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
 }
 
 /// load/store left/right
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
 def LWL : MMRel, LoadLeftRight<"lwl", MipsLWL, GPR32Opnd, II_LWL>, LW_FM<0x22>,
           ISA_MIPS1_NOT_32R6_64R6;
 def LWR : MMRel, LoadLeftRight<"lwr", MipsLWR, GPR32Opnd, II_LWR>, LW_FM<0x26>,
@@ -2159,7 +2175,7 @@ let DecoderNamespace = "COP3_" in {
               ISA_MIPS32R2;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def TEQ : MMRel, TEQ_FT<"teq", GPR32Opnd, uimm10, II_TEQ>, TEQ_FM<0x34>,
             ISA_MIPS2;
   def TGE : MMRel, TEQ_FT<"tge", GPR32Opnd, uimm10, II_TGE>, TEQ_FM<0x30>,
@@ -2187,7 +2203,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
              ISA_MIPS2_NOT_32R6_64R6;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def BREAK : MMRel, StdMMR6Rel, BRK_FT<"break">, BRK_FM<0xd>, ISA_MIPS1;
   def SYSCALL : MMRel, SYS_FT<"syscall", uimm20, II_SYSCALL>, SYS_FM<0xc>,
                 ISA_MIPS1;
@@ -2208,17 +2224,17 @@ let AdditionalPredicates = [NotInMicroMips] in {
   def WAIT : MMRel, StdMMR6Rel, WAIT_FT<"wait">, WAIT_FM, INSN_MIPS3_32;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
 /// Load-linked, Store-conditional
 def LL : LLBase<"ll", GPR32Opnd>, LW_FM<0x30>, PTR_32, ISA_MIPS2_NOT_32R6_64R6;
 def SC : SCBase<"sc", GPR32Opnd>, LW_FM<0x38>, PTR_32, ISA_MIPS2_NOT_32R6_64R6;
 }
 /// Jump and Branch Instructions
-let AdditionalPredicates = [NotInMicroMips, RelocNotPIC] in
+let AdditionalPredicates = [NotInMicroMips, RelocNotPIC, NotNanoMips] in
 def J       : MMRel, JumpFJ<jmptarget, "j", br, bb, "j">, FJ<2>,
               IsBranch, ISA_MIPS1;
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
 def JR      : MMRel, IndirectBranch<"jr", GPR32Opnd>, MTLO_FM<8>,
               ISA_MIPS1_NOT_32R6_64R6;
 def BEQ     : MMRel, CBranch<"beq", brtarget, seteq, GPR32Opnd>, BEQ_FM<4>,
@@ -2251,12 +2267,12 @@ def JAL  : MMRel, JumpLink<"jal", calltarget>, FJ<3>, ISA_MIPS1;
 
 }
 
-let AdditionalPredicates = [NotInMicroMips, NoIndirectJumpGuards] in {
+let AdditionalPredicates = [NotInMicroMips, NoIndirectJumpGuards, NotNanoMips] in {
   def JALR : JumpLinkReg<"jalr", GPR32Opnd>, JALR_FM, ISA_MIPS1;
   def JALRPseudo : JumpLinkRegPseudo<GPR32Opnd, JALR, RA>, ISA_MIPS1;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def JALX : MMRel, JumpLink<"jalx", calltarget>, FJ<0x1D>,
              ISA_MIPS32_NOT_32R6_64R6;
   def BGEZAL : MMRel, BGEZAL_FT<"bgezal", brtarget, GPR32Opnd>, BGEZAL_FM<0x11>,
@@ -2269,11 +2285,11 @@ let AdditionalPredicates = [NotInMicroMips] in {
                 BGEZAL_FM<0x12>, ISA_MIPS2_NOT_32R6_64R6;
   def BAL_BR : BAL_BR_Pseudo<BGEZAL, brtarget>, ISA_MIPS1;
 }
-let AdditionalPredicates = [NotInMips16Mode, NotInMicroMips] in {
+let AdditionalPredicates = [NotInMips16Mode, NotInMicroMips, NotNanoMips] in {
   def TAILCALL : TailCall<J, jmptarget>, ISA_MIPS1;
 }
 let AdditionalPredicates = [NotInMips16Mode, NotInMicroMips,
-                            NoIndirectJumpGuards] in
+                            NoIndirectJumpGuards, NotNanoMips] in
   def TAILCALLREG : TailCallReg<JR, GPR32Opnd>, ISA_MIPS1_NOT_32R6_64R6;
 
 // Indirect branches are matched as PseudoIndirectBranch/PseudoIndirectBranch64
@@ -2291,14 +2307,14 @@ class PseudoIndirectBranchBase<Instruction JumpInst, RegisterOperand RO> :
 }
 
 let AdditionalPredicates = [NotInMips16Mode, NotInMicroMips,
-                            NoIndirectJumpGuards] in
+                            NoIndirectJumpGuards, NotNanoMips] in
   def PseudoIndirectBranch : PseudoIndirectBranchBase<JR, GPR32Opnd>,
                              ISA_MIPS1_NOT_32R6_64R6;
 
 // Return instructions are matched as a RetRA instruction, then are expanded
-// into PseudoReturn/PseudoReturn64 after register allocation. Finally,
-// MipsAsmPrinter expands this into JR, JR64, JALR, or JALR64 depending on the
-// ISA.
+// into PseudoReturn/PseudoReturn64/PseudoReturnNM after register allocation.
+// Finally, MipsAsmPrinter expands this into JR, JR64, JALR, JALR64 or JRC_NM
+// depending on the ISA.
 class PseudoReturnBase<RegisterOperand RO> : MipsPseudo<(outs), (ins RO:$rs),
                                                         [], II_ReturnPseudo> {
   let isTerminator = 1;
@@ -2335,7 +2351,7 @@ let Uses = [V0, V1], isTerminator = 1, isReturn = 1,
 }
 
 /// Multiply and Divide Instructions.
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def MULT  : MMRel, Mult<"mult", II_MULT, GPR32Opnd, [HI0, LO0]>,
               MULT_FM<0, 0x18>, ISA_MIPS1_NOT_32R6_64R6;
   def MULTu : MMRel, Mult<"multu", II_MULTU, GPR32Opnd, [HI0, LO0]>,
@@ -2377,7 +2393,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
   // instructions. The same not happens for stack address copies, so an
   // add op with mem ComplexPattern is used and the stack address copy
   // can be matched. It's similar to Sparc LEA_ADDRi
-  let AdditionalPredicates = [NotInMicroMips] in
+  let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in
     def LEA_ADDiu : MMRel, EffectiveAddress<"addiu", GPR32Opnd>, LW_FM<9>,
                     ISA_MIPS1;
 
@@ -2392,7 +2408,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
               ISA_MIPS32_NOT_32R6_64R6;
 }
 
-let AdditionalPredicates = [NotDSP] in {
+let AdditionalPredicates = [NotDSP, NotNanoMips] in {
 def PseudoMULT  : MultDivPseudo<MULT, ACC64, GPR32Opnd, MipsMult, II_MULT>,
                   ISA_MIPS1_NOT_32R6_64R6;
 def PseudoMULTu : MultDivPseudo<MULTu, ACC64, GPR32Opnd, MipsMultu, II_MULTU>,
@@ -2410,7 +2426,7 @@ def PseudoMSUBU : MAddSubPseudo<MSUBU, MipsMSubu, II_MSUBU>,
                   ISA_MIPS32_NOT_32R6_64R6;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def PseudoSDIV : MultDivPseudo<SDIV, ACC64, GPR32Opnd, MipsDivRem, II_DIV,
                                  0, 1, 1>, ISA_MIPS1_NOT_32R6_64R6;
   def PseudoUDIV : MultDivPseudo<UDIV, ACC64, GPR32Opnd, MipsDivRemU, II_DIVU,
@@ -2426,7 +2442,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
             EXT_FM<4>, ISA_MIPS32R2;
 }
 /// Move Control Registers From/To CPU Registers
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def MTC0 : MTC3OP<"mtc0", COP0Opnd, GPR32Opnd, II_MTC0>,
              MFC3OP_FM<0x10, 4, 0>, ISA_MIPS1;
   def MFC0 : MFC3OP<"mfc0", GPR32Opnd, COP0Opnd, II_MFC0>,
@@ -2439,7 +2455,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
 
 class Barrier<string asmstr, InstrItinClass itin = NoItinerary> :
   InstSE<(outs), (ins), asmstr, [], itin, FrmOther, asmstr>;
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def SSNOP : MMRel, StdMMR6Rel, Barrier<"ssnop", II_SSNOP>, BARRIER_FM<1>,
               ISA_MIPS1;
   def EHB : MMRel, Barrier<"ehb", II_EHB>, BARRIER_FM<3>, ISA_MIPS1;
@@ -2492,12 +2508,12 @@ class JALR_HB_ENC : JALR_HB_FM<9>;
 def JR_HB : JR_HB_DESC<GPR32Opnd>, JR_HB_ENC, ISA_MIPS32R2_NOT_32R6_64R6;
 def JALR_HB : JALR_HB_DESC<GPR32Opnd>, JALR_HB_ENC, ISA_MIPS32;
 
-let AdditionalPredicates = [NotInMicroMips, UseIndirectJumpsHazard] in
+let AdditionalPredicates = [NotInMicroMips, UseIndirectJumpsHazard, NotNanoMips] in
   def JALRHBPseudo : JumpLinkRegPseudo<GPR32Opnd, JALR_HB, RA>;
 
 
 let AdditionalPredicates = [NotInMips16Mode, NotInMicroMips,
-                            UseIndirectJumpsHazard] in {
+                            UseIndirectJumpsHazard, NotNanoMips] in {
   def TAILCALLREGHB : TailCallReg<JR_HB, GPR32Opnd>, ISA_MIPS32_NOT_32R6_64R6;
   def PseudoIndirectHazardBranch : PseudoIndirectBranchBase<JR_HB, GPR32Opnd>,
                                    ISA_MIPS32R2_NOT_32R6_64R6;
@@ -2505,7 +2521,7 @@ let AdditionalPredicates = [NotInMips16Mode, NotInMicroMips,
 
 class TLB<string asmstr, InstrItinClass itin = NoItinerary> :
   InstSE<(outs), (ins), asmstr, [], itin, FrmOther, asmstr>;
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def TLBP : MMRel, TLB<"tlbp", II_TLBP>, COP0_TLB_FM<0x08>, ISA_MIPS1;
   def TLBR : MMRel, TLB<"tlbr", II_TLBR>, COP0_TLB_FM<0x01>, ISA_MIPS1;
   def TLBWI : MMRel, TLB<"tlbwi", II_TLBWI>, COP0_TLB_FM<0x02>, ISA_MIPS1;
@@ -2519,7 +2535,7 @@ class CacheOp<string instr_asm, Operand MemOpnd,
   let DecoderMethod = "DecodeCacheOp";
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def CACHE : MMRel, CacheOp<"cache", mem, II_CACHE>, CACHEOP_FM<0b101111>,
               INSN_MIPS3_32_NOT_32R6_64R6;
   def PREF :  MMRel, CacheOp<"pref", mem, II_PREF>, CACHEOP_FM<0b110011>,
@@ -2629,7 +2645,7 @@ class HYPCALL_FT<string opstr> :
   let BaseOpcode = opstr;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def MFGC0    : MMRel, MFC3OP<"mfgc0", GPR32Opnd, COP0Opnd, II_MFGC0>,
                  MFC3OP_FM<0x10, 3, 0>, ISA_MIPS32R5, ASE_VIRT;
   def MTGC0    : MMRel, MTC3OP<"mtgc0", COP0Opnd, GPR32Opnd, II_MTGC0>,
@@ -2672,7 +2688,7 @@ multiclass OneOrTwoOperandMacroImmediateAlias<string Memnomic,
                                         Imm:$imm), 0>;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def : MipsInstAlias<"move $dst, $src",
                       (OR GPR32Opnd:$dst, GPR32Opnd:$src, ZERO), 1>,
         GPR_32, ISA_MIPS1;
@@ -2868,6 +2884,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
                       (RDHWR GPR32Opnd:$rt, HWRegsOpnd:$rs, 0), 1>, ISA_MIPS1;
 
 }
+let AdditionalPredicates = [NotNanoMips] in {
 def : MipsInstAlias<"sub, $rd, $rs, $imm",
                     (ADDi GPR32Opnd:$rd, GPR32Opnd:$rs,
                           InvertedImOperand:$imm), 0>, ISA_MIPS1_NOT_32R6_64R6;
@@ -2879,7 +2896,8 @@ def : MipsInstAlias<"subu, $rd, $rs, $imm",
                            InvertedImOperand:$imm), 0>;
 def : MipsInstAlias<"subu $rs, $imm", (ADDiu GPR32Opnd:$rs, GPR32Opnd:$rs,
                                              InvertedImOperand:$imm), 0>;
-let AdditionalPredicates = [NotInMicroMips] in {
+}
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def : MipsInstAlias<"sll $rd, $rt, $rs",
                       (SLLV GPR32Opnd:$rd, GPR32Opnd:$rt, GPR32Opnd:$rs), 0>;
   def : MipsInstAlias<"sra $rd, $rt, $rs",
@@ -2898,7 +2916,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
                      ISA_MIPS32R2;
 }
 def : MipsInstAlias<"sdbbp", (SDBBP 0)>, ISA_MIPS32_NOT_32R6_64R6;
-let AdditionalPredicates = [NotInMicroMips] in
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in
   def : MipsInstAlias<"sync", (SYNC 0), 1>, ISA_MIPS2;
 
 def : MipsInstAlias<"mulo $rs, $rt",
@@ -2908,7 +2926,7 @@ def : MipsInstAlias<"mulou $rs, $rt",
                     (MULOUMacro GPR32Opnd:$rs, GPR32Opnd:$rs, GPR32Opnd:$rt), 0>,
                     ISA_MIPS1_NOT_32R6_64R6;
 
-let AdditionalPredicates = [NotInMicroMips] in
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in
   def : MipsInstAlias<"hypcall", (HYPCALL 0), 1>, ISA_MIPS32R5, ASE_VIRT;
 
 //===----------------------------------------------------------------------===//
@@ -3132,11 +3150,11 @@ def : MipsPat<(VT ORiPred:$imm), (ORiOp ZEROReg, imm:$imm)>;
 def : MipsPat<(VT immSExt16:$imm), (ADDiuOp ZEROReg, imm:$imm)>;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in
   defm : MaterializeImms<i32, ZERO, ADDiu, LUi, ORi>, ISA_MIPS1;
 
 // Carry MipsPatterns
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def : MipsPat<(subc GPR32:$lhs, GPR32:$rhs),
                 (SUBu GPR32:$lhs, GPR32:$rhs)>, ISA_MIPS1;
 }
@@ -3155,14 +3173,16 @@ def : MipsPat<(mul GPR32:$lhs, GPR32:$rhs),
 def : MipsPat<(MipsSync (i32 immz)),
               (SYNC 0)>, ISA_MIPS2;
 
+let AdditionalPredicates = [NotNanoMips] in {
 // Call
 def : MipsPat<(MipsJmpLink (i32 texternalsym:$dst)),
               (JAL texternalsym:$dst)>, ISA_MIPS1;
 //def : MipsPat<(MipsJmpLink GPR32:$dst),
 //              (JALR GPR32:$dst)>;
+}
 
 // Tail call
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def : MipsPat<(MipsTailCall (iPTR tglobaladdr:$dst)),
                 (TAILCALL tglobaladdr:$dst)>, ISA_MIPS1;
   def : MipsPat<(MipsTailCall (iPTR texternalsym:$dst)),
@@ -3208,7 +3228,7 @@ multiclass MipsHiLoRelocs<Instruction Lui, Instruction Addiu,
 class WrapperPat<SDNode node, Instruction ADDiuOp, RegisterClass RC>:
       MipsPat<(MipsWrapper RC:$gp, node:$in), (ADDiuOp RC:$gp, node:$in)>;
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   defm : MipsHiLoRelocs<LUi, ADDiu, ZERO, GPR32Opnd>, ISA_MIPS1;
 
   def : MipsPat<(MipsGotHi tglobaladdr:$in), (LUi tglobaladdr:$in)>, ISA_MIPS1;
@@ -3237,7 +3257,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
 }
 
 // extended loads
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   def : MipsPat<(i32 (extloadi1  addr:$src)), (LBu addr:$src)>, ISA_MIPS1;
   def : MipsPat<(i32 (extloadi8  addr:$src)), (LBu addr:$src)>, ISA_MIPS1;
   def : MipsPat<(i32 (extloadi16 addr:$src)), (LHu addr:$src)>, ISA_MIPS1;
@@ -3277,7 +3297,7 @@ def : MipsPat<(brcond (i32 (setule RC:$lhs, RC:$rhs)), bb:$dst),
 def : MipsPat<(brcond RC:$cond, bb:$dst),
               (BNEOp RC:$cond, ZEROReg, bb:$dst)>;
 }
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   defm : BrcondPats<GPR32, BEQ, BEQ, BNE, SLT, SLTu, SLTi, SLTiu, ZERO>,
          ISA_MIPS1;
   def : MipsPat<(brcond (i32 (setlt i32:$lhs, 1)), bb:$dst),
@@ -3330,7 +3350,7 @@ multiclass SetgeImmPats<RegisterClass RC, Instruction XORiOp,
                 (XORiOp (SLTiuOp RC:$lhs, immSExt16:$rhs), 1)>;
 }
 
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   defm : SeteqPats<GPR32, SLTiu, XOR, SLTu, ZERO>, ISA_MIPS1;
   defm : SetlePats<GPR32, XORi, SLT, SLTu>, ISA_MIPS1;
   defm : SetgtPats<GPR32, SLT, SLTu>, ISA_MIPS1;
@@ -3342,7 +3362,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
 }
 
 // Load halfword/word patterns.
-let AdditionalPredicates = [NotInMicroMips] in {
+let AdditionalPredicates = [NotInMicroMips, NotNanoMips] in {
   let AddedComplexity = 40 in {
     def : LoadRegImmPat<LBu, i32, zextloadi8>, ISA_MIPS1;
     def : LoadRegImmPat<LHu, i32, zextloadi16>, ISA_MIPS1;
@@ -3394,10 +3414,6 @@ include "MipsMSAInstrInfo.td"
 include "MipsEVAInstrFormats.td"
 include "MipsEVAInstrInfo.td"
 
-// MT
-include "MipsMTInstrFormats.td"
-include "MipsMTInstrInfo.td"
-
 // Micromips
 include "MicroMipsInstrFormats.td"
 include "MicroMipsInstrInfo.td"
@@ -3410,3 +3426,11 @@ include "MicroMips32r6InstrInfo.td"
 // Micromips DSP
 include "MicroMipsDSPInstrFormats.td"
 include "MicroMipsDSPInstrInfo.td"
+
+// Nanomips
+include "NanoMipsInstrFormats.td"
+include "NanoMipsInstrInfo.td"
+
+// MT
+include "MipsMTInstrFormats.td"
+include "MipsMTInstrInfo.td"

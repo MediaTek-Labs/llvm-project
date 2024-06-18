@@ -145,6 +145,8 @@ class LLVMConfig(object):
             elif re.match(r'^arm.*', target_triple):
                 features.add('target-arm')
 
+        features.add('nanomips')
+
         use_gmalloc = lit_config.params.get('use_gmalloc', None)
         if lit.util.pythonize_bool(use_gmalloc):
             # Allow use of an explicit path for gmalloc library.
@@ -321,8 +323,7 @@ class LLVMConfig(object):
     def make_itanium_abi_triple(self, triple):
         m = re.match(r'(\w+)-(\w+)-(\w+)', triple)
         if not m:
-            self.lit_config.fatal(
-                "Could not turn '%s' into Itanium ABI triple" % triple)
+            return triple
         if m.group(3).lower() != 'windows':
             # All non-windows triples use the Itanium ABI.
             return triple
@@ -331,8 +332,8 @@ class LLVMConfig(object):
     def make_msabi_triple(self, triple):
         m = re.match(r'(\w+)-(\w+)-(\w+)', triple)
         if not m:
-            self.lit_config.fatal(
-                "Could not turn '%s' into MS ABI triple" % triple)
+            # Some non-Windows target. Return default.
+            return 'i686-pc-windows-msvc'
         isa = m.group(1).lower()
         vendor = m.group(2).lower()
         os = m.group(3).lower()

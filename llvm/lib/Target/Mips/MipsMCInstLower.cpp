@@ -18,6 +18,7 @@
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineOperand.h"
+#include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -32,6 +33,23 @@ void MipsMCInstLower::Initialize(MCContext *C) {
   Ctx = C;
 }
 
+static MipsMCExpr::MipsExprKind getTargetKindNM(const MachineOperand &MO) {
+  switch(MO.getTargetFlags()) {
+  default:
+    llvm_unreachable("Invalid target flag!");
+  case MipsII::MO_NO_FLAG:
+    return MipsMCExpr::MEK_None;
+  case MipsII::MO_ABS_HI:
+    return MipsMCExpr::MEK_HI;
+  case MipsII::MO_ABS_LO:
+    return MipsMCExpr::MEK_LO;
+  case MipsII::MO_PCREL_HI:
+    return MipsMCExpr::MEK_PCREL_HI;
+  case MipsII::MO_GPREL:
+    return MipsMCExpr::MEK_GPREL;
+  }
+}
+
 MCOperand MipsMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
                                               MachineOperandType MOTy,
                                               int64_t Offset) const {
@@ -40,84 +58,87 @@ MCOperand MipsMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
   bool IsGpOff = false;
   const MCSymbol *Symbol;
 
-  switch(MO.getTargetFlags()) {
-  default:
-    llvm_unreachable("Invalid target flag!");
-  case MipsII::MO_NO_FLAG:
-    break;
-  case MipsII::MO_GPREL:
-    TargetKind = MipsMCExpr::MEK_GPREL;
-    break;
-  case MipsII::MO_GOT_CALL:
-    TargetKind = MipsMCExpr::MEK_GOT_CALL;
-    break;
-  case MipsII::MO_GOT:
-    TargetKind = MipsMCExpr::MEK_GOT;
-    break;
-  case MipsII::MO_ABS_HI:
-    TargetKind = MipsMCExpr::MEK_HI;
-    break;
-  case MipsII::MO_ABS_LO:
-    TargetKind = MipsMCExpr::MEK_LO;
-    break;
-  case MipsII::MO_TLSGD:
-    TargetKind = MipsMCExpr::MEK_TLSGD;
-    break;
-  case MipsII::MO_TLSLDM:
-    TargetKind = MipsMCExpr::MEK_TLSLDM;
-    break;
-  case MipsII::MO_DTPREL_HI:
-    TargetKind = MipsMCExpr::MEK_DTPREL_HI;
-    break;
-  case MipsII::MO_DTPREL_LO:
-    TargetKind = MipsMCExpr::MEK_DTPREL_LO;
-    break;
-  case MipsII::MO_GOTTPREL:
-    TargetKind = MipsMCExpr::MEK_GOTTPREL;
-    break;
-  case MipsII::MO_TPREL_HI:
-    TargetKind = MipsMCExpr::MEK_TPREL_HI;
-    break;
-  case MipsII::MO_TPREL_LO:
-    TargetKind = MipsMCExpr::MEK_TPREL_LO;
-    break;
-  case MipsII::MO_GPOFF_HI:
-    TargetKind = MipsMCExpr::MEK_HI;
-    IsGpOff = true;
-    break;
-  case MipsII::MO_GPOFF_LO:
-    TargetKind = MipsMCExpr::MEK_LO;
-    IsGpOff = true;
-    break;
-  case MipsII::MO_GOT_DISP:
-    TargetKind = MipsMCExpr::MEK_GOT_DISP;
-    break;
-  case MipsII::MO_GOT_HI16:
-    TargetKind = MipsMCExpr::MEK_GOT_HI16;
-    break;
-  case MipsII::MO_GOT_LO16:
-    TargetKind = MipsMCExpr::MEK_GOT_LO16;
-    break;
-  case MipsII::MO_GOT_PAGE:
-    TargetKind = MipsMCExpr::MEK_GOT_PAGE;
-    break;
-  case MipsII::MO_GOT_OFST:
-    TargetKind = MipsMCExpr::MEK_GOT_OFST;
-    break;
-  case MipsII::MO_HIGHER:
-    TargetKind = MipsMCExpr::MEK_HIGHER;
-    break;
-  case MipsII::MO_HIGHEST:
-    TargetKind = MipsMCExpr::MEK_HIGHEST;
-    break;
-  case MipsII::MO_CALL_HI16:
-    TargetKind = MipsMCExpr::MEK_CALL_HI16;
-    break;
-  case MipsII::MO_CALL_LO16:
-    TargetKind = MipsMCExpr::MEK_CALL_LO16;
-    break;
-  case MipsII::MO_JALR:
-    return MCOperand();
+  if (Ctx->getTargetTriple().isNanoMips())
+    TargetKind =  getTargetKindNM(MO);
+  else
+    switch(MO.getTargetFlags()) {
+    default:
+      llvm_unreachable("Invalid target flag!");
+    case MipsII::MO_NO_FLAG:
+      break;
+    case MipsII::MO_GPREL:
+      TargetKind = MipsMCExpr::MEK_GPREL;
+      break;
+    case MipsII::MO_GOT_CALL:
+      TargetKind = MipsMCExpr::MEK_GOT_CALL;
+      break;
+    case MipsII::MO_GOT:
+      TargetKind = MipsMCExpr::MEK_GOT;
+      break;
+    case MipsII::MO_ABS_HI:
+      TargetKind = MipsMCExpr::MEK_HI;
+      break;
+    case MipsII::MO_ABS_LO:
+      TargetKind = MipsMCExpr::MEK_LO;
+      break;
+    case MipsII::MO_TLSGD:
+      TargetKind = MipsMCExpr::MEK_TLSGD;
+      break;
+    case MipsII::MO_TLSLDM:
+      TargetKind = MipsMCExpr::MEK_TLSLDM;
+      break;
+    case MipsII::MO_DTPREL_HI:
+      TargetKind = MipsMCExpr::MEK_DTPREL_HI;
+      break;
+    case MipsII::MO_DTPREL_LO:
+      TargetKind = MipsMCExpr::MEK_DTPREL_LO;
+      break;
+    case MipsII::MO_GOTTPREL:
+      TargetKind = MipsMCExpr::MEK_GOTTPREL;
+      break;
+    case MipsII::MO_TPREL_HI:
+      TargetKind = MipsMCExpr::MEK_TPREL_HI;
+      break;
+    case MipsII::MO_TPREL_LO:
+      TargetKind = MipsMCExpr::MEK_TPREL_LO;
+      break;
+    case MipsII::MO_GPOFF_HI:
+      TargetKind = MipsMCExpr::MEK_HI;
+      IsGpOff = true;
+      break;
+    case MipsII::MO_GPOFF_LO:
+      TargetKind = MipsMCExpr::MEK_LO;
+      IsGpOff = true;
+      break;
+    case MipsII::MO_GOT_DISP:
+      TargetKind = MipsMCExpr::MEK_GOT_DISP;
+      break;
+    case MipsII::MO_GOT_HI16:
+      TargetKind = MipsMCExpr::MEK_GOT_HI16;
+      break;
+    case MipsII::MO_GOT_LO16:
+      TargetKind = MipsMCExpr::MEK_GOT_LO16;
+      break;
+    case MipsII::MO_GOT_PAGE:
+      TargetKind = MipsMCExpr::MEK_GOT_PAGE;
+      break;
+    case MipsII::MO_GOT_OFST:
+      TargetKind = MipsMCExpr::MEK_GOT_OFST;
+      break;
+    case MipsII::MO_HIGHER:
+      TargetKind = MipsMCExpr::MEK_HIGHER;
+      break;
+    case MipsII::MO_HIGHEST:
+      TargetKind = MipsMCExpr::MEK_HIGHEST;
+      break;
+    case MipsII::MO_CALL_HI16:
+      TargetKind = MipsMCExpr::MEK_CALL_HI16;
+      break;
+    case MipsII::MO_CALL_LO16:
+      TargetKind = MipsMCExpr::MEK_CALL_LO16;
+      break;
+    case MipsII::MO_JALR:
+      return MCOperand();
   }
 
   switch (MOTy) {

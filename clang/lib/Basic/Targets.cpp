@@ -308,6 +308,7 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
       return new MipsTargetInfo(Triple, Opts);
     }
 
+
   case llvm::Triple::m68k:
     switch (os) {
     case llvm::Triple::Linux:
@@ -316,6 +317,22 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
       return new NetBSDTargetInfo<M68kTargetInfo>(Triple, Opts);
     default:
       return new M68kTargetInfo(Triple, Opts);
+    }
+
+  case llvm::Triple::nanomips:
+    switch (os) {
+    case llvm::Triple::Linux:
+      return new LinuxTargetInfo<MipsTargetInfo>(Triple, Opts);
+    case llvm::Triple::RTEMS:
+      return new RTEMSTargetInfo<MipsTargetInfo>(Triple, Opts);
+    case llvm::Triple::FreeBSD:
+      return new FreeBSDTargetInfo<MipsTargetInfo>(Triple, Opts);
+    case llvm::Triple::NetBSD:
+      return new NetBSDTargetInfo<MipsTargetInfo>(Triple, Opts);
+    case llvm::Triple::OpenBSD:
+      return new OpenBSDTargetInfo<MipsTargetInfo>(Triple, Opts);
+    default:
+      return new MipsTargetInfo(Triple, Opts);
     }
 
   case llvm::Triple::le32:

@@ -56,6 +56,14 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
     DefMips64CPU = "mips3";
   }
 
+  if (Triple.isNanoMips()) {
+    DefMips32CPU = "i7200";
+    CPUName = "i7200";
+    if (ABIName.empty()) {
+      ABIName = "p32";
+    }
+  }
+
   if (Arg *A = Args.getLastArg(clang::driver::options::OPT_march_EQ,
                                options::OPT_mcpu_EQ))
     CPUName = A->getValue();
@@ -123,6 +131,7 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
     CPUName = llvm::StringSwitch<const char *>(ABIName)
                   .Case("o32", DefMips32CPU)
                   .Cases("n32", "n64", DefMips64CPU)
+                  .Case("p32", "nanomips")
                   .Default("");
   }
 
@@ -173,8 +182,9 @@ mips::FloatABI mips::getMipsFloatABI(const Driver &D, const ArgList &Args,
 
   // If unspecified, choose the default based on the platform.
   if (ABI == mips::FloatABI::Invalid) {
-    if (Triple.isOSFreeBSD()) {
+    if (Triple.isOSFreeBSD() || Triple.isNanoMips()) {
       // For FreeBSD, assume "soft" on all flavors of MIPS.
+      // nanoMIPS currently only supports "soft" ABI.
       ABI = mips::FloatABI::Soft;
     } else {
       // Assume "hard", because it's a default value used by gcc.
@@ -185,6 +195,8 @@ mips::FloatABI mips::getMipsFloatABI(const Driver &D, const ArgList &Args,
   }
 
   assert(ABI != mips::FloatABI::Invalid && "must select an ABI");
+  assert((!Triple.isNanoMips() || ABI != mips::FloatABI::Hard) &&
+         "nanoMIPS does not support hard-float ABI");
   return ABI;
 }
 
@@ -278,6 +290,14 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       Features.push_back("+xgot");
     else
       Features.push_back("-xgot");
+  }
+
+  if (Arg *A = Args.getLastArg(options::OPT_mjump_table_opt,
+                               options::OPT_mno_jump_table_opt)) {
+    if (A->getOption().matches(options::OPT_mno_jump_table_opt))
+      Features.push_back("+disable-jump-table-opt");
+    else
+      Features.push_back("-disable-jump-table-opt");
   }
 
   mips::FloatABI FloatABI = mips::getMipsFloatABI(D, Args, Triple);
@@ -397,6 +417,18 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
     } else
       D.Diag(diag::err_drv_unknown_indirect_jump_opt) << Val;
   }
+
+  if (Triple.isNanoMips()) {
+    if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
+      Features.push_back("+relax");
+    else
+      Features.push_back("-relax");
+    if (Args.hasFlag(options::OPT_mpcrel, options::OPT_mno_pcrel, true))
+      Features.push_back("+pcrel");
+    else
+      Features.push_back("-pcrel");
+  }
+
 }
 
 mips::IEEE754Standard mips::getIEEE754Standard(StringRef &CPU) {

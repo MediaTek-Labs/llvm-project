@@ -61,6 +61,10 @@ private:
   virtual bool selectAddrDefault(SDValue Addr, SDValue &Base,
                                  SDValue &Offset) const;
 
+  virtual bool selectAddrSym(SDValue Addr, SDValue &Base) const;
+
+  virtual bool selectAddrSymGPRel(SDValue Addr, SDValue &Base) const;
+
   /// Match integer address pattern.
   virtual bool selectIntAddr(SDValue Addr, SDValue &Base,
                              SDValue &Offset) const;
@@ -75,6 +79,9 @@ private:
                                  SDValue &Offset) const;
 
   virtual bool selectIntAddrLSL2MM(SDValue Addr, SDValue &Base,
+                                   SDValue &Offset) const;
+
+  virtual bool selectIntAddrSImm9(SDValue Addr, SDValue &Base,
                                    SDValue &Offset) const;
 
   /// Match addr+simm10 and addr
@@ -92,6 +99,28 @@ private:
 
   virtual bool selectAddr16(SDValue Addr, SDValue &Base, SDValue &Offset);
   virtual bool selectAddr16SP(SDValue Addr, SDValue &Base, SDValue &Offset);
+
+  virtual bool selectAddrFrameIndexUOffset(SDValue Addr, SDValue &Base,
+                                           SDValue &Offset, unsigned OffsetBits,
+                                           unsigned ShiftAmount) const;
+
+  virtual bool selectIntAddrUImm12(SDValue Addr, SDValue &Base,
+                                   SDValue &Offset) const;
+
+  virtual bool selectIntAddrUImm19s2(SDValue Addr, SDValue &Base,
+				     SDValue &Offset) const;
+
+  virtual bool selectIntAddrUImm18(SDValue Addr, SDValue &Base,
+				   SDValue &Offset) const;
+
+  virtual bool selectIntAddrUImm17s1(SDValue Addr, SDValue &Base,
+				     SDValue &Offset) const;
+
+  virtual bool selectIntAddrIndexed(SDValue Addr, SDValue &Base, SDValue &Offset) const;
+
+  virtual bool selectIntAddrIndexedLsl2(SDValue Addr, SDValue &Base, SDValue &Offset) const;
+
+  virtual bool selectIntAddrIndexedLsl1(SDValue Addr, SDValue &Base, SDValue &Offset) const;
 
   /// Select constant vector splats.
   virtual bool selectVSplat(SDNode *N, APInt &Imm,
@@ -143,6 +172,11 @@ private:
   bool SelectInlineAsmMemoryOperand(const SDValue &Op,
                                     unsigned ConstraintID,
                                     std::vector<SDValue> &OutOps) override;
+
+  // Select a GP-relative offset expressions
+  virtual bool selectOffsetGP18(SDValue Addr, SDValue &Offset) const;
+  virtual bool selectOffsetGP19s2(SDValue Addr, SDValue &Offset) const;
+
 };
 }
 

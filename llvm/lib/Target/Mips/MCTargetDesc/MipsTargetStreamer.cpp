@@ -178,6 +178,7 @@ void MipsTargetStreamer::emitDirectiveSetOddSPReg() { forbidModuleDirective(); }
 void MipsTargetStreamer::emitDirectiveSetNoOddSPReg() {
   forbidModuleDirective();
 }
+void MipsTargetStreamer::emitAssignmentAsSet(MCSymbol *Symbol, const MCExpr *Value) {}
 
 void MipsTargetStreamer::emitR(unsigned Opcode, unsigned Reg0, SMLoc IDLoc,
                                const MCSubtargetInfo *STI) {
@@ -410,7 +411,7 @@ MipsTargetAsmStreamer::MipsTargetAsmStreamer(MCStreamer &S,
                                              formatted_raw_ostream &OS)
     : MipsTargetStreamer(S), OS(OS) {}
 
-void MipsTargetAsmStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
+void MipsTargetAsmStreamer::emitAssignmentAsSet(MCSymbol *Symbol, const MCExpr *Value) {
   OS << "\t.set\t" << Symbol->getName() << ", ";
   emitValue(Value);
 }

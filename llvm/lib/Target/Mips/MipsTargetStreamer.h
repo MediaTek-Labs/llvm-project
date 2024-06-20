@@ -122,6 +122,7 @@ public:
   virtual void emitDirectiveModuleNoVirt();
   virtual void emitDirectiveModuleGINV();
   virtual void emitDirectiveModuleNoGINV();
+  virtual void emitAssignmentAsSet(MCSymbol *Symbol, const MCExpr *Value);
 
   void emitR(unsigned Opcode, unsigned Reg0, SMLoc IDLoc,
              const MCSubtargetInfo *STI);
@@ -218,7 +219,7 @@ class MipsTargetAsmStreamer : public MipsTargetStreamer {
 
 public:
   MipsTargetAsmStreamer(MCStreamer &S, formatted_raw_ostream &OS);
-  void emitAssignment(MCSymbol *Symbol, const MCExpr *Value) override;
+  void emitAssignmentAsSet(MCSymbol *Symbol, const MCExpr *Value) override;
   void emitDirectiveSetMicroMips() override;
   void emitDirectiveSetNoMicroMips() override;
   void emitDirectiveSetMips16() override;

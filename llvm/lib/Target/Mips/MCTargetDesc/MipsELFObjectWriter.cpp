@@ -336,12 +336,18 @@ unsigned MipsELFObjectWriter::getRelocType(MCContext &Ctx,
                                            const MCFixup &Fixup,
                                            bool IsPCRel) const {
   // Determine the type of the relocation.
-  unsigned Kind = Fixup.getTargetKind();
-  if (Kind >= FirstLiteralRelocationKind)
-    return Kind - FirstLiteralRelocationKind;
 
+  // FIXME: nanoMIPS has got some relocations after FirstLiteralRelocationKind,
+  // so returning Kind - FirstLiteralRelocationKind won't be right here.
+  // Nevertheless, it seems like nanoMIPS doesn't use these literal
+  // relocations, this should be changed if nanoMIPS starts using them.
   if (Ctx.getTargetTriple().isNanoMips())
     return getNanoMipsRelocType(Ctx, Target, Fixup, IsPCRel);
+
+  unsigned Kind = Fixup.getTargetKind();
+
+  if (Kind >= FirstLiteralRelocationKind)
+    return Kind - FirstLiteralRelocationKind;
 
   switch (Kind) {
   case FK_NONE:

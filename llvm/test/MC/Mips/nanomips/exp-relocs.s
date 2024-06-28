@@ -2,10 +2,10 @@
 #
 # RUN: llvm-mc -filetype=obj -triple nanomips-elf %s -o - \
 # RUN:   | llvm-objdump --triple nanomips-elf -d -r - | FileCheck %s
+	.linkrelax
 	.text
 	.globl foo
 	.set noat
-	.linkrelax
 	.reloc	1f,R_NANOMIPS_JALR32,end # CHECK: R_NANOMIPS_JALR32	end
 1:	jalr	$t9
 	.reloc	1f,R_NANOMIPS_JALR16,end # CHECK: R_NANOMIPS_JALR16	end

@@ -142,7 +142,10 @@ public:
 
   bool evaluateBranch(const MCInst &Inst, uint64_t Addr, uint64_t Size,
                       uint64_t &Target) const override {
-    unsigned NumOps = Inst.getNumOperands();
+    // unsigned NumOps = Inst.getNumOperands();
+    // Note: Number of operands that are in McInst and in MCInstrDesc don't match
+    // sometimes, at least for the save for nanoMIPS 
+    unsigned NumOps = Info->get(Inst.getOpcode()).getNumOperands();
     if (NumOps == 0)
       return false;
     switch (Info->get(Inst.getOpcode()).operands()[NumOps - 1].OperandType) {

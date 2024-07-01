@@ -122,10 +122,13 @@ PreservedAnalyses KCFIPass::run(Function &F, FunctionAnalysisManager &AM) {
       TrapCall->getParent()->getTerminator()->eraseFromParent();
     } else {
       FunctionCallee WarningFn;
-      WarningFn = M.getOrInsertFunction(
-          "__ubsan_handle_kcfi", Builder.getVoidTy(), PointerType::get(Type::getInt8Ty(Builder.getContext()), 0));
+      Type *OpType = PointerType::get(Type::getInt8Ty(Builder.getContext()), 0);
       Value *Data = emitDebugLocData(DebugLoc, M, Builder);
-      CallInst *Call = Builder.CreateCall(WarningFn, Data);
+      WarningFn = M.getOrInsertFunction(
+          "__ubsan_handle_kcfi", Builder.getVoidTy(), Data->getType(), OpType);
+      CallInst *Call = Builder.CreateCall(
+          WarningFn,
+          {Data, Builder.CreateBitCast(CI->getCalledOperand(), OpType)});
       Call->setDebugLoc(DebugLoc);
       Call->setCannotMerge();
     }

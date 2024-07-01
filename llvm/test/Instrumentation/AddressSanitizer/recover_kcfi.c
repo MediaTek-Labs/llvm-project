@@ -21,10 +21,11 @@
 
 // TRAP: call void @llvm.debugtrap()
 // TRAP-NEXT: unreachable
-// RECOVER: [[VAR1:@[0-9]+]] = private constant {{.*}}c"{{.*}}/recover_kcfi.c\00"
-// RECOVER: [[VAR2:@[0-9]+]] = private constant { ptr, i32, i32 } { ptr [[VAR1]], i32 100, i32 3 }
-// RECOVER: call void @__ubsan_handle_kcfi(ptr [[VAR2]])
+// RECOVER: [[FILENAME:@[0-9]+]] = private constant {{.*}}c"{{.*}}/recover_kcfi.c\00"
+// RECOVER: [[STRUCT:@[0-9]+]] = private constant { ptr, i32, i32 } { ptr [[FILENAME]], i32 100, i32 3 }
+// RECOVER: call void @__ubsan_handle_kcfi(ptr [[STRUCT]], ptr {{.*}}[[CALLEE:%[0-9]+]])
 // RECOVER-NEXT: br label
+// RECOVER: {{.*}}call i32 [[CALLEE]]
 typedef int (*callback1_t)(int);
 void assign_func(callback1_t *p);
 int main() {

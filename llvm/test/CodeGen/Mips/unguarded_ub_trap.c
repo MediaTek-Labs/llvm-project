@@ -51,6 +51,16 @@
 // RUN:  clang %s -O0 -fsanitize-trap=all -fsanitize=unsigned-integer-overflow -g -S -fwarn-ubsantrap |& \
 // RUN:    FileCheck %s --check-prefix WARN-32
 
+// check suppression
+// (for integration test: a run with -suppress-warned-traps expected to complete)
+// RUN: clang %s -S -O3 -fsanitize-trap=all -fsanitize=unsigned-integer-overflow -fwarn-ubsantrap \
+// RUN:   -DWIDTH=32 -g -emit-llvm -o - |& FileCheck %s --check-prefix ENABLE
+// RUN: clang %s -S -O3 -fsanitize-trap=all -fsanitize=unsigned-integer-overflow -fwarn-ubsantrap \
+// RUN:   -DWIDTH=32 -g -mllvm -suppress-warned-traps -emit-llvm -o - |& FileCheck %s --check-prefix SUPPRESS
+
+// ENABLE-COUNT-16: call{{.*}}trap
+// SUPPRESS-NOT: call{{.*}}trap
+
 // SILENT-NOT: Operation overflow is not guarded
 #include <limits.h>
 typedef unsigned char UCHAR;

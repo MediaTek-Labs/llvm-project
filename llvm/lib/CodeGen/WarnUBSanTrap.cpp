@@ -20,6 +20,14 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Support/CommandLine.h"
+namespace llvm {
+cl::opt<bool>
+    SuppressWarnedTraps("suppress-warned-traps", cl::Hidden,
+                        cl::desc("Suppress warned ubsan overflow traps"),
+                        cl::init(false));
+} // namespace llvm
+
 using namespace llvm;
 
 void WarnUBSanTrapPass::WarnUnguardedTrapInstr(Function &F, Value *DILocOp) {
@@ -33,7 +41,9 @@ void WarnUBSanTrapPass::WarnUnguardedTrapInstr(Function &F, Value *DILocOp) {
 
 PreservedAnalyses WarnUBSanTrapPass::run(Module &M, ModuleAnalysisManager &AM) {
   int Change = false;
-  StringRef TrapUniqueName = Intrinsic::getName(Intrinsic::ubsantrap_unique);
+  StringRef TrapUniqueName = Intrinsic::getName(
+      SuppressWarnedTraps ? Intrinsic::ubsantrap_unique_return
+                          : Intrinsic::ubsantrap_unique);
   // TODO: in llvm 16 add a parameter to this pass
   // indicating if the warning flag is enabled
   // and skip this check if not
@@ -43,14 +53,18 @@ PreservedAnalyses WarnUBSanTrapPass::run(Module &M, ModuleAnalysisManager &AM) {
       if (auto *CI = dyn_cast<CallInst>(U.getUser()))
         callSites.push_back(CI);
     if (!callSites.empty()) {
-      Function *UBSanTrap = Intrinsic::getDeclaration(&M, Intrinsic::ubsantrap);
+      Function *UBSanTrap;
+      if (!SuppressWarnedTraps)
+        UBSanTrap = Intrinsic::getDeclaration(&M, Intrinsic::ubsantrap);
       for (CallInst *CI : callSites) {
-        Function *F = CI->getParent()->getParent();
-        Value *TrapOp = CI->getOperand(0);
-        CallInst *NewCall = CallInst::Create(UBSanTrap, {TrapOp}, "", CI);
-        CI->replaceAllUsesWith(NewCall);
+        if (!SuppressWarnedTraps) {
+          Value *TrapOp = CI->getOperand(0);
+          CallInst *NewCall;
+          NewCall = CallInst::Create(UBSanTrap, {TrapOp}, "", CI);
+          CI->replaceAllUsesWith(NewCall);
+        }
+        WarnUnguardedTrapInstr(*(CI->getFunction()), CI->getOperand(1));
         CI->eraseFromParent();
-        WarnUnguardedTrapInstr(*F, CI->getOperand(1));
       }
     }
     TrapUnique->eraseFromParent();

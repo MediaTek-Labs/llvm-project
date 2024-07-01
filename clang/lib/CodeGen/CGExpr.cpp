@@ -51,6 +51,9 @@
 #include <optional>
 #include <string>
 
+namespace llvm {
+extern cl::opt<bool> SuppressWarnedTraps;
+}
 using namespace clang;
 using namespace CodeGen;
 
@@ -3949,12 +3952,13 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
     llvm::CallInst *TrapCall;
     if (UBSanTrapExpr) {
       llvm::Value *LocMDVal = sourceLocMetadataValue(UBSanTrapExpr);
+      llvm::Intrinsic::ID TrapUnique =
+          llvm::SuppressWarnedTraps ? llvm::Intrinsic::ubsantrap_unique_return
+                                    : llvm::Intrinsic::ubsantrap_unique;
       TrapCall = Builder.CreateCall(
-          CGM.getIntrinsic(llvm::Intrinsic::ubsantrap_unique),
+          CGM.getIntrinsic(TrapUnique),
           {llvm::ConstantInt::get(CGM.Int8Ty, CheckHandlerID), LocMDVal});
-      // clear value for next time
       CGM.OverflowExpr.push_back(std::make_pair(UBSanTrapExpr, TrapCall));
-      UBSanTrapExpr = nullptr;
     } else {
       TrapCall = Builder.CreateCall(
           CGM.getIntrinsic(llvm::Intrinsic::ubsantrap),
@@ -3968,9 +3972,14 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
     }
     if (NoMerge)
       TrapCall->addFnAttr(llvm::Attribute::NoMerge);
-    TrapCall->setDoesNotReturn();
     TrapCall->setDoesNotThrow();
-    Builder.CreateUnreachable();
+    // if suppressed, this trap will be deleted
+    // this prevents moving the block to invalid locations
+    if (!(UBSanTrapExpr && llvm::SuppressWarnedTraps)) {
+      TrapCall->setDoesNotReturn();
+      Builder.CreateUnreachable();
+    }
+    UBSanTrapExpr = nullptr;
   }
 
   EmitBlock(Cont);

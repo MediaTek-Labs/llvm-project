@@ -1813,6 +1813,10 @@ def int_ubsantrap : Intrinsic<[], [llvm_i8_ty],
 // to be finally converted back to the regular form, after issuing the warning
 def int_ubsantrap_unique : Intrinsic<[], [llvm_i8_ty, llvm_metadata_ty],
                               [IntrNoReturn, IntrCold, ImmArg<ArgIndex<0>>]>;
+// Same as int_ubsantrap_unique but intended to be removed instead of replaced
+// with a regular trap
+def int_ubsantrap_unique_return : Intrinsic<[], [llvm_i8_ty, llvm_metadata_ty],
+                              [IntrCold, ImmArg<ArgIndex<0>>]>;
 
 // Return true if ubsan check is allowed.
 def int_allow_ubsan_check : DefaultAttrsIntrinsic<[llvm_i1_ty], [llvm_i8_ty],

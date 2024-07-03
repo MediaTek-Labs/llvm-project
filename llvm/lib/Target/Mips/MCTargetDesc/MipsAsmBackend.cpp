@@ -824,21 +824,24 @@ bool MipsAsmBackend::isMicroMips(const MCSymbol *Sym) const {
 bool MipsAsmBackend::shouldInsertFixupForCodeAlign(MCAssembler &Asm,
                                      MCAlignFragment &AF) {
   MCContext &Ctx = Asm.getContext();
-  // Insert the fixup only when alignment is greater than 2.
-  // FIXME: skip when linker relaxation is disabled.
-  if (!Ctx.getTargetTriple().isNanoMips() || AF.getAlignment() == 2)
+  // Insert the fixup only when alignment is greater than 2
+  // and skip when linker relaxation is disabled.
+  if (!Ctx.getTargetTriple().isNanoMips() || AF.getAlignment() <= 2 ||
+      !AF.getSubtargetInfo()->hasFeature(Mips::FeatureRelax))
     return false;
 
-  const MCExpr *Dummy = MCConstantExpr::create(0, Ctx);
-  // Create fixup
+  uint64_t PadCount = Asm.computeFragmentSize(AF);
+  MCSymbol *AlignConst = Ctx.createTempSymbol();
+  AlignConst->setVariableValue(MCConstantExpr::create(llvm::Log2(AF.getAlignment()), Ctx));
+  (cast<MCSymbolELF>(*AlignConst)).setSize(MCConstantExpr::create(PadCount, Ctx));
+  Asm.registerSymbol(*AlignConst);
+
+  const MCSymbolRefExpr *AlignRef = MCSymbolRefExpr::create(AlignConst, Ctx);
   MCFixup Fixup =
-      MCFixup::create(0, Dummy, MCFixupKind(Mips::fixup_NANOMIPS_ALIGN), SMLoc());
-
+      MCFixup::create(0, AlignRef, MCFixupKind(Mips::fixup_NANOMIPS_ALIGN), SMLoc());
   uint64_t FixedValue = 0;
-  MCValue NopBytes = MCValue::get(AF.getAlignment().value());
-
-  Asm.getWriter().recordRelocation(Asm, &AF, Fixup, NopBytes, FixedValue);     
-                            
+  MCValue NopBytes = MCValue::get(AlignRef, nullptr, 0, 0);
+  Asm.getWriter().recordRelocation(Asm, &AF, Fixup, NopBytes, FixedValue);
   return true;
 }
 

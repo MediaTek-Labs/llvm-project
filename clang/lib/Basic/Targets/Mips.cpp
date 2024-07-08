@@ -171,8 +171,11 @@ void MipsTargetInfo::getTargetDefines(const LangOptions &Opts,
   if (IsMicromips)
     Builder.defineMacro("__mips_micromips", Twine(1));
 
-  if (IsNanoMips)
+  if (IsNanoMips) {
     Builder.defineMacro("__nanomips__", Twine(1));
+    if (NMips64BitTimeT)
+      Builder.defineMacro("__nanomips_64bit_time_t__", Twine(1));
+  }
 
   if (IsNan2008)
     Builder.defineMacro("__mips_nan2008", Twine(1));

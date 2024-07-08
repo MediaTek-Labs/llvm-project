@@ -44,7 +44,7 @@ struct MipsRelocationEntry {
 class MipsELFObjectWriter : public MCELFObjectTargetWriter {
 public:
   MipsELFObjectWriter(uint8_t OSABI, bool HasRelocationAddend,
-		      uint16_t EMachine, bool Is64);
+		      uint16_t EMachine, bool Is64, uint8_t ABIVersion);
 
   ~MipsELFObjectWriter() override = default;
 
@@ -151,8 +151,10 @@ static bool isMatchingReloc(unsigned MatchingType, const ELFRelocationEntry &R,
 
 MipsELFObjectWriter::MipsELFObjectWriter(uint8_t OSABI,
                                          bool HasRelocationAddend,
-					 uint16_t EMachine, bool Is64)
-    : MCELFObjectTargetWriter(Is64, OSABI, EMachine, HasRelocationAddend) {}
+					 uint16_t EMachine, bool Is64,
+					 uint8_t ABIVersion)
+    : MCELFObjectTargetWriter(Is64, OSABI, EMachine, HasRelocationAddend,
+			      ABIVersion) {}
 
 static unsigned getNanoMipsRelocType(MCContext &Ctx,
 				     const MCValue &Target,
@@ -727,12 +729,12 @@ bool MipsELFObjectWriter::needsRelocateWithSymbol(const MCValue &Val,
 }
 
 std::unique_ptr<MCObjectTargetWriter>
-llvm::createMipsELFObjectWriter(const Triple &TT, bool IsN32) {
+llvm::createMipsELFObjectWriter(const Triple &TT, bool IsN32, uint8_t ABIVersion) {
   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
   bool IsN64 = TT.isArch64Bit() && !IsN32;
   bool HasRelocationAddend = (TT.isArch64Bit() || TT.getArch() == llvm::Triple::nanomips);
   uint16_t EMachine = ((TT.getArch() == llvm::Triple::nanomips)?
 		       ELF::EM_NANOMIPS : ELF::EM_MIPS);
   return std::make_unique<MipsELFObjectWriter>(OSABI, HasRelocationAddend,
-					       EMachine, IsN64);
+					       EMachine, IsN64, ABIVersion);
 }

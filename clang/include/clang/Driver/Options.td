@@ -5543,6 +5543,10 @@ def mjump_table_opt : Flag<["-"], "mjump-table-opt">, Group<m_mips_Features_Grou
 def mno_jump_table_opt : Flag<["-"], "mno-jump-table-opt">, Group<m_mips_Features_Group>;
 def mfix_nmips_hw110880 : Flag<["-"], "mfix-nmips-hw110880">, Group<m_mips_Features_Group>;
 def mno_fix_nmips_hw110880 : Flag<["-"], "mno-fix-nmips-hw110880">, Group<m_mips_Features_Group>;
+
+def muse_64bit_time_t : Flag<["-"], "muse-64bit-time_t">, Group<m_mips_Features_Group>;
+def mno_use_64bit_time_t : Flag<["-"], "mno-use-64bit-time_t">, Group<m_mips_Features_Group>;
+
 def mldc1_sdc1 : Flag<["-"], "mldc1-sdc1">, Group<m_mips_Features_Group>;
 def mno_ldc1_sdc1 : Flag<["-"], "mno-ldc1-sdc1">, Group<m_mips_Features_Group>;
 def mcheck_zero_division : Flag<["-"], "mcheck-zero-division">,

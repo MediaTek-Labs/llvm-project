@@ -304,6 +304,12 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       Features.push_back("-fix-hw110880");
   }
 
+  if (Args.hasFlag(options::OPT_muse_64bit_time_t,
+		   options::OPT_mno_use_64bit_time_t, false))
+    Features.push_back("+nmips-64bit-time_t");
+  else
+    Features.push_back("-nmips-64bit-time_t");
+
   mips::FloatABI FloatABI = mips::getMipsFloatABI(D, Args, Triple);
   if (FloatABI == mips::FloatABI::Soft) {
     // FIXME: Note, this is a hack. We need to pass the selected float

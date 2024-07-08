@@ -239,6 +239,9 @@ def FeaturePCRel : SubtargetFeature<"pcrel", "UsePCRel", "true",
 def FeatureXformHw110880 : SubtargetFeature<"fix-hw110880", "HasXformHw110880", "true",
 					"Avoid specific 48-bit instruction patterns [hw110880]">;
 
+def Feature64BitTimeT : SubtargetFeature<"nmips-64bit-time_t", "Use64BitTimeT", "true",
+					"Set to use 64-bit time_t for Y2k38 workaround">;
+
 //===----------------------------------------------------------------------===//
 // Register File, Calling Conv, Instruction Descriptions
 //===----------------------------------------------------------------------===//

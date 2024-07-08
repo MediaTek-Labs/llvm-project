@@ -56,6 +56,7 @@ class LLVM_LIBRARY_VISIBILITY MipsTargetInfo : public TargetInfo {
   bool DisableMadd4;
   bool UseIndirectJumpHazard;
   bool NoOddSpreg;
+  bool NMips64BitTimeT;
 
 protected:
   enum FPModeEnum { FPXX, FP32, FP64 } FPMode;
@@ -67,7 +68,7 @@ public:
         IsNanoMips(false), IsNan2008(false), IsAbs2008(false),
         IsSingleFloat(false), IsNoABICalls(false), CanUseBSDABICalls(false),
         FloatABI(HardFloat), DspRev(NoDSP), HasMSA(false), DisableMadd4(false),
-        UseIndirectJumpHazard(false), FPMode(FPXX) {
+        UseIndirectJumpHazard(false), FPMode(FPXX), NMips64BitTimeT(false) {
     TheCXXABI.set(TargetCXXABI::GenericMIPS);
 
     if (Triple.isMIPS32()) {
@@ -405,7 +406,8 @@ public:
       } else if (Feature == "-nooddspreg") {
         NoOddSpreg = false;
         OddSpregGiven = true;
-      }
+      } else if (Feature == "+nmips-64bit-time_t")
+        NMips64BitTimeT = true;
     }
 
     if (FPMode == FPXX && !OddSpregGiven)

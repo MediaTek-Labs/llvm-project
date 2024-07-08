@@ -300,7 +300,7 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value,
 
 std::unique_ptr<MCObjectTargetWriter>
 MipsAsmBackend::createObjectTargetWriter() const {
-  return createMipsELFObjectWriter(TheTriple, IsN32);
+  return createMipsELFObjectWriter(TheTriple, IsN32, ABIVersion);
 }
 
 // Little-endian fixup data byte ordering:
@@ -988,12 +988,17 @@ bool MipsAsmBackend::relaxDwarfCFA(MCDwarfCallFrameFragment &DF,
   return true;
 }
 
+#include "MipsSubtarget.h"
+
 MCAsmBackend *llvm::createMipsAsmBackend(const Target &T,
                                          const MCSubtargetInfo &STI,
                                          const MCRegisterInfo &MRI,
                                          const MCTargetOptions &Options) {
   MipsABIInfo ABI = MipsABIInfo::computeTargetABI(STI.getTargetTriple(),
                                                   STI.getCPU(), Options);
+  // Increment ABI version to indication that libc will be compiled with
+  // 64-bit time_t to avoid Y2K38.
   return new MipsAsmBackend(T, MRI, STI.getTargetTriple(), STI.getCPU(),
-                            ABI.IsN32());
+                            ABI.IsN32(),
+			    STI.getFeatureBits()[Mips::Feature64BitTimeT] ? 1 : 0);
 }

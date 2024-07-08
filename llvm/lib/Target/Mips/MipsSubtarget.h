@@ -221,6 +221,9 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
 
   bool HasXformHw110880 = false;
 
+  // Use 64-bit time_t
+  bool Use64BitTimeT = true;
+
   /// The minimum alignment known to hold of the stack frame on
   /// entry to the function and which must be maintained by every function.
   Align stackAlignment;

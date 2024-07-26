@@ -132,7 +132,17 @@ def : InstRW<[GenericWriteALU], (instrs ADD_NM, ADDu16_NM, ADDu4x4_NM, ADDu_NM,
                                  SLL_NM, SLLV_NM, SLT_NM, SLTI_NM, SLTIU_NM, SLTU_NM,
                                  SOV_NM, SRAV_NM, SRA_NM, SRLV_NM, SRL_NM, SUB_NM,
                                  SUBu_NM, SUBu16_NM, XOR_NM, XOR16_NM, XORI_NM,
-				 SLL16_NM, SRL16_NM)>;
+                                 SLL16_NM, SRL16_NM,
+                                 ADDQ_PH_NM, ADDQ_S_PH_NM, SUBQ_PH_NM, SUBQ_S_PH_NM,
+                                 ADDU_QB_NM, ADDU_S_QB_NM, SUBU_QB_NM, SUBU_S_QB_NM,
+                                 MUL_PH_NM, MUL_S_PH_NM,
+                                 CMPGU_EQ_QB_NM, CMPGU_LE_QB_NM, CMPGU_LT_QB_NM,
+                                 PICK_QB_NM, PICK_PH_NM, PRECRQ_PH_W_NM,
+                                 CMP_EQ_PH_NM, CMP_LE_PH_NM, CMP_LT_PH_NM,
+                                 SHRL_PH_NM, SHLL_PH_NM, SHLL_S_PH_NM,
+                                 SHRL_QB_NM, SHLL_QB_NM,
+                                 MADD_NM, RDDSP_NM, WRDSP_NM,
+                                 MFHI_NM, MFLO_NM, MTHI_NM, MTLO_NM)>;
 
 def : InstRW<[GenericWriteALU], (instrs CRC32B_NM, CRC32H_NM, CRC32W_NM, CRC32CB_NM,
                                  CRC32CH_NM, CRC32CW_NM)>;
@@ -1142,6 +1152,7 @@ def : InstRW<[GenericWriteStore], (instrs SWDSP)>;
 def : InstRW<[GenericWriteLoad], (instrs LWDSP)>;
 
 def : InstRW<[GenericWriteMove], (instrs PseudoMTLOHI_DSP)>;
+def : InstRW<[GenericWriteMove], (instrs PseudoMTLOHI_DSP_NM)>;
 
 def GenericDSP : ProcResource<1> { let BufferSize = 1; }
 def GenericDSPShort : SchedWriteRes<[GenericDSP]> { let Latency = 2; }

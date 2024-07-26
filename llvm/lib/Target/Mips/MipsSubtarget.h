@@ -348,6 +348,8 @@ public:
   bool hasDSP() const { return HasDSP; }
   bool hasDSPR2() const { return HasDSPR2; }
   bool hasDSPR3() const { return HasDSPR3; }
+  bool hasDSPNanoMips() const { return HasDSP && hasNanoMips(); }
+  bool hasDSPPreNanoMips() const { return HasDSP && !hasNanoMips(); }
   bool has3D() const { return Has3D; }
   bool hasMSA() const { return HasMSA; }
   bool disableMadd4() const { return DisableMadd4; }

@@ -790,6 +790,9 @@ bool NMLoadStoreOpt::generatePCRelative(MachineBasicBlock &MBB) {
     auto Dst = Use->getOperand(0).getReg();
     int64_t Offset = Use->getOperand(2).getImm() + Address.getOffset();
 
+    if (Address.isCPI())
+      continue;
+
     assert(Address.isGlobal());
 
     if (Use->getOpcode() == Mips::ADDIU_NM ||

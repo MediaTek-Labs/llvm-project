@@ -236,6 +236,8 @@ def UseAbs :          Predicate<"Subtarget->inAbs2008Mode() ||"
 def HasStdEnc :       Predicate<"Subtarget->hasStandardEncoding()">,
                       AssemblerPredicate<(all_of (not FeatureMips16))>;
 def NotDSP :          Predicate<"!Subtarget->hasDSP()">;
+def HasDSPNanoMips : Predicate<"Subtarget->hasNanoMips() && Subtarget->hasDSP()">;
+def HasDSPPreNanoMips : Predicate<"!Subtarget->hasNanoMips() && Subtarget->hasDSP()">;
 def InMicroMips    :  Predicate<"Subtarget->inMicroMipsMode()">,
                       AssemblerPredicate<(all_of FeatureMicroMips)>;
 def NotInMicroMips :  Predicate<"!Subtarget->inMicroMipsMode()">,
@@ -3438,6 +3440,7 @@ include "MicroMipsDSPInstrInfo.td"
 // Nanomips
 include "NanoMipsInstrFormats.td"
 include "NanoMipsInstrInfo.td"
+include "NanoMipsDSPInstrInfo.td"
 
 // MT
 include "MipsMTInstrFormats.td"

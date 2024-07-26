@@ -646,6 +646,8 @@ def GPR32NONZERO : RegisterClass<"Mips", [i32], 32, (add
 
 def DSPR  : GPR32Class<[v4i8, v2i16]>;
 
+def DSPRNM  : GPR32ClassNM<[v4i8, v2i16]>;
+
 def GPRMM16 : RegisterClass<"Mips", [i32], 32, (add
   // Callee save
   S0, S1,
@@ -781,7 +783,9 @@ def MSACtrl: RegisterClass<"Mips", [i32], 32, (add
 def LO32 : RegisterClass<"Mips", [i32], 32, (add LO0)>;
 def HI32 : RegisterClass<"Mips", [i32], 32, (add HI0)>;
 def LO32DSP : RegisterClass<"Mips", [i32], 32, (sequence "LO%u", 0, 3)>;
+def LO32DSPNM : RegisterClass<"Mips", [i32], 32, (sequence "LO%u", 0, 3)>;
 def HI32DSP : RegisterClass<"Mips", [i32], 32, (sequence "HI%u", 0, 3)>;
+def HI32DSPNM : RegisterClass<"Mips", [i32], 32, (sequence "HI%u", 0, 3)>;
 def LO64 : RegisterClass<"Mips", [i64], 64, (add LO0_64)>;
 def HI64 : RegisterClass<"Mips", [i64], 64, (add HI0_64)>;
 
@@ -799,6 +803,10 @@ def ACC128 : RegisterClass<"Mips", [untyped], 128, (add AC0_64)> {
 }
 
 def ACC64DSP : RegisterClass<"Mips", [untyped], 64, (sequence "AC%u", 0, 3)> {
+  let Size = 64;
+}
+
+def ACC64DSPNM : RegisterClass<"Mips", [untyped], 64, (sequence "AC%u", 0, 3)> {
   let Size = 64;
 }
 
@@ -906,13 +914,28 @@ def ACC64DSPAsmOperand : MipsAsmRegOperand {
   let PredicateMethod = "isACCAsmReg";
 }
 
+def ACC64DSPNMAsmOperand : MipsAsmRegOperand {
+  let Name = "ACC64DSPNMAsmReg";
+  let PredicateMethod = "isACCAsmReg";
+}
+
 def HI32DSPAsmOperand : MipsAsmRegOperand {
   let Name = "HI32DSPAsmReg";
   let PredicateMethod = "isACCAsmReg";
 }
 
+def HI32DSPNMAsmOperand : MipsAsmRegOperand {
+  let Name = "HI32DSPNMAsmReg";
+  let PredicateMethod = "isACCAsmReg";
+}
+
 def LO32DSPAsmOperand : MipsAsmRegOperand {
   let Name = "LO32DSPAsmReg";
+  let PredicateMethod = "isACCAsmReg";
+}
+
+def LO32DSPNMAsmOperand : MipsAsmRegOperand {
+  let Name = "LO32DSPNMAsmReg";
   let PredicateMethod = "isACCAsmReg";
 }
 
@@ -1085,6 +1108,10 @@ def DSPROpnd : RegisterOperand<DSPR> {
   let ParserMatchClass = GPR32AsmOperand;
 }
 
+def DSPRNMOpnd : RegisterOperand<DSPRNM> {
+  let ParserMatchClass = GPRNM32AsmOperand;
+}
+
 def CCROpnd : RegisterOperand<CCR> {
   let ParserMatchClass = CCRAsmOperand;
 }
@@ -1147,12 +1174,24 @@ def LO32DSPOpnd : RegisterOperand<LO32DSP> {
   let ParserMatchClass = LO32DSPAsmOperand;
 }
 
+def LO32DSPNMOpnd : RegisterOperand<LO32DSPNM> {
+  let ParserMatchClass = LO32DSPNMAsmOperand;
+}
+
 def HI32DSPOpnd : RegisterOperand<HI32DSP> {
   let ParserMatchClass = HI32DSPAsmOperand;
 }
 
+def HI32DSPNMOpnd : RegisterOperand<HI32DSPNM> {
+  let ParserMatchClass = HI32DSPNMAsmOperand;
+}
+
 def ACC64DSPOpnd : RegisterOperand<ACC64DSP> {
   let ParserMatchClass = ACC64DSPAsmOperand;
+}
+
+def ACC64DSPNMOpnd : RegisterOperand<ACC64DSPNM> {
+  let ParserMatchClass = ACC64DSPNMAsmOperand;
 }
 
 def COP0Opnd : RegisterOperand<COP0> {
@@ -1190,3 +1229,18 @@ def MSA128DOpnd : RegisterOperand<MSA128D> {
 def MSA128CROpnd : RegisterOperand<MSACtrl> {
   let ParserMatchClass = MSACtrlAsmOperand;
 }
+
+class RO_TYPES<RegisterOperand RO_DSPR,
+               RegisterOperand RO_GPR,
+               RegisterOperand RO_ACC64DSP,
+               RegisterOperand RO_HI32DSP,
+               RegisterOperand RO_LO32DSP> {
+   RegisterOperand DSPR = RO_DSPR;
+   RegisterOperand GPR = RO_GPR;
+   RegisterOperand ACC64DSP = RO_ACC64DSP;
+   RegisterOperand HI32DSP = RO_HI32DSP;
+   RegisterOperand LO32DSP = RO_LO32DSP;
+}
+
+def MipsRO_TYPES : RO_TYPES<DSPROpnd, GPR32Opnd, ACC64DSPOpnd, HI32DSPOpnd, LO32DSPOpnd>;
+def NanoMipsRO_TYPES :  RO_TYPES<DSPRNMOpnd, GPRNM32Opnd, ACC64DSPNMOpnd, HI32DSPNMOpnd, LO32DSPNMOpnd>;

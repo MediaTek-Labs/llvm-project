@@ -53,6 +53,9 @@ static std::pair<unsigned, unsigned> getMFHiLoOpc(unsigned Src) {
   if (Mips::ACC64DSPRegClass.contains(Src))
     return std::make_pair((unsigned)Mips::MFHI_DSP, (unsigned)Mips::MFLO_DSP);
 
+  if (Mips::ACC64DSPNMRegClass.contains(Src))
+    return std::make_pair((unsigned)Mips::MFHI_NM, (unsigned)Mips::MFLO_NM);
+
   if (Mips::ACC128RegClass.contains(Src))
     return std::make_pair((unsigned)Mips::PseudoMFHI64,
                           (unsigned)Mips::PseudoMFLO64);

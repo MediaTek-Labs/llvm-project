@@ -10693,6 +10693,8 @@ def err_mips_builtin_requires_dspr2 : Error<
   "this builtin requires 'dsp r2' ASE, please use -mdspr2">;
 def err_mips_builtin_requires_msa : Error<
   "this builtin requires 'msa' ASE, please use -mmsa">;
+def err_nanomips_builtin_dsp_unsupported : Error<
+  "this builtin is not supported by Nanomips DSP ASE">;  
 def err_ppc_builtin_requires_abi : Error<
   "this builtin requires ABI -mabi=%0">;
 def err_ppc_invalid_use_mma_type : Error<

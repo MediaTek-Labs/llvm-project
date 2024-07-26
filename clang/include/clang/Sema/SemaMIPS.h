@@ -28,6 +28,7 @@ public:
                                     CallExpr *TheCall);
   bool CheckMipsBuiltinCpu(const TargetInfo &TI, unsigned BuiltinID,
                            CallExpr *TheCall);
+  bool CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall);                         
   bool CheckMipsBuiltinArgument(unsigned BuiltinID, CallExpr *TheCall);
   void handleInterruptAttr(Decl *D, const ParsedAttr &AL);
 };

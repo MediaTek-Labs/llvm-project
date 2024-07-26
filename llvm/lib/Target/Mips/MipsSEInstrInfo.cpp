@@ -105,8 +105,12 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       SrcReg = 0;
     } else if (Mips::HI32DSPRegClass.contains(SrcReg))
       Opc = Mips::MFHI_DSP;
+    else if (Mips::HI32DSPNMRegClass.contains(SrcReg))
+      Opc = Mips::MFHI_NM;
     else if (Mips::LO32DSPRegClass.contains(SrcReg))
       Opc = Mips::MFLO_DSP;
+    else if (Mips::LO32DSPNMRegClass.contains(SrcReg))
+      Opc = Mips::MFLO_NM;
     else if (Mips::DSPCCRegClass.contains(SrcReg)) {
       BuildMI(MBB, I, DL, get(Mips::RDDSP), DestReg).addImm(1 << 4)
         .addReg(SrcReg, RegState::Implicit | getKillRegState(KillSrc));
@@ -126,8 +130,12 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       Opc = Mips::MTLO, DestReg = 0;
     else if (Mips::HI32DSPRegClass.contains(DestReg))
       Opc = Mips::MTHI_DSP;
+    else if (Mips::HI32DSPNMRegClass.contains(DestReg))
+      Opc = Mips::MTHI_NM;
     else if (Mips::LO32DSPRegClass.contains(DestReg))
       Opc = Mips::MTLO_DSP;
+    else if (Mips::LO32DSPNMRegClass.contains(DestReg))
+      Opc = Mips::MTLO_NM;
     else if (Mips::DSPCCRegClass.contains(DestReg)) {
       BuildMI(MBB, I, DL, get(Mips::WRDSP))
         .addReg(SrcReg, getKillRegState(KillSrc)).addImm(1 << 4)
@@ -423,6 +431,9 @@ bool MipsSEInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
     break;
   case Mips::PseudoMTLOHI_MM:
     expandPseudoMTLoHi(MBB, MI, Mips::MTLO_MM, Mips::MTHI_MM, false);
+    break;
+  case Mips::PseudoMTLOHI_DSP_NM:
+    expandPseudoMTLoHi(MBB, MI, Mips::MTLO_NM, Mips::MTHI_NM, true);
     break;
   case Mips::PseudoCVT_S_W:
     expandCvtFPInt(MBB, MI, Mips::CVT_S_W, Mips::MTC1, false);

@@ -132,6 +132,9 @@ MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
     for (const auto &VecTy : VecTys) {
       addRegisterClass(VecTy, &Mips::DSPRRegClass);
 
+      if (Subtarget.hasNanoMips())
+        addRegisterClass(VecTy, &Mips::DSPRNMRegClass);
+
       // Expand all builtin opcodes.
       for (unsigned Opc = 0; Opc < ISD::BUILTIN_OP_END; ++Opc)
         setOperationAction(Opc, VecTy, Expand);
@@ -382,7 +385,10 @@ llvm::createMipsSETargetLowering(const MipsTargetMachine &TM,
 const TargetRegisterClass *
 MipsSETargetLowering::getRepRegClassFor(MVT VT) const {
   if (VT == MVT::Untyped)
-    return Subtarget.hasDSP() ? &Mips::ACC64DSPRegClass : &Mips::ACC64RegClass;
+    return Subtarget.hasDSP()
+               ? (Subtarget.hasNanoMips() ? &Mips::ACC64DSPNMRegClass
+                                          : &Mips::ACC64DSPRegClass)
+               : &Mips::ACC64RegClass;
 
   return TargetLowering::getRepRegClassFor(VT);
 }
@@ -1039,7 +1045,10 @@ static SDValue performSRLCombine(SDNode *N, SelectionDAG &DAG,
                                  const MipsSubtarget &Subtarget) {
   EVT Ty = N->getValueType(0);
 
-  if (((Ty != MVT::v2i16) || !Subtarget.hasDSPR2()) && (Ty != MVT::v4i8))
+  if (((Ty != MVT::v2i16) ||
+       !(Subtarget.hasDSPR2() ||
+         (Subtarget.hasNanoMips() && Subtarget.hasDSP()))) &&
+      (Ty != MVT::v4i8))
     return SDValue();
 
   return performDSPShiftCombine(MipsISD::SHRL_DSP, N, Ty, DAG, Subtarget);

@@ -2809,8 +2809,6 @@ lowerJumpTable(SDValue Op, SelectionDAG &DAG) const
 SDValue MipsTargetLowering::
 lowerConstantPool(SDValue Op, SelectionDAG &DAG) const
 {
-  assert(!Subtarget.hasNanoMips() && "No nanoMIPS support yet");
-
   ConstantPoolSDNode *N = cast<ConstantPoolSDNode>(Op);
   EVT Ty = Op.getValueType();
 
@@ -2820,15 +2818,21 @@ lowerConstantPool(SDValue Op, SelectionDAG &DAG) const
             getTargetMachine().getObjFileLowering());
 
     if (TLOF->IsConstantInSmallSection(DAG.getDataLayout(), N->getConstVal(),
-                                       getTargetMachine()))
+                                       getTargetMachine())) {
+      assert(!Subtarget.hasNanoMips() && "No nanoMIPS support yet");
       // %gp_rel relocation
       return getAddrGPRel(N, SDLoc(N), Ty, DAG);
+    }
 
+    if (Subtarget.hasNanoMips()) {
+      return getNMAddrNonPIC(N, SDLoc(N), Ty, DAG);
+    }
     return Subtarget.hasSym32() ? getAddrNonPIC(N, SDLoc(N), Ty, DAG)
                                 : getAddrNonPICSym64(N, SDLoc(N), Ty, DAG);
   }
 
- return getAddrLocal(N, SDLoc(N), Ty, DAG, ABI.IsN32() || ABI.IsN64());
+  assert(!Subtarget.hasNanoMips() && "No nanoMIPS support yet");
+  return getAddrLocal(N, SDLoc(N), Ty, DAG, ABI.IsN32() || ABI.IsN64());
 }
 
 SDValue MipsTargetLowering::lowerNM_VASTART(SDValue Op,

@@ -348,9 +348,9 @@ bool MipsTargetInfo::validateTarget(DiagnosticsEngine &Diags) const {
       return false;
     }
 
-    // NanoMips does not support dsp.
-    if (DspRev != NoDSP) {
-      Diags.Report(diag::err_opt_not_valid_on_target) << "-mdsp/-mdspr2" << CPU;
+    // So far only one dsp revision in NanoMips.
+    if (DspRev == DSP2) {
+      Diags.Report(diag::err_opt_not_valid_on_target) << "-mdspr2" << CPU;
       return false;
     }
 

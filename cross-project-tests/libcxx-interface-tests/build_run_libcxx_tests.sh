@@ -42,7 +42,7 @@ build_run_gettimeofday_dependent_test() {
 
 toolchain=$1;
 
-tests=(algorithm array chrono climits cstdbool ctype inttypes limits map 
+tests=(algorithm array chrono climits cstdbool ctype fenv inttypes limits map
        math memory queue random set stdarg stdbool stdint stdio stdlib
        stdlib_exit_1 stdlib_exit_2 stdlib_exit_3 stdlib_exit_4
        stdlib_exit_5 stdlib_exit_6 stdlib_exit_7

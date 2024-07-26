@@ -1997,6 +1997,7 @@ def : MnemonicAlias<"jalr.hb", "jalrc.hb">, Requires<[HasNanoMips]>;
 def : NMPat<(MipsFullAddr tglobaladdr:$in), (PseudoLA_NM tglobaladdr:$in)>;
 def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (PseudoLA_NM tglobaltlsaddr:$in)>;
 def : NMPat<(MipsFullAddr tblockaddress:$in), (PseudoLA_NM tblockaddress:$in)>;
+def : NMPat<(MipsFullAddr tconstpool:$in), (PseudoLA_NM tconstpool:$in)>;
 def : NMPat<(MipsFullAddr tjumptable:$in), (LAPC48_NM tjumptable:$in)>;
 def : NMPat<(MipsFullAddrAdd GPRNM32:$rs, tglobaladdr:$in), (ADDIU48_NM GPRNM32:$rs, tglobaladdr:$in)>;
  

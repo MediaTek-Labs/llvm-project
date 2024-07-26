@@ -1,18 +1,21 @@
-class InstNM<dag outs, dag ins, string asmstr, list<dag> pattern,
-             InstrItinClass itin = NoItinerary>:
-  Instruction, PredicateControl, ISA_NANOMIPS
-{
+class InstNM_Enc : Instruction, PredicateControl, ISA_NANOMIPS
+ {
   let Namespace = "Mips";
   let DecoderNamespace = "NanoMips";
   let EncodingPredicates = [HasNanoMips];
   string Arch = "nanomips";
+  let AsmVariantName = "nanomips";
+}
 
+class InstNM<dag outs, dag ins, string asmstr, list<dag> pattern,
+             InstrItinClass itin = NoItinerary,
+             bit FastISelIgnore = 1>: InstNM_Enc
+{
   let OutOperandList = outs;
   let InOperandList  = ins;
-  let AsmVariantName = "nanomips";
   let AsmString = asmstr;
   let Pattern   = pattern;
-  let FastISelShouldIgnore = 1; // disabled for all NanoMips
+  let FastISelShouldIgnore = FastISelIgnore; // disabled for all NanoMips
   bit isCTI = 0; // Any form of Control Transfer Instruction.
 
   let Itinerary = itin;

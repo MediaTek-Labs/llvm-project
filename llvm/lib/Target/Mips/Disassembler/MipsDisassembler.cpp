@@ -160,6 +160,10 @@ static DecodeStatus DecodeDSPRRegisterClass(MCInst &Inst, unsigned RegNo,
                                             uint64_t Address,
                                             const MCDisassembler *Decoder);
 
+static DecodeStatus DecodeDSPRNMRegisterClass(MCInst &Inst, unsigned RegNo,
+                                              uint64_t Address,
+                                              const MCDisassembler *Decoder);
+
 static DecodeStatus DecodeFGR64RegisterClass(MCInst &Inst, unsigned RegNo,
                                              uint64_t Address,
                                              const MCDisassembler *Decoder);
@@ -192,13 +196,25 @@ static DecodeStatus DecodeACC64DSPRegisterClass(MCInst &Inst, unsigned RegNo,
                                                 uint64_t Address,
                                                 const MCDisassembler *Decoder);
 
+static DecodeStatus
+DecodeACC64DSPNMRegisterClass(MCInst &Inst, unsigned RegNo, uint64_t Address,
+                              const MCDisassembler *Decoder);
+
 static DecodeStatus DecodeHI32DSPRegisterClass(MCInst &Inst, unsigned RegNo,
                                                uint64_t Address,
                                                const MCDisassembler *Decoder);
 
+static DecodeStatus DecodeHI32DSPNMRegisterClass(MCInst &Inst, unsigned RegNo,
+                                                 uint64_t Address,
+                                                 const MCDisassembler *Decoder);
+
 static DecodeStatus DecodeLO32DSPRegisterClass(MCInst &Inst, unsigned RegNo,
                                                uint64_t Address,
                                                const MCDisassembler *Decoder);
+
+static DecodeStatus DecodeLO32DSPNMRegisterClass(MCInst &Inst, unsigned RegNo,
+                                                 uint64_t Address,
+                                                 const MCDisassembler *Decoder);
 
 static DecodeStatus DecodeMSA128BRegisterClass(MCInst &Inst, unsigned RegNo,
                                                uint64_t Address,
@@ -1721,6 +1737,12 @@ static DecodeStatus DecodeDSPRRegisterClass(MCInst &Inst, unsigned RegNo,
   return DecodeGPR32RegisterClass(Inst, RegNo, Address, Decoder);
 }
 
+static DecodeStatus DecodeDSPRNMRegisterClass(MCInst &Inst, unsigned RegNo,
+                                              uint64_t Address,
+                                              const MCDisassembler *Decoder) {
+  return DecodeGPRNM32RegisterClass(Inst, RegNo, Address, Decoder);
+}
+
 static DecodeStatus DecodeFGR64RegisterClass(MCInst &Inst, unsigned RegNo,
                                              uint64_t Address,
                                              const MCDisassembler *Decoder) {
@@ -2402,6 +2424,17 @@ static DecodeStatus DecodeACC64DSPRegisterClass(MCInst &Inst, unsigned RegNo,
   return MCDisassembler::Success;
 }
 
+static DecodeStatus
+DecodeACC64DSPNMRegisterClass(MCInst &Inst, unsigned RegNo, uint64_t Address,
+                              const MCDisassembler *Decoder) {
+  if (RegNo >= 4)
+    return MCDisassembler::Fail;
+
+  unsigned Reg = getReg(Decoder, Mips::ACC64DSPNMRegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
 static DecodeStatus DecodeHI32DSPRegisterClass(MCInst &Inst, unsigned RegNo,
                                                uint64_t Address,
                                                const MCDisassembler *Decoder) {
@@ -2413,6 +2446,17 @@ static DecodeStatus DecodeHI32DSPRegisterClass(MCInst &Inst, unsigned RegNo,
   return MCDisassembler::Success;
 }
 
+static DecodeStatus
+DecodeHI32DSPNMRegisterClass(MCInst &Inst, unsigned RegNo, uint64_t Address,
+                             const MCDisassembler *Decoder) {
+  if (RegNo >= 4)
+    return MCDisassembler::Fail;
+
+  unsigned Reg = getReg(Decoder, Mips::HI32DSPNMRegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
 static DecodeStatus DecodeLO32DSPRegisterClass(MCInst &Inst, unsigned RegNo,
                                                uint64_t Address,
                                                const MCDisassembler *Decoder) {
@@ -2420,6 +2464,17 @@ static DecodeStatus DecodeLO32DSPRegisterClass(MCInst &Inst, unsigned RegNo,
     return MCDisassembler::Fail;
 
   unsigned Reg = getReg(Decoder, Mips::LO32DSPRegClassID, RegNo);
+  Inst.addOperand(MCOperand::createReg(Reg));
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus
+DecodeLO32DSPNMRegisterClass(MCInst &Inst, unsigned RegNo, uint64_t Address,
+                             const MCDisassembler *Decoder) {
+  if (RegNo >= 4)
+    return MCDisassembler::Fail;
+
+  unsigned Reg = getReg(Decoder, Mips::LO32DSPNMRegClassID, RegNo);
   Inst.addOperand(MCOperand::createReg(Reg));
   return MCDisassembler::Success;
 }

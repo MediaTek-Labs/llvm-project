@@ -170,9 +170,11 @@ void MipsSEDAGToDAGISel::processFunctionAfterISel(MachineFunction &MF) {
     for (auto &MI: MBB) {
       switch (MI.getOpcode()) {
       case Mips::RDDSP:
+      case Mips::RDDSP_NM:
         addDSPCtrlRegOperands(false, MI, MF);
         break;
       case Mips::WRDSP:
+      case Mips::WRDSP_NM:
         addDSPCtrlRegOperands(true, MI, MF);
         break;
       case Mips::BuildPairF64_64:

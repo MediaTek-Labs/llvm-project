@@ -3851,8 +3851,54 @@ bool Sema::CheckMipsBuiltinFunctionCall(const TargetInfo &TI,
          CheckMipsBuiltinArgument(BuiltinID, TheCall);
 }
 
+bool Sema::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
+  switch (BuiltinID) {
+  default:
+    return false;
+  case Mips::BI__builtin_mips_addq_ph:
+  case Mips::BI__builtin_mips_addq_s_ph:
+  case Mips::BI__builtin_mips_addu_qb:
+  case Mips::BI__builtin_mips_addu_s_qb:
+  case Mips::BI__builtin_mips_cmp_eq_ph:
+  case Mips::BI__builtin_mips_cmpgu_eq_qb:
+  case Mips::BI__builtin_mips_cmpgu_le_qb:
+  case Mips::BI__builtin_mips_cmpgu_lt_qb:
+  case Mips::BI__builtin_mips_cmp_le_ph:
+  case Mips::BI__builtin_mips_cmp_lt_ph:
+  case Mips::BI__builtin_mips_madd:
+  case Mips::BI__builtin_mips_mul_ph:
+  case Mips::BI__builtin_mips_mul_s_ph:
+  case Mips::BI__builtin_mips_pick_ph:
+  case Mips::BI__builtin_mips_pick_qb:
+  case Mips::BI__builtin_mips_precrq_ph_w:
+  case Mips::BI__builtin_mips_rddsp:
+  case Mips::BI__builtin_mips_shrl_qb:
+  case Mips::BI__builtin_mips_shll_qb:
+  case Mips::BI__builtin_mips_shrl_ph:
+  case Mips::BI__builtin_mips_shll_ph:
+  case Mips::BI__builtin_mips_shll_s_ph:
+  case Mips::BI__builtin_mips_subq_ph:
+  case Mips::BI__builtin_mips_subq_s_ph:
+  case Mips::BI__builtin_mips_subu_qb:
+  case Mips::BI__builtin_mips_subu_s_qb:
+  case Mips::BI__builtin_mips_wrdsp:
+    return true;
+  }
+}
+
 bool Sema::CheckMipsBuiltinCpu(const TargetInfo &TI, unsigned BuiltinID,
                                CallExpr *TheCall) {
+
+  if (Mips::BI__builtin_mips_addu_qb <= BuiltinID &&
+      BuiltinID <= Mips::BI__builtin_mips_subuh_r_qb &&
+      TI.getTriple().getArch() == llvm::Triple::nanomips) {
+    if (!TI.hasFeature("dsp"))
+      return Diag(TheCall->getBeginLoc(), diag::err_mips_builtin_requires_dsp);
+    if (!CheckNanomipsBuiltinCpu(BuiltinID, TheCall))
+      return Diag(TheCall->getBeginLoc(),
+                  diag::err_nanomips_builtin_dsp_unsupported);
+    return false;
+  }
 
   if (Mips::BI__builtin_mips_addu_qb <= BuiltinID &&
       BuiltinID <= Mips::BI__builtin_mips_lwx) {

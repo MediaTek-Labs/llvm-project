@@ -45,7 +45,7 @@ def REGIMM_OPCODE : Field6<0b000001>;
 
 class DSPInst<string opstr = "">
     : MipsInst<(outs), (ins), "", [], NoItinerary, FrmOther> {
-  let ASEPredicate = [HasDSP];
+  let ASEPredicate = [HasDSP, NotNanoMips];
   string BaseOpcode = opstr;
   string Arch = "dsp";
 }

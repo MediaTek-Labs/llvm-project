@@ -1124,6 +1124,14 @@ private:
     return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
   }
 
+  /// Coerce the register to ACC64DSPNM and return the real register for the
+  /// current target.
+  unsigned getACC64DSPNMReg() const {
+    assert(isRegIdx() && (RegIdx.Kind & RegKind_ACC) && "Invalid access!");
+    unsigned ClassID = Mips::ACC64DSPNMRegClassID;
+    return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
+  }
+
   /// Coerce the register to HI32DSP and return the real register for the
   /// current target.
   unsigned getHI32DSPReg() const {
@@ -1132,11 +1140,27 @@ private:
     return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
   }
 
+  /// Coerce the register to HI32DSPNM and return the real register for the
+  /// current target.
+  unsigned getHI32DSPNMReg() const {
+    assert(isRegIdx() && (RegIdx.Kind & RegKind_ACC) && "Invalid access!");
+    unsigned ClassID = Mips::HI32DSPNMRegClassID;
+    return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
+  }
+
   /// Coerce the register to LO32DSP and return the real register for the
   /// current target.
   unsigned getLO32DSPReg() const {
     assert(isRegIdx() && (RegIdx.Kind & RegKind_ACC) && "Invalid access!");
     unsigned ClassID = Mips::LO32DSPRegClassID;
+    return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
+  }
+
+  /// Coerce the register to LO32DSPNM and return the real register for the
+  /// current target.
+  unsigned getLO32DSPNMReg() const {
+    assert(isRegIdx() && (RegIdx.Kind & RegKind_ACC) && "Invalid access!");
+    unsigned ClassID = Mips::LO32DSPNMRegClassID;
     return RegIdx.RegInfo->getRegClass(ClassID).getRegister(RegIdx.Index);
   }
 
@@ -1317,14 +1341,29 @@ public:
     Inst.addOperand(MCOperand::createReg(getACC64DSPReg()));
   }
 
+  void addACC64DSPNMAsmRegOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(getACC64DSPNMReg()));
+  }
+
   void addHI32DSPAsmRegOperands(MCInst &Inst, unsigned N) const {
     assert(N == 1 && "Invalid number of operands!");
     Inst.addOperand(MCOperand::createReg(getHI32DSPReg()));
   }
 
+  void addHI32DSPNMAsmRegOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(getHI32DSPNMReg()));
+  }
+
   void addLO32DSPAsmRegOperands(MCInst &Inst, unsigned N) const {
     assert(N == 1 && "Invalid number of operands!");
     Inst.addOperand(MCOperand::createReg(getLO32DSPReg()));
+  }
+
+  void addLO32DSPNMAsmRegOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(getLO32DSPNMReg()));
   }
 
   void addCCRAsmRegOperands(MCInst &Inst, unsigned N) const {

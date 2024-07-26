@@ -13482,6 +13482,7 @@ private:
   bool CheckHexagonBuiltinArgument(unsigned BuiltinID, CallExpr *TheCall);
   bool CheckMipsBuiltinFunctionCall(const TargetInfo &TI, unsigned BuiltinID,
                                     CallExpr *TheCall);
+  bool CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall);
   bool CheckMipsBuiltinCpu(const TargetInfo &TI, unsigned BuiltinID,
                            CallExpr *TheCall);
   bool CheckMipsBuiltinArgument(unsigned BuiltinID, CallExpr *TheCall);

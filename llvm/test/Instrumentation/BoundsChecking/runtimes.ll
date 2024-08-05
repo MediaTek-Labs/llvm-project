@@ -28,7 +28,7 @@ define void @f1(i64 %x) nounwind {
 ; TR-NEXT:    [[TMP8:%.*]] = load i128, ptr [[TMP2]], align 4
 ; TR-NEXT:    ret void
 ; TR:       [[TRAP]]:
-; TR-NEXT:    call void @llvm.trap() #[[ATTR2:[0-9]+]], !nosanitize [[META0]]
+; TR-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR2:[0-9]+]], !nosanitize [[META0]]
 ; TR-NEXT:    unreachable, !nosanitize [[META0]]
 ;
 ; RT-LABEL: define void @f1(
@@ -176,7 +176,7 @@ define void @f1(i64 %x) nounwind {
 
 ;.
 ; TR: attributes #[[ATTR0]] = { nounwind }
-; TR: attributes #[[ATTR1:[0-9]+]] = { cold noreturn nounwind memory(inaccessiblemem: write) }
+; TR: attributes #[[ATTR1:[0-9]+]] = { cold noreturn nounwind {{.*}}}
 ; TR: attributes #[[ATTR2]] = { noreturn nounwind }
 ;.
 ; RT: attributes #[[ATTR0]] = { nounwind }

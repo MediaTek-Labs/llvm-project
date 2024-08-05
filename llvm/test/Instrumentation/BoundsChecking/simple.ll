@@ -33,7 +33,7 @@ define void @f2() nounwind {
 ; CHECK-NEXT:    store i32 3, ptr [[IDX]], align 4
 ; CHECK-NEXT:    ret void
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5:[0-9]+]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5:[0-9]+]]
 ; CHECK-NEXT:    unreachable
 ;
   %1 = tail call ptr @malloc(i64 32)
@@ -57,7 +57,7 @@ define void @f3(i64 %x) nounwind {
 ; CHECK-NEXT:    store i32 3, ptr [[IDX]], align 4
 ; CHECK-NEXT:    ret void
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
   %1 = tail call ptr @calloc(i64 4, i64 %x)
@@ -93,7 +93,7 @@ define void @f4(i64 %x) nounwind {
 ; CHECK-NEXT:    [[TMP8:%.*]] = load i32, ptr [[IDX]], align 4
 ; CHECK-NEXT:    ret void
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
   %1 = tail call ptr @realloc(ptr null, i64 %x) nounwind
@@ -115,7 +115,7 @@ define void @f5(i64 %x) nounwind {
 ; CHECK-NEXT:    [[TMP7:%.*]] = load i8, ptr [[IDX]], align 4
 ; CHECK-NEXT:    ret void
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
   %idx = getelementptr inbounds [8 x i8], ptr @.str, i64 0, i64 %x
@@ -137,7 +137,7 @@ define void @f5_as1(i64 %x) nounwind {
 ; CHECK-NEXT:    [[TMP7:%.*]] = load i8, ptr addrspace(1) [[IDX]], align 4
 ; CHECK-NEXT:    ret void
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
   %idx = getelementptr inbounds [8 x i8], ptr addrspace(1) @.str_as1, i64 0, i64 %x
@@ -169,7 +169,7 @@ define void @f7(i64 %x) nounwind {
 ; CHECK-NEXT:    [[TMP8:%.*]] = load i128, ptr [[TMP2]], align 4
 ; CHECK-NEXT:    ret void
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
   %1 = alloca i128, i64 %x
@@ -222,7 +222,7 @@ define void @f10(i64 %x, i64 %y) nounwind {
 ; CHECK-NEXT:    [[TMP12:%.*]] = load i128, ptr [[TMP6]], align 4
 ; CHECK-NEXT:    ret void
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
   %1 = alloca i128, i64 %x
@@ -240,7 +240,7 @@ define void @f11(ptr byval(i128) %x) nounwind {
 ; CHECK-NEXT:    [[TMP3:%.*]] = load i8, ptr [[TMP1]], align 4
 ; CHECK-NEXT:    ret void
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
   %1 = getelementptr inbounds i8, ptr %x, i64 16
@@ -256,7 +256,7 @@ define void @f11_as1(ptr addrspace(1) byval(i128) %x) nounwind {
 ; CHECK-NEXT:    [[TMP3:%.*]] = load i8, ptr addrspace(1) [[TMP1]], align 4
 ; CHECK-NEXT:    ret void
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
   %1 = getelementptr inbounds i8, ptr addrspace(1) %x, i16 16
@@ -282,7 +282,7 @@ define i64 @f12(i64 %x, i64 %y) nounwind {
 ; CHECK-NEXT:    [[TMP12:%.*]] = load i64, ptr [[TMP4]], align 8
 ; CHECK-NEXT:    ret i64 [[TMP12]]
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
   %1 = tail call ptr @calloc(i64 1, i64 %x)
@@ -354,7 +354,7 @@ define i8 @f14(i1 %i) {
 ; CHECK-NEXT:    [[RET:%.*]] = load i8, ptr [[P]], align 1
 ; CHECK-NEXT:    ret i8 [[RET]]
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
 entry:
@@ -396,7 +396,7 @@ define i8 @f15(i1 %i) {
 ; CHECK-NEXT:    [[RET:%.*]] = load i8, ptr [[ALLOC]], align 1
 ; CHECK-NEXT:    ret i8 [[RET]]
 ; CHECK:       trap:
-; CHECK-NEXT:    call void @llvm.trap() #[[ATTR5]]
+; CHECK-NEXT:    call void @llvm.ubsantrap({{.*}}) #[[ATTR5]]
 ; CHECK-NEXT:    unreachable
 ;
 entry:

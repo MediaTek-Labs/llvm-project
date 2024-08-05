@@ -37,7 +37,7 @@
 // RUN:   -fsanitize-recover -fno-sanitize-recover=bounds -g -emit-llvm -o - | \
 // RUN:   FileCheck %s --check-prefixes HANDLER,DEFAULT
 
-// TRAP: call void @llvm.trap()
+// TRAP: call void @llvm.ubsantrap(
 // TRAP-NEXT: unreachable
 // HANDLER: [[VAR1:@[0-9]+]] = private constant {{.*}}c"{{.*}}/recover_bounds.c\00"
 // HANDLER: [[VAR2:@[0-9]+]] = private constant { ptr, i32, i32 } { ptr [[VAR1]], i32 100, i32 10 }

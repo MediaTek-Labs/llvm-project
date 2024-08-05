@@ -114,10 +114,8 @@ static Value *getBoundsCheckCond(Value *Ptr, Value *InstVal,
   return Or;
 }
 
-static CallInst *InsertTrap(BuilderTy &IRB, bool DebugTrapBB,
+static CallInst *InsertTrap(BuilderTy &IRB,
                             std::optional<int8_t> GuardKind) {
-  if (!DebugTrapBB)
-    return IRB.CreateIntrinsic(Intrinsic::trap, {}, {});
 
   return IRB.CreateIntrinsic(
       Intrinsic::ubsantrap, {},
@@ -271,7 +269,7 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
 
     bool DebugTrapBB = !Opts.Merge;
     CallInst *TrapCall = Opts.Rt ? InsertCall(IRB, Opts.Rt->MayReturn, Name)
-                                 : InsertTrap(IRB, DebugTrapBB, Opts.GuardKind);
+                                 : InsertTrap(IRB, Opts.GuardKind);
     if (DebugTrapBB)
       TrapCall->addFnAttr(llvm::Attribute::NoMerge);
 

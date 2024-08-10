@@ -894,7 +894,7 @@ AsmToken AsmLexer::LexToken() {
 
       std::tie(Operator, OperatorLength) =
           StringSwitch<std::pair<AsmToken::TokenKind, unsigned>>(
-              StringRef(CurPtr))
+              StringRef(CurPtr, CurBuf.end() - CurPtr))
               .StartsWith("call16", {AsmToken::PercentCall16, 7})
               .StartsWith("call_hi", {AsmToken::PercentCall_Hi, 8})
               .StartsWith("call_lo", {AsmToken::PercentCall_Lo, 8})

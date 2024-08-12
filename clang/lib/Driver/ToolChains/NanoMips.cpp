@@ -320,3 +320,10 @@ void NanoMips::AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
       addSystemInclude(DriverArgs, CC1Args, Dir.str());
   }
 }
+
+std::string NanoMips::getCompilerRTPath() const {
+  SmallString<128> Path(getDriver().ResourceDir);
+  if (!SelectedMultilibs.empty())
+    Path += SelectedMultilibs.back().gccSuffix();
+  return std::string(Path.str());
+}

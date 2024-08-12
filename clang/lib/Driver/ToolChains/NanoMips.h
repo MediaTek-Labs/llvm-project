@@ -54,6 +54,7 @@ class LLVM_LIBRARY_VISIBILITY NanoMips : public Generic_ELF {
   // NanoMips gold and gdb.
   unsigned GetDefaultDwarfVersion() const override { return 4; }
 
+  std::string getCompilerRTPath() const override;
 };
 
 } // toolchains

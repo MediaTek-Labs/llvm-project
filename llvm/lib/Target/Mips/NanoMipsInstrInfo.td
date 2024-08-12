@@ -2746,12 +2746,14 @@ class CondMove_Enc<bits<1> isel> : _Pool_P_CMOVE<isel>
 def MOVZ_NM : InstNM<(outs GPRNM32Opnd:$rd),
                      (ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, GPRNM32Opnd:$F),
                      "movz\t$rd, $rs, $rt",
-                     []>, CondMove_Enc<0b0>, RegConstraint<"$F = $rd">;
+                     []>, CondMove_Enc<0b0>, RegConstraint<"$F = $rd">,
+                     IsCommutable;
 
 def MOVN_NM : InstNM<(outs GPRNM32Opnd:$rd),
                      (ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, GPRNM32Opnd:$F),
                      "movn\t$rd, $rs, $rt",
-                     []>, CondMove_Enc<0b1>, RegConstraint<"$F = $rd">;
+                     []>, CondMove_Enc<0b1>, RegConstraint<"$F = $rd">,
+                     IsCommutable;
 
 multiclass MovzPats2NM<RegisterClass CRC, RegisterClass DRC,
                      Instruction MOVZInst, Instruction XORiOp> {

@@ -843,9 +843,70 @@ bool MipsInstrInfo::findCommutedOpIndices(const MachineInstr &MI,
     if (!MI.getOperand(SrcOpIdx1).isReg() || !MI.getOperand(SrcOpIdx2).isReg())
       return false;
     return true;
+  case Mips::MOVN_NM:
+  case Mips::MOVZ_NM:
+    return fixCommutedOpIndices(SrcOpIdx1, SrcOpIdx2, 1, 3);
   }
   return TargetInstrInfo::findCommutedOpIndices(MI, SrcOpIdx1, SrcOpIdx2);
 }
+
+static bool mayBeZeroRegisterOperand(MachineOperand &MO) {
+  Register Reg = MO.getReg();
+  if (Reg == Mips::ZERO || Reg == Mips::ZERO_NM) {
+    return true;
+  } else {
+    // Could be a local copy of zero register, which could be coalesced
+    // to $zero.
+    MachineInstr *MI = MO.getParent();
+    MachineBasicBlock *MBB = MI->getParent();
+    MachineFunction *MF = MBB->getParent();
+    const MachineRegisterInfo &MRI = MF->getRegInfo();
+    MachineOperand *Def = MRI.getOneDef(Reg);
+    if (Def) {
+      MachineInstr *DefInstr = Def->getParent();
+      if (DefInstr->isCopy() && MRI.hasOneUse(Def->getReg())) {
+        if (DefInstr->getOperand(1).getReg() == Mips::ZERO_NM
+	    || DefInstr->getOperand(1).getReg() == Mips::ZERO) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+MachineInstr *MipsInstrInfo::commuteInstructionImpl(MachineInstr &MI, bool NewMI,
+                                                    unsigned OpIdx1, unsigned OpIdx2) const {
+
+  auto cloneIfNew = [NewMI](MachineInstr &MI) -> MachineInstr & {
+    if (NewMI)
+      return *MI.getParent()->getParent()->CloneMachineInstr(&MI);
+    return MI;
+  };
+
+  switch (MI.getOpcode()) {
+  case Mips::MOVN_NM:
+  case Mips::MOVZ_NM:
+    // return nullptr;
+    if ((OpIdx1 == 1 && OpIdx2 == 3)
+        || (OpIdx1 == 3 && OpIdx2 == 1)) {
+
+      // Avoid commuting if the operand we'll tie is $zero, or is a
+      // coalescable copy of $zero, since $zero isn't a useful
+      // destination and a MOVE will definitely be required.
+         if (mayBeZeroRegisterOperand(MI.getOperand(1)))
+           return nullptr;
+
+      auto &CommutedMI = cloneIfNew(MI);
+      CommutedMI.setDesc(get(MI.getOpcode() == Mips::MOVZ_NM ?
+                             Mips::MOVN_NM : Mips::MOVZ_NM));
+      return TargetInstrInfo::commuteInstructionImpl(CommutedMI, NewMI, OpIdx1, OpIdx2);
+    }
+    break;
+  }
+  return TargetInstrInfo::commuteInstructionImpl(MI, NewMI, OpIdx1, OpIdx2);
+}
+
 
 // ins, ext, dext*, dins have the following constraints:
 // X <= pos      <  Y

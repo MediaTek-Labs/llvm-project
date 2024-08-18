@@ -39,6 +39,19 @@ NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
   std::string SysRoot = computeSysRoot();
   const std::string OSLibDir = "lib";
   const std::string MultiarchTriple = Triple.getTriple();
+  const llvm::Triple &GCCTriple = GCCInstallation.getTriple();
+  const std::string &LibPath =
+    std::string(GCCInstallation.getParentLibPath());
+
+  if (GCCInstallation.isValid() &&
+      D.CCCIsCXX() &&
+      !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs) &&
+      Args.hasArg(options::OPT_fno_rtti) &&
+      Args.hasArg(options::OPT_fno_exceptions))
+      addPathIfExists(D,
+		      LibPath + "/../" + GCCTriple.str() + "/" + OSLibDir +
+		      SelectedMultilib.gccSuffix() + "/noehrtti",
+		      Paths);
 
   Generic_GCC::AddMultilibPaths(D, SysRoot, OSLibDir, MultiarchTriple, Paths);
   if (!SysRoot.empty()) {
@@ -48,9 +61,6 @@ NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
 
   // NanoMips multilibs installation has the objects nested under an extra 'lib' dir
   if (GCCInstallation.isValid()) {
-    const llvm::Triple &GCCTriple = GCCInstallation.getTriple();
-    const std::string &LibPath =
-        std::string(GCCInstallation.getParentLibPath());
     addPathIfExists(D,
                     LibPath + "/../" + GCCTriple.str() + "/" + OSLibDir +
                     SelectedMultilib.osSuffix() + "/" + OSLibDir,

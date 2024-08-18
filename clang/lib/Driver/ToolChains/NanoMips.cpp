@@ -41,6 +41,19 @@ NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
   std::string SysRoot = computeSysRoot();
   const std::string OSLibDir = "lib";
   const std::string MultiarchTriple = Triple.getTriple();
+  const llvm::Triple &GCCTriple = GCCInstallation.getTriple();
+  const std::string &LibPath =
+    std::string(GCCInstallation.getParentLibPath());
+
+  if (GCCInstallation.isValid() &&
+      D.CCCIsCXX() &&
+      !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs) &&
+      Args.hasArg(options::OPT_fno_rtti) &&
+      Args.hasArg(options::OPT_fno_exceptions))
+      addPathIfExists(D,
+		      LibPath + "/../" + GCCTriple.str() + "/" + OSLibDir +
+		      SelectedMultilibs.back().gccSuffix() + "/noehrtti",
+		      Paths);
 
   Generic_GCC::AddMultilibPaths(D, SysRoot, OSLibDir, MultiarchTriple, Paths);
   if (!SysRoot.empty()) {
@@ -50,13 +63,9 @@ NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
 
   // NanoMips multilibs installation has the objects nested under an extra 'lib' dir
   if (GCCInstallation.isValid()) {
-    const llvm::Triple &GCCTriple = GCCInstallation.getTriple();
-    const std::string &LibPath =
-        std::string(GCCInstallation.getParentLibPath());
     addPathIfExists(D,
                     LibPath + "/../" + GCCTriple.str() + "/" + OSLibDir +
-                    //SelectedMultilib.osSuffix() + "/" + OSLibDir,
-                    "" + "/" + OSLibDir,
+                    SelectedMultilibs.back().osSuffix() + "/" + OSLibDir,
                     Paths);
     ToolChain::path_list &PPaths = getProgramPaths();
     // Multilib cross-compiler GCC installations put ld in a triple-prefixed
@@ -301,8 +310,6 @@ void NanoMips::AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
   if (GCCInstallation.isValid()) {
     // Standard libs includes in, eg. <install>/nanomips-elf/include
     llvm::Triple Triple = GCCInstallation.getTriple();
-    // TODO: Investigate this DJT.
-    // std::string Install = getDriver().getInstalledDir();
     std::string LibDir = GCCInstallation.getParentLibPath().str();
     std::string Install = GCCInstallation.getInstallPath().str();
     if (GetRuntimeLibType(DriverArgs) == ToolChain::RLT_Libgcc) {

@@ -56,6 +56,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/xxhash.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
@@ -80,6 +81,16 @@ XformHw110880("nmips-fix-hw110880", cl::Hidden,
 cl::opt<bool> NMipsGuardKCFIPrefetch("nmips-guard-kcfi-prefetch",
 				     cl::desc("On NanoMips, guard KCFI signatures against prefetch"),
 				     cl::init(true));
+
+cl::opt<int> ScatterNopsSeed("scatter-nops-seed",
+			     cl::desc("Pseudo-randomly scatter nops between functions to fuzz"
+				      " cache occupancy"),
+			     cl::init(0));
+
+cl::opt<int> ScatterNopsDensity("scatter-nops-density",
+				cl::desc("Approximate percentage of functions to pad with nop"),
+				cl::value_desc("percentage"),
+				cl::init(0));
 
 void MipsAsmPrinter::emitJumpTableInfo() {
   if (!Subtarget->hasNanoMips() || Subtarget->useAbsoluteJumpTables() ) {
@@ -727,6 +738,14 @@ const char *MipsAsmPrinter::getCurrentABIString() const {
 
 void MipsAsmPrinter::emitFunctionEntryLabel() {
   MipsTargetStreamer &TS = getTargetStreamer();
+
+  if (ScatterNopsDensity != 0) {
+    uint64_t Hash = (llvm::xxHash64(CurrentFnSym->getName())
+		     + ScatterNopsSeed);
+    if ((Hash % 100) < ScatterNopsDensity)
+      EmitToStreamer(*OutStreamer,
+		     MCInstBuilder(Subtarget->hasNanoMips()? Mips::NOP_NM : Mips::NOP));
+  }
 
   // NaCl sandboxing requires that indirect call instructions are masked.
   // This means that function entry points should be bundle-aligned.

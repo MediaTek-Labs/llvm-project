@@ -1587,7 +1587,7 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
                   Flags);
   addMultilibFlag(ABIName == "n32", "-mabi=n32", Flags);
   addMultilibFlag(ABIName == "n64", "-mabi=n64", Flags);
-  addMultilibFlag(ABIName == "p32", "-m32", Flags);
+  addMultilibFlag(ABIName == "p32", "-mabi=p32", Flags);
   addMultilibFlag(isSoftFloatABI(Args, TargetTriple), "-msoft-float", Flags);
   addMultilibFlag(!isSoftFloatABI(Args, TargetTriple), "-mhard-float", Flags);
   addMultilibFlag(isMipsEL(TargetArch), "-EL", Flags);

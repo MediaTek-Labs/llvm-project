@@ -5230,7 +5230,8 @@ public:
   llvm::Constant *EmitCheckSourceLocation(SourceLocation Loc);
 
   void EmitKCFIOperandBundle(const CGCallee &Callee,
-                             SmallVectorImpl<llvm::OperandBundleDef> &Bundles);
+                             SmallVectorImpl<llvm::OperandBundleDef> &Bundles,
+                             SourceLocation Location);
 
   /// Create a basic block that will either trap or call a handler function in
   /// the UBSan runtime with the provided arguments, and create a conditional

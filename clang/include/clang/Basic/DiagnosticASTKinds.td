@@ -1002,6 +1002,10 @@ def remark_sanitize_address_insert_extra_padding_rejected : Remark<
     "is ignorelisted}1">, ShowInSystemHeader,
     InGroup<SanitizeAddressRemarks>;
 
+def warn_sanitize_kcfi_anon_struct : Warning<
+    "indirect call of function with anonymous stucture reference in type is "
+    "unsupported by kCFI">;
+
 def warn_npot_ms_struct : Warning<
   "ms_struct may not produce Microsoft-compatible layouts with fundamental "
   "data types with sizes that aren't a power of two">,

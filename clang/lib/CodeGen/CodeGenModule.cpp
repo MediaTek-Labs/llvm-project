@@ -2199,7 +2199,7 @@ llvm::ConstantInt *CodeGenModule::CreateCrossDsoCfiTypeId(llvm::Metadata *MD) {
   return llvm::ConstantInt::get(Int64Ty, llvm::MD5Hash(MDS->getString()));
 }
 
-llvm::ConstantInt *CodeGenModule::CreateKCFITypeId(QualType T) {
+llvm::ConstantInt *CodeGenModule::CreateKCFITypeId(QualType T, bool *AnonymousStruct) {
   if (auto *FnType = T->getAs<FunctionProtoType>())
     T = getContext().getFunctionType(
         FnType->getReturnType(), FnType->getParamTypes(),
@@ -2212,6 +2212,12 @@ llvm::ConstantInt *CodeGenModule::CreateKCFITypeId(QualType T) {
 
   if (getCodeGenOpts().SanitizeCfiICallNormalizeIntegers)
     Out << ".normalized";
+
+  if (AnonymousStruct != nullptr)
+    // Anonymous (untagged) structures may have differing '$_n'
+    // identifiers in different compile units. This is incompatible
+    // with KCFI.
+    *AnonymousStruct = (OutName.find("$_") != std::string::npos);
 
   return llvm::ConstantInt::get(Int32Ty,
                                 static_cast<uint32_t>(llvm::xxHash64(OutName)));

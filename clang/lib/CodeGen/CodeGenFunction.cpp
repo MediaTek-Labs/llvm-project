@@ -26,6 +26,7 @@
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/AST/ASTDiagnostic.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/StmtCXX.h"
 #include "clang/AST/StmtObjC.h"
@@ -2854,11 +2855,19 @@ void CodeGenFunction::EmitSanitizerStatReport(llvm::SanitizerStatKind SSK) {
 }
 
 void CodeGenFunction::EmitKCFIOperandBundle(
-    const CGCallee &Callee, SmallVectorImpl<llvm::OperandBundleDef> &Bundles) {
+    const CGCallee &Callee, SmallVectorImpl<llvm::OperandBundleDef> &Bundles,
+    SourceLocation Location) {
   const FunctionProtoType *FP =
       Callee.getAbstractInfo().getCalleeFunctionProtoType();
-  if (FP)
-    Bundles.emplace_back("kcfi", CGM.CreateKCFITypeId(FP->desugar()));
+  if (FP) {
+    bool AnonymousStruct = false;
+    llvm::ConstantInt *TypeId = CGM.CreateKCFITypeId(FP->desugar(),
+						     &AnonymousStruct);
+    if (AnonymousStruct)
+      CGM.getDiags().Report(Location, diag::warn_sanitize_kcfi_anon_struct);
+    else
+      Bundles.emplace_back("kcfi", TypeId);
+  }
 }
 
 llvm::Value *

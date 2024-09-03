@@ -146,7 +146,7 @@
 
 #define NO_EXEC_STACK_DIRECTIVE
 
-#elif defined(__ELF__)
+#elif defined(__ELF__) || defined(__nanomips__)
 
 #if defined(__arm__)
 #define SYMBOL_IS_FUNC(name) .type name,%function

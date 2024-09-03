@@ -66,7 +66,7 @@
   #define _LIBUNWIND_EXPORT
   #define _LIBUNWIND_HIDDEN
 #else
-  #if !defined(__ELF__) && !defined(__MACH__) && !defined(_AIX)
+  #if !(defined(__ELF__) || defined(__nanomips__)) && !defined(__MACH__) && !defined(_AIX)
     #define _LIBUNWIND_EXPORT __declspec(dllexport)
     #define _LIBUNWIND_HIDDEN
   #else
@@ -89,7 +89,7 @@
   __asm__(".globl " SYMBOL_NAME(aliasname));                                   \
   __asm__(SYMBOL_NAME(aliasname) " = " SYMBOL_NAME(name));                     \
   _LIBUNWIND_ALIAS_VISIBILITY(SYMBOL_NAME(aliasname))
-#elif defined(__ELF__) || defined(_AIX) || defined(__wasm__)
+#elif defined(__ELF__) || defined(_AIX) || defined(__wasm__) || defined(__nanomips__)
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
   extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
       __attribute__((weak, alias(#name)));
@@ -115,7 +115,7 @@
 #endif
 
 #if defined(__i386__) || defined(__x86_64__) || defined(__powerpc__) ||        \
-    (!defined(__APPLE__) && defined(__arm__)) || defined(__aarch64__) ||       \
+    (!defined(__APPLE__) && defined(__arm__)) || defined(__aarch64__) || defined(__nanomips__)  || \
     defined(__mips__) || defined(__riscv) || defined(__hexagon__) ||           \
     defined(__sparc__) || defined(__s390x__) || defined(__loongarch__)
 #if !defined(_LIBUNWIND_BUILD_SJLJ_APIS)

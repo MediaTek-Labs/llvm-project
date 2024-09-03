@@ -41,6 +41,7 @@ enum {
   REGISTERS_VE,
   REGISTERS_S390X,
   REGISTERS_LOONGARCH,
+  REGISTERS_NANOMIPS,
 };
 
 #if defined(_LIBUNWIND_TARGET_I386)
@@ -2811,6 +2812,183 @@ inline const char *Registers_or1k::getRegisterName(int regNum) {
 
 }
 #endif // _LIBUNWIND_TARGET_OR1K
+
+#if defined(_LIBUNWIND_TARGET_NANOMIPS)
+/// Registers_nanomips holds the register state of a thread in a 32-bit
+/// NanoMips process.
+class _LIBUNWIND_HIDDEN Registers_nanomips {
+public:
+  Registers_nanomips();
+  Registers_nanomips(const void *registers);
+
+  bool validRegister(int num) const;
+  uint32_t getRegister(int num) const;
+  void setRegister(int num, uint32_t value);
+  bool validFloatRegister(int num) const;
+  double getFloatRegister(int num) const;
+  void setFloatRegister(int num, double value);
+  bool validVectorRegister(int num) const;
+  v128 getVectorRegister(int num) const;
+  void setVectorRegister(int num, v128 value);
+  static const char *getRegisterName(int num);
+  void jumpto();
+  static constexpr int lastDwarfRegNum() {
+    return _LIBUNWIND_HIGHEST_DWARF_REGISTER_NANOMIPS;
+  }
+  static int getArch() { return REGISTERS_NANOMIPS; }
+
+  uint32_t getSP() const { return _registers.__r[29]; }
+  void setSP(uint32_t value) { _registers.__r[29] = value; }
+  uint32_t getIP() const { return _registers.__pc; }
+  void setIP(uint32_t value) { _registers.__pc = value; }
+
+private:
+  struct nanomips_thread_state_t {
+    uint32_t __r[32];
+    uint32_t __pc;
+  };
+
+  nanomips_thread_state_t _registers;
+};
+
+inline Registers_nanomips::Registers_nanomips(const void *registers) {
+ static_assert((check_fit<Registers_nanomips, unw_context_t>::does_fit),
+                "nanomips registers do not fit into unw_context_t");
+  memcpy(&_registers, static_cast<const uint8_t *>(registers), sizeof(_registers));
+}
+
+inline Registers_nanomips::Registers_nanomips() {
+  memset(&_registers, 0, sizeof(_registers));
+}
+
+inline bool Registers_nanomips::validRegister(int regNum) const {
+  if (regNum == UNW_REG_IP || regNum == UNW_REG_SP)
+    return true;
+  if (regNum < 0 || regNum > UNW_NANOMIPS_RA)
+    return false;
+  return true;
+}
+
+inline uint32_t Registers_nanomips::getRegister(int regNum) const {
+  if (regNum >= UNW_NANOMIPS_ZERO && regNum <= UNW_NANOMIPS_RA)
+    return _registers.__r[regNum - UNW_NANOMIPS_ZERO];
+
+  if (regNum == UNW_REG_IP)
+    return _registers.__pc;
+  if (regNum == UNW_REG_SP)
+    return _registers.__r[29];
+  _LIBUNWIND_ABORT("unsupported nanomips register");
+}
+
+inline void Registers_nanomips::setRegister(int regNum, uint32_t value) {
+  if (regNum >= UNW_NANOMIPS_ZERO && regNum <= UNW_NANOMIPS_RA)
+    _registers.__r[regNum - UNW_NANOMIPS_ZERO] = value;
+  else if (regNum == UNW_REG_IP)
+    _registers.__pc = value;
+  else if (regNum == UNW_REG_SP)
+    _registers.__r[29] = value;
+  else
+    _LIBUNWIND_ABORT("unsupported nanomips register");
+}
+
+inline const char *Registers_nanomips::getRegisterName(int regNum) {
+  switch (regNum) {
+  case UNW_REG_SP:
+    return "$sp";
+  case UNW_NANOMIPS_ZERO:
+    return "$zero";
+  case UNW_NANOMIPS_AT:
+    return "$at";
+  case UNW_NANOMIPS_T4:
+    return "$t4";
+  case UNW_NANOMIPS_T5:
+    return "$t5";
+  case UNW_NANOMIPS_A0:
+    return "$a0";
+  case UNW_NANOMIPS_A1:
+    return "$a1";
+  case UNW_NANOMIPS_A2:
+    return "$a2";
+  case UNW_NANOMIPS_A3:
+    return "$a3";
+  case UNW_NANOMIPS_A4:
+    return "$a4";
+  case UNW_NANOMIPS_A5:
+    return "$a5";
+  case UNW_NANOMIPS_A6:
+    return "$a6";
+  case UNW_NANOMIPS_A7:
+    return "$a7";
+  case UNW_NANOMIPS_T0:
+    return "$t0";
+  case UNW_NANOMIPS_T1:
+    return "$t1";
+  case UNW_NANOMIPS_T2:
+    return "$t2";
+  case UNW_NANOMIPS_T3:
+    return "$t3";
+  case UNW_NANOMIPS_S0:
+    return "$s0";
+  case UNW_NANOMIPS_S1:
+    return "$s1";
+  case UNW_NANOMIPS_S2:
+    return "$s2";
+  case UNW_NANOMIPS_S3:
+    return "$s3";
+  case UNW_NANOMIPS_S4:
+    return "$s4";
+  case UNW_NANOMIPS_S5:
+    return "$s5";
+  case UNW_NANOMIPS_S6:
+    return "$s6";
+  case UNW_NANOMIPS_S7:
+    return "$s7";
+  case UNW_NANOMIPS_T8:
+    return "$t8";
+  case UNW_NANOMIPS_T9:
+    return "$t9";
+  case UNW_NANOMIPS_K0:
+    return "$k0";
+  case UNW_NANOMIPS_K1:
+    return "$k1";
+  case UNW_NANOMIPS_GP:
+    return "$gp";
+  case UNW_NANOMIPS_SP:
+    return "$sp";
+  case UNW_NANOMIPS_FP:
+    return "$fp";
+  case UNW_NANOMIPS_RA:
+    return "$ra";
+  default:
+    return "unknown register";
+  }
+}
+
+inline bool Registers_nanomips::validFloatRegister(int regNum) const {
+    return false;
+}
+
+inline double Registers_nanomips::getFloatRegister(int regNum) const {
+  _LIBUNWIND_ABORT("libunwind not built with float support");
+}
+
+inline void Registers_nanomips::setFloatRegister(int regNum, double value) {
+  _LIBUNWIND_ABORT("libunwind not built with float support");
+}
+
+inline bool Registers_nanomips::validVectorRegister(int) const {
+  return false;
+}
+
+inline v128 Registers_nanomips::getVectorRegister(int) const {
+  _LIBUNWIND_ABORT("nanomips vector support not implemented");
+}
+
+inline void Registers_nanomips::setVectorRegister(int, v128) {
+  _LIBUNWIND_ABORT("nanomips vector support not implemented");
+}
+
+#endif //_LIBUNWIND_TARGET_NANOMIPS
 
 #if defined(_LIBUNWIND_TARGET_MIPS_O32)
 /// Registers_mips_o32 holds the register state of a thread in a 32-bit MIPS

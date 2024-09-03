@@ -428,9 +428,9 @@ public:
 
   int getEHDataRegisterNumber(unsigned RegNo) const override {
     if (RegNo == 0)
-      return 4;
+      return IsNanoMips ? 7 : 4;
     if (RegNo == 1)
-      return 5;
+      return IsNanoMips ? 6 : 5;
     return -1;
   }
 

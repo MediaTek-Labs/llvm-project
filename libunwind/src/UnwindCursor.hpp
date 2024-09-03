@@ -1082,6 +1082,10 @@ private:
   }
 #endif
 
+#if defined(_LIBUNWIND_TARGET_NANOMIPS)
+  int stepWithCompactEncoding(Registers_nanomips &) { return UNW_EINVAL; }
+#endif
+
   bool compactSaysUseDwarf(uint32_t *offset=NULL) const {
     R dummy;
     return compactSaysUseDwarf(dummy, offset);
@@ -1162,6 +1166,12 @@ private:
 
 #if defined (_LIBUNWIND_TARGET_RISCV)
   bool compactSaysUseDwarf(Registers_riscv &, uint32_t *) const {
+    return true;
+  }
+#endif
+
+#if defined(_LIBUNWIND_TARGET_NANOMIPS)
+  bool compactSaysUseDwarf(Registers_nanomips &, uint32_t *) const {
     return true;
   }
 #endif
@@ -1258,6 +1268,12 @@ private:
 
 #if defined (_LIBUNWIND_TARGET_S390X)
   compact_unwind_encoding_t dwarfEncoding(Registers_s390x &) const {
+    return 0;
+  }
+#endif
+
+#if defined(_LIBUNWIND_TARGET_NANOMIPS)
+  compact_unwind_encoding_t dwarfEncoding(Registers_nanomips &) const {
     return 0;
   }
 #endif

@@ -128,6 +128,50 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   xorl  %eax, %eax    # return UNW_ESUCCESS
   ret
 
+#elif defined(__nanomips__)
+#
+# extern int __unw_getcontext(unw_context_t* thread_state)
+#
+# On entry:
+#  thread_state pointer is in $a0($r4)
+#
+DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
+  sw    $at, (4 * 1)($a0)
+  sw    $t4, (4 * 2)($a0)
+  sw    $t5, (4 * 3)($a0)
+  sw    $a0, (4 * 4)($a0)
+  sw    $a1, (4 * 5)($a0)
+  sw    $a2, (4 * 6)($a0)
+  sw    $a3, (4 * 7)($a0)
+  sw    $a4, (4 * 8)($a0)
+  sw    $a5, (4 * 9)($a0)
+  sw    $a6, (4 * 10)($a0)
+  sw    $a7, (4 * 11)($a0)
+  sw    $t0, (4 * 12)($a0)
+  sw    $t1, (4 * 13)($a0)
+  sw    $t2, (4 * 14)($a0)
+  sw    $t3, (4 * 15)($a0)
+  sw    $s0, (4 * 16)($a0)
+  sw    $s1, (4 * 17)($a0)
+  sw    $s2, (4 * 18)($a0)
+  sw    $s3, (4 * 19)($a0)
+  sw    $s4, (4 * 20)($a0)
+  sw    $s5, (4 * 21)($a0)
+  sw    $s6, (4 * 22)($a0)
+  sw    $s7, (4 * 23)($a0)
+  sw    $t8, (4 * 24)($a0)
+  sw    $t9, (4 * 25)($a0)
+  sw    $k0, (4 * 26)($a0)
+  sw    $k1, (4 * 27)($a0)
+  sw    $gp, (4 * 28)($a0)
+  sw    $sp, (4 * 29)($a0)
+  sw    $fp, (4 * 30)($a0)
+  sw    $ra, (4 * 31)($a0)
+  sw    $ra, (4 * 32)($a0)
+
+  move    $a0, $zero
+  jrc	$ra
+
 #elif defined(__mips__) && defined(_ABIO32) && _MIPS_SIM == _ABIO32
 
 #

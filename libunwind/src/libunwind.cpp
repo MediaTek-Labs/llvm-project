@@ -61,6 +61,8 @@ _LIBUNWIND_HIDDEN int __unw_init_local(unw_cursor_t *cursor,
 # define REGISTER_KIND Registers_or1k
 #elif defined(__hexagon__)
 # define REGISTER_KIND Registers_hexagon
+#elif defined(__nanomips__)
+#define REGISTER_KIND Registers_nanomips
 #elif defined(__mips__) && defined(_ABIO32) && _MIPS_SIM == _ABIO32
 # define REGISTER_KIND Registers_mips_o32
 #elif defined(__mips64)

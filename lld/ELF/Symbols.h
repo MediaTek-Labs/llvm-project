@@ -512,6 +512,9 @@ struct ElfSym {
   static Defined *mipsGpDisp;
   static Defined *mipsLocalGp;
 
+  // _gp symbol. Only for nanoMIPS.
+  static Defined *nanoMipsGp;
+
   // __rel{,a}_iplt_{start,end} symbols.
   static Defined *relaIpltStart;
   static Defined *relaIpltEnd;

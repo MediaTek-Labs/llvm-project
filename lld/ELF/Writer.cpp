@@ -189,6 +189,8 @@ void elf::addReservedSymbols() {
     addOptionalRegular("_SDA_BASE_", nullptr, 0, STV_HIDDEN);
   } else if (config->emachine == EM_PPC64) {
     addPPC64SaveRestore();
+  } else if (config->emachine == EM_NANOMIPS && !ElfSym::nanoMipsGp) {
+    ElfSym::nanoMipsGp = addAbsolute("_gp");
   }
 
   // The Power Architecture 64-bit v2 ABI defines a TableOfContents (TOC) which
@@ -313,6 +315,12 @@ template <class ELFT> void elf::createSyntheticSections() {
       add(*in.mipsOptions);
     if ((in.mipsReginfo = MipsReginfoSection<ELFT>::create()))
       add(*in.mipsReginfo);
+  }
+
+  // Add nanoMIPS-specific sections.
+  if (config->emachine == EM_NANOMIPS) {
+    if (auto *sec = NanoMipsAbiFlagsSection<ELFT>::get())
+      add(*sec);
   }
 
   StringRef relaDynName = config->isRela ? ".rela.dyn" : ".rel.dyn";
@@ -1100,6 +1108,44 @@ template <class ELFT> void Writer<ELFT>::setReservedSymbolSections() {
         ElfSym::mipsGp->value = 0x7ff0;
         break;
       }
+    }
+  }
+
+  // Setup nanoMIPS _gp if not set up by linker script yet
+  // TODO: Check the constraints that are marked in documentation, chapter 5.3
+  // Sections -> Special sections
+  // http://codescape.mips.com/components/toolchain/nanomips/2019.03-01/docs/MIPS_nanoMIPS_ABI_supplement_01_03_DN00179.pdf
+  // also, check if we can do something about the order of the small data area
+  // sections
+  // TODO: Needs testing and verification
+  if (ElfSym::nanoMipsGp && !ElfSym::nanoMipsGp->scriptDefined) {
+    const char *smallDataArea[] = {".got", ".ssdata", ".ssbss", ".sdata",
+                                   ".sbss"};
+    // Refers to the smallDataArea section that is found
+    int foundSec = 5;
+    size_t foundSecIdx = 0;
+    for (auto [i, osec] : llvm::enumerate(outputSections)) {
+      for (int j = 0; j < foundSec; j++) {
+        if (osec->name == smallDataArea[j]) {
+          foundSec = j;
+          foundSecIdx = i;
+        }
+        break;
+      }
+
+      // Best find is the got section, we search for it until the end
+      if (foundSec == 0)
+        break;
+    }
+
+    // We didn't find any of the small data area sections
+    // _gp is then set to 0
+    if (foundSec == 5) {
+      ElfSym::nanoMipsGp->section = nullptr;
+      ElfSym::nanoMipsGp->value = 0;
+    } else {
+      ElfSym::nanoMipsGp->section = outputSections[foundSecIdx];
+      ElfSym::nanoMipsGp->value = 0;
     }
   }
 }
@@ -2036,6 +2082,11 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
         addPhdrForSection(part, SHT_MIPS_REGINFO, PT_MIPS_REGINFO, PF_R);
         addPhdrForSection(part, SHT_MIPS_OPTIONS, PT_MIPS_OPTIONS, PF_R);
         addPhdrForSection(part, SHT_MIPS_ABIFLAGS, PT_MIPS_ABIFLAGS, PF_R);
+      }
+
+      if (config->emachine == EM_NANOMIPS) {
+        addPhdrForSection(part, SHT_NANOMIPS_ABIFLAGS, PT_NANOMIPS_ABIFLAGS,
+                          PF_R);
       }
     }
     Out::programHeaders->size = sizeof(Elf_Phdr) * mainPart->phdrs.size();

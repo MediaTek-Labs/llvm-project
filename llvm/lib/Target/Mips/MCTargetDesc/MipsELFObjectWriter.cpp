@@ -251,7 +251,7 @@ static unsigned getNanoMipsRelocType(MCContext &Ctx,
     case Mips::fixup_NANOMIPS_PC4_S1:
       return ELF::R_NANOMIPS_PC4_S1;
     case Mips::fixup_NANOMIPS_PCHI20:
-      return ELF::R_NANOMIPS_PCHI20;
+      return ELF::R_NANOMIPS_PC_HI20;
     case Mips::fixup_NANOMIPS_PC_I32:
       return ELF::R_NANOMIPS_PC_I32;
     case Mips::fixup_NANOMIPS_GOTPC_I32:
@@ -632,7 +632,7 @@ bool MipsELFObjectWriter::needsRelocateWithSymbol(const MCSymbol &Sym,
   if (getEMachine() == ELF::EM_NANOMIPS) {
     switch (Type) {
     case ELF::R_NANOMIPS_PC_I32:
-    case ELF::R_NANOMIPS_PCHI20:
+    case ELF::R_NANOMIPS_PC_HI20:
       return true;
     default:
     return (!Sym.isInSection() ||

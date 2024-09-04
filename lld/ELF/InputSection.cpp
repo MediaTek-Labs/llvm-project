@@ -638,6 +638,13 @@ uint64_t InputSectionBase::getRelocTargetVA(const InputFile *file, RelType type,
     return a;
   case R_RELAX_HINT:
     return 0;
+  // It is marked as composite as it always goes with another relocation
+  case R_NANOMIPS_NEG_COMPOSITE:
+    return -sym.getVA(-a);
+  case R_NANOMIPS_ASHIFTR:
+    return static_cast<int64_t>(
+               SignExtend64(sym.getVA(a), config->wordsize * 8)) >>
+           1;
   case R_ARM_SBREL:
     return sym.getVA(a) - getARMStaticBase(sym);
   case R_GOT:
@@ -705,6 +712,10 @@ uint64_t InputSectionBase::getRelocTargetVA(const InputFile *file, RelType type,
   case R_MIPS_TLSLD:
     return in.mipsGot->getVA() + in.mipsGot->getTlsIndexOffset(file) -
            in.mipsGot->getGp(file);
+  case R_NANOMIPS_GPREL:
+    return sym.getVA(a) - ElfSym::nanoMipsGp->getVA(0);
+  case R_NANOMIPS_PAGE_PC:
+    return sym.getVA(a) - getNanoMipsPage(p + 4);
   case R_AARCH64_PAGE_PC: {
     uint64_t val = sym.isUndefWeak() ? p + a : sym.getVA(a);
     return getAArch64Page(val) - getAArch64Page(p);
@@ -841,7 +852,12 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
       break;
     }
 
-  for (const RelTy &rel : rels) {
+  // Next two vars are used only for nanoMIPS
+  uint64_t valFromBefore = 0;
+  bool prevRelocOnlyCalculating = false;
+
+  for (auto it = rels.begin(), end = rels.end(); it != end; it++) {
+    const RelTy &rel = *it;
     RelType type = rel.getType(config->isMips64EL);
 
     // GCC 8.0 or earlier have a bug that they emit R_386_GOTPC relocations
@@ -905,6 +921,48 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
     // For a relocatable link, only tombstone values are applied.
     if (config->relocatable)
       continue;
+
+    // We might have more than one relocation
+    // consisting the final relocation
+    if (config->emachine == EM_NANOMIPS) {
+      // No R_SIZE for now for nanoMIPS
+      if (expr == R_ABS || expr == R_NANOMIPS_NEG_COMPOSITE ||
+          expr == R_NANOMIPS_ASHIFTR || expr == R_DTPREL ||
+          expr == R_GOTPLTREL) {
+        uint64_t val = 0;
+
+        uint64_t secAddr = getOutputSection()->addr;
+        if (auto *sec = dyn_cast<InputSection>(this))
+          secAddr += sec->outSecOff;
+        const uint64_t addrLoc = secAddr + offset;
+
+        if (prevRelocOnlyCalculating) {
+          val = SignExtend64<bits>(this->getRelocTargetVA(
+              file, type, valFromBefore, addrLoc, sym, expr));
+        } else {
+          val = SignExtend64<bits>(
+              this->getRelocTargetVA(file, type, addend, addrLoc, sym, expr));
+        }
+        auto next = it + 1;
+        if (next != rels.end() && next->r_offset == rel.r_offset) {
+          const RelTy &nextRel = *next;
+          RelType nextType = nextRel.getType(config->isMips64EL);
+          Symbol &nextSym = getFile<ELFT>()->getRelocTargetSym(nextRel);
+          RelExpr nextExpr = target.getRelExpr(nextType, nextSym, bufLoc);
+          if (nextExpr == R_ABS || nextExpr == R_NANOMIPS_NEG_COMPOSITE ||
+              nextExpr == R_NANOMIPS_ASHIFTR || expr == R_DTPREL ||
+              nextExpr == R_GOTPLTREL) {
+
+            prevRelocOnlyCalculating = true;
+            valFromBefore = val;
+            continue;
+          }
+        }
+        prevRelocOnlyCalculating = false;
+        target.relocateNoSym(bufLoc, type, val);
+        continue;
+      }
+    }
 
     if (expr == R_SIZE) {
       target.relocateNoSym(bufLoc, type,

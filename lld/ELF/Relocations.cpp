@@ -208,7 +208,8 @@ static bool needsGot(RelExpr expr) {
 static bool isRelExpr(RelExpr expr) {
   return oneof<R_PC, R_GOTREL, R_GOTPLTREL, R_MIPS_GOTREL, R_PPC64_CALL,
                R_PPC64_RELAX_TOC, R_AARCH64_PAGE_PC, R_RELAX_GOT_PC,
-               R_RISCV_PC_INDIRECT, R_PPC64_RELAX_GOT_PC>(expr);
+               R_RISCV_PC_INDIRECT, R_PPC64_RELAX_GOT_PC, R_NANOMIPS_PAGE_PC,
+               R_NANOMIPS_GPREL>(expr);
 }
 
 

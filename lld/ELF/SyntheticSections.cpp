@@ -41,6 +41,8 @@
 #include "llvm/Support/TimeProfiler.h"
 #include <cstdlib>
 
+#include "llvm/Support/NanoMipsABIFlags.h"
+
 using namespace llvm;
 using namespace llvm::dwarf;
 using namespace llvm::ELF;
@@ -148,6 +150,223 @@ std::unique_ptr<MipsAbiFlagsSection<ELFT>> MipsAbiFlagsSection<ELFT>::create() {
   if (create)
     return std::make_unique<MipsAbiFlagsSection<ELFT>>(flags);
   return nullptr;
+}
+
+// .nanoMIPS.abiflags section.
+template <class ELFT>
+NanoMipsAbiFlagsSection<ELFT>::NanoMipsAbiFlagsSection(
+    Elf_NanoMips_ABIFlags flags)
+    : SyntheticSection(SHF_ALLOC, SHT_NANOMIPS_ABIFLAGS, 8,
+                       ".nanoMIPS.abiflags"),
+      flags(flags) {
+  this->entsize = sizeof(Elf_NanoMips_ABIFlags);
+}
+
+template <class ELFT>
+void NanoMipsAbiFlagsSection<ELFT>::writeTo(uint8_t *buf) {
+  memcpy(buf, &flags, sizeof(flags));
+}
+
+template <class ELFT>
+std::string NanoMipsAbiFlagsSection<ELFT>::fpAbiString(uint32_t fp) {
+  switch (fp) {
+  case llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_DOUBLE:
+    return "-mdouble-float";
+  case llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_SINGLE:
+    return "-msingle-float";
+  case llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_SOFT:
+    return "-msoft-float";
+  default:
+    return "unknown";
+  }
+}
+
+template <class ELFT>
+uint32_t NanoMipsAbiFlagsSection<ELFT>::selectFpAbi(const StringRef filename,
+                                                    uint32_t inFp,
+                                                    uint32_t outFp) {
+  if (outFp == llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_ANY || inFp == outFp)
+    return inFp;
+
+  if (inFp != llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_ANY)
+    warn(filename + ": FP ABI " + fpAbiString(inFp) + " is incompatible with " +
+         fpAbiString(outFp));
+
+  return outFp;
+}
+
+template <class ELFT>
+uint32_t NanoMipsAbiFlagsSection<ELFT>::selectIsaExt(const StringRef filename,
+                                                     uint32_t isaExtIn,
+                                                     uint32_t isaExtOut) {
+  if (isaExtOut == llvm::NanoMips::AFL_EXT_NONE || isaExtIn == isaExtOut)
+    return isaExtIn;
+
+  if (isaExtIn != llvm::NanoMips::AFL_EXT_NONE)
+    warn(filename + ": processor specific extension " + Twine(isaExtIn) +
+         " is incompatible with " + Twine(isaExtOut));
+
+  return isaExtOut;
+}
+
+template <class ELFT>
+void NanoMipsAbiFlagsSection<ELFT>::getAbiFlagsISAFromEflags(
+    const ObjFile<ELFT> *objFile, Elf_NanoMips_ABIFlags *inferredFlags) {
+  uint32_t eflags = objFile->getObj().getHeader().e_flags;
+  switch (eflags & EF_NANOMIPS_ARCH) {
+  case E_NANOMIPS_ARCH_32R6:
+    inferredFlags->isa_level = 32;
+    inferredFlags->isa_rev = 6;
+    break;
+  case E_NANOMIPS_ARCH_64R6:
+    inferredFlags->isa_level = 64;
+    inferredFlags->isa_rev = 6;
+    break;
+  default:
+    error(objFile->getName() + ": Unknown architecture given!\n");
+  }
+}
+
+template <class ELFT>
+void NanoMipsAbiFlagsSection<ELFT>::inferAbiFlags(
+    const ObjFile<ELFT> *objFile, Elf_NanoMips_ABIFlags *inferredFlags) {
+  // TODO: SHT_GNU_ATTRIBUTES, floating point can be derived from here as well
+  inferredFlags->fp_abi = llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_ANY;
+
+  uint32_t eflags = objFile->getObj().getHeader().e_flags;
+  // get abi flags isa from eflags
+  getAbiFlagsISAFromEflags(objFile, inferredFlags);
+  inferredFlags->cpr1_size = llvm::NanoMips::AFL_REG_NONE;
+  inferredFlags->cpr2_size = llvm::NanoMips::AFL_REG_NONE;
+  inferredFlags->gpr_size =
+      (((eflags & EF_NANOMIPS_32BITMODE) != 0 ||
+        (eflags & EF_NANOMIPS_ARCH) == E_NANOMIPS_ARCH_32R6)
+           ? llvm::NanoMips::AFL_REG_32
+           : llvm::NanoMips::AFL_REG_64);
+
+  // Doesn't happen until SHT_GNU_ATTRIBUTES section is implemented
+  if (inferredFlags->fp_abi == llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_SINGLE ||
+      (inferredFlags->fp_abi ==
+           llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_DOUBLE &&
+       inferredFlags->gpr_size == llvm::NanoMips::AFL_REG_32))
+    inferredFlags->cpr1_size = llvm::NanoMips::AFL_REG_32;
+
+  else if (inferredFlags->fp_abi ==
+           llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_DOUBLE)
+    inferredFlags->cpr1_size = llvm::NanoMips::AFL_REG_64;
+}
+
+template <class ELFT>
+NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create() {
+  Elf_NanoMips_ABIFlags flags{};
+  bool create = false;
+
+  llvm::DenseMap<ObjFile<ELFT> *, const Elf_NanoMips_ABIFlags *> tmpMap;
+  // TODO: Test generating abi flags without nanoMIPS.abiflags.section
+  // in the obj file
+  for (InputFile *f : ctx.objectFiles) {
+    const Elf_NanoMips_ABIFlags *s = nullptr;
+    ObjFile<ELFT> *obj = cast<ObjFile<ELFT>>(f);
+    Elf_NanoMips_ABIFlags headerFlags = {};
+    inferAbiFlags(obj, &headerFlags);
+    for (InputSectionBase *sec : obj->getSections()) {
+      if (sec == nullptr || sec->type != SHT_NANOMIPS_ABIFLAGS)
+        continue;
+
+      sec->markDead();
+      create = true;
+      const size_t size = sec->content().size();
+      if (size < sizeof(Elf_NanoMips_ABIFlags)) {
+        error(f->getName() +
+              ": invalid size of .nanoMIPS.abiflags section: got " +
+              Twine(size) + " instead of " +
+              Twine(sizeof(Elf_NanoMips_ABIFlags)));
+        return nullptr;
+      }
+
+      s = reinterpret_cast<const Elf_NanoMips_ABIFlags *>(
+          sec->content().data());
+      break;
+    }
+
+    // Check compability between header and abiflags section
+    if (s != nullptr) {
+      if (s->isa_level != headerFlags.isa_level ||
+          s->isa_rev != headerFlags.isa_rev)
+        warn(f->getName() +
+             ": Inconsistent ISA between e_flags and .nanoMIPS.abiflags");
+
+      if (headerFlags.fp_abi != llvm::NanoMips::VAL_GNU_NANOMIPS_ABI_FP_ANY &&
+          s->fp_abi != headerFlags.fp_abi)
+        warn(f->getName() + ": Inconsistent FP ABI between .gnu.attributes and "
+                            ".nanoMIPS.abiflags");
+
+      // Shouldn't happen
+      if (LLVM_UNLIKELY((s->ases & headerFlags.ases) != headerFlags.ases))
+        warn(f->getName() +
+             ": Inconsistent ASEs between e_flags and .nanoMIPS.abiflags");
+    }
+    // There is no abiflags section, so use headerFlags instead
+    // TODO: Test this
+    else {
+      warn(f->getName() +
+           ": Inherited abiflags from e_flags instead of .nanoMIPS.abiflags");
+      s = make<Elf_NanoMips_ABIFlags>(headerFlags);
+      create = true;
+    }
+    tmpMap[obj] = s;
+    if (s->version != 0) {
+      error(f->getName() + ": unexpected .nanoMIPS.abiflags version " +
+            Twine(s->version));
+      return nullptr;
+    }
+
+    flags.isa_level = std::max(flags.isa_level, s->isa_level);
+    flags.isa_rev = std::max(flags.isa_rev, s->isa_rev);
+    flags.gpr_size = std::max(flags.gpr_size, s->gpr_size);
+    flags.cpr1_size = std::max(flags.cpr1_size, s->cpr1_size);
+    flags.cpr2_size = std::max(flags.cpr2_size, s->cpr2_size);
+    flags.fp_abi = selectFpAbi(f->getName(), s->fp_abi, flags.fp_abi);
+    flags.isa_ext = selectIsaExt(f->getName(), s->isa_ext, flags.isa_ext);
+    flags.ases |= s->ases;
+    flags.flags1 |= s->flags1;
+    flags.flags2 |= s->flags2;
+  }
+
+  if (create) {
+    auto *abiFlagsSec = make<NanoMipsAbiFlagsSection<ELFT>>(flags);
+    abiFlagsSec->mapOfAbiFlags = std::move(tmpMap);
+    return abiFlagsSec;
+  }
+  return nullptr;
+}
+
+template <class ELFT>
+NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::get() {
+  if (abiFlagsUnique == nullptr) {
+    abiFlagsUnique = create();
+    if (abiFlagsUnique == nullptr)
+      warn("Couldn't create .nanoMIPS.abiflags section");
+  }
+
+  return abiFlagsUnique;
+}
+
+template <class ELFT>
+bool NanoMipsAbiFlagsSection<ELFT>::isFullNanoMipsISA() const {
+  return (flags.ases & llvm::NanoMips::AFL_ASE_xNMS) != 0;
+}
+template <class ELFT>
+bool NanoMipsAbiFlagsSection<ELFT>::isFullNanoMipsISA(
+    const InputSectionBase *isec) const {
+  bool retVal = isFullNanoMipsISA();
+  if (auto *obj = isec->getFile<ELFT>()) {
+    if (mapOfAbiFlags.count(obj)) {
+      retVal =
+          (mapOfAbiFlags.lookup(obj)->ases & llvm::NanoMips::AFL_ASE_xNMS) != 0;
+    }
+  }
+  return retVal;
 }
 
 // .MIPS.options section.
@@ -3896,6 +4115,11 @@ template class elf::MipsAbiFlagsSection<ELF32LE>;
 template class elf::MipsAbiFlagsSection<ELF32BE>;
 template class elf::MipsAbiFlagsSection<ELF64LE>;
 template class elf::MipsAbiFlagsSection<ELF64BE>;
+
+template class elf::NanoMipsAbiFlagsSection<ELF32LE>;
+template class elf::NanoMipsAbiFlagsSection<ELF32BE>;
+template class elf::NanoMipsAbiFlagsSection<ELF64LE>;
+template class elf::NanoMipsAbiFlagsSection<ELF64BE>;
 
 template class elf::MipsOptionsSection<ELF32LE>;
 template class elf::MipsOptionsSection<ELF32BE>;

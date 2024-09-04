@@ -392,6 +392,9 @@ template <typename T, endianness E> inline void write(void *P, T V) {
   *(detail::packed_endian_specific_integral<T, E, unaligned> *)P = V;
 }
 
+inline void write8(void *P, uint8_t V, endianness E) {
+  write<uint8_t>(P, V, E);
+}
 inline void write16(void *P, uint16_t V, endianness E) {
   write<uint16_t>(P, V, E);
 }
@@ -402,6 +405,9 @@ inline void write64(void *P, uint64_t V, endianness E) {
   write<uint64_t>(P, V, E);
 }
 
+template <endianness E> inline void write8(void *P, uint8_t V) {
+  write<uint8_t, E>(P, V);
+}
 template <endianness E> inline void write16(void *P, uint16_t V) {
   write<uint16_t, E>(P, V);
 }
@@ -412,9 +418,11 @@ template <endianness E> inline void write64(void *P, uint64_t V) {
   write<uint64_t, E>(P, V);
 }
 
+inline void write8le(void *P, uint8_t V) { write8<little>(P, V); }
 inline void write16le(void *P, uint16_t V) { write16<little>(P, V); }
 inline void write32le(void *P, uint32_t V) { write32<little>(P, V); }
 inline void write64le(void *P, uint64_t V) { write64<little>(P, V); }
+inline void write8be(void *P, uint16_t V) { write8<big>(P, V); }
 inline void write16be(void *P, uint16_t V) { write16<big>(P, V); }
 inline void write32be(void *P, uint32_t V) { write32<big>(P, V); }
 inline void write64be(void *P, uint64_t V) { write64<big>(P, V); }

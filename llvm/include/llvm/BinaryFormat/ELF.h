@@ -634,7 +634,10 @@ enum : unsigned {
   // nanoMIPS ABI in 32 bit mode.
   E_NANOMIPS_ABI_P32 = 0x00001000,
   // nanoMIPS ABI in 64 bit mode.
-  E_NANOMIPS_ABI_P64 = 0x00002000
+  E_NANOMIPS_ABI_P64 = 0x00002000,
+
+  // Machine variant if we know it.
+  EF_NANOMIPS_MACH = 0x00ff0000
 };
 
 // Hexagon-specific e_flags
@@ -1457,6 +1460,8 @@ enum {
 
   // RISCV program header types.
   PT_RISCV_ATTRIBUTES = 0x70000003,
+  // nanoMIPS program header types
+  PT_NANOMIPS_ABIFLAGS = 0x70000000 // Abiflags segment;
 };
 
 // Segment flag bits.

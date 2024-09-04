@@ -187,6 +187,7 @@ void setHexagonTargetInfo(Ctx &);
 void setLoongArchTargetInfo(Ctx &);
 void setMSP430TargetInfo(Ctx &);
 void setMipsTargetInfo(Ctx &);
+void setNanoMipsTargetInfo(Ctx &);
 void setPPC64TargetInfo(Ctx &);
 void setPPCTargetInfo(Ctx &);
 void setRISCVTargetInfo(Ctx &);
@@ -239,6 +240,7 @@ void writePrefixedInst(Ctx &, uint8_t *loc, uint64_t insn);
 void addPPC64SaveRestore(Ctx &);
 uint64_t getPPC64TocBase(Ctx &ctx);
 uint64_t getAArch64Page(uint64_t expr);
+uint64_t getNanoMipsPage(uint64_t expr);
 bool isAArch64BTILandingPad(Ctx &, Symbol &s, int64_t a);
 template <typename ELFT> void writeARMCmseImportLib(Ctx &);
 uint64_t getLoongArchPageDelta(uint64_t dest, uint64_t pc, RelType type);
@@ -306,6 +308,10 @@ inline uint32_t read32(Ctx &ctx, const void *p) {
 
 inline uint64_t read64(Ctx &ctx, const void *p) {
   return llvm::support::endian::read64(p, ctx.arg.endianness);
+}
+
+inline void write8(Ctx &ctx, void *p, uint8_t v) {
+  llvm::support::endian::write8(p, v, ctx.arg.endianness);
 }
 
 inline void write16(Ctx &ctx, void *p, uint16_t v) {

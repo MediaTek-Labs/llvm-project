@@ -211,7 +211,8 @@ static bool isRelExpr(RelExpr expr) {
   return oneof<R_PC, R_GOTREL, R_GOTPLTREL, RE_ARM_PCA, RE_MIPS_GOTREL,
                RE_PPC64_CALL, RE_PPC64_RELAX_TOC, RE_AARCH64_PAGE_PC,
                R_RELAX_GOT_PC, RE_RISCV_PC_INDIRECT, RE_PPC64_RELAX_GOT_PC,
-               RE_LOONGARCH_PAGE_PC>(expr);
+               RE_LOONGARCH_PAGE_PC, R_NANOMIPS_PAGE_PC,
+               R_NANOMIPS_GPREL>(expr);
 }
 
 static RelExpr toPlt(RelExpr expr) {
@@ -814,7 +815,10 @@ static bool maybeReportUndefined(Ctx &ctx, Undefined &sym,
   // PPC32 .got2 is similar but cannot be fixed. Multiple .got2 is infeasible
   // because .LC0-.LTOC is not representable if the two labels are in different
   // .got2
-  if (sym.discardedSecIdx != 0 && (sec.name == ".got2" || sec.name == ".toc"))
+  // TODO: Need to check why .eh_frame is necessary here
+  if (sym.discardedSecIdx != 0 &&
+      (sec.name == ".got2" || sec.name == ".toc" ||
+       (ctx.arg.emachine == EM_NANOMIPS && sec.name == ".eh_frame")))
     return false;
 
   bool isWarning =

@@ -786,6 +786,11 @@ uint64_t InputSectionBase::getRelocTargetVA(Ctx &ctx, const Relocation &r,
     return a;
   case R_RELAX_HINT:
     return 0;
+  // It is marked as composite as it always goes with another relocation
+  case R_NANOMIPS_NEG_COMPOSITE:
+    return -r.sym->getVA(ctx, -a);
+  case R_NANOMIPS_ASHIFTR:
+    return static_cast<int64_t>(SignExtend64(r.sym->getVA(ctx, a), ctx.arg.wordsize * 8)) >> 1;  
   case RE_ARM_SBREL:
     return r.sym->getVA(ctx, a) - getARMStaticBase(*r.sym);
   case R_GOT:
@@ -876,6 +881,10 @@ uint64_t InputSectionBase::getRelocTargetVA(Ctx &ctx, const Relocation &r,
   case RE_MIPS_TLSLD:
     return ctx.in.mipsGot->getVA() + ctx.in.mipsGot->getTlsIndexOffset(file) -
            ctx.in.mipsGot->getGp(file);
+  case R_NANOMIPS_GPREL:
+    return r.sym->getVA(ctx, a) - ctx.sym.nanoMipsGp->getVA(ctx, 0);
+  case R_NANOMIPS_PAGE_PC:
+    return r.sym->getVA(ctx, a) - getNanoMipsPage(p + 4);         
   case RE_AARCH64_PAGE_PC: {
     uint64_t val = r.sym->isUndefWeak() ? p + a : r.sym->getVA(ctx, a);
     return getAArch64Page(val) - getAArch64Page(p);
@@ -1037,6 +1046,11 @@ void InputSection::relocateNonAlloc(Ctx &ctx, uint8_t *buf,
     }
 
   const InputFile *f = this->file;
+  
+  // Next two vars are used only for nanoMIPS
+  uint64_t valFromBefore = 0;
+  bool prevRelocOnlyCalculating = false;
+
   for (auto it = rels.begin(), end = rels.end(); it != end; ++it) {
     const RelTy &rel = *it;
     const RelType type = rel.getType(ctx.arg.isMips64EL);
@@ -1114,13 +1128,53 @@ void InputSection::relocateNonAlloc(Ctx &ctx, uint8_t *buf,
         continue;
       }
     }
-
     // For a relocatable link, content relocated by relocation types with an
     // explicit addend, such as RELA, remain unchanged and we can stop here.
     // While content relocated by relocation types with an implicit addend, such
     // as REL, needs the implicit addend updated.
     if (ctx.arg.relocatable && (RelTy::HasAddend || sym.type != STT_SECTION))
       continue;
+    
+    // We might have more than one relocation
+    // consisting the final relocation
+    if (ctx.arg.emachine == EM_NANOMIPS) {
+      // No R_SIZE for now for nanoMIPS
+      if (expr == R_ABS || expr == R_NANOMIPS_NEG_COMPOSITE ||
+        expr == R_NANOMIPS_ASHIFTR || expr == R_DTPREL ||
+        expr == R_GOTPLTREL) {
+        uint64_t val = 0;
+
+        uint64_t secAddr = getOutputSection()->addr;
+        if (auto *sec = dyn_cast<InputSection>(this))
+          secAddr += sec->outSecOff;
+        const uint64_t addrLoc = secAddr + offset;
+
+        if (prevRelocOnlyCalculating)
+          addend = valFromBefore; 
+        
+        val = SignExtend64<bits>(
+            this->getRelocTargetVA(ctx, Relocation{expr, type, offset, addend, &sym}, addrLoc));    
+        
+        auto nextIt = std::next(it);
+        if (nextIt != end && nextIt->r_offset == rel.r_offset) {
+          const RelTy &nextRel = *nextIt;
+          RelType nextType = nextRel.getType(ctx.arg.isMips64EL);
+          Symbol &nextSym = getFile<ELFT>()->getRelocTargetSym(nextRel);
+          RelExpr nextExpr = target.getRelExpr(nextType, nextSym, bufLoc);
+          if (nextExpr == R_ABS || nextExpr == R_NANOMIPS_NEG_COMPOSITE ||
+              nextExpr == R_NANOMIPS_ASHIFTR || expr == R_DTPREL ||
+              nextExpr == R_GOTPLTREL) {
+
+            prevRelocOnlyCalculating = true;
+            valFromBefore = val;
+            continue;
+          }
+        }
+        prevRelocOnlyCalculating = false;
+        target.relocateNoSym(bufLoc, type, val);
+        continue;
+      }
+    }
 
     // R_ABS/R_DTPREL and some other relocations can be used from non-SHF_ALLOC
     // sections.
@@ -1149,6 +1203,7 @@ void InputSection::relocateNonAlloc(Ctx &ctx, uint8_t *buf,
     // against _GLOBAL_OFFSET_TABLE_ for .debug_info. The bug has been fixed in
     // 2017 (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=82630), but we need to
     // keep this bug-compatible code for a while.
+
     bool isErr = expr != R_PC && !(emachine == EM_386 && type == R_386_GOTPC);
     {
       ELFSyncStream diag(ctx, isErr && !ctx.arg.noinhibitExec
@@ -1163,6 +1218,7 @@ void InputSection::relocateNonAlloc(Ctx &ctx, uint8_t *buf,
           SignExtend64<bits>(sym.getVA(ctx, addend - offset - outSecOff)));
   }
 }
+
 
 template <class ELFT>
 void InputSectionBase::relocate(Ctx &ctx, uint8_t *buf, uint8_t *bufEnd) {

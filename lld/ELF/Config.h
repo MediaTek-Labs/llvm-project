@@ -605,6 +605,9 @@ struct Ctx : CommonLinkerContext {
     Defined *mipsGpDisp;
     Defined *mipsLocalGp;
 
+    // _gp symbol. Only for nanoMIPS.
+    Defined *nanoMipsGp;
+
     // __global_pointer$ for RISC-V.
     Defined *riscvGlobalPointer;
 

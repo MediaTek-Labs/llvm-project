@@ -69,6 +69,15 @@ void elf::setTarget(Ctx &ctx) {
     return setLoongArchTargetInfo(ctx);
   case EM_MIPS:
     return setMipsTargetInfo(ctx);
+  case EM_NANOMIPS:
+    switch (ctx.arg.ekind) {
+    case ELF32LEKind:
+      return setNanoMipsTargetInfo(ctx);
+      // TO DO: Support for other endianess and bit sizes for
+      // the nanoMIPS target
+      default:
+        llvm_unreachable("unsupported nanoMIPS target");
+    }
   case EM_MSP430:
     return setMSP430TargetInfo(ctx);
   case EM_PPC:

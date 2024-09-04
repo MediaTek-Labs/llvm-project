@@ -1107,6 +1107,7 @@ static void readConfigs(opt::InputArgList &args) {
 
   config->executeOnly =
       args.hasFlag(OPT_execute_only, OPT_no_execute_only, false);
+  config->expand = args.hasFlag(OPT_expand, OPT_no_expand, true);
   config->exportDynamic =
       args.hasFlag(OPT_export_dynamic, OPT_no_export_dynamic, false) ||
       args.hasArg(OPT_shared);
@@ -1153,6 +1154,16 @@ static void readConfigs(opt::InputArgList &args) {
       args.hasFlag(OPT_merge_exidx_entries, OPT_no_merge_exidx_entries, true);
   config->mmapOutputFile =
       args.hasFlag(OPT_mmap_output_file, OPT_no_mmap_output_file, true);
+  config->nanoMipsFixHw110880 =
+      args.hasFlag(OPT_fix_nmips_hw110880, OPT_no_fix_nmips_hw110880, false);
+  config->nanoMipsFixHw113064 =
+      args.hasFlag(OPT_fix_nmips_hw113064, OPT_no_fix_nmips_hw113064, false);
+  config->nanoMipsInsn32 = args.hasFlag(OPT_insn32, OPT_no_insn32, false);
+  config->nanoMipsRelaxLo12 =
+      args.hasFlag(OPT_relax_lo12, OPT_no_relax_lo12, false);
+  config->nanoMipsStrictAddressModes =
+      args.hasFlag(OPT_strict_address_modes, OPT_no_strict_address_modes, true);
+  config->nanoMipsExpandReg = args::getInteger(args, OPT_expand_reg, 1);
   config->nmagic = args.hasFlag(OPT_nmagic, OPT_no_nmagic, false);
   config->noinhibitExec = args.hasArg(OPT_noinhibit_exec);
   config->nostdlib = args.hasArg(OPT_nostdlib);

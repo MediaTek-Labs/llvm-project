@@ -40,6 +40,7 @@ template <class ELFT> struct RelsOrRelas {
   bool areRelocsRel() const { return rels.size(); }
 };
 
+struct NanoMipsRelaxAux;
 // This is the base class of all sections that lld handles. Some are sections in
 // input files, some are sections in the produced output file and some exist
 // just as a convenience for implementing special ways of combining some
@@ -224,6 +225,7 @@ public:
     // Auxiliary information for RISC-V linker relaxation. RISC-V does not use
     // jumpInstrMod.
     RISCVRelaxAux *relaxAux;
+    NanoMipsRelaxAux *nanoMipsRelaxAux;
 
     // The compressed content size when `compressed` is true.
     size_t compressedSize;

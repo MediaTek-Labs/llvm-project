@@ -208,7 +208,8 @@ static bool needsGot(RelExpr expr) {
 static bool isRelExpr(RelExpr expr) {
   return oneof<R_PC, R_GOTREL, R_GOTPLTREL, R_MIPS_GOTREL, R_PPC64_CALL,
                R_PPC64_RELAX_TOC, R_AARCH64_PAGE_PC, R_RELAX_GOT_PC,
-               R_RISCV_PC_INDIRECT, R_PPC64_RELAX_GOT_PC>(expr);
+               R_RISCV_PC_INDIRECT, R_PPC64_RELAX_GOT_PC, R_NANOMIPS_PAGE_PC,
+               R_NANOMIPS_GPREL>(expr);
 }
 
 
@@ -817,7 +818,10 @@ static bool maybeReportUndefined(Undefined &sym, InputSectionBase &sec,
   // PPC32 .got2 is similar but cannot be fixed. Multiple .got2 is infeasible
   // because .LC0-.LTOC is not representable if the two labels are in different
   // .got2
-  if (sym.discardedSecIdx != 0 && (sec.name == ".got2" || sec.name == ".toc"))
+  // TODO: Need to check why .eh_frame is necessary here
+  if (sym.discardedSecIdx != 0 &&
+      (sec.name == ".got2" || sec.name == ".toc" ||
+       (config->emachine == EM_NANOMIPS && sec.name == ".eh_frame")))
     return false;
 
   bool isWarning =

@@ -51,13 +51,13 @@ StringRef llvm::object::getELFRelocationTypeName(uint32_t Machine,
       break;
     }
     break;
-   case ELF::EM_NANOMIPS:
-     switch (Type) {
+  case ELF::EM_NANOMIPS:
+    switch (Type) {
 #include "llvm/BinaryFormat/ELFRelocs/NanoMips.def"
-     default:
-       break;
-     }
-     break;
+    default:
+      break;
+    }
+    break;
   case ELF::EM_AARCH64:
     switch (Type) {
 #include "llvm/BinaryFormat/ELFRelocs/AArch64.def"
@@ -277,6 +277,9 @@ StringRef llvm::object::getELFSectionTypeName(uint32_t Machine, unsigned Type) {
     break;
   case ELF::EM_RISCV:
     switch (Type) { STRINGIFY_ENUM_CASE(ELF, SHT_RISCV_ATTRIBUTES); }
+    break;
+  case ELF::EM_NANOMIPS:
+    switch (Type) { STRINGIFY_ENUM_CASE(ELF, SHT_NANOMIPS_ABIFLAGS); }
     break;
   default:
     break;

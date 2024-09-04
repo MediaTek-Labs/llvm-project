@@ -998,6 +998,47 @@ private:
   Elf_Mips_ABIFlags flags;
 };
 
+// .nanoMIPS.abiflags section.
+
+// This is a singleton as only one .nanoMIPS.abiflags section is needed
+template <class ELFT>
+class NanoMipsAbiFlagsSection final : public SyntheticSection {
+  using Elf_NanoMips_ABIFlags = llvm::object::Elf_NanoMips_ABIFlags<ELFT>;
+
+public:
+  static NanoMipsAbiFlagsSection *get();
+
+  NanoMipsAbiFlagsSection(Elf_NanoMips_ABIFlags flags);
+  size_t getSize() const override { return sizeof(Elf_NanoMips_ABIFlags); }
+  const Elf_NanoMips_ABIFlags *getFlags() const { return &flags; };
+  void writeTo(uint8_t *buf) override;
+  // Checks wheter the final link output file is full nanoMIPS ISA
+  bool isFullNanoMipsISA() const;
+  // Checks whether the obj file which this section is in full nanoMIPS ISA
+  bool isFullNanoMipsISA(const InputSectionBase *isec) const;
+
+private:
+  static NanoMipsAbiFlagsSection *create();
+  static void inferAbiFlags(const ObjFile<ELFT> *objFile,
+                            Elf_NanoMips_ABIFlags *inferredABIFlags);
+  static void getAbiFlagsISAFromEflags(const ObjFile<ELFT> *objFile,
+                                       Elf_NanoMips_ABIFlags *inferredFlags);
+
+  static uint32_t selectIsaExt(const StringRef filename, uint32_t inIsaExt,
+                               uint32_t outIsaExt);
+  static uint32_t selectFpAbi(const StringRef filename, uint32_t inFp,
+                              uint32_t outFp);
+  static std::string fpAbiString(uint32_t fp);
+  Elf_NanoMips_ABIFlags flags;
+  static NanoMipsAbiFlagsSection *abiFlagsUnique;
+
+  llvm::DenseMap<ObjFile<ELFT> *, const Elf_NanoMips_ABIFlags *> mapOfAbiFlags;
+};
+
+template <class ELFT>
+NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::abiFlagsUnique =
+    nullptr;
+
 // .MIPS.options section.
 template <class ELFT> class MipsOptionsSection final : public SyntheticSection {
   using Elf_Mips_Options = llvm::object::Elf_Mips_Options<ELFT>;

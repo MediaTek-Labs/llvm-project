@@ -818,7 +818,14 @@ defm strict_address_modes: BB<"strict-address-modes",
 >;
 
 defm expand_reg: EEq<"expand-reg",
-    "(nanoMIPS only) Set the register that will be used in expansions (default $1 - pass the value without dollar sign)"
+    "(nanoMIPS only) Set the register that will be used in expansions "
+    "(default $1 - pass the value without dollar sign)"
+>;
+
+defm nanomips_custom_linker_script_type: BB<
+  "nanomips-custom-linker-script-type",
+  "Parse linker script in nanoMIPS' custom way",
+  "Parse linker script regularly (default)"
 >;
 
 // Hidden option used for testing MIPS multi-GOT implementation.

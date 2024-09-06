@@ -569,7 +569,8 @@ SmallVector<SectionCommand *, 0> ScriptParser::readOverlay() {
   }
   // When AT is omitted, LMA should equal VMA. script->getDot() when evaluating
   // lmaExpr will ensure this, even if the start address is specified.
-  Expr lmaExpr = consume("AT") ? readParenExpr()
+  Expr lmaExpr = (!ctx.arg.nanoMipsCustomLinkerScriptType || consume("AT")) 
+                               ? readParenExpr()
                                : [s = ctx.script] { return s->getDot(); };
   expect("{");
 
@@ -580,19 +581,43 @@ SmallVector<SectionCommand *, 0> ScriptParser::readOverlay() {
     // starting from the base load address specified.
     OutputDesc *osd = readOverlaySectionDescription();
     osd->osec.addrExpr = addrExpr;
-    if (prev) {
-      osd->osec.lmaExpr = [=] { return prev->getLMA() + prev->size; };
-    } else {
-      osd->osec.lmaExpr = lmaExpr;
-      // Use first section address for subsequent sections as initial addrExpr
-      // can be DOT. Ensure the first section, even if empty, is not discarded.
-      osd->osec.usedInExpression = true;
-      addrExpr = [=]() -> ExprValue { return {&osd->osec, false, 0, ""}; };
+    if (lmaExpr) {
+      if (prev) {
+        osd->osec.lmaExpr = [=] { return prev->getLMA() + prev->size; };
+      } else {
+        osd->osec.lmaExpr = lmaExpr;
+        // Use first section address for subsequent sections as initial addrExpr
+        // can be DOT. Ensure the first section, even if empty, is not discarded.
+        osd->osec.usedInExpression = true;
+        addrExpr = [=]() -> ExprValue { return {&osd->osec, false, 0, ""}; };
+      }
     }
     v.push_back(osd);
     prev = &osd->osec;
   }
 
+  if (ctx.arg.nanoMipsCustomLinkerScriptType && consume(">")) {
+    StringRef tok = next();
+    for (SectionCommand *cmd : v)
+      cast<OutputDesc>(cmd)->osec.memoryRegionName = std::string(tok);
+  }
+
+  if (ctx.arg.nanoMipsCustomLinkerScriptType && consume("AT")) {
+    expect(">");
+    StringRef tok = next();
+    for (SectionCommand *cmd : v) {
+      OutputSection &osec = cast<OutputDesc>(cmd)->osec;
+      osec.lmaRegionName = std::string(tok);
+      if (osec.lmaExpr)
+        error("section can't have both LMA and a load region");
+    }
+  }
+
+  for (SectionCommand *cmd : v) {
+    OutputSection &osec = cast<OutputDesc>(cmd)->osec;
+    if (!osec.lmaExpr && osec.lmaRegionName.empty())
+      error("overlay section must have LMA or a load region");
+  }
   // According to the specification, at the end of the overlay, the location
   // counter should be equal to the overlay base address plus size of the
   // largest section seen in the overlay.
@@ -601,6 +626,17 @@ SmallVector<SectionCommand *, 0> ScriptParser::readOverlay() {
     uint64_t max = 0;
     for (SectionCommand *cmd : v)
       max = std::max(max, cast<OutputDesc>(cmd)->osec.size);
+    // FIXME: Side effect, nanoMIPS may have a memory region for
+    // overlay section VA. It isn't updated during assigning of offsets
+    // as OVERLAY osecs use the same starting VA, so it is updated here
+    if (ctx.arg.nanoMipsCustomLinkerScriptType && v.size()) {
+      auto *firstOsec = cast<OutputDesc>(v[0]);
+      // Memory region will be initialized by then
+      if (firstOsec->osec.memRegion) {
+        firstOsec->osec.memRegion->curPos += max;
+      }
+    }
+
     return addrExpr().getValue() + max;
   };
   v.push_back(make<SymbolAssignment>(".", moveDot, 0, getCurrentLocation()));
@@ -991,6 +1027,21 @@ OutputDesc *ScriptParser::readOverlaySectionDescription() {
   while (auto tok = till("}")) {
     uint64_t withFlags = 0;
     uint64_t withoutFlags = 0;
+
+    if (ctx.arg.nanoMipsCustomLinkerScriptType) {
+      if (tok == ";") continue;
+      
+      if (SymbolAssignment *assign = readAssignment(tok)) {
+        osd->osec.commands.push_back(assign);
+        continue;
+      }
+
+      if (ByteCommand *data = readByteCommand(tok)) {
+        osd->osec.commands.push_back(data);
+        continue;
+      }
+    }
+
     if (tok == "INPUT_SECTION_FLAGS") {
       std::tie(withFlags, withoutFlags) = readInputSectionFlags();
       tok = till("");

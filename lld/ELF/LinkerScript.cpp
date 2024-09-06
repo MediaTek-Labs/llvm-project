@@ -176,7 +176,9 @@ void LinkerScript::expandMemoryRegions(uint64_t size) {
   if (state->memRegion)
     expandMemoryRegion(state->memRegion, size, state->outSec->name);
   // Only expand the LMARegion if it is different from memRegion.
-  if (state->lmaRegion && state->memRegion != state->lmaRegion)
+  if (state->lmaRegion && state->memRegion != state->lmaRegion &&
+      (!ctx.arg.nanoMipsCustomLinkerScriptType ||
+       state->outSec->type != SHT_NOBITS))
     expandMemoryRegion(state->lmaRegion, size, state->outSec->name);
 }
 
@@ -1153,6 +1155,7 @@ bool LinkerScript::assignOffsets(OutputSection *sec) {
   const bool sameMemRegion = state->memRegion == sec->memRegion;
   const bool prevLMARegionIsDefault = state->lmaRegion == nullptr;
   const uint64_t savedDot = dot;
+  uint64_t savedOverlayCurPos = 0;
   bool addressChanged = false;
   state->memRegion = sec->memRegion;
   state->lmaRegion = sec->lmaRegion;
@@ -1168,10 +1171,21 @@ bool LinkerScript::assignOffsets(OutputSection *sec) {
     else
       dot = state->tbssAddr;
   } else {
-    if (state->memRegion)
+    if (state->memRegion) {
       dot = state->memRegion->curPos;
-    if (sec->addrExpr)
+      savedOverlayCurPos = state->memRegion->curPos;
+    }
+    if (sec->addrExpr) {
+      // FIXME: nanoMIPS workaround for interpreting the dot symbol
+      if (ctx.arg.nanoMipsCustomLinkerScriptType)
+        dot = savedDot;
       setDot(sec->addrExpr, sec->location, false);
+    }
+
+    // FIXME: Seting the alignment is not ignored for nanoMIPS custom linker
+    // script type
+    if (ctx.arg.nanoMipsCustomLinkerScriptType)
+      dot = alignToPowerOf2(dot, sec->addralign);
 
     // If the address of the section has been moved forward by an explicit
     // expression so that it now starts past the current curPos of the enclosing
@@ -1273,6 +1287,12 @@ bool LinkerScript::assignOffsets(OutputSection *sec) {
     // NOBITS TLS sections are similar. Additionally save the end address.
     state->tbssAddr = dot;
     dot = savedDot;
+  }
+
+  if (ctx.arg.nanoMipsCustomLinkerScriptType && (sec->inOverlay)) {
+    dot = savedDot;
+    if (sec->memRegion)
+      sec->memRegion->curPos = savedOverlayCurPos;
   }
   return addressChanged;
 }

@@ -2394,17 +2394,19 @@ Writer<ELFT>::createPhdrs(Partition &part) {
 
     bool sameLMARegion =
         load && !sec->lmaExpr && sec->lmaRegion == load->firstSec->lmaRegion;
-    if (load && sec != relroEnd &&
-        sec->memRegion == load->firstSec->memRegion &&
-        (sameLMARegion || load->lastSec == ctx.out.programHeaders.get()) &&
-        (ctx.script->hasSectionsCommand || sec->type == SHT_NOBITS ||
-         load->lastSec->type != SHT_NOBITS)) {
-      load->p_flags |= newFlags;
-    } else {
+    if (!(load && sec != relroEnd &&
+          sec->memRegion == load->firstSec->memRegion &&
+          (sameLMARegion || load->lastSec == ctx.out.programHeaders.get()) &&
+          (ctx.script->hasSectionsCommand || sec->type == SHT_NOBITS ||
+            load->lastSec->type != SHT_NOBITS)) || (ctx.arg.nanoMipsCustomLinkerScriptType &&
+          (sec->inOverlay || sec->type == SHT_NOBITS ||
+            load->firstSec->type == SHT_NOBITS ||
+          sec->addralign != load->firstSec->addralign))) {
       load = addHdr(PT_LOAD, newFlags);
       flags = newFlags;
+    } else {
+      load->p_flags |= newFlags;
     }
-
     load->add(sec);
   }
 
@@ -2594,7 +2596,8 @@ static uint64_t computeFileOffset(Ctx &ctx, OutputSection *os, uint64_t off) {
   // If two sections share the same PT_LOAD the file offset is calculated
   // using this formula: Off2 = Off1 + (VA2 - VA1).
   OutputSection *first = os->ptLoad->firstSec;
-  return first->offset + os->addr - first->addr;
+  uint64_t result = first->offset + os->addr - first->addr;
+  return result;
 }
 
 template <class ELFT> void Writer<ELFT>::assignFileOffsetsBinary() {
@@ -2754,6 +2757,10 @@ static void checkOverlap(Ctx &ctx, StringRef name,
     // addresses, because it is what OVERLAY was designed for.
     if (isVirtualAddr && a.sec->inOverlay && b.sec->inOverlay)
       continue;
+
+    if (ctx.arg.nanoMipsCustomLinkerScriptType &&
+        (a.sec->type == SHT_NOBITS || b.sec->type == SHT_NOBITS))
+      continue;  
 
     Err(ctx) << "section " << a.sec->name << " " << name
              << " range overlaps with " << b.sec->name << "\n>>> "

@@ -1376,6 +1376,8 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
       args.hasFlag(OPT_merge_exidx_entries, OPT_no_merge_exidx_entries, true);
   ctx.arg.mmapOutputFile =
       args.hasFlag(OPT_mmap_output_file, OPT_no_mmap_output_file, true);
+  ctx.arg.nanoMipsCustomLinkerScriptType =
+      args.hasFlag(OPT_nanomips_custom_linker_script_type, OPT_no_nanomips_custom_linker_script_type, false);
   ctx.arg.nanoMipsFixHw110880 =
       args.hasFlag(OPT_fix_nmips_hw110880, OPT_no_fix_nmips_hw110880, false);
   ctx.arg.nanoMipsFixHw113064 =

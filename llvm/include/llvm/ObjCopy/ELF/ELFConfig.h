@@ -29,6 +29,7 @@ struct ELFConfig {
   bool AllowBrokenLinks = false;
   bool KeepFileSymbols = false;
   bool LocalizeHidden = false;
+  std::optional<uint64_t> MaxSectionOffset;
 };
 
 } // namespace objcopy

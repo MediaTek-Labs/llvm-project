@@ -37,6 +37,7 @@ struct ELFConfig {
   bool KeepFileSymbols = false;
   bool LocalizeHidden = false;
   bool VerifyNoteSections = true;
+  std::optional<uint64_t> MaxSectionOffset;
 
   // Notes specified by --remove-note option.
   SmallVector<RemoveNoteInfo, 0> NotesToRemove;

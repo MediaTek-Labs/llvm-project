@@ -436,6 +436,11 @@ them.
 
  Mark all symbols with hidden or internal visibility local in the output.
 
+.. option:: --max-section-offset <value>
+
+ Emit an error if input section has a file offset greater than the specified
+ ``<value>``.
+
 .. option:: --new-symbol-visibility <visibility>
 
  Specify the visibility of the symbols automatically created when using binary

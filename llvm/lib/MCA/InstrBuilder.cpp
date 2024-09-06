@@ -578,7 +578,7 @@ InstrBuilder::createInstrDescImpl(const MCInst &MCI) {
   ID->NumMicroOps = SCDesc.NumMicroOps;
   ID->SchedClassID = SchedClassID;
 
-  if (MCDesc.isCall() && FirstCallInst) {
+  if (MCDesc.isCall() && FirstCallInst && !STI.getTargetTriple().isNanoMips()) {
     // We don't correctly model calls.
     WithColor::warning() << "found a call in the input assembly sequence.\n";
     WithColor::note() << "call instructions are not correctly modeled. "

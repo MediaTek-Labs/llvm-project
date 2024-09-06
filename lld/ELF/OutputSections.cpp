@@ -120,7 +120,13 @@ void OutputSection::commitSection(InputSection *isec) {
         // (e.g. https://github.com/ClangBuiltLinux/linux/issues/1597)
         // traditionally rely on the behavior. Issue a warning to not break
         // them. Other types get an error.
-        auto diagnose = type == SHT_NOBITS ? warn : errorOrWarn;
+        // FIXME: A .rel.dyn section may be mapped to a SHT_PROGBITS section in
+        // a nanoMIPS linker script, so this is a workaround to let it pass
+        auto diagnose =
+            ((type == SHT_NOBITS) ||
+             (isec->name == ".rel.dyn" && config->emachine == EM_NANOMIPS))
+                ? warn
+                : errorOrWarn;
         diagnose("section type mismatch for " + isec->name + "\n>>> " +
                  toString(isec) + ": " +
                  getELFSectionTypeName(config->emachine, isec->type) +

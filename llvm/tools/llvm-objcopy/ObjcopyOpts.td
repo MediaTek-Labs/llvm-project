@@ -132,6 +132,10 @@ def localize_hidden
     : Flag<["--"], "localize-hidden">,
       HelpText<
           "Mark all symbols that have hidden or internal visibility as local">;
+def disable_huge_section_offsets
+    : Flag<["--"], "disable-huge-section-offset">,
+      HelpText<
+          "Emit an error if input section has a huge file offset">;
 defm localize_symbol : Eq<"localize-symbol", "Mark <symbol> as local">,
                        MetaVarName<"symbol">;
 defm localize_symbols

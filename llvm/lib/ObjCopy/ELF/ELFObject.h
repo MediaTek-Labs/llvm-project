@@ -15,6 +15,7 @@
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/MC/StringTableBuilder.h"
 #include "llvm/ObjCopy/CommonConfig.h"
+#include "llvm/ObjCopy/ELF/ELFConfig.h"
 #include "llvm/Object/ELFObjectFile.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileOutputBuffer.h"
@@ -361,11 +362,15 @@ private:
 
   uint64_t TotalSize = 0;
 
+  bool DisableHugeSectionOffset = false;
+
 public:
   ~BinaryWriter() {}
   Error finalize() override;
   Error write() override;
-  BinaryWriter(Object &Obj, raw_ostream &Out) : Writer(Obj, Out) {}
+  BinaryWriter(Object &Obj, raw_ostream &Out, const ELFConfig &ELFConfig)
+      : Writer(Obj, Out),
+        DisableHugeSectionOffset(ELFConfig.DisableHugeSectionOffset) {}
 };
 
 class IHexWriter : public Writer {
@@ -544,7 +549,7 @@ class CompressedSection : public SectionBase {
 
 public:
   CompressedSection(const SectionBase &Sec,
-    DebugCompressionType CompressionType, bool Is64Bits);
+                    DebugCompressionType CompressionType, bool Is64Bits);
   CompressedSection(ArrayRef<uint8_t> CompressedData, uint32_t ChType,
                     uint64_t DecompressedSize, uint64_t DecompressedAlign);
 

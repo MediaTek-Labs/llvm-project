@@ -29,6 +29,7 @@ struct ELFConfig {
   bool AllowBrokenLinks = false;
   bool KeepFileSymbols = false;
   bool LocalizeHidden = false;
+  bool DisableHugeSectionOffset = false;
 };
 
 } // namespace objcopy

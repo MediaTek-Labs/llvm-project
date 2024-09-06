@@ -169,7 +169,8 @@ void LinkerScript::expandMemoryRegions(uint64_t size) {
   if (state->memRegion)
     expandMemoryRegion(state->memRegion, size, state->outSec->name);
   // Only expand the LMARegion if it is different from memRegion.
-  if (state->lmaRegion && state->memRegion != state->lmaRegion)
+  if (state->lmaRegion && state->memRegion != state->lmaRegion &&
+      (config->emachine != EM_NANOMIPS || state->outSec->type != SHT_NOBITS))
     expandMemoryRegion(state->lmaRegion, size, state->outSec->name);
 }
 
@@ -948,7 +949,7 @@ LinkerScript::findMemoryRegion(OutputSection *sec, MemoryRegion *hint) {
 
 static OutputSection *findFirstSection(PhdrEntry *load) {
   for (OutputSection *sec : outputSections)
-    if (sec->ptLoad == load)
+    if (sec->ptLoad == load && (config->emachine != EM_NANOMIPS || sec->type != SHT_NOBITS))
       return sec;
   return nullptr;
 }
@@ -960,6 +961,7 @@ void LinkerScript::assignOffsets(OutputSection *sec) {
   const bool sameMemRegion = state->memRegion == sec->memRegion;
   const bool prevLMARegionIsDefault = state->lmaRegion == nullptr;
   const uint64_t savedDot = dot;
+  uint64_t savedOverlayCurPos = 0;
   state->memRegion = sec->memRegion;
   state->lmaRegion = sec->lmaRegion;
 
@@ -974,10 +976,20 @@ void LinkerScript::assignOffsets(OutputSection *sec) {
     else
       dot = state->tbssAddr;
   } else {
-    if (state->memRegion)
+    if (state->memRegion) {
       dot = state->memRegion->curPos;
-    if (sec->addrExpr)
+      savedOverlayCurPos = state->memRegion->curPos;
+    }
+    if (sec->addrExpr) {
+      // FIXME: nanoMIPS workaround for interpreting the dot symbol
+      if (config->emachine == EM_NANOMIPS)
+        dot = savedDot;
       setDot(sec->addrExpr, sec->location, false);
+    }
+
+    // FIXME: Seting the alignment is not ignored for nanoMIPS
+    if (config->emachine == EM_NANOMIPS)
+      dot = alignToPowerOf2(dot, sec->addralign);
 
     // If the address of the section has been moved forward by an explicit
     // expression so that it now starts past the current curPos of the enclosing
@@ -1072,6 +1084,12 @@ void LinkerScript::assignOffsets(OutputSection *sec) {
     // NOBITS TLS sections are similar. Additionally save the end address.
     state->tbssAddr = dot;
     dot = savedDot;
+  }
+
+  if (config->emachine == EM_NANOMIPS && (sec->inOverlay)) {
+    dot = savedDot;
+    if (sec->memRegion)
+      sec->memRegion->curPos = savedOverlayCurPos;
   }
 }
 

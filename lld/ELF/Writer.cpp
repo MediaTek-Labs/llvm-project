@@ -2391,9 +2391,19 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
     uint64_t newFlags = computeFlags(sec->getPhdrFlags());
     bool sameLMARegion =
         load && !sec->lmaExpr && sec->lmaRegion == load->firstSec->lmaRegion;
+    // FIXME: Added specifics for EM_NANOMIPS, as parsing OVERLAY in linker script
+    // is different for this architecture. New load program header is needed so
+    // OVERLAY sections can have same virtual addresses but different load addresses
+    // FIXME: Also nanoMIPS, added a case where when output section alignment is not
+    // the same as the first section's in the load program header, then a new load
+    // program header is created, as this can result in lmas overlapping
     if (!(load && newFlags == flags && sec != relroEnd &&
           sec->memRegion == load->firstSec->memRegion &&
-          (sameLMARegion || load->lastSec == Out::programHeaders))) {
+          (sameLMARegion || load->lastSec == Out::programHeaders)) ||
+        (config->emachine == EM_NANOMIPS && 
+          (sec->inOverlay || sec->type == SHT_NOBITS || 
+          load->firstSec->type == SHT_NOBITS ||
+          sec->addralign != load->firstSec->addralign))) {
       load = addHdr(PT_LOAD, newFlags);
       flags = newFlags;
     }
@@ -2571,7 +2581,10 @@ static uint64_t computeFileOffset(OutputSection *os, uint64_t off) {
   // If two sections share the same PT_LOAD the file offset is calculated
   // using this formula: Off2 = Off1 + (VA2 - VA1).
   OutputSection *first = os->ptLoad->firstSec;
-  return first->offset + os->addr - first->addr;
+  uint64_t result = first->offset + os->addr - first->addr;
+  if (config->emachine == EM_NANOMIPS && os->inOverlay)
+    result = first->offset + os->getLMA() - first->getLMA();
+  return result;
 }
 
 template <class ELFT> void Writer<ELFT>::assignFileOffsetsBinary() {
@@ -2719,6 +2732,9 @@ static void checkOverlap(StringRef name, std::vector<SectionOffset> &sections,
     // If both sections are in OVERLAY we allow the overlapping of virtual
     // addresses, because it is what OVERLAY was designed for.
     if (isVirtualAddr && a.sec->inOverlay && b.sec->inOverlay)
+      continue;
+
+    if (config->emachine == EM_NANOMIPS && (a.sec->type == SHT_NOBITS || b.sec->type == SHT_NOBITS))
       continue;
 
     errorOrWarn("section " + a.sec->name + " " + name +

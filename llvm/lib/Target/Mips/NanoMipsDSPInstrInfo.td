@@ -185,14 +185,15 @@ class MT_FMT<bits<2> psel>: MOVE_HALF_ACC_FMT<psel> {
   let Inst{20...16} = rs;
 }
 
-class MADD_NM_ENC: InstNM_Enc, _Pool_P32A<0b111> {
+class MADD_DSP_NM_ENC<bits<5> psel>: InstNM_Enc, _Pool_P32A<0b111> {
   bits<2> ac;
   bits<5> rs;
   bits<5> rt;
   let Inst{25...21} = rt;
   let Inst{20...16} = rs;
   let Inst{15...14} = ac;
-  let Inst{13...3} = 0b00101010111;
+  let Inst{13...9} = psel;
+  let Inst{8...3} = 0b010111;
 }
 class ADDU_QB_NM_ENC     : ADDU_QB_NM_FMT     <0b00011001>;
 class ADDU_S_QB_NM_ENC   : ADDU_QB_NM_FMT     <0b10011001>;
@@ -204,6 +205,7 @@ class SUBQ_PH_NM_ENC     : ADDU_QB_NM_FMT     <0b01000001>;
 class SUBQ_S_PH_NM_ENC   : ADDU_QB_NM_FMT     <0b11000001>;
 class MUL_PH_NM_ENC      : ADDU_QB_NM_FMT    <0b00000101>;
 class MUL_S_PH_NM_ENC    : ADDU_QB_NM_FMT    <0b10000101>;
+
 class PRECRQ_PH_W_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0011101>;
 class SHLL_QB_NM_ENC     : SHL_QB_FMT         <0b0>;
 class SHRL_QB_NM_ENC     : SHL_QB_FMT         <0b1>;
@@ -225,37 +227,43 @@ class CMP_LT_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0001000>;
 class RDDSP_NM_ENC       : RDWR_DSP_FMT       <0b0>;
 class WRDSP_NM_ENC       : RDWR_DSP_FMT       <0b1>;
 
-def ADDU_QB_NM     : ADDU_QB_NM_ENC    , ADDU_QB_DESC    <NanoMipsRO_TYPES>;
-def ADDU_S_QB_NM   : ADDU_S_QB_NM_ENC  , ADDU_S_QB_DESC  <NanoMipsRO_TYPES>;
-def SUBU_QB_NM     : SUBU_QB_NM_ENC    , SUBU_QB_DESC    <NanoMipsRO_TYPES>;
-def SUBU_S_QB_NM   : SUBU_S_QB_NM_ENC  , SUBU_S_QB_DESC  <NanoMipsRO_TYPES>;
-def ADDQ_PH_NM     : ADDQ_PH_NM_ENC    , ADDQ_PH_DESC    <NanoMipsRO_TYPES>;
-def ADDQ_S_PH_NM   : ADDQ_S_PH_NM_ENC  , ADDQ_S_PH_DESC  <NanoMipsRO_TYPES>;
-def SUBQ_PH_NM     : SUBQ_PH_NM_ENC    , SUBQ_PH_DESC    <NanoMipsRO_TYPES>;
-def SUBQ_S_PH_NM   : SUBQ_S_PH_NM_ENC  , SUBQ_S_PH_DESC  <NanoMipsRO_TYPES>;
-def MUL_PH_NM      : MUL_PH_NM_ENC     , MUL_PH_DESC     <NanoMipsRO_TYPES>;
-def MUL_S_PH_NM    : MUL_S_PH_NM_ENC   , MUL_S_PH_DESC   <NanoMipsRO_TYPES>;
-def PRECRQ_PH_W_NM : PRECRQ_PH_W_NM_ENC, PRECRQ_PH_W_DESC<NanoMipsRO_TYPES>;
-def SHLL_QB_NM     : SHLL_QB_NM_ENC    , SHLL_QB_NM_DESC;
-def SHRL_QB_NM     : SHRL_QB_NM_ENC    , SHRL_QB_NM_DESC;
-def SHRL_PH_NM     : SHRL_PH_NM_ENC    , SHRL_PH_NM_DESC;
-def SHLL_PH_NM     : SHLL_PH_NM_ENC    , SHLL_PH_NM_DESC;
-def SHLL_S_PH_NM   : SHLL_S_PH_NM_ENC  , SHLL_S_PH_NM_DESC;
-def MFHI_NM        : MFHI_NM_ENC       , MFHI_NM_DESC    <NanoMipsRO_TYPES>;
-def MFLO_NM        : MFLO_NM_ENC       , MFLO_NM_DESC    <NanoMipsRO_TYPES>;
-def MTHI_NM        : MTHI_NM_ENC       , MTHI_DESC       <NanoMipsRO_TYPES>;
-def MTLO_NM        : MTLO_NM_ENC       , MTLO_DESC       <NanoMipsRO_TYPES>;
-def MADD_NM        : MADD_NM_ENC       , MADD_DSP_DESC   <NanoMipsRO_TYPES>;
-def CMPGU_EQ_QB_NM : CMPGU_EQ_QB_NM_ENC, CMPGU_EQ_QB_DESC<NanoMipsRO_TYPES>;
-def CMPGU_LT_QB_NM : CMPGU_LT_QB_NM_ENC, CMPGU_LT_QB_DESC<NanoMipsRO_TYPES>;
-def CMPGU_LE_QB_NM : CMPGU_LE_QB_NM_ENC, CMPGU_LE_QB_DESC<NanoMipsRO_TYPES>;
-def CMP_EQ_PH_NM   : CMP_EQ_PH_NM_ENC  , CMP_EQ_PH_DESC  <NanoMipsRO_TYPES>;
-def CMP_LE_PH_NM   : CMP_LE_PH_NM_ENC  , CMP_LE_PH_DESC  <NanoMipsRO_TYPES>;
-def CMP_LT_PH_NM   : CMP_LT_PH_NM_ENC  , CMP_LT_PH_DESC  <NanoMipsRO_TYPES>;
-def PICK_QB_NM     : PICK_QB_NM_ENC    , PICK_QB_DESC    <NanoMipsRO_TYPES>;
-def PICK_PH_NM     : PICK_PH_NM_ENC    , PICK_PH_DESC    <NanoMipsRO_TYPES>;
-def RDDSP_NM       : RDDSP_NM_ENC      , RDDSP_NM_DESC;
-def WRDSP_NM       : WRDSP_NM_ENC      , WRDSP_NM_DESC;
+def ADDU_QB_NM     : ADDU_QB_NM_ENC          , ADDU_QB_DESC    <NanoMipsRO_TYPES>;
+def ADDU_S_QB_NM   : ADDU_S_QB_NM_ENC        , ADDU_S_QB_DESC  <NanoMipsRO_TYPES>;
+def SUBU_QB_NM     : SUBU_QB_NM_ENC          , SUBU_QB_DESC    <NanoMipsRO_TYPES>;
+def SUBU_S_QB_NM   : SUBU_S_QB_NM_ENC        , SUBU_S_QB_DESC  <NanoMipsRO_TYPES>;
+def ADDQ_PH_NM     : ADDQ_PH_NM_ENC          , ADDQ_PH_DESC    <NanoMipsRO_TYPES>;
+def ADDQ_S_PH_NM   : ADDQ_S_PH_NM_ENC        , ADDQ_S_PH_DESC  <NanoMipsRO_TYPES>;
+def SUBQ_PH_NM     : SUBQ_PH_NM_ENC          , SUBQ_PH_DESC    <NanoMipsRO_TYPES>;
+def SUBQ_S_PH_NM   : SUBQ_S_PH_NM_ENC        , SUBQ_S_PH_DESC  <NanoMipsRO_TYPES>;
+def MUL_PH_NM      : MUL_PH_NM_ENC           , MUL_PH_DESC     <NanoMipsRO_TYPES>;
+def MUL_S_PH_NM    : MUL_S_PH_NM_ENC         , MUL_S_PH_DESC   <NanoMipsRO_TYPES>;
+def PRECRQ_PH_W_NM : PRECRQ_PH_W_NM_ENC      , PRECRQ_PH_W_DESC<NanoMipsRO_TYPES>;
+def SHLL_QB_NM     : SHLL_QB_NM_ENC          , SHLL_QB_NM_DESC;
+def SHRL_QB_NM     : SHRL_QB_NM_ENC          , SHRL_QB_NM_DESC;
+def SHRL_PH_NM     : SHRL_PH_NM_ENC          , SHRL_PH_NM_DESC;
+def SHLL_PH_NM     : SHLL_PH_NM_ENC          , SHLL_PH_NM_DESC;
+def SHLL_S_PH_NM   : SHLL_S_PH_NM_ENC        , SHLL_S_PH_NM_DESC;
+def MFHI_NM        : MFHI_NM_ENC             , MFHI_NM_DESC    <NanoMipsRO_TYPES>;
+def MFLO_NM        : MFLO_NM_ENC             , MFLO_NM_DESC    <NanoMipsRO_TYPES>;
+def MTHI_NM        : MTHI_NM_ENC             , MTHI_DESC       <NanoMipsRO_TYPES>;
+def MTLO_NM        : MTLO_NM_ENC             , MTLO_DESC       <NanoMipsRO_TYPES>;
+def MULT_DSP_NM    : MADD_DSP_NM_ENC<0b00110>, MULT_DSP_DESC   <NanoMipsRO_TYPES>;
+def MULTU_DSP_NM   : MADD_DSP_NM_ENC<0b01110>, MULTU_DSP_DESC  <NanoMipsRO_TYPES>;
+def MADD_DSP_NM    : MADD_DSP_NM_ENC<0b00101>, MADD_DSP_DESC   <NanoMipsRO_TYPES>;
+def MADDU_DSP_NM   : MADD_DSP_NM_ENC<0b01101>, MADDU_DSP_DESC  <NanoMipsRO_TYPES>;
+def MSUB_DSP_NM    : MADD_DSP_NM_ENC<0b10101>, MSUB_DSP_DESC   <NanoMipsRO_TYPES>;
+def MSUBU_DSP_NM   : MADD_DSP_NM_ENC<0b11101>, MSUBU_DSP_DESC  <NanoMipsRO_TYPES>;
+
+def CMPGU_EQ_QB_NM : CMPGU_EQ_QB_NM_ENC      , CMPGU_EQ_QB_DESC<NanoMipsRO_TYPES>;
+def CMPGU_LT_QB_NM : CMPGU_LT_QB_NM_ENC      , CMPGU_LT_QB_DESC<NanoMipsRO_TYPES>;
+def CMPGU_LE_QB_NM : CMPGU_LE_QB_NM_ENC      , CMPGU_LE_QB_DESC<NanoMipsRO_TYPES>;
+def CMP_EQ_PH_NM   : CMP_EQ_PH_NM_ENC        , CMP_EQ_PH_DESC  <NanoMipsRO_TYPES>;
+def CMP_LE_PH_NM   : CMP_LE_PH_NM_ENC        , CMP_LE_PH_DESC  <NanoMipsRO_TYPES>;
+def CMP_LT_PH_NM   : CMP_LT_PH_NM_ENC        , CMP_LT_PH_DESC  <NanoMipsRO_TYPES>;
+def PICK_QB_NM     : PICK_QB_NM_ENC          , PICK_QB_DESC    <NanoMipsRO_TYPES>;
+def PICK_PH_NM     : PICK_PH_NM_ENC          , PICK_PH_DESC    <NanoMipsRO_TYPES>;
+def RDDSP_NM       : RDDSP_NM_ENC            , RDDSP_NM_DESC;
+def WRDSP_NM       : WRDSP_NM_ENC            , WRDSP_NM_DESC;
 
 let AdditionalPredicates = [HasDSPNanoMips, HasDSP] in {
   def PseudoMTLOHI_DSP_NM : PseudoMTLOHI<ACC64DSPNM, GPRNM32>;

@@ -477,11 +477,11 @@ class DPA_W_PH_DESC_BASE<string instr_asm, SDPatternOperator OpNode> {
 }
 
 class MULT_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
-                     InstrItinClass itin> {
-  dag OutOperandList = (outs ACC64DSPOpnd:$ac);
-  dag InOperandList = (ins GPR32Opnd:$rs, GPR32Opnd:$rt);
+                     InstrItinClass itin, RO_TYPES RO = MipsRO_TYPES> {
+  dag OutOperandList = (outs RO.ACC64DSP:$ac);
+  dag InOperandList = (ins RO.GPR:$rs, RO.GPR:$rt);
   string AsmString = !strconcat(instr_asm, "\t$ac, $rs, $rt");
-  list<dag> Pattern = [(set ACC64DSPOpnd:$ac, (OpNode GPR32Opnd:$rs, GPR32Opnd:$rt))];
+  list<dag> Pattern = [(set RO.ACC64DSP:$ac, (OpNode RO.GPR:$rs, RO.GPR:$rt))];
   InstrItinClass Itinerary = itin;
   bit isCommutable = 1;
   string BaseOpcode = instr_asm;
@@ -854,12 +854,12 @@ class DPAQ_SA_L_W_DESC : DPA_W_PH_DESC_BASE<"dpaq_sa.l.w", MipsDPAQ_SA_L_W>,
 class DPSQ_SA_L_W_DESC : DPA_W_PH_DESC_BASE<"dpsq_sa.l.w", MipsDPSQ_SA_L_W>,
                          Defs<[DSPOutFlag16_19]>;
 
-class MULT_DSP_DESC  : MULT_DESC_BASE<"mult", MipsMult, NoItinerary>;
-class MULTU_DSP_DESC : MULT_DESC_BASE<"multu", MipsMultu, NoItinerary>;
+class MULT_DSP_DESC<RO_TYPES RO = MipsRO_TYPES>  : MULT_DESC_BASE<"mult", MipsMult, NoItinerary, RO>;
+class MULTU_DSP_DESC<RO_TYPES RO = MipsRO_TYPES> : MULT_DESC_BASE<"multu", MipsMultu, NoItinerary, RO>;
 class MADD_DSP_DESC<RO_TYPES RO = MipsRO_TYPES>  : MADD_DESC_BASE<"madd", MipsMAdd, NoItinerary, RO>;
-class MADDU_DSP_DESC : MADD_DESC_BASE<"maddu", MipsMAddu, NoItinerary>;
-class MSUB_DSP_DESC  : MADD_DESC_BASE<"msub", MipsMSub, NoItinerary>;
-class MSUBU_DSP_DESC : MADD_DESC_BASE<"msubu", MipsMSubu, NoItinerary>;
+class MADDU_DSP_DESC<RO_TYPES RO = MipsRO_TYPES> : MADD_DESC_BASE<"maddu", MipsMAddu, NoItinerary, RO>;
+class MSUB_DSP_DESC<RO_TYPES RO = MipsRO_TYPES>  : MADD_DESC_BASE<"msub", MipsMSub, NoItinerary, RO>;
+class MSUBU_DSP_DESC<RO_TYPES RO = MipsRO_TYPES> : MADD_DESC_BASE<"msubu", MipsMSubu, NoItinerary, RO>;
 
 // Comparison
 class CMPU_EQ_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :

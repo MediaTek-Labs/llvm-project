@@ -1,4 +1,5 @@
 ; RUN: llc -march=mipsel -mattr=+dsp < %s
+; RUN: llc -mcpu=nanomips -mattr=+dsp < %s
 
 @g1 = common global i64 0, align 8
 @g2 = common global i64 0, align 8

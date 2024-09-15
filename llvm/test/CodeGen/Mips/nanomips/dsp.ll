@@ -1,6 +1,25 @@
 ; RUN: llc -mcpu=nanomips -mattr=+dsp -verify-machineinstrs < %s | \
 ; RUN:     FileCheck %s
 
+define i64 @test__builtin_mips_mult1(i32 %i0, i32 %a0, i32 %a1) nounwind readnone {
+entry:
+; CHECK: mult $ac{{[0-9]}}
+
+  %0 = tail call i64 @llvm.mips.mult(i32 %a0, i32 %a1)
+  ret i64 %0
+}
+
+declare i64 @llvm.mips.mult(i32, i32) nounwind readnone
+
+define i64 @test__builtin_mips_multu1(i32 %i0, i32 %a0, i32 %a1) nounwind readnone {
+entry:
+; CHECK: multu $ac{{[0-9]}}
+
+  %0 = tail call i64 @llvm.mips.multu(i32 %a0, i32 %a1)
+  ret i64 %0
+}
+
+declare i64 @llvm.mips.multu(i32, i32) nounwind readnone
 
 define i64 @test__builtin_mips_madd1(i32 %i0, i32, i64 %a0, i32 %a1, i32 %a2) nounwind readnone {
 entry:
@@ -11,6 +30,36 @@ entry:
 }
 
 declare i64 @llvm.mips.madd(i64, i32, i32) nounwind readnone
+
+define i64 @test__builtin_mips_maddu1(i32 %i0, i32, i64 %a0, i32 %a1, i32 %a2) nounwind readnone {
+entry:
+; CHECK: maddu $ac{{[0-9]}}
+
+  %1 = tail call i64 @llvm.mips.maddu(i64 %a0, i32 %a1, i32 %a2)
+  ret i64 %1
+}
+
+declare i64 @llvm.mips.maddu(i64, i32, i32) nounwind readnone
+
+define i64 @test__builtin_mips_msub1(i32 %i0, i32, i64 %a0, i32 %a1, i32 %a2) nounwind readnone {
+entry:
+; CHECK: msub $ac{{[0-9]}}
+
+  %1 = tail call i64 @llvm.mips.msub(i64 %a0, i32 %a1, i32 %a2)
+  ret i64 %1
+}
+
+declare i64 @llvm.mips.msub(i64, i32, i32) nounwind readnone
+
+define i64 @test__builtin_mips_msubu1(i32 %i0, i32, i64 %a0, i32 %a1, i32 %a2) nounwind readnone {
+entry:
+; CHECK: msubu $ac{{[0-9]}}
+
+  %1 = tail call i64 @llvm.mips.msubu(i64 %a0, i32 %a1, i32 %a2)
+  ret i64 %1
+}
+
+declare i64 @llvm.mips.msubu(i64, i32, i32) nounwind readnone
 
 define { i32 } @test__builtin_mips_addq_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:

@@ -1234,6 +1234,38 @@ void EhInputSection::split(ArrayRef<RelTy> rels) {
       break;
     }
     uint64_t size = endian::read32<ELFT::TargetEndianness>(d.data());
+
+    if (config->emachine == EM_NANOMIPS) {
+      // nanoMIPS may have an unresolved relocation for size of CIE/FDE,
+      // calculate the value here, so proper values can be used
+      const uint64_t off = d.data() - content().data();
+      while (relI != rels.size() && rels[relI].r_offset < off)
+        ++relI;
+
+      if (relI != rels.size()) {
+
+        // Resolving (composite) nanoMIPS relocation
+        const unsigned bits = sizeof(typename ELFT::uint) * 8;
+        uint64_t calculatedVal = getAddend<ELFT>(rels[relI]);
+        for (unsigned int relJ = relI;
+             relJ != rels.size() && rels[relJ].r_offset == off; ++relJ) {
+          const RelTy &rel = rels[relJ];
+          Symbol &sym = getFile<ELFT>()->getRelocTargetSym(rel);
+          RelType type = rel.getType(config->isMips64EL);
+          RelExpr expr = target->getRelExpr(type, sym, 0);
+          assert(expr != R_PC && expr != R_NANOMIPS_PAGE_PC &&
+                 "PC relocs not expected for determining size of .eh_frame "
+                 "entries");
+          calculatedVal = SignExtend64<bits>(
+              getRelocTargetVA(file, type, calculatedVal, 0, sym, expr));
+        }
+
+        // If the relocation exists, use its calculated value
+        // for the size
+        if (rels[relI].r_offset == off)
+          size = calculatedVal;
+      }
+    }
     if (size == 0) // ZERO terminator
       break;
     uint32_t id = endian::read32<ELFT::TargetEndianness>(d.data() + 4);

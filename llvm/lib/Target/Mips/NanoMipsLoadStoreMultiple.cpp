@@ -39,10 +39,8 @@ struct NMLoadStoreMultipleOpt : public MachineFunctionPass {
     unsigned Rs;
     int64_t Offset;
     MachineBasicBlock *MBB;
-    MachineInstr *MI;
 
     LSIns(MachineInstr *MI) {
-      this->MI = MI;
       MBB = MI->getParent();
       Rt = MI->getOperand(0).getReg().id();
       Rs = MI->getOperand(1).getReg().id();
@@ -51,12 +49,6 @@ struct NMLoadStoreMultipleOpt : public MachineFunctionPass {
   };
   using InstrList = SmallVector<MachineInstr *, 4>;
   using MBBIter = MachineBasicBlock::iterator;
-  struct Candidate {
-    InstrList Sequence;
-    size_t GapSize;
-    bool Move = false;
-  };
-  using CandidateList = SmallVector<Candidate, 3>;
   static char ID;
   const MipsSubtarget *STI;
   const TargetInstrInfo *TII;
@@ -77,11 +69,9 @@ struct NMLoadStoreMultipleOpt : public MachineFunctionPass {
   unsigned getRegNo(unsigned Reg);
   bool isValidLoadStore(MachineInstr &MI, bool IsLoad, InstrList);
   bool isValidNextLoadStore(LSIns Prev, LSIns Next, size_t &GapSize,
-                            size_t &CurrSeqSize, bool &RegGap);
+                            size_t &CurrSeqSize);
   bool generateLoadStoreMultiple(MachineBasicBlock &MBB, bool IsLoad);
   void sortLoadStoreList(InstrList &LoadStoreList, bool IsLoad);
-  void findCandidatesForOptimization(InstrList &LoadStoreList,
-                                     CandidateList &Candidates);
 };
 } // namespace
 
@@ -141,53 +131,6 @@ void NMLoadStoreMultipleOpt::sortLoadStoreList(InstrList &LoadStoreList,
   std::sort(LoadStoreList.begin(), LoadStoreList.end(), CompareInstructions);
 }
 
-void NMLoadStoreMultipleOpt::findCandidatesForOptimization(
-    InstrList &LoadStoreList, CandidateList &Candidates) {
-  InstrList Sequence;
-  size_t GapSize = 0, SeqSize = 0;
-  bool RegGap = false;
-
-  auto clearSeqence = [&Sequence, &GapSize, &SeqSize, &RegGap]() {
-    Sequence.clear();
-    GapSize = 0;
-    SeqSize = 0;
-    RegGap = false;
-  };
-
-  for (auto &MI : LoadStoreList) {
-    // Sequences cannot be longer than 8 instructions.
-    if (SeqSize == 8) {
-      Candidates.push_back({Sequence, GapSize});
-      clearSeqence();
-    }
-    // When starting a new sequence, there's no need to do any checks.
-    if (Sequence.empty()) {
-      Sequence.push_back(MI);
-      SeqSize = 1;
-      continue;
-    }
-
-    if (!isValidNextLoadStore(Sequence.back(), MI, GapSize, SeqSize, RegGap)) {
-      if (SeqSize > 1)
-        Candidates.push_back({Sequence, GapSize});
-      clearSeqence();
-    }
-
-    Sequence.push_back(MI);
-    SeqSize++;
-
-    if (RegGap) {
-      Candidates.push_back({Sequence, GapSize, true});
-      clearSeqence();
-    }
-  }
-
-  // Save the last valid sequence for this list. At least 2 instructions are
-  // neccessary for a valid sequence.
-  if (SeqSize > 1)
-    Candidates.push_back({Sequence, GapSize});
-}
-
 // All instruction in the seqence should have the same Rs register, and
 // different Rt register.
 bool NMLoadStoreMultipleOpt::isValidLoadStore(MachineInstr &MI, bool IsLoad,
@@ -238,52 +181,43 @@ bool NMLoadStoreMultipleOpt::isValidLoadStore(MachineInstr &MI, bool IsLoad,
 
 bool NMLoadStoreMultipleOpt::isValidNextLoadStore(LSIns Prev, LSIns Next,
                                                   size_t &GapSize,
-                                                  size_t &CurrSeqSize,
-                                                  bool &RegGap) {
+                                                  size_t &CurrSeqSize) {
   unsigned PrevRtNo = getRegNo(Prev.Rt);
   unsigned DesiredRtNo = PrevRtNo != 0 ? (PrevRtNo + 1) : 0;
   Register DesiredRtReg = RC.getRegister(DesiredRtNo);
   if (Next.Offset == Prev.Offset + 4) {
-    if (Next.Rt == DesiredRtReg)
-      return true;
-    // Next.Rt != DesiredRtReg
     // GAP, but offset ok
     // lw a0, 8(a4)
     // lw a1, 12(a4)
     // lw a3, 16(a4)
-    // For now, the instruction like lw a3, 16(a4) interrupts the sequence.
-    if (CurrSeqSize < 2)
+    if (Next.Rt != DesiredRtReg) {
+      // TODO
       return false;
-
-    assert(Register::isPhysicalRegister(DesiredRtNo) &&
-           "Desired register is not physical!");
-    if (MachineBasicBlock::LQR_Dead !=
-        Prev.MBB->computeRegisterLiveness(TRI, DesiredRtReg, Prev.MI))
-      return false;
-
-    RegGap = true;
-    return true;
-  }
-  // Next.Offset != Prev.Offset + 4
-  bool OffsetOk = ((Next.Offset - Prev.Offset) % 4) == 0;
-  unsigned Gap = abs((Next.Offset - Prev.Offset) / 4 - 1);
-  if (OffsetOk && (CurrSeqSize + Gap + 1 <= 8) &&
-      Next.Rt == RC.getRegister(PrevRtNo + Gap + 1)) {
+    } else {
+      return true;
+    }
+  } else {
     // "full" GAP
     // lw a0, 8(a4)
     // lw a1, 12(a4)
     // lw a3, 20(a4)
-    for (size_t i = 0; i < Gap; i++) {
-      assert(Register::isPhysicalRegister(DesiredRtNo + i) &&
-             "Desired register is not physical!");
-      if (MachineBasicBlock::LQR_Dead !=
-          Prev.MBB->computeRegisterLiveness(TRI, DesiredRtReg, Prev.MI))
-        return false;
-      DesiredRtReg = RC.getRegister(DesiredRtNo + i + 1);
+    bool OffsetOk = ((Next.Offset - Prev.Offset) % 4) == 0;
+    unsigned Gap = abs((Next.Offset - Prev.Offset) / 4 - 1);
+    if (OffsetOk && (CurrSeqSize + Gap + 1 <= 8) &&
+        Next.Rt == RC.getRegister(PrevRtNo + Gap + 1)) {
+      LivePhysRegs LiveRegs(*TRI);
+      computeLiveIns(LiveRegs, *Prev.MBB);
+      for (size_t i = 0; i < Gap; i++) {
+        assert(Register::isPhysicalRegister(DesiredRtNo + i) &&
+               "Desired register is not physical!");
+        if (!LiveRegs.available(*MRI, (DesiredRtReg)))
+          return false;
+        DesiredRtReg = RC.getRegister(DesiredRtNo + i + 1);
+      }
+      GapSize += Gap;
+      CurrSeqSize += Gap;
+      return true;
     }
-    GapSize += Gap;
-    CurrSeqSize += Gap;
-    return true;
   }
   return false;
 }
@@ -291,11 +225,10 @@ bool NMLoadStoreMultipleOpt::isValidNextLoadStore(LSIns Prev, LSIns Next,
 bool NMLoadStoreMultipleOpt::generateLoadStoreMultiple(MachineBasicBlock &MBB,
                                                        bool IsLoad) {
   bool Modified = false;
-
-  // TODO: Consider allowing interspersed arithmetic/logical operations in
-  // load/store sequences to reduce sensitivity to instruction ordering. Note
-  // that proper scheduling models will alter instruction order, increasing
-  // mixed memory and compute operations. Dependency checks will be required.
+  struct Candidate {
+    InstrList Sequence;
+    size_t GapSize;
+  };
   InstrList SequenceToSort;
   SmallVector<InstrList, 3> SequenceList;
   for (auto &MI : MBB) {
@@ -312,11 +245,59 @@ bool NMLoadStoreMultipleOpt::generateLoadStoreMultiple(MachineBasicBlock &MBB,
     }
   }
 
-  CandidateList Candidates;
+  SmallVector<Candidate, 3> Candidates;
   InstrList Sequence;
+  size_t GapSize = 0;
+  size_t SeqSize = 0;
   for (size_t i = 0; i < SequenceList.size(); i++) {
     sortLoadStoreList(SequenceList[i], IsLoad);
-    findCandidatesForOptimization(SequenceList[i], Candidates);
+    for (auto &MI : SequenceList[i]) {
+      // Sequences cannot be longer than 8 instructions.
+      if (SeqSize == 8) {
+        Candidates.push_back({Sequence, GapSize});
+        Sequence.clear();
+        GapSize = 0;
+        SeqSize = 0;
+      }
+      // When starting a new sequence, there's no need to do any checks.
+      if (Sequence.empty()) {
+        Sequence.push_back(MI);
+        SeqSize = 1;
+        continue;
+      }
+
+      if (!isValidNextLoadStore(Sequence.back(), MI, GapSize, SeqSize)) {
+        if (SeqSize > 1)
+          Candidates.push_back({Sequence, GapSize});
+        Sequence.clear();
+        GapSize = 0;
+        SeqSize = 0;
+      }
+
+      Sequence.push_back(MI);
+      SeqSize++;
+      continue;
+    }
+
+    // At least 2 instructions are neccessary for a valid sequence.
+    if (SeqSize > 1) {
+      Candidates.push_back({Sequence, GapSize});
+      SeqSize++;
+    }
+
+    // Sequence has either ended or has never been started.
+    if (!Sequence.empty()) {
+      Sequence.clear();
+      SeqSize = 0;
+      GapSize = 0;
+    }
+  }
+
+  // Make sure that the last sequence has been added to the Candidates list.
+  // TODO: Check if needed.
+  if (SeqSize > 1) {
+    Candidates.push_back({Sequence, GapSize});
+    SeqSize++;
   }
 
   for (auto &C : Candidates) {
@@ -337,12 +318,6 @@ bool NMLoadStoreMultipleOpt::generateLoadStoreMultiple(MachineBasicBlock &MBB,
             .addImm(Offset)
             .addImm(Seq.size() + C.GapSize);
     BMI.cloneMergedMemRefs(Seq);
-    if (C.Move) {
-      BuildMI(MBB, std::next(MBBIter(BMI.getInstr())), Base->getDebugLoc(),
-              TII->get(Mips::MOVE_NM))
-          .addReg(Seq.back()->getOperand(0).getReg(), RegState::Define)
-          .addReg(Seq[Seq.size() - 2]->getOperand(0).getReg() + 1);
-    }
     for (auto *MI : Seq) {
       if (MI != Base)
         BMI.addReg(MI->getOperand(0).getReg(),

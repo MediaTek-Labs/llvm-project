@@ -1420,7 +1420,7 @@ class DSPPat<dag pattern, dag result, Predicate pred> :
   Pat<pattern, result>, Requires<[pred]>;
 
 class BitconvertPat<ValueType DstVT, ValueType SrcVT, RegisterClass DstRC,
-                    RegisterClass SrcRC, Predicate pred = HasDSP> :
+                    RegisterClass SrcRC, Predicate pred = HasDSPPreNanoMips> :
    DSPPat<(DstVT (bitconvert (SrcVT SrcRC:$src))),
           (COPY_TO_REGCLASS SrcRC:$src, DstRC), pred>;
 

@@ -1554,14 +1554,15 @@ def : EXTR_W_TY1_R1_Pat<MipsEXTR_S_H, EXTR_S_H>;
 def : EXTR_W_TY1_R2_Pat<MipsEXTR_S_H, EXTRV_S_H>;
 
 // Indexed load patterns.
-class IndexedLoadPat<SDPatternOperator LoadNode, Instruction Instr> :
+class IndexedLoadPat<SDPatternOperator LoadNode, Instruction Instr,
+                     Predicate pred = HasDSP> :
   DSPPat<(i32 (LoadNode (add i32:$base, i32:$index))),
-         (Instr i32:$base, i32:$index)>;
+         (Instr i32:$base, i32:$index), pred>;
 
 let AddedComplexity = 20 in {
-  def : IndexedLoadPat<zextloadi8, LBUX>;
-  def : IndexedLoadPat<sextloadi16, LHX>;
-  def : IndexedLoadPat<load, LWX>;
+  def : IndexedLoadPat<zextloadi8, LBUX, HasDSPPreNanoMips>;
+  def : IndexedLoadPat<sextloadi16, LHX, HasDSPPreNanoMips>;
+  def : IndexedLoadPat<load, LWX, HasDSPPreNanoMips>;
 }
 
 // Instruction alias.

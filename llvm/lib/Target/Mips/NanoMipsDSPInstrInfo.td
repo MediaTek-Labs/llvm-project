@@ -271,9 +271,9 @@ def : DSPPat<(v2i16 (load addr:$a)),
 def : DSPPat<(v4i8 (load addr:$a)),
 	     (v4i8 (COPY_TO_REGCLASS (LW_NM addr:$a), DSPRNM)), HasDSPNanoMips>;
 def : DSPPat<(store (v2i16 DSPRNM:$val), addr:$a),
-	     (SW (COPY_TO_REGCLASS DSPRNM:$val, GPRNM32), addr:$a), HasDSPNanoMips>;
+	     (SW_NM (COPY_TO_REGCLASS DSPRNM:$val, GPRNM32), addr:$a), HasDSPNanoMips>;
 def : DSPPat<(store (v4i8 DSPRNM:$val), addr:$a),
-	     (SW (COPY_TO_REGCLASS DSPRNM:$val, GPRNM32), addr:$a), HasDSPNanoMips>;
+	     (SW_NM (COPY_TO_REGCLASS DSPRNM:$val, GPRNM32), addr:$a), HasDSPNanoMips>;
 
 def : DSPBinPat<ADDQ_PH_NM, v2i16, int_mips_addq_ph, HasDSPNanoMips>;
 def : DSPBinPat<ADDQ_PH_NM, v2i16, add             , HasDSPNanoMips>;

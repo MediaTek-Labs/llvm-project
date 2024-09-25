@@ -265,6 +265,8 @@ def : BitconvertPat<i32,   v2i16, GPRNM32, DSPRNM,  HasDSPNanoMips>;
 def : BitconvertPat<v2i16, i32,   DSPRNM,  GPRNM32, HasDSPNanoMips>;
 def : BitconvertPat<i32,   v4i8,  GPRNM32, DSPRNM,  HasDSPNanoMips>;
 def : BitconvertPat<v4i8,  i32,   DSPRNM,  GPRNM32, HasDSPNanoMips>;
+def : BitconvertPat<v4i8, v2i16, DSPR, DSPR, HasDSPNanoMips>;
+def : BitconvertPat<v2i16, v4i8, DSPR, DSPR, HasDSPNanoMips>;
 
 def : DSPPat<(v2i16 (load addr:$a)),
              (v2i16 (COPY_TO_REGCLASS (LW_NM addr:$a), DSPRNM)), HasDSPNanoMips>;

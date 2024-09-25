@@ -1072,13 +1072,18 @@ static bool isLegalDSPCondCode(EVT Ty, ISD::CondCode CC) {
   }
 }
 
-static SDValue performSETCCCombine(SDNode *N, SelectionDAG &DAG) {
+static SDValue performSETCCCombine(SDNode *N, SelectionDAG &DAG,
+                                   const MipsSubtarget &Subtarget) {
   EVT Ty = N->getValueType(0);
 
   if ((Ty != MVT::v2i16) && (Ty != MVT::v4i8))
     return SDValue();
 
   if (!isLegalDSPCondCode(Ty, cast<CondCodeSDNode>(N->getOperand(2))->get()))
+    return SDValue();
+
+  // no syntactic sugar support yet for CC DSP
+  if (Subtarget.hasNanoMips())
     return SDValue();
 
   return DAG.getNode(MipsISD::SETCC_DSP, SDLoc(N), Ty, N->getOperand(0),
@@ -1156,7 +1161,7 @@ MipsSETargetLowering::PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI) const {
     Val = performXORCombine(N, DAG, Subtarget);
     break;
   case ISD::SETCC:
-    Val = performSETCCCombine(N, DAG);
+    Val = performSETCCCombine(N, DAG, Subtarget);
     break;
   }
 

@@ -296,3 +296,11 @@ def : DSPShiftPat<SHLL_QB_NM, v4i8,  MipsSHLL_DSP,      imm,      HasDSPNanoMips
 def : DSPShiftPat<SHRL_QB_NM, v4i8,  MipsSHRL_DSP,      imm,      HasDSPNanoMips>;
 def : DSPShiftPat<SHLL_QB_NM, v4i8,  int_mips_shll_qb,  immZExt3, HasDSPNanoMips>;
 def : DSPShiftPat<SHRL_QB_NM, v4i8,  int_mips_shrl_qb,  immZExt3, HasDSPNanoMips>;
+
+let DecoderNamespace = "MipsDSP", Arch = "dsp",
+    ASEPredicate = [HasDSP] in {
+  def LWDSP_NM : Load<"lw", DSPRNMOpnd, null_frag, II_LW>,
+	      LSMem_U12_Enc<0b1000>;
+  def SWDSP_NM : Store<"sw", DSPRNMOpnd, null_frag, II_SW>,
+	      LSMem_U12_Enc<0b1001>;
+}

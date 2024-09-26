@@ -769,7 +769,7 @@ def: InstRW<[GenericWriteStore], (instrs SW_NM, SWs9_NM, SW16_NM, SH16_NM,
 				  LWSP16_NM, SWSP16_NM, SW4x4_NM,
                                   SWX_NM, SWXS_NM, SHX_NM, SHXS_NM, SBX_NM,
                                   UASH_NM, SWM_NM, UASWM_NM, UASW_NM, SWPC_NM,
-				  SC_NM, SCWP_NM)>;
+				  SC_NM, SCWP_NM, SWDSP_NM, LWDSP_NM)>;
 
 def : InstRW<[GenericWriteCOP0], (instrs EHB_NM, PAUSE_NM)>;
 

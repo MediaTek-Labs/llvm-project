@@ -498,6 +498,9 @@ void assemble(const Config &Conf, TargetMachine *TM, AddStreamFn AddStream,
                        ": " + MBOrErr.getError().message());
 
   auto Stream = AddStream(Task, Mod.getModuleIdentifier());
+  if (Error Err = Stream.takeError())
+    report_fatal_error(std::move(Err));
+
   *((*Stream)->OS) << (*MBOrErr)->getBuffer();
 }
 

@@ -306,6 +306,8 @@ storeRegToStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
     Opc = Mips::SWDSP;
   else if (Mips::GPRNM32RegClass.hasSubClassEq(RC))
     Opc = Mips::SW_NM;
+  else if (Mips::DSPRNMRegClass.hasSubClassEq(RC))
+    Opc = Mips::SWDSP_NM;
 
   // Hi, Lo are normally caller save but they are callee save
   // for interrupt handling.
@@ -384,6 +386,8 @@ loadRegFromStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
     Opc = Mips::LD;
   else if (Mips::DSPRRegClass.hasSubClassEq(RC))
     Opc = Mips::LWDSP;
+  else if (Mips::DSPRNMRegClass.hasSubClassEq(RC))
+    Opc = Mips::LWDSP_NM;
   else if (Mips::GPRNM32RegClass.hasSubClassEq(RC))
     Opc = Mips::LW_NM;
 

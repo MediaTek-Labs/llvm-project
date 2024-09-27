@@ -229,6 +229,15 @@ let Namespace = "Mips" in {
   def LO2 : MipsReg<2, "ac2">, DwarfRegNum<[179]>;
   def LO3 : MipsReg<3, "ac3">, DwarfRegNum<[181]>;
 
+  def HI0_NM : MipsReg<0, "ac0">, DwarfRegNum<[64]>;
+  def HI1_NM : MipsReg<1, "ac1">, DwarfRegNum<[176]>;
+  def HI2_NM : MipsReg<2, "ac2">, DwarfRegNum<[178]>;
+  def HI3_NM : MipsReg<3, "ac3">, DwarfRegNum<[180]>;
+  def LO0_NM : MipsReg<0, "ac0">, DwarfRegNum<[65]>;
+  def LO1_NM : MipsReg<1, "ac1">, DwarfRegNum<[177]>;
+  def LO2_NM : MipsReg<2, "ac2">, DwarfRegNum<[179]>;
+  def LO3_NM : MipsReg<3, "ac3">, DwarfRegNum<[181]>;
+
   let SubRegIndices = [sub_32] in {
   def HI0_64  : RegisterWithSubRegs<"hi", [HI0]>;
   def LO0_64  : RegisterWithSubRegs<"lo", [LO0]>;
@@ -270,6 +279,10 @@ let Namespace = "Mips" in {
   foreach I = 0-3 in
   def AC#I : ACCReg<I, "ac"#I,
                     [!cast<Register>("LO"#I), !cast<Register>("HI"#I)]>;
+
+foreach I = 0-3 in
+  def AC#I#_NM : ACCReg<I, "ac"#I,
+                    [!cast<Register>("LO"#I#"_NM"), !cast<Register>("HI"#I#"_NM")]>;
 
   def AC0_64 : ACCReg<0, "ac0", [LO0_64, HI0_64]>;
 
@@ -783,9 +796,9 @@ def MSACtrl: RegisterClass<"Mips", [i32], 32, (add
 def LO32 : RegisterClass<"Mips", [i32], 32, (add LO0)>;
 def HI32 : RegisterClass<"Mips", [i32], 32, (add HI0)>;
 def LO32DSP : RegisterClass<"Mips", [i32], 32, (sequence "LO%u", 0, 3)>;
-def LO32DSPNM : RegisterClass<"Mips", [i32], 32, (sequence "LO%u", 0, 3)>;
+def LO32DSPNM : RegisterClass<"Mips", [i32], 32, (sequence "LO%u_NM", 0, 3)>;
 def HI32DSP : RegisterClass<"Mips", [i32], 32, (sequence "HI%u", 0, 3)>;
-def HI32DSPNM : RegisterClass<"Mips", [i32], 32, (sequence "HI%u", 0, 3)>;
+def HI32DSPNM : RegisterClass<"Mips", [i32], 32, (sequence "HI%u_NM", 0, 3)>;
 def LO64 : RegisterClass<"Mips", [i64], 64, (add LO0_64)>;
 def HI64 : RegisterClass<"Mips", [i64], 64, (add HI0_64)>;
 
@@ -806,7 +819,7 @@ def ACC64DSP : RegisterClass<"Mips", [untyped], 64, (sequence "AC%u", 0, 3)> {
   let Size = 64;
 }
 
-def ACC64DSPNM : RegisterClass<"Mips", [untyped], 64, (sequence "AC%u", 0, 3)> {
+def ACC64DSPNM : RegisterClass<"Mips", [untyped], 64, (sequence "AC%u_NM", 0, 3)> {
   let Size = 64;
 }
 

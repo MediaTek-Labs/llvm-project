@@ -124,6 +124,7 @@ bool ExpandPseudo::expandInstr(MachineBasicBlock &MBB, Iter I) {
     break;
   case Mips::LOAD_ACC64:
   case Mips::LOAD_ACC64DSP:
+  case Mips::LOAD_ACC64DSPNM:
     expandLoadACC(MBB, I, 4);
     break;
   case Mips::LOAD_ACC128:
@@ -134,6 +135,9 @@ bool ExpandPseudo::expandInstr(MachineBasicBlock &MBB, Iter I) {
     break;
   case Mips::STORE_ACC64DSP:
     expandStoreACC(MBB, I, Mips::MFHI_DSP, Mips::MFLO_DSP, 4);
+    break;
+  case Mips::STORE_ACC64DSPNM:
+    expandStoreACC(MBB, I, Mips::MFHI_NM, Mips::MFLO_NM, 4);
     break;
   case Mips::STORE_ACC128:
     expandStoreACC(MBB, I, Mips::PseudoMFHI64, Mips::PseudoMFLO64, 8);

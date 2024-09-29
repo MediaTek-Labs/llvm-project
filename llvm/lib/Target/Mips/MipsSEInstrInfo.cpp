@@ -243,6 +243,8 @@ void MipsSEInstrInfo::storeRegToStack(MachineBasicBlock &MBB,
     Opc = Mips::STORE_ACC64;
   else if (Mips::ACC64DSPRegClass.hasSubClassEq(RC))
     Opc = Mips::STORE_ACC64DSP;
+  else if (Mips::ACC64DSPNMRegClass.hasSubClassEq(RC))
+    Opc = Mips::STORE_ACC64DSPNM;
   else if (Mips::ACC128RegClass.hasSubClassEq(RC))
     Opc = Mips::STORE_ACC128;
   else if (Mips::DSPCCRegClass.hasSubClassEq(RC))
@@ -325,6 +327,8 @@ void MipsSEInstrInfo::loadRegFromStack(
     Opc = Mips::LOAD_ACC64;
   else if (Mips::ACC64DSPRegClass.hasSubClassEq(RC))
     Opc = Mips::LOAD_ACC64DSP;
+  else if (Mips::ACC64DSPNMRegClass.hasSubClassEq(RC))
+    Opc = Mips::LOAD_ACC64DSPNM;
   else if (Mips::ACC128RegClass.hasSubClassEq(RC))
     Opc = Mips::LOAD_ACC128;
   else if (Mips::DSPCCRegClass.hasSubClassEq(RC))

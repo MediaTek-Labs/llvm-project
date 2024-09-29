@@ -1082,7 +1082,7 @@ static SDValue performSETCCCombine(SDNode *N, SelectionDAG &DAG,
   if (!isLegalDSPCondCode(Ty, cast<CondCodeSDNode>(N->getOperand(2))->get()))
     return SDValue();
 
-  // no syntactic sugar support yet for CC DSP
+  // no support yet for CC DSP
   if (Subtarget.hasNanoMips())
     return SDValue();
 

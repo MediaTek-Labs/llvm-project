@@ -1422,7 +1422,7 @@ class DSPPat<dag pattern, dag result, Predicate pred> :
   Pat<pattern, result>, Requires<[pred]>;
 
 class BitconvertPat<ValueType DstVT, ValueType SrcVT, RegisterClass DstRC,
-                    RegisterClass SrcRC, Predicate pred = HasDSPPreNanoMips> :
+                    RegisterClass SrcRC, Predicate pred = HasDSPNonNanoMips> :
    DSPPat<(DstVT (bitconvert (SrcVT SrcRC:$src))),
           (COPY_TO_REGCLASS SrcRC:$src, DstRC), pred>;
 
@@ -1438,37 +1438,37 @@ def : BitconvertPat<v4i8, v2i16, DSPR, DSPR>;
 def : BitconvertPat<v2i16, v4i8, DSPR, DSPR>;
 
 def : DSPPat<(v2i16 (load addr:$a)),
-             (v2i16 (COPY_TO_REGCLASS (LW addr:$a), DSPR)), HasDSPPreNanoMips>;
+             (v2i16 (COPY_TO_REGCLASS (LW addr:$a), DSPR)), HasDSPNonNanoMips>;
 def : DSPPat<(v4i8 (load addr:$a)),
-             (v4i8 (COPY_TO_REGCLASS (LW addr:$a), DSPR)), HasDSPPreNanoMips>;
+             (v4i8 (COPY_TO_REGCLASS (LW addr:$a), DSPR)), HasDSPNonNanoMips>;
 def : DSPPat<(store (v2i16 DSPR:$val), addr:$a),
-             (SW (COPY_TO_REGCLASS DSPR:$val, GPR32), addr:$a), HasDSPPreNanoMips>;
+             (SW (COPY_TO_REGCLASS DSPR:$val, GPR32), addr:$a), HasDSPNonNanoMips>;
 def : DSPPat<(store (v4i8 DSPR:$val), addr:$a),
-             (SW (COPY_TO_REGCLASS DSPR:$val, GPR32), addr:$a), HasDSPPreNanoMips>;
+             (SW (COPY_TO_REGCLASS DSPR:$val, GPR32), addr:$a), HasDSPNonNanoMips>;
 
 // Binary operations.
 class DSPBinPat<Instruction Inst, ValueType ValTy, SDPatternOperator Node,
                 Predicate Pred = HasDSP> :
   DSPPat<(Node ValTy:$a, ValTy:$b), (Inst ValTy:$a, ValTy:$b), Pred>;
 
-def : DSPBinPat<ADDQ_PH, v2i16, int_mips_addq_ph, HasDSPPreNanoMips>;
-def : DSPBinPat<ADDQ_PH, v2i16, add, HasDSPPreNanoMips>;
-def : DSPBinPat<SUBQ_PH, v2i16, int_mips_subq_ph, HasDSPPreNanoMips>;
-def : DSPBinPat<SUBQ_PH, v2i16, sub, HasDSPPreNanoMips>;
+def : DSPBinPat<ADDQ_PH, v2i16, int_mips_addq_ph, HasDSPNonNanoMips>;
+def : DSPBinPat<ADDQ_PH, v2i16, add, HasDSPNonNanoMips>;
+def : DSPBinPat<SUBQ_PH, v2i16, int_mips_subq_ph, HasDSPNonNanoMips>;
+def : DSPBinPat<SUBQ_PH, v2i16, sub, HasDSPNonNanoMips>;
 def : DSPBinPat<MUL_PH, v2i16, int_mips_mul_ph, HasDSPR2>;
 def : DSPBinPat<MUL_PH, v2i16, mul, HasDSPR2>;
-def : DSPBinPat<ADDU_QB, v4i8, int_mips_addu_qb, HasDSPPreNanoMips>;
-def : DSPBinPat<ADDU_QB, v4i8, add, HasDSPPreNanoMips>;
-def : DSPBinPat<SUBU_QB, v4i8, int_mips_subu_qb, HasDSPPreNanoMips>;
-def : DSPBinPat<SUBU_QB, v4i8, sub, HasDSPPreNanoMips>;
-def : DSPBinPat<ADDSC, i32, int_mips_addsc, HasDSPPreNanoMips>;
-def : DSPBinPat<ADDSC, i32, addc, HasDSPPreNanoMips>;
-def : DSPBinPat<ADDWC, i32, int_mips_addwc, HasDSPPreNanoMips>;
-def : DSPBinPat<ADDWC, i32, adde, HasDSPPreNanoMips>;
+def : DSPBinPat<ADDU_QB, v4i8, int_mips_addu_qb, HasDSPNonNanoMips>;
+def : DSPBinPat<ADDU_QB, v4i8, add, HasDSPNonNanoMips>;
+def : DSPBinPat<SUBU_QB, v4i8, int_mips_subu_qb, HasDSPNonNanoMips>;
+def : DSPBinPat<SUBU_QB, v4i8, sub, HasDSPNonNanoMips>;
+def : DSPBinPat<ADDSC, i32, int_mips_addsc, HasDSPNonNanoMips>;
+def : DSPBinPat<ADDSC, i32, addc, HasDSPNonNanoMips>;
+def : DSPBinPat<ADDWC, i32, int_mips_addwc, HasDSPNonNanoMips>;
+def : DSPBinPat<ADDWC, i32, adde, HasDSPNonNanoMips>;
 
 // Shift immediate patterns.
 class DSPShiftPat<Instruction Inst, ValueType ValTy, SDPatternOperator Node,
-                  SDPatternOperator Imm, Predicate Pred = HasDSPPreNanoMips> :
+                  SDPatternOperator Imm, Predicate Pred = HasDSPNonNanoMips> :
   DSPPat<(Node ValTy:$a, Imm:$shamt), (Inst ValTy:$a, Imm:$shamt), Pred>;
 
 def : DSPShiftPat<SHLL_PH, v2i16, MipsSHLL_DSP, imm>;
@@ -1510,31 +1510,31 @@ class DSPSelectCCPatInv<Instruction Cmp, Instruction Pick, ValueType ValTy,
   DSPPat<(ValTy (MipsSELECT_CC_DSP ValTy:$a, ValTy:$b, ValTy:$c, ValTy:$d, CC)),
          (ValTy (Pick (ValTy (Cmp ValTy:$a, ValTy:$b)), $d, $c)), Pred>;
 
-def : DSPSetCCPat<PseudoCMP_EQ_PH, PseudoPICK_PH, v2i16, SETEQ, HasDSPPreNanoMips>;
-def : DSPSetCCPat<PseudoCMP_LT_PH, PseudoPICK_PH, v2i16, SETLT, HasDSPPreNanoMips>;
-def : DSPSetCCPat<PseudoCMP_LE_PH, PseudoPICK_PH, v2i16, SETLE, HasDSPPreNanoMips>;
-def : DSPSetCCPatInv<PseudoCMP_EQ_PH, PseudoPICK_PH, v2i16, SETNE, HasDSPPreNanoMips>;
-def : DSPSetCCPatInv<PseudoCMP_LT_PH, PseudoPICK_PH, v2i16, SETGE, HasDSPPreNanoMips>;
-def : DSPSetCCPatInv<PseudoCMP_LE_PH, PseudoPICK_PH, v2i16, SETGT, HasDSPPreNanoMips>;
-def : DSPSetCCPat<PseudoCMPU_EQ_QB, PseudoPICK_QB, v4i8, SETEQ, HasDSPPreNanoMips>;
-def : DSPSetCCPat<PseudoCMPU_LT_QB, PseudoPICK_QB, v4i8, SETULT, HasDSPPreNanoMips>;
-def : DSPSetCCPat<PseudoCMPU_LE_QB, PseudoPICK_QB, v4i8, SETULE, HasDSPPreNanoMips>;
-def : DSPSetCCPatInv<PseudoCMPU_EQ_QB, PseudoPICK_QB, v4i8, SETNE, HasDSPPreNanoMips>;
-def : DSPSetCCPatInv<PseudoCMPU_LT_QB, PseudoPICK_QB, v4i8, SETUGE, HasDSPPreNanoMips>;
-def : DSPSetCCPatInv<PseudoCMPU_LE_QB, PseudoPICK_QB, v4i8, SETUGT, HasDSPPreNanoMips>;
+def : DSPSetCCPat<PseudoCMP_EQ_PH, PseudoPICK_PH, v2i16, SETEQ, HasDSPNonNanoMips>;
+def : DSPSetCCPat<PseudoCMP_LT_PH, PseudoPICK_PH, v2i16, SETLT, HasDSPNonNanoMips>;
+def : DSPSetCCPat<PseudoCMP_LE_PH, PseudoPICK_PH, v2i16, SETLE, HasDSPNonNanoMips>;
+def : DSPSetCCPatInv<PseudoCMP_EQ_PH, PseudoPICK_PH, v2i16, SETNE, HasDSPNonNanoMips>;
+def : DSPSetCCPatInv<PseudoCMP_LT_PH, PseudoPICK_PH, v2i16, SETGE, HasDSPNonNanoMips>;
+def : DSPSetCCPatInv<PseudoCMP_LE_PH, PseudoPICK_PH, v2i16, SETGT, HasDSPNonNanoMips>;
+def : DSPSetCCPat<PseudoCMPU_EQ_QB, PseudoPICK_QB, v4i8, SETEQ, HasDSPNonNanoMips>;
+def : DSPSetCCPat<PseudoCMPU_LT_QB, PseudoPICK_QB, v4i8, SETULT, HasDSPNonNanoMips>;
+def : DSPSetCCPat<PseudoCMPU_LE_QB, PseudoPICK_QB, v4i8, SETULE, HasDSPNonNanoMips>;
+def : DSPSetCCPatInv<PseudoCMPU_EQ_QB, PseudoPICK_QB, v4i8, SETNE, HasDSPNonNanoMips>;
+def : DSPSetCCPatInv<PseudoCMPU_LT_QB, PseudoPICK_QB, v4i8, SETUGE, HasDSPNonNanoMips>;
+def : DSPSetCCPatInv<PseudoCMPU_LE_QB, PseudoPICK_QB, v4i8, SETUGT, HasDSPNonNanoMips>;
 
-def : DSPSelectCCPat<PseudoCMP_EQ_PH, PseudoPICK_PH, v2i16, SETEQ, HasDSPPreNanoMips>;
-def : DSPSelectCCPat<PseudoCMP_LT_PH, PseudoPICK_PH, v2i16, SETLT, HasDSPPreNanoMips>;
-def : DSPSelectCCPat<PseudoCMP_LE_PH, PseudoPICK_PH, v2i16, SETLE, HasDSPPreNanoMips>;
-def : DSPSelectCCPatInv<PseudoCMP_EQ_PH, PseudoPICK_PH, v2i16, SETNE, HasDSPPreNanoMips>;
-def : DSPSelectCCPatInv<PseudoCMP_LT_PH, PseudoPICK_PH, v2i16, SETGE, HasDSPPreNanoMips>;
-def : DSPSelectCCPatInv<PseudoCMP_LE_PH, PseudoPICK_PH, v2i16, SETGT, HasDSPPreNanoMips>;
-def : DSPSelectCCPat<PseudoCMPU_EQ_QB, PseudoPICK_QB, v4i8, SETEQ, HasDSPPreNanoMips>;
-def : DSPSelectCCPat<PseudoCMPU_LT_QB, PseudoPICK_QB, v4i8, SETULT, HasDSPPreNanoMips>;
-def : DSPSelectCCPat<PseudoCMPU_LE_QB, PseudoPICK_QB, v4i8, SETULE, HasDSPPreNanoMips>;
-def : DSPSelectCCPatInv<PseudoCMPU_EQ_QB, PseudoPICK_QB, v4i8, SETNE, HasDSPPreNanoMips>;
-def : DSPSelectCCPatInv<PseudoCMPU_LT_QB, PseudoPICK_QB, v4i8, SETUGE, HasDSPPreNanoMips>;
-def : DSPSelectCCPatInv<PseudoCMPU_LE_QB, PseudoPICK_QB, v4i8, SETUGT, HasDSPPreNanoMips>;
+def : DSPSelectCCPat<PseudoCMP_EQ_PH, PseudoPICK_PH, v2i16, SETEQ, HasDSPNonNanoMips>;
+def : DSPSelectCCPat<PseudoCMP_LT_PH, PseudoPICK_PH, v2i16, SETLT, HasDSPNonNanoMips>;
+def : DSPSelectCCPat<PseudoCMP_LE_PH, PseudoPICK_PH, v2i16, SETLE, HasDSPNonNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMP_EQ_PH, PseudoPICK_PH, v2i16, SETNE, HasDSPNonNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMP_LT_PH, PseudoPICK_PH, v2i16, SETGE, HasDSPNonNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMP_LE_PH, PseudoPICK_PH, v2i16, SETGT, HasDSPNonNanoMips>;
+def : DSPSelectCCPat<PseudoCMPU_EQ_QB, PseudoPICK_QB, v4i8, SETEQ, HasDSPNonNanoMips>;
+def : DSPSelectCCPat<PseudoCMPU_LT_QB, PseudoPICK_QB, v4i8, SETULT, HasDSPNonNanoMips>;
+def : DSPSelectCCPat<PseudoCMPU_LE_QB, PseudoPICK_QB, v4i8, SETULE, HasDSPNonNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMPU_EQ_QB, PseudoPICK_QB, v4i8, SETNE, HasDSPNonNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMPU_LT_QB, PseudoPICK_QB, v4i8, SETUGE, HasDSPNonNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMPU_LE_QB, PseudoPICK_QB, v4i8, SETUGT, HasDSPNonNanoMips>;
 
 // Extr patterns.
 class EXTR_W_TY1_R2_Pat<SDPatternOperator OpNode, Instruction Instr, Predicate Pred> :
@@ -1545,22 +1545,22 @@ class EXTR_W_TY1_R1_Pat<SDPatternOperator OpNode, Instruction Instr, Predicate P
   DSPPat<(i32 (OpNode immZExt5:$shift, ACC64DSP:$ac)),
          (Instr ACC64DSP:$ac, immZExt5:$shift), Pred>;
 
-def : EXTR_W_TY1_R1_Pat<MipsEXTP, EXTP, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTP, EXTPV, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTPDP, EXTPDP, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTPDP, EXTPDPV, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTR_W, EXTR_W, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTR_W, EXTRV_W, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTR_R_W, EXTR_R_W, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTR_R_W, EXTRV_R_W, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTR_RS_W, EXTR_RS_W, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTR_RS_W, EXTRV_RS_W, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTR_S_H, EXTR_S_H, HasDSPPreNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTR_S_H, EXTRV_S_H, HasDSPPreNanoMips>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTP, EXTP, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTP, EXTPV, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTPDP, EXTPDP, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTPDP, EXTPDPV, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_W, EXTR_W, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_W, EXTRV_W, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_R_W, EXTR_R_W, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_R_W, EXTRV_R_W, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_RS_W, EXTR_RS_W, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_RS_W, EXTRV_RS_W, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_S_H, EXTR_S_H, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_S_H, EXTRV_S_H, HasDSPNonNanoMips>;
 
 // Indexed load patterns.
 class IndexedLoadPat<SDPatternOperator LoadNode, Instruction Instr,
-                     Predicate pred = HasDSPPreNanoMips> :
+                     Predicate pred = HasDSPNonNanoMips> :
   DSPPat<(i32 (LoadNode (add i32:$base, i32:$index))),
          (Instr i32:$base, i32:$index), pred>;
 

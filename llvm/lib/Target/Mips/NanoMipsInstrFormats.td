@@ -15,7 +15,7 @@ class InstNM<dag outs, dag ins, string asmstr, list<dag> pattern,
   let InOperandList  = ins;
   let AsmString = asmstr;
   let Pattern   = pattern;
-  let FastISelShouldIgnore = FastISelIgnore; // disabled for all NanoMips
+  let FastISelShouldIgnore = FastISelIgnore;
   bit isCTI = 0; // Any form of Control Transfer Instruction.
 
   let Itinerary = itin;

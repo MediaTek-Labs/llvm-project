@@ -297,6 +297,16 @@ def : DSPShiftPat<SHRL_QB_NM, v4i8,  MipsSHRL_DSP,      imm,      HasDSPNanoMips
 def : DSPShiftPat<SHLL_QB_NM, v4i8,  int_mips_shll_qb,  immZExt3, HasDSPNanoMips>;
 def : DSPShiftPat<SHRL_QB_NM, v4i8,  int_mips_shrl_qb,  immZExt3, HasDSPNanoMips>;
 
+let isPseudo = 1, isCodeGenOnly = 1, hasNoSchedulingInfo = 1 in {
+  // Pseudo instructions for loading and storing accumulator registers.
+  def LOAD_ACC64DSPNM  : Load<"", ACC64DSPNMOpnd>;
+  def STORE_ACC64DSPNM : Store<"", ACC64DSPNMOpnd>;
+
+  // Pseudos for loading and storing ccond field of DSP control register.
+//  def LOAD_CCOND_DSP  : Load<"load_ccond_dsp", DSPCC>;
+//  def STORE_CCOND_DSP : Store<"store_ccond_dsp", DSPCC>;
+}
+
 let DecoderNamespace = "MipsDSP", Arch = "dsp",
     ASEPredicate = [HasDSP] in {
   def LWDSP_NM : Load<"lw", DSPRNMOpnd, null_frag, II_LW>,

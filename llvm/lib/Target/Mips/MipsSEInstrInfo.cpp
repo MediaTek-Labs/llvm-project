@@ -360,10 +360,10 @@ void MipsSEInstrInfo::loadRegFromStack(
     Opc = Mips::LD;
   else if (Mips::DSPRRegClass.hasSubClassEq(RC))
     Opc = Mips::LWDSP;
-  else if (Mips::DSPRNMRegClass.hasSubClassEq(RC))
-    Opc = Mips::LWDSP_NM;
   else if (Mips::GPRNM32RegClass.hasSubClassEq(RC))
     Opc = Mips::LW_NM;
+  else if (Mips::DSPRNMRegClass.hasSubClassEq(RC))
+    Opc = Mips::LWDSP_NM;
 
   assert(Opc && "Register class not handled!");
 

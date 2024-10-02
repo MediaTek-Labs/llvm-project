@@ -60,6 +60,43 @@ class CMP_EQ_QB_R2_NM_FMT<bits<7> psel>: InstNM_Enc, _Pool_P32A<0b101> {
   let Inst{9...3} = psel;
 }
 
+class EXTR_W_TY1_NM_FMT<bits<3> op1, bits<5> op2>: InstNM_Enc, _Pool_P32A<0b111> {
+  bits<5> rt;
+  bits<2> ac;
+  bits<5> shift_rs;
+
+  let Inst{25...21} = rt;
+  let Inst{20...16} = shift_rs;
+  let Inst{15...14} = ac;
+  let Inst{13...9} = op2;
+  let Inst{8...6} = op1;
+  let Inst{5...3} = 0b111;
+}
+
+class BITREV_FMT<bits<7> op>: InstNM_Enc, _Pool_P32A<0b111> {
+  bits<5> rt; // input register, rs is the new name,
+              // use rt to match Mips definitions
+  bits<5> rd; // output register, rt is the new name,
+              // use rd to match Mips definitions
+  let Inst{25...21} = rd;
+  let Inst{20...16} = rt;
+  let Inst{15...9} = op;
+  let Inst{8...3} = 0b100111;
+}
+
+class INSV_NM_FMT<bits<7> op>: InstNM_Enc, _Pool_P32A<0b111> {
+  bits<5> rt;
+  bits<5> rs;
+
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs;
+  let Inst{15...9} = op;
+  let Inst{8...3} = 0b100111;
+}
+
+class EXTR_W_TY1_VAR_NM_FMT<bits<5> op> : EXTR_W_TY1_NM_FMT<0b010, op>;
+class EXTR_W_TY1_LIT_NM_FMT<bits<5> op> : EXTR_W_TY1_NM_FMT<0b001, op>;
+
 class SHLL_QB_R2_NM_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
                               Operand ImmOp, ImmLeaf ImmPattern,
                               bit SideEffects = 0> {
@@ -185,6 +222,24 @@ class MT_FMT<bits<2> psel>: MOVE_HALF_ACC_FMT<psel> {
   let Inst{20...16} = rs;
 }
 
+class SHILO_R1_NM_FMT :  InstNM_Enc, _Pool_P32A<0b101> {
+  bits<2> ac;
+  bits<6> shift;
+  let Inst{21-16} = shift;
+  let Inst{15-14} = ac;
+  let Inst{9-3} = 0b0000011;
+}
+
+class SHILO_R2_NM_FMT<bits<2> op> :  InstNM_Enc, _Pool_P32A<0b111> {
+  bits<2> ac;
+  bits<5> rs;
+
+  let Inst{20-16} = rs;
+  let Inst{15-14} = ac;
+  let Inst{13-12} = op;
+  let Inst{11-3} = 0b001001111;
+}
+
 class MADD_DSP_NM_ENC<bits<5> psel>: InstNM_Enc, _Pool_P32A<0b111> {
   bits<2> ac;
   bits<5> rs;
@@ -216,6 +271,9 @@ class MFHI_NM_ENC        : MF_FMT             <0b00>;
 class MFLO_NM_ENC        : MF_FMT             <0b01>;
 class MTHI_NM_ENC        : MT_FMT             <0b10>;
 class MTLO_NM_ENC        : MT_FMT             <0b11>;
+class MTHLIP_NM_ENC      : SHILO_R2_NM_FMT    <0b00>;
+class SHILOV_NM_ENC      : SHILO_R2_NM_FMT    <0b01>;
+class SHILO_NM_ENC       : SHILO_R1_NM_FMT;
 class CMPGU_EQ_QB_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0011000>;
 class CMPGU_LT_QB_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0100000>;
 class CMPGU_LE_QB_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0101000>;
@@ -226,6 +284,19 @@ class CMP_LE_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0010000>;
 class CMP_LT_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0001000>;
 class RDDSP_NM_ENC       : RDWR_DSP_FMT       <0b0>;
 class WRDSP_NM_ENC       : RDWR_DSP_FMT       <0b1>;
+
+class EXTRV_R_W_NM_ENC  : EXTR_W_TY1_VAR_NM_FMT<0b01111>;
+class EXTR_R_W_NM_ENC   : EXTR_W_TY1_LIT_NM_FMT<0b01111>;
+class EXTRV_RS_W_NM_ENC : EXTR_W_TY1_VAR_NM_FMT<0b10111>;
+class EXTR_RS_W_NM_ENC  : EXTR_W_TY1_LIT_NM_FMT<0b10111>;
+class EXTRV_W_NM_ENC    : EXTR_W_TY1_VAR_NM_FMT<0b00111>;
+class EXTR_W_NM_ENC     : EXTR_W_TY1_LIT_NM_FMT<0b00111>;
+class EXTPV_NM_ENC      : EXTR_W_TY1_VAR_NM_FMT<0b10100>;
+class EXTP_NM_ENC       : EXTR_W_TY1_LIT_NM_FMT<0b10011>;
+class EXTPDPV_NM_ENC    : EXTR_W_TY1_VAR_NM_FMT<0b11100>;
+class EXTPDP_NM_ENC     : EXTR_W_TY1_LIT_NM_FMT<0b11011>;
+class BITREV_NM_ENC     : BITREV_FMT           <0b0011000>;
+class INSV_NM_ENC       : INSV_NM_FMT          <0b0100000>;
 
 def ADDU_QB_NM     : ADDU_QB_NM_ENC          , ADDU_QB_DESC    <NanoMipsRO_TYPES>;
 def ADDU_S_QB_NM   : ADDU_S_QB_NM_ENC        , ADDU_S_QB_DESC  <NanoMipsRO_TYPES>;
@@ -247,6 +318,13 @@ def MFHI_NM        : MFHI_NM_ENC             , MFHI_NM_DESC    <NanoMipsRO_TYPES
 def MFLO_NM        : MFLO_NM_ENC             , MFLO_NM_DESC    <NanoMipsRO_TYPES>;
 def MTHI_NM        : MTHI_NM_ENC             , MTHI_DESC       <NanoMipsRO_TYPES>;
 def MTLO_NM        : MTLO_NM_ENC             , MTLO_DESC       <NanoMipsRO_TYPES>;
+
+def MTHLIP_NM      : MTHLIP_NM_ENC           , MTHLIP_DESC     <NanoMipsRO_TYPES>;
+def SHILOV_NM      : SHILOV_NM_ENC           , SHILOV_DESC     <NanoMipsRO_TYPES>;
+def SHILO_NM       : SHILO_NM_ENC            , SHILO_DESC      <NanoMipsRO_TYPES>;
+def BITREV_NM      : BITREV_NM_ENC           , BITREV_DESC     <NanoMipsRO_TYPES>;
+def INSV_NM        : INSV_NM_ENC             , INSV_DESC       <NanoMipsRO_TYPES>;
+
 def MULT_DSP_NM    : MADD_DSP_NM_ENC<0b00110>, MULT_DSP_DESC   <NanoMipsRO_TYPES>;
 def MULTU_DSP_NM   : MADD_DSP_NM_ENC<0b01110>, MULTU_DSP_DESC  <NanoMipsRO_TYPES>;
 def MADD_DSP_NM    : MADD_DSP_NM_ENC<0b00101>, MADD_DSP_DESC   <NanoMipsRO_TYPES>;
@@ -262,6 +340,17 @@ def CMP_LE_PH_NM   : CMP_LE_PH_NM_ENC        , CMP_LE_PH_DESC  <NanoMipsRO_TYPES
 def CMP_LT_PH_NM   : CMP_LT_PH_NM_ENC        , CMP_LT_PH_DESC  <NanoMipsRO_TYPES>;
 def PICK_QB_NM     : PICK_QB_NM_ENC          , PICK_QB_DESC    <NanoMipsRO_TYPES>;
 def PICK_PH_NM     : PICK_PH_NM_ENC          , PICK_PH_DESC    <NanoMipsRO_TYPES>;
+def EXTPV_NM       : EXTPV_NM_ENC            , EXTPV_DESC      <NanoMipsRO_TYPES>;
+def EXTP_NM        : EXTP_NM_ENC             , EXTP_DESC       <NanoMipsRO_TYPES>;
+def EXTPDPV_NM     : EXTPDPV_NM_ENC          , EXTPDPV_DESC    <NanoMipsRO_TYPES>;
+def EXTPDP_NM      : EXTPDP_NM_ENC           , EXTPDP_DESC     <NanoMipsRO_TYPES>;
+def EXTRV_W_NM     : EXTRV_W_NM_ENC          , EXTRV_W_DESC    <NanoMipsRO_TYPES>;
+def EXTR_W_NM      : EXTR_W_NM_ENC           , EXTR_W_DESC     <NanoMipsRO_TYPES>;
+def EXTRV_R_W_NM   : EXTRV_R_W_NM_ENC        , EXTRV_R_W_DESC  <NanoMipsRO_TYPES>;
+def EXTR_R_W_NM    : EXTR_R_W_NM_ENC         , EXTR_R_W_DESC   <NanoMipsRO_TYPES>;
+def EXTRV_RS_W_NM  : EXTRV_RS_W_NM_ENC       , EXTRV_RS_W_DESC <NanoMipsRO_TYPES>;
+def EXTR_RS_W_NM   : EXTR_RS_W_NM_ENC        , EXTR_RS_W_DESC  <NanoMipsRO_TYPES>;
+
 def RDDSP_NM       : RDDSP_NM_ENC            , RDDSP_NM_DESC;
 def WRDSP_NM       : WRDSP_NM_ENC            , WRDSP_NM_DESC;
 
@@ -312,6 +401,17 @@ def : DSPShiftPat<SHLL_QB_NM, v4i8,  MipsSHLL_DSP,      imm,      HasDSPNanoMips
 def : DSPShiftPat<SHRL_QB_NM, v4i8,  MipsSHRL_DSP,      imm,      HasDSPNanoMips>;
 def : DSPShiftPat<SHLL_QB_NM, v4i8,  int_mips_shll_qb,  immZExt3, HasDSPNanoMips>;
 def : DSPShiftPat<SHRL_QB_NM, v4i8,  int_mips_shrl_qb,  immZExt3, HasDSPNanoMips>;
+
+def : EXTR_W_TY1_R1_Pat<MipsEXTP,       EXTP_NM,       HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTP,       EXTPV_NM,      HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTPDP,     EXTPDP_NM,     HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTPDP,     EXTPDPV_NM,    HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_W,     EXTR_W_NM,     HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_W,     EXTRV_W_NM,    HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_R_W,   EXTR_R_W_NM,   HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_R_W,   EXTRV_R_W_NM,  HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_RS_W,  EXTR_RS_W_NM,  HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_RS_W,  EXTRV_RS_W_NM, HasDSPNanoMips, NanoMipsRO_TYPES>;
 
 let isPseudo = 1, isCodeGenOnly = 1, hasNoSchedulingInfo = 1 in {
   // Pseudo instructions for loading and storing accumulator registers.

@@ -398,48 +398,53 @@ class APPEND_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
   string BaseOpcode = instr_asm;
 }
 
-class EXTR_W_TY1_R2_DESC_BASE<string instr_asm, InstrItinClass itin> {
-  dag OutOperandList = (outs GPR32Opnd:$rt);
-  dag InOperandList = (ins ACC64DSPOpnd:$ac, GPR32Opnd:$shift_rs);
+class EXTR_W_TY1_R2_DESC_BASE<string instr_asm, InstrItinClass itin,
+                              RO_TYPES RO> {
+  dag OutOperandList = (outs RO.GPR:$rt);
+  dag InOperandList = (ins RO.ACC64DSP:$ac, RO.GPR:$shift_rs);
   string AsmString = !strconcat(instr_asm, "\t$rt, $ac, $shift_rs");
   InstrItinClass Itinerary = itin;
   string BaseOpcode = instr_asm;
 }
 
-class EXTR_W_TY1_R1_DESC_BASE<string instr_asm, InstrItinClass itin> {
-  dag OutOperandList = (outs GPR32Opnd:$rt);
-  dag InOperandList = (ins ACC64DSPOpnd:$ac, uimm5:$shift_rs);
+class EXTR_W_TY1_R1_DESC_BASE<string instr_asm, InstrItinClass itin,
+                              RO_TYPES RO> {
+  dag OutOperandList = (outs RO.GPR:$rt);
+  dag InOperandList = (ins RO.ACC64DSP:$ac, uimm5:$shift_rs);
   string AsmString = !strconcat(instr_asm, "\t$rt, $ac, $shift_rs");
   InstrItinClass Itinerary = itin;
   string BaseOpcode = instr_asm;
 }
 
-class SHILO_R1_DESC_BASE<string instr_asm, SDPatternOperator OpNode> {
-  dag OutOperandList = (outs ACC64DSPOpnd:$ac);
-  dag InOperandList = (ins simm6:$shift, ACC64DSPOpnd:$acin);
+class SHILO_R1_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
+                         RO_TYPES RO> {
+  dag OutOperandList = (outs RO.ACC64DSP:$ac);
+  dag InOperandList = (ins simm6:$shift, RO.ACC64DSP:$acin);
   string AsmString = !strconcat(instr_asm, "\t$ac, $shift");
-  list<dag> Pattern = [(set ACC64DSPOpnd:$ac,
-                        (OpNode immSExt6:$shift, ACC64DSPOpnd:$acin))];
+  list<dag> Pattern = [(set RO.ACC64DSP:$ac,
+                        (OpNode immSExt6:$shift, RO.ACC64DSP:$acin))];
   string Constraints = "$acin = $ac";
   string BaseOpcode = instr_asm;
 }
 
-class SHILO_R2_DESC_BASE<string instr_asm, SDPatternOperator OpNode> {
-  dag OutOperandList = (outs ACC64DSPOpnd:$ac);
-  dag InOperandList = (ins GPR32Opnd:$rs, ACC64DSPOpnd:$acin);
+class SHILO_R2_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
+                         RO_TYPES RO> {
+  dag OutOperandList = (outs RO.ACC64DSP:$ac);
+  dag InOperandList = (ins RO.GPR:$rs, RO.ACC64DSP:$acin);
   string AsmString = !strconcat(instr_asm, "\t$ac, $rs");
-  list<dag> Pattern = [(set ACC64DSPOpnd:$ac,
-                        (OpNode GPR32Opnd:$rs, ACC64DSPOpnd:$acin))];
+  list<dag> Pattern = [(set RO.ACC64DSP:$ac,
+                        (OpNode RO.GPR:$rs, RO.ACC64DSP:$acin))];
   string Constraints = "$acin = $ac";
   string BaseOpcode = instr_asm;
 }
 
-class MTHLIP_DESC_BASE<string instr_asm, SDPatternOperator OpNode> {
-  dag OutOperandList = (outs ACC64DSPOpnd:$ac);
-  dag InOperandList = (ins GPR32Opnd:$rs, ACC64DSPOpnd:$acin);
+class MTHLIP_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
+                       RO_TYPES RO> {
+  dag OutOperandList = (outs RO.ACC64DSP:$ac);
+  dag InOperandList = (ins RO.GPR:$rs, RO.ACC64DSP:$acin);
   string AsmString = !strconcat(instr_asm, "\t$rs, $ac");
-  list<dag> Pattern = [(set ACC64DSPOpnd:$ac,
-                        (OpNode GPR32Opnd:$rs, ACC64DSPOpnd:$acin))];
+  list<dag> Pattern = [(set RO.ACC64DSP:$ac,
+                        (OpNode RO.GPR:$rs, RO.ACC64DSP:$acin))];
   string Constraints = "$acin = $ac";
   string BaseOpcode = instr_asm;
 }
@@ -539,11 +544,11 @@ class BPOSGE32_DESC_BASE<string instr_asm, DAGOperand opnd,
 }
 
 class INSV_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
-                     InstrItinClass itin> {
-  dag OutOperandList = (outs GPR32Opnd:$rt);
-  dag InOperandList = (ins GPR32Opnd:$src, GPR32Opnd:$rs);
+                     InstrItinClass itin, RO_TYPES RO> {
+  dag OutOperandList = (outs RO.GPR:$rt);
+  dag InOperandList = (ins RO.GPR:$src, RO.GPR:$rs);
   string AsmString = !strconcat(instr_asm, "\t$rt, $rs");
-  list<dag> Pattern = [(set GPR32Opnd:$rt, (OpNode GPR32Opnd:$src, GPR32Opnd:$rs))];
+  list<dag> Pattern = [(set RO.GPR:$rt, (OpNode RO.GPR:$src, RO.GPR:$rs))];
   InstrItinClass Itinerary = itin;
   string Constraints = "$src = $rt";
   string BaseOpcode = instr_asm;
@@ -951,53 +956,69 @@ class LBUX_DESC : LX_DESC_BASE<"lbux", int_mips_lbux, NoItinerary>;
 class BPOSGE32_DESC : BPOSGE32_DESC_BASE<"bposge32", brtarget, NoItinerary>;
 
 // Extr
-class EXTP_DESC : EXTR_W_TY1_R1_DESC_BASE<"extp", NoItinerary>,
+class EXTP_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                  EXTR_W_TY1_R1_DESC_BASE<"extp", NoItinerary, RO>,
                   Uses<[DSPPos]>, Defs<[DSPEFI]>;
 
-class EXTPV_DESC : EXTR_W_TY1_R2_DESC_BASE<"extpv", NoItinerary>,
+class EXTPV_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                   EXTR_W_TY1_R2_DESC_BASE<"extpv", NoItinerary, RO>,
                    Uses<[DSPPos]>, Defs<[DSPEFI]>;
 
-class EXTPDP_DESC : EXTR_W_TY1_R1_DESC_BASE<"extpdp", NoItinerary>,
+class EXTPDP_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                    EXTR_W_TY1_R1_DESC_BASE<"extpdp", NoItinerary, RO>,
                     Uses<[DSPPos]>, Defs<[DSPPos, DSPEFI]>;
 
-class EXTPDPV_DESC : EXTR_W_TY1_R2_DESC_BASE<"extpdpv", NoItinerary>,
+class EXTPDPV_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                     EXTR_W_TY1_R2_DESC_BASE<"extpdpv", NoItinerary, RO>,
                      Uses<[DSPPos]>, Defs<[DSPPos, DSPEFI]>;
 
-class EXTR_W_DESC : EXTR_W_TY1_R1_DESC_BASE<"extr.w", NoItinerary>,
+class EXTR_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                    EXTR_W_TY1_R1_DESC_BASE<"extr.w", NoItinerary, RO>,
                     Defs<[DSPOutFlag23]>;
 
-class EXTRV_W_DESC : EXTR_W_TY1_R2_DESC_BASE<"extrv.w", NoItinerary>,
+class EXTRV_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                     EXTR_W_TY1_R2_DESC_BASE<"extrv.w", NoItinerary, RO>,
                      Defs<[DSPOutFlag23]>;
 
-class EXTR_R_W_DESC : EXTR_W_TY1_R1_DESC_BASE<"extr_r.w", NoItinerary>,
+class EXTR_R_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                      EXTR_W_TY1_R1_DESC_BASE<"extr_r.w", NoItinerary, RO>,
                       Defs<[DSPOutFlag23]>;
 
-class EXTRV_R_W_DESC : EXTR_W_TY1_R2_DESC_BASE<"extrv_r.w", NoItinerary>,
+class EXTRV_R_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                       EXTR_W_TY1_R2_DESC_BASE<"extrv_r.w", NoItinerary, RO>,
                        Defs<[DSPOutFlag23]>;
 
-class EXTR_RS_W_DESC : EXTR_W_TY1_R1_DESC_BASE<"extr_rs.w", NoItinerary>,
+class EXTR_RS_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                       EXTR_W_TY1_R1_DESC_BASE<"extr_rs.w", NoItinerary, RO>,
                        Defs<[DSPOutFlag23]>;
 
-class EXTRV_RS_W_DESC : EXTR_W_TY1_R2_DESC_BASE<"extrv_rs.w", NoItinerary>,
+class EXTRV_RS_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                        EXTR_W_TY1_R2_DESC_BASE<"extrv_rs.w", NoItinerary, RO>,
                         Defs<[DSPOutFlag23]>;
 
-class EXTR_S_H_DESC : EXTR_W_TY1_R1_DESC_BASE<"extr_s.h", NoItinerary>,
+class EXTR_S_H_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                      EXTR_W_TY1_R1_DESC_BASE<"extr_s.h", NoItinerary, RO>,
                       Defs<[DSPOutFlag23]>;
 
-class EXTRV_S_H_DESC : EXTR_W_TY1_R2_DESC_BASE<"extrv_s.h", NoItinerary>,
+class EXTRV_S_H_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                       EXTR_W_TY1_R2_DESC_BASE<"extrv_s.h", NoItinerary, RO>,
                        Defs<[DSPOutFlag23]>;
 
-class SHILO_DESC : SHILO_R1_DESC_BASE<"shilo", MipsSHILO>;
+class SHILO_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                 SHILO_R1_DESC_BASE<"shilo", MipsSHILO, RO>;
 
-class SHILOV_DESC : SHILO_R2_DESC_BASE<"shilov", MipsSHILO>;
+class SHILOV_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                  SHILO_R2_DESC_BASE<"shilov", MipsSHILO, RO>;
 
-class MTHLIP_DESC : MTHLIP_DESC_BASE<"mthlip", MipsMTHLIP>, Defs<[DSPPos]>;
+class MTHLIP_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                  MTHLIP_DESC_BASE<"mthlip", MipsMTHLIP, RO>, Defs<[DSPPos]>;
 
 class RDDSP_DESC : RDDSP_DESC_BASE<"rddsp", int_mips_rddsp, NoItinerary>;
 
 class WRDSP_DESC : WRDSP_DESC_BASE<"wrdsp", int_mips_wrdsp, NoItinerary>;
 
-class INSV_DESC : INSV_DESC_BASE<"insv", int_mips_insv, NoItinerary>,
+class INSV_DESC<RO_TYPES RO = MipsRO_TYPES> :
+                  INSV_DESC_BASE<"insv", int_mips_insv, NoItinerary, RO>,
                   Uses<[DSPPos, DSPSCount]>;
 
 //===----------------------------------------------------------------------===//
@@ -1535,26 +1556,28 @@ def : DSPSelectCCPatInv<PseudoCMPU_LT_QB, PseudoPICK_QB, v4i8, SETUGE, HasDSPNon
 def : DSPSelectCCPatInv<PseudoCMPU_LE_QB, PseudoPICK_QB, v4i8, SETUGT, HasDSPNonNanoMips>;
 
 // Extr patterns.
-class EXTR_W_TY1_R2_Pat<SDPatternOperator OpNode, Instruction Instr, Predicate Pred> :
-  DSPPat<(i32 (OpNode GPR32:$rs, ACC64DSP:$ac)),
-         (Instr ACC64DSP:$ac, GPR32:$rs), Pred>;
+class EXTR_W_TY1_R2_Pat<SDPatternOperator OpNode, Instruction Instr,
+                        Predicate Pred, RO_TYPES RO> :
+  DSPPat<(i32 (OpNode RO.GPR:$rs, RO.ACC64DSP:$ac)),
+         (Instr RO.ACC64DSP:$ac, RO.GPR:$rs), Pred>;
 
-class EXTR_W_TY1_R1_Pat<SDPatternOperator OpNode, Instruction Instr, Predicate Pred> :
-  DSPPat<(i32 (OpNode immZExt5:$shift, ACC64DSP:$ac)),
-         (Instr ACC64DSP:$ac, immZExt5:$shift), Pred>;
+class EXTR_W_TY1_R1_Pat<SDPatternOperator OpNode, Instruction Instr,
+                        Predicate Pred, RO_TYPES RO> :
+  DSPPat<(i32 (OpNode immZExt5:$shift, RO.ACC64DSP:$ac)),
+         (Instr RO.ACC64DSP:$ac, immZExt5:$shift), Pred>;
 
-def : EXTR_W_TY1_R1_Pat<MipsEXTP, EXTP, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTP, EXTPV, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTPDP, EXTPDP, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTPDP, EXTPDPV, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTR_W, EXTR_W, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTR_W, EXTRV_W, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTR_R_W, EXTR_R_W, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTR_R_W, EXTRV_R_W, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTR_RS_W, EXTR_RS_W, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTR_RS_W, EXTRV_RS_W, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R1_Pat<MipsEXTR_S_H, EXTR_S_H, HasDSPNonNanoMips>;
-def : EXTR_W_TY1_R2_Pat<MipsEXTR_S_H, EXTRV_S_H, HasDSPNonNanoMips>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTP, EXTP, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTP, EXTPV, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTPDP, EXTPDP, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTPDP, EXTPDPV, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_W, EXTR_W, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_W, EXTRV_W, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_R_W, EXTR_R_W, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_R_W, EXTRV_R_W, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_RS_W, EXTR_RS_W, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_RS_W, EXTRV_RS_W, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_S_H, EXTR_S_H, HasDSPNonNanoMips, MipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_S_H, EXTRV_S_H, HasDSPNonNanoMips, MipsRO_TYPES>;
 
 // Indexed load patterns.
 class IndexedLoadPat<SDPatternOperator LoadNode, Instruction Instr,

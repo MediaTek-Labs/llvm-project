@@ -137,14 +137,21 @@ def : InstRW<[GenericWriteALU], (instrs ADD_NM, ADDu16_NM, ADDu4x4_NM, ADDu_NM,
                                  ADDU_QB_NM, ADDU_S_QB_NM, SUBU_QB_NM, SUBU_S_QB_NM,
                                  MUL_PH_NM, MUL_S_PH_NM,
                                  CMPGU_EQ_QB_NM, CMPGU_LE_QB_NM, CMPGU_LT_QB_NM,
-                                 PICK_QB_NM, PICK_PH_NM, PRECRQ_PH_W_NM,
+                                 PICK_QB_NM, PICK_PH_NM,
+                                 EXTPV_NM, EXTPDPV_NM,
+                                 EXTP_NM, EXTPDP_NM,
+                                 EXTRV_W_NM, EXTRV_R_W_NM, EXTRV_RS_W_NM,
+                                 EXTR_W_NM, EXTR_R_W_NM, EXTR_RS_W_NM,
+                                 PRECRQ_PH_W_NM,
                                  CMP_EQ_PH_NM, CMP_LE_PH_NM, CMP_LT_PH_NM,
                                  SHRL_PH_NM, SHLL_PH_NM, SHLL_S_PH_NM,
                                  SHRL_QB_NM, SHLL_QB_NM,
                                  MULT_DSP_NM, MULTU_DSP_NM,
                                  MADD_DSP_NM, MADDU_DSP_NM, MSUB_DSP_NM, MSUBU_DSP_NM,
+                                 BITREV_NM, INSV_NM,
                                  RDDSP_NM, WRDSP_NM,
-                                 MFHI_NM, MFLO_NM, MTHI_NM, MTLO_NM)>;
+                                 MFHI_NM, MFLO_NM, MTHI_NM, MTLO_NM,
+                                 MTHLIP_NM, SHILOV_NM, SHILO_NM)>;
 
 def : InstRW<[GenericWriteALU], (instrs CRC32B_NM, CRC32H_NM, CRC32W_NM, CRC32CB_NM,
                                  CRC32CH_NM, CRC32CW_NM)>;

@@ -115,6 +115,13 @@ void foo() {
   v2q15_r = __builtin_mips_pick_ph(v2q15_a, v2q15_b);
 // CHECK: call <2 x i16> @llvm.mips.pick.ph
 
+  a64_a = 0x1234567887654321LL;
+  i32_b = 0x11112222;
+  __builtin_mips_wrdsp(0, 1);
+// CHECK: call void @llvm.mips.wrdsp
+  a64_r = __builtin_mips_mthlip(a64_a, i32_b);
+// CHECK: call i64 @llvm.mips.mthlip
+
   // MIPS DSP Rev 2
 
   v2i16_a = (v2i16) {0xffff, 0x2468};
@@ -133,6 +140,33 @@ void foo() {
   i32_b = 8;
   v2i16_r = __builtin_mips_shrl_ph (v2i16_a, i32_b);
 // CHECK: call <2 x i16> @llvm.mips.shrl.ph
+
+//  a64_a = 0xFFFFF81230000000LL;
+///  i32_r = __builtin_mips_extr_s_h(a64_a, 4);
+// CHxxECK: call i32 @llvm.mips.extr.s.h
+  a64_a = 0x8123456712345678LL;
+  i32_r = __builtin_mips_extr_w(a64_a, 31);
+// CHECK: call i32 @llvm.mips.extr.w
+  i32_r = __builtin_mips_extr_rs_w(a64_a, 31);
+// CHECK: call i32 @llvm.mips.extr.rs.w
+  i32_r = __builtin_mips_extr_r_w(a64_a, 31);
+// CHECK: call i32 @llvm.mips.extr.r.w
+  a64_a = 0x1234567887654321LL;
+  i32_r = __builtin_mips_extp(a64_a, 3);
+// CHECK: call i32 @llvm.mips.extp
+  a64_a = 0x123456789ABCDEF0LL;
+  i32_r = __builtin_mips_extpdp(a64_a, 7);
+// CHECK: call i32 @llvm.mips.extpdp
+
+  i32_a = 0xFFFFFFFF;
+  i32_b = 0x12345678;
+  __builtin_mips_wrdsp((16<<7) + 4, 3);
+// CHECK: call void @llvm.mips.wrdsp
+  i32_r = __builtin_mips_insv(i32_a, i32_b);
+// CHECK: call i32 @llvm.mips.insv
+  i32_a = 0x1234;
+  i32_r = __builtin_mips_bitrev(i32_a);
+// CHECK: call i32 @llvm.mips.bitrev
 
   __builtin_mips_wrdsp(2052, 3);
 // CHECK: call void @llvm.mips.wrdsp

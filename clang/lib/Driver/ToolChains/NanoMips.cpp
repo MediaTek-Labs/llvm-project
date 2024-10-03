@@ -224,8 +224,6 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
       ToolChain.AddCXXStdlibLibArgs(Args, CmdArgs);
       if (ToolChain.GetCXXStdlibType(Args) == ToolChain::CST_Libcxx) {
         CmdArgs.push_back("-lc++abi");
-        if (!Args.hasArg(options::OPT_mno_libunwind))
-          CmdArgs.push_back("-lunwind");
       }
       if (OnlyLibstdcxxStatic)
         CmdArgs.push_back("-Bdynamic");

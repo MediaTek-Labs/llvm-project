@@ -42,7 +42,12 @@ class LLVM_LIBRARY_VISIBILITY NanoMips : public Generic_ELF {
   }
 
   UnwindLibType GetUnwindLibType(const llvm::opt::ArgList &Args) const override {
-    return ToolChain::UNW_None;
+    if (!Args.hasArg(options::OPT_unwindlib_EQ) &&
+	Args.hasArg(options::OPT_fno_rtti) &&
+	Args.hasArg(options::OPT_fno_exceptions))
+      return ToolChain::UNW_None;
+    else
+      return Generic_ELF::GetUnwindLibType(Args);
   }
 
   bool HasNativeLLVMSupport() const override {

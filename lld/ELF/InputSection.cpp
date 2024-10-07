@@ -351,9 +351,13 @@ InputSectionBase *InputSection::getRelocatedSection() const {
 
 template <class ELFT, class RelTy>
 void InputSection::copyRelocations(uint8_t *buf) {
-  if (config->relax && !config->relocatable && config->emachine == EM_RISCV) {
+  if ((config->relax && !config->relocatable && config->emachine == EM_RISCV) ||
+      ((config->relax || config->expand) && !config->relocatable &&
+       config->emachine == EM_NANOMIPS)) {
     // On RISC-V, relaxation might change relocations: copy from internal ones
     // that are updated by relaxation.
+    // Similar to RISC-V, nanoMIPS also copies from internal ones that are
+    // updated by transformations
     InputSectionBase *sec = getRelocatedSection();
     copyRelocations<ELFT, RelTy>(buf, llvm::make_range(sec->relocations.begin(),
                                                        sec->relocations.end()));

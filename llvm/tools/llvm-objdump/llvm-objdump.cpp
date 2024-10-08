@@ -2312,6 +2312,13 @@ disassembleObject(ObjectFile &Obj, const ObjectFile &DbgObj,
                 ThisBytes.size(),
                 DT->DisAsm->suggestBytesToSkip(ThisBytes, ThisAddr));
 
+	  // Treat potential instruction encoding with a label embedded
+	  // inside it as data, truncated at the label.
+	  if (SI != SE && Size > (Symbols[SI].Addr - ThisAddr)) {
+	    Disassembled = false;
+	    Size = Symbols[SI].Addr - ThisAddr;
+	  }
+
           LVP.update({Index, Section.getIndex()},
                      {Index + Size, Section.getIndex()}, Index + Size != End);
 

@@ -11,4 +11,8 @@ void foo() {
   __builtin_mips_rddsp(-1);       // expected-error-re{{argument value {{.*}} is outside the valid range}}
   __builtin_mips_wrdsp(2052, 64); // expected-error-re{{argument value {{.*}} is outside the valid range}}
   __builtin_mips_rddsp(64);       // expected-error-re{{argument value {{.*}} is outside the valid range}}
+  __builtin_mips_append(1, 2, a); // expected-error{{argument to '__builtin_mips_append' must be a constant integer}}
+  __builtin_mips_append(1, 2, -1);  // expected-error-re{{argument value {{.*}} is outside the valid range}}
+  __builtin_mips_append(1, 2, 32);  // expected-error-re{{argument value {{.*}} is outside the valid range}}
+
 }

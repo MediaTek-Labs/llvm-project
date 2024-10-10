@@ -97,6 +97,17 @@ class INSV_NM_FMT<bits<7> op>: InstNM_Enc, _Pool_P32A<0b111> {
 class EXTR_W_TY1_VAR_NM_FMT<bits<5> op> : EXTR_W_TY1_NM_FMT<0b010, op>;
 class EXTR_W_TY1_LIT_NM_FMT<bits<5> op> : EXTR_W_TY1_NM_FMT<0b001, op>;
 
+class APPEND_NM_ENC : InstNM_Enc, _Pool_P32A<0b101> {
+  bits<5> rt;
+  bits<5> rs;
+  bits<5> sa;
+
+  let Inst{25-21} = rt;
+  let Inst{20-16} = rs;
+  let Inst{15-11} = sa;
+  let Inst{9-3} = 0b1000010;
+}
+
 class SHLL_QB_R2_NM_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
                               Operand ImmOp, ImmLeaf ImmPattern,
                               bit SideEffects = 0> {
@@ -282,6 +293,8 @@ class PICK_PH_NM_ENC     : CMP_EQ_QB_R3_NM_FMT<0b1000101>;
 class CMP_EQ_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0000000>;
 class CMP_LE_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0010000>;
 class CMP_LT_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0001000>;
+class PACKRL_PH_NM_ENC   : CMP_EQ_QB_R3_NM_FMT<0b0110101>;
+class MODSUB_NM_ENC      : CMP_EQ_QB_R3_NM_FMT<0b1010010>;
 class RDDSP_NM_ENC       : RDWR_DSP_FMT       <0b0>;
 class WRDSP_NM_ENC       : RDWR_DSP_FMT       <0b1>;
 
@@ -306,6 +319,7 @@ def ADDQ_PH_NM     : ADDQ_PH_NM_ENC          , ADDQ_PH_DESC    <NanoMipsRO_TYPES
 def ADDQ_S_PH_NM   : ADDQ_S_PH_NM_ENC        , ADDQ_S_PH_DESC  <NanoMipsRO_TYPES>;
 def SUBQ_PH_NM     : SUBQ_PH_NM_ENC          , SUBQ_PH_DESC    <NanoMipsRO_TYPES>;
 def SUBQ_S_PH_NM   : SUBQ_S_PH_NM_ENC        , SUBQ_S_PH_DESC  <NanoMipsRO_TYPES>;
+def MODSUB_NM      : MODSUB_NM_ENC           , MODSUB_DESC     <NanoMipsRO_TYPES>;
 def MUL_PH_NM      : MUL_PH_NM_ENC           , MUL_PH_DESC     <NanoMipsRO_TYPES>;
 def MUL_S_PH_NM    : MUL_S_PH_NM_ENC         , MUL_S_PH_DESC   <NanoMipsRO_TYPES>;
 def PRECRQ_PH_W_NM : PRECRQ_PH_W_NM_ENC      , PRECRQ_PH_W_DESC<NanoMipsRO_TYPES>;
@@ -314,6 +328,7 @@ def SHRL_QB_NM     : SHRL_QB_NM_ENC          , SHRL_QB_NM_DESC;
 def SHRL_PH_NM     : SHRL_PH_NM_ENC          , SHRL_PH_NM_DESC;
 def SHLL_PH_NM     : SHLL_PH_NM_ENC          , SHLL_PH_NM_DESC;
 def SHLL_S_PH_NM   : SHLL_S_PH_NM_ENC        , SHLL_S_PH_NM_DESC;
+def APPEND_NM      : APPEND_NM_ENC           , APPEND_DESC     <NanoMipsRO_TYPES>;
 def MFHI_NM        : MFHI_NM_ENC             , MFHI_NM_DESC    <NanoMipsRO_TYPES>;
 def MFLO_NM        : MFLO_NM_ENC             , MFLO_NM_DESC    <NanoMipsRO_TYPES>;
 def MTHI_NM        : MTHI_NM_ENC             , MTHI_DESC       <NanoMipsRO_TYPES>;
@@ -324,6 +339,7 @@ def SHILOV_NM      : SHILOV_NM_ENC           , SHILOV_DESC     <NanoMipsRO_TYPES
 def SHILO_NM       : SHILO_NM_ENC            , SHILO_DESC      <NanoMipsRO_TYPES>;
 def BITREV_NM      : BITREV_NM_ENC           , BITREV_DESC     <NanoMipsRO_TYPES>;
 def INSV_NM        : INSV_NM_ENC             , INSV_DESC       <NanoMipsRO_TYPES>;
+def PACKRL_PH_NM   : PACKRL_PH_NM_ENC        , PACKRL_PH_DESC  <NanoMipsRO_TYPES>;
 
 def MULT_DSP_NM    : MADD_DSP_NM_ENC<0b00110>, MULT_DSP_DESC   <NanoMipsRO_TYPES>;
 def MULTU_DSP_NM   : MADD_DSP_NM_ENC<0b01110>, MULTU_DSP_DESC  <NanoMipsRO_TYPES>;

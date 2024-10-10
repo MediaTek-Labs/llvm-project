@@ -387,12 +387,12 @@ class ADDUH_QB_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
 
 class APPEND_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
                        Operand ImmOp, SDPatternOperator Imm,
-                       InstrItinClass itin> {
-  dag OutOperandList = (outs GPR32Opnd:$rt);
-  dag InOperandList = (ins GPR32Opnd:$rs, ImmOp:$sa, GPR32Opnd:$src);
+                       InstrItinClass itin, RO_TYPES RO> {
+  dag OutOperandList = (outs RO.GPR:$rt);
+  dag InOperandList = (ins RO.GPR:$rs, ImmOp:$sa, RO.GPR:$src);
   string AsmString = !strconcat(instr_asm, "\t$rt, $rs, $sa");
-  list<dag> Pattern =  [(set GPR32Opnd:$rt,
-                        (OpNode GPR32Opnd:$src, GPR32Opnd:$rs, Imm:$sa))];
+  list<dag> Pattern =  [(set RO.GPR:$rt,
+                        (OpNode RO.GPR:$src, RO.GPR:$rs, Imm:$sa))];
   InstrItinClass Itinerary = itin;
   string Constraints = "$src = $rt";
   string BaseOpcode = instr_asm;
@@ -1215,14 +1215,14 @@ class SHRLV_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
                        NoItinerary, RO.DSPR>;
 
 // Misc
-class APPEND_DESC : APPEND_DESC_BASE<"append", int_mips_append, uimm5, timmZExt5,
-                                     NoItinerary>;
+class APPEND_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  APPEND_DESC_BASE<"append", int_mips_append, uimm5, timmZExt5, NoItinerary, RO>;
 
-class BALIGN_DESC : APPEND_DESC_BASE<"balign", int_mips_balign, uimm2, timmZExt2,
-                                     NoItinerary>;
+class BALIGN_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  APPEND_DESC_BASE<"balign", int_mips_balign, uimm2, timmZExt2, NoItinerary, RO>;
 
-class PREPEND_DESC : APPEND_DESC_BASE<"prepend", int_mips_prepend, uimm5,
-                                      timmZExt5, NoItinerary>;
+class PREPEND_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  APPEND_DESC_BASE<"prepend", int_mips_prepend, uimm5, timmZExt5, NoItinerary, RO>;
 
 // Pseudos.
 def BPOSGE32_PSEUDO : BPOSGE32_PSEUDO_DESC_BASE<int_mips_bposge32>,

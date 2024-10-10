@@ -3,7 +3,7 @@
 
 define i32 @test__builtin_mips_extr_w1(i32 %i0, i32, i64 %a0) nounwind {
 entry:
-; CHECK: extr.w
+; CHECK: extr.w $
 
   %1 = tail call i32 @llvm.mips.extr.w(i64 %a0, i32 15)
   ret i32 %1
@@ -13,7 +13,7 @@ declare i32 @llvm.mips.extr.w(i64, i32) nounwind
 
 define i32 @test__builtin_mips_extr_w2(i32 %i0, i32, i64 %a0, i32 %a1) nounwind {
 entry:
-; CHECK: extrv.w
+; CHECK: extrv.w $
 
   %1 = tail call i32 @llvm.mips.extr.w(i64 %a0, i32 %a1)
   ret i32 %1
@@ -21,7 +21,7 @@ entry:
 
 define i32 @test__builtin_mips_extr_r_w1(i32 %i0, i32, i64 %a0) nounwind {
 entry:
-; CHECK: extr_r.w
+; CHECK: extr_r.w $
 
   %1 = tail call i32 @llvm.mips.extr.r.w(i64 %a0, i32 15)
   ret i32 %1
@@ -41,7 +41,7 @@ declare i32 @llvm.mips.extr.r.w(i64, i32) nounwind
 
 define i32 @test__builtin_mips_extr_rs_w1(i32 %i0, i32, i64 %a0) nounwind {
 entry:
-; CHECK: extr_rs.w
+; CHECK: extr_rs.w $
 
   %1 = tail call i32 @llvm.mips.extr.rs.w(i64 %a0, i32 15)
   ret i32 %1
@@ -51,7 +51,7 @@ declare i32 @llvm.mips.extr.rs.w(i64, i32) nounwind
 
 define i32 @test__builtin_mips_extr_rs_w2(i32 %i0, i32, i64 %a0, i32 %a1) nounwind {
 entry:
-; CHECK: extrv_rs.w
+; CHECK: extrv_rs.w $
 
   %1 = tail call i32 @llvm.mips.extr.rs.w(i64 %a0, i32 %a1)
   ret i32 %1
@@ -67,7 +67,7 @@ entry:
 
 define i32 @test__builtin_mips_extr_r_w2(i32 %i0, i32, i64 %a0, i32 %a1) nounwind {
 entry:
-; CHECK: extrv_r.w
+; CHECK: extrv_r.w $
 
   %1 = tail call i32 @llvm.mips.extr.r.w(i64 %a0, i32 %a1)
   ret i32 %1
@@ -85,7 +85,7 @@ declare i32 @llvm.mips.extp(i64, i32) nounwind
 
 define i32 @test__builtin_mips_extp2(i32 %i0, i32, i64 %a0, i32 %a1) nounwind {
 entry:
-; CHECK: extpv
+; CHECK: extpv $
 
   %1 = tail call i32 @llvm.mips.extp(i64 %a0, i32 %a1)
   ret i32 %1
@@ -103,7 +103,7 @@ declare i32 @llvm.mips.extpdp(i64, i32) nounwind
 
 define i32 @test__builtin_mips_extpdp2(i32 %i0, i32, i64 %a0, i32 %a1) nounwind {
 entry:
-; CHECK: extpdpv
+; CHECK: extpdpv $
 
   %1 = tail call i32 @llvm.mips.extpdp(i64 %a0, i32 %a1)
   ret i32 %1
@@ -121,7 +121,7 @@ declare i64 @llvm.mips.shilo(i64, i32) nounwind readnone
 
 define i64 @test__builtin_mips_shilo2(i32 %i0, i32, i64 %a0, i32 %a1) nounwind readnone {
 entry:
-; CHECK: shilov
+; CHECK: shilov $
 
   %1 = tail call i64 @llvm.mips.shilo(i64 %a0, i32 %a1)
   ret i64 %1
@@ -129,7 +129,7 @@ entry:
 
 define i64 @test__builtin_mips_mthlip1(i32 %i0, i32, i64 %a0, i32 %a1) nounwind {
 entry:
-; CHECK: mthlip
+; CHECK: mthlip $
 
   %1 = tail call i64 @llvm.mips.mthlip(i64 %a0, i32 %a1)
   ret i64 %1
@@ -197,9 +197,19 @@ entry:
 
 declare i64 @llvm.mips.msubu(i64, i32, i32) nounwind readnone
 
+define i32 @test__builtin_mips_modsub1(i32 %i0, i32 %a0, i32 %a1) nounwind readnone {
+entry:
+; CHECK: modsub $
+
+  %0 = tail call i32 @llvm.mips.modsub(i32 %a0, i32 %a1)
+  ret i32 %0
+}
+
+declare i32 @llvm.mips.modsub(i32, i32) nounwind readnone
+
 define { i32 } @test__builtin_mips_addq_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: addq.ph
+; CHECK: addq.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -213,7 +223,7 @@ declare <2 x i16> @llvm.mips.addq.ph(<2 x i16>, <2 x i16>) nounwind
 
 define { i32 } @test__builtin_mips_addq_s_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: addq_s.ph
+; CHECK: addq_s.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -227,7 +237,7 @@ declare <2 x i16> @llvm.mips.addq.s.ph(<2 x i16>, <2 x i16>) nounwind
 
 define { i32 } @test__builtin_mips_addu_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: addu.qb
+; CHECK: addu.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = bitcast i32 %a1.coerce to <4 x i8>
@@ -241,7 +251,7 @@ declare <4 x i8> @llvm.mips.addu.qb(<4 x i8>, <4 x i8>) nounwind
 
 define { i32 } @test__builtin_mips_addu_s_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: addu_s.qb
+; CHECK: addu_s.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = bitcast i32 %a1.coerce to <4 x i8>
@@ -255,7 +265,7 @@ declare <4 x i8> @llvm.mips.addu.s.qb(<4 x i8>, <4 x i8>) nounwind
 
 define { i32 } @test__builtin_mips_subq_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: subq.ph
+; CHECK: subq.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -269,7 +279,7 @@ declare <2 x i16> @llvm.mips.subq.ph(<2 x i16>, <2 x i16>) nounwind
 
 define { i32 } @test__builtin_mips_subq_s_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: subq_s.ph
+; CHECK: subq_s.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -283,7 +293,7 @@ declare <2 x i16> @llvm.mips.subq.s.ph(<2 x i16>, <2 x i16>) nounwind
 
 define { i32 } @test__builtin_mips_subu_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: subu.qb
+; CHECK: subu.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = bitcast i32 %a1.coerce to <4 x i8>
@@ -297,7 +307,7 @@ declare <4 x i8> @llvm.mips.subu.qb(<4 x i8>, <4 x i8>) nounwind
 
 define { i32 } @test__builtin_mips_subu_s_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: subu_s.qb
+; CHECK: subu_s.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = bitcast i32 %a1.coerce to <4 x i8>
@@ -309,9 +319,19 @@ entry:
 
 declare <4 x i8> @llvm.mips.subu.s.qb(<4 x i8>, <4 x i8>) nounwind
 
+define i32 @test__builtin_mips_append1(i32 %i0, i32 %a0, i32 %a1) nounwind readnone {
+entry:
+; CHECK: append $
+
+  %0 = tail call i32 @llvm.mips.append(i32 %a0, i32 %a1, i32 15)
+  ret i32 %0
+}
+
+declare i32 @llvm.mips.append(i32, i32, i32) nounwind readnone
+
 define { i32 } @test__builtin_mips_precrq_ph_w1(i32 %i0, i32 %a0, i32 %a1) nounwind readnone {
 entry:
-; CHECK: precrq.ph.w
+; CHECK: precrq.ph.w $
 
   %0 = tail call <2 x i16> @llvm.mips.precrq.ph.w(i32 %a0, i32 %a1)
   %1 = bitcast <2 x i16> %0 to i32
@@ -323,7 +343,7 @@ declare <2 x i16> @llvm.mips.precrq.ph.w(i32, i32) nounwind readnone
 
 define i32 @test__builtin_mips_cmpgu_eq_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: cmpgu.eq.qb
+; CHECK: cmpgu.eq.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = bitcast i32 %a1.coerce to <4 x i8>
@@ -335,7 +355,7 @@ declare i32 @llvm.mips.cmpgu.eq.qb(<4 x i8>, <4 x i8>) nounwind
 
 define i32 @test__builtin_mips_cmpgu_lt_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: cmpgu.lt.qb
+; CHECK: cmpgu.lt.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = bitcast i32 %a1.coerce to <4 x i8>
@@ -347,7 +367,7 @@ declare i32 @llvm.mips.cmpgu.lt.qb(<4 x i8>, <4 x i8>) nounwind
 
 define i32 @test__builtin_mips_cmpgu_le_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: cmpgu.le.qb
+; CHECK: cmpgu.le.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = bitcast i32 %a1.coerce to <4 x i8>
@@ -359,7 +379,7 @@ declare i32 @llvm.mips.cmpgu.le.qb(<4 x i8>, <4 x i8>) nounwind
 
 define i32 @test__builtin_mips_cmp_eq_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: cmp.eq.ph
+; CHECK: cmp.eq.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -373,7 +393,7 @@ declare i32 @llvm.mips.rddsp(i32) nounwind readonly
 
 define i32 @test__builtin_mips_cmp_lt_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: cmp.lt.ph
+; CHECK: cmp.lt.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -386,7 +406,7 @@ declare void @llvm.mips.cmp.lt.ph(<2 x i16>, <2 x i16>) nounwind
 
 define i32 @test__builtin_mips_cmp_le_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: cmp.le.ph
+; CHECK: cmp.le.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -399,7 +419,7 @@ declare void @llvm.mips.cmp.le.ph(<2 x i16>, <2 x i16>) nounwind
 
 define { i32 } @test__builtin_mips_pick_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind readonly {
 entry:
-; CHECK: pick.qb
+; CHECK: pick.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = bitcast i32 %a1.coerce to <4 x i8>
@@ -415,7 +435,7 @@ declare void @llvm.mips.wrdsp(i32, i32) nounwind
 
 define { i32 } @test__builtin_mips_pick_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind readonly {
 entry:
-; CHECK: pick.ph
+; CHECK: pick.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -428,9 +448,23 @@ entry:
 
 declare <2 x i16> @llvm.mips.pick.ph(<2 x i16>, <2 x i16>) nounwind readonly
 
+define { i32 } @test__builtin_mips_packrl_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind readnone {
+entry:
+; CHECK: packrl.ph $
+
+  %0 = bitcast i32 %a0.coerce to <2 x i16>
+  %1 = bitcast i32 %a1.coerce to <2 x i16>
+  %2 = tail call <2 x i16> @llvm.mips.packrl.ph(<2 x i16> %0, <2 x i16> %1)
+  %3 = bitcast <2 x i16> %2 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %3, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.packrl.ph(<2 x i16>, <2 x i16>) nounwind readnone
+
 define { i32 } @test__builtin_mips_shll_qb1(i32 %i0, i32 %a0.coerce) nounwind {
 entry:
-; CHECK: shll.qb
+; CHECK: shll.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = tail call <4 x i8> @llvm.mips.shll.qb(<4 x i8> %0, i32 3)
@@ -443,7 +477,7 @@ declare <4 x i8> @llvm.mips.shll.qb(<4 x i8>, i32) nounwind
 
 define { i32 } @test__builtin_mips_shll_ph1(i32 %i0, i32 %a0.coerce) nounwind {
 entry:
-; CHECK: shll.ph
+; CHECK: shll.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = tail call <2 x i16> @llvm.mips.shll.ph(<2 x i16> %0, i32 7)
@@ -456,7 +490,7 @@ declare <2 x i16> @llvm.mips.shll.ph(<2 x i16>, i32) nounwind
 
 define { i32 } @test__builtin_mips_shll_s_ph1(i32 %i0, i32 %a0.coerce) nounwind {
 entry:
-; CHECK: shll_s.ph
+; CHECK: shll_s.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = tail call <2 x i16> @llvm.mips.shll.s.ph(<2 x i16> %0, i32 7)
@@ -469,7 +503,7 @@ declare <2 x i16> @llvm.mips.shll.s.ph(<2 x i16>, i32) nounwind
 
 define { i32 } @test__builtin_mips_shrl_qb1(i32 %i0, i32 %a0.coerce) nounwind readnone {
 entry:
-; CHECK: shrl.qb
+; CHECK: shrl.qb $
 
   %0 = bitcast i32 %a0.coerce to <4 x i8>
   %1 = tail call <4 x i8> @llvm.mips.shrl.qb(<4 x i8> %0, i32 3)
@@ -482,7 +516,7 @@ declare <4 x i8> @llvm.mips.shrl.qb(<4 x i8>, i32) nounwind readnone
 
 define { i32 } @test__builtin_mips_mul_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: mul.ph
+; CHECK: mul.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -496,7 +530,7 @@ declare <2 x i16> @llvm.mips.mul.ph(<2 x i16>, <2 x i16>) nounwind
 
 define { i32 } @test__builtin_mips_mul_s_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
-; CHECK: mul_s.ph
+; CHECK: mul_s.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = bitcast i32 %a1.coerce to <2 x i16>
@@ -510,7 +544,7 @@ declare <2 x i16> @llvm.mips.mul.s.ph(<2 x i16>, <2 x i16>) nounwind
 
 define { i32 } @test__builtin_mips_shrl_ph1(i32 %i0, i32 %a0.coerce) nounwind readnone {
 entry:
-; CHECK: shrl.ph
+; CHECK: shrl.ph $
 
   %0 = bitcast i32 %a0.coerce to <2 x i16>
   %1 = tail call <2 x i16> @llvm.mips.shrl.ph(<2 x i16> %0, i32 7)
@@ -523,7 +557,7 @@ declare <2 x i16> @llvm.mips.shrl.ph(<2 x i16>, i32) nounwind readnone
 
 define i32 @test__builtin_mips_bitrev1(i32 %i0, i32 %a0) nounwind readnone {
 entry:
-; CHECK: bitrev
+; CHECK: bitrev $
 
   %0 = tail call i32 @llvm.mips.bitrev(i32 %a0)
   ret i32 %0

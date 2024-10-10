@@ -46,6 +46,11 @@ void foo() {
   v2q15_r = __builtin_mips_subq_s_ph(v2q15_a, v2q15_b);
 // CHECK: call <2 x i16> @llvm.mips.subq.s.ph
 
+  i32_a = 20;
+  i32_b = 0x1402;
+  i32_r = __builtin_mips_modsub(i32_a, i32_b);
+// CHECK: call i32 @llvm.mips.modsub
+
   a64_a = 0x12345678;
   i32_b = 0x80000000;
   i32_c = 0x11112222;
@@ -92,6 +97,11 @@ void foo() {
   ui32_b = 0x11112222;
   a64_r = __builtin_mips_multu(ui32_a, ui32_b);
 // CHECK: call i64 @llvm.mips.multu
+
+  i32_a = 0x12345678;
+  i32_b = 0x87654321;
+  i32_r = __builtin_mips_append(i32_a, i32_b, 16);
+// CHECK: call i32 @llvm.mips.append
 
   i32_r = __builtin_mips_cmpgu_eq_qb(v4i8_a, v4i8_b);
 // CHECK: call i32 @llvm.mips.cmpgu.eq.qb
@@ -167,6 +177,11 @@ void foo() {
   i32_a = 0x1234;
   i32_r = __builtin_mips_bitrev(i32_a);
 // CHECK: call i32 @llvm.mips.bitrev
+
+  v2q15_a = (v2q15) {0x1111, 0x2222};
+  v2q15_b = (v2q15) {0x3333, 0x4444};
+  v2q15_r = __builtin_mips_packrl_ph(v2q15_a, v2q15_b);
+// CHECK: call <2 x i16> @llvm.mips.packrl.ph
 
   __builtin_mips_wrdsp(2052, 3);
 // CHECK: call void @llvm.mips.wrdsp

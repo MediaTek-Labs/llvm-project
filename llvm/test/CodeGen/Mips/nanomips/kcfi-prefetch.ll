@@ -1,7 +1,5 @@
-; RUN: llc -mtriple=nanomips -asm-show-inst < %s | FileCheck %s
-
-
-
+; RUN: llc -mtriple=nanomips -asm-show-inst < %s | FileCheck --check-prefixes=CHECK,ENABLED %s
+; RUN: llc -mtriple=nanomips -nmips-guard-kcfi-prefetch=false -asm-show-inst < %s | FileCheck --check-prefixes=CHECK,DISABLED %s
 
 ; ModuleID = 'signatures.bc'
 ;source_filename = "signatures.c"
@@ -9,15 +7,19 @@
 ;target triple = "nanomips-unknown-unknown-elf"
 
 ;; Signature is 16-bit instruction followed by 16-bit branch
-; CHECK: bc{{.*}}Ltmp
+; ENABLED: bc{{.*}}Ltmp
+; DISABLED-NOT: bc{{.*}}Ltmp
 ; CHECK: .4byte{{.*}}0x993e738c
 ; CHECK-label: test_0:
 define dso_local i32 @test_0() !kcfi_type !3 {
   ret i32 0
 }
 
-;; Signature is 32-bit LAPC, no workaround needed
-; CHECK-NOT: bc{{.*}}Ltmp
+;; Signature is 32-bit LAPC. This should be an innocuous instruction, but we
+;; still apply a "bc" barrier
+
+; ENABLED: bc{{.*}}Ltmp
+; DISABLED-NOT: bc{{.*}}Ltmp
 ; CHECK: .4byte{{.*}}0x50794
 ; CHECK-label: test_1:
 define dso_local i32 @test_1(i32 noundef signext %0) !kcfi_type !4 {
@@ -25,7 +27,8 @@ define dso_local i32 @test_1(i32 noundef signext %0) !kcfi_type !4 {
 }
 
 ;; Signature is 16-bit branch
-; CHECK: bc{{.*}}Ltmp
+; ENABLED: bc{{.*}}Ltmp
+; DISABLED-NOT: bc{{.*}}Ltmp
 ; CHECK: .4byte{{.*}}0x148a1a47
 ; CHECK-label: test_3:
 define dso_local i32 @test_3(i32 noundef signext %0, i32 noundef signext %1, i32 noundef signext %2) !kcfi_type !10 {
@@ -33,7 +36,8 @@ define dso_local i32 @test_3(i32 noundef signext %0, i32 noundef signext %1, i32
 }
 
 ;; Signature is a 32-bit branch
-; CHECK: bc{{.*}}Ltmp
+; ENABLED: bc{{.*}}Ltmp
+; DISABLED-NOT: bc{{.*}}Ltmp
 ; CHECK: .4byte{{.*}}0xab5888ac
 ; CHECK-label: test_6:
 define dso_local i32 @test_6(i32 noundef signext %0, i32 noundef signext %1, i32 noundef signext %2, i32 noundef signext %3, i32 noundef signext %4, i32 noundef signext %5) !kcfi_type !13 {

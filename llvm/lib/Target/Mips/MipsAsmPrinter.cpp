@@ -78,7 +78,7 @@ XformHw110880("nmips-fix-hw110880", cl::Hidden,
          cl::init(true));
 
 cl::opt<bool> NMipsGuardKCFIPrefetch("nmips-guard-kcfi-prefetch",
-				     cl::desc("On NanoMips, guard KCFI signatures against branch prefetch"),
+				     cl::desc("On NanoMips, guard KCFI signatures against prefetch"),
 				     cl::init(true));
 
 void MipsAsmPrinter::emitJumpTableInfo() {
@@ -1595,35 +1595,6 @@ void MipsAsmPrinter::PrintDebugValueComment(const MachineInstr *MI,
 }
 
 
-
-static bool mayMatch16BitBranch_NM(uint64_t Bits) {
-  switch ((Bits >> (16-6)) & 0x3f) {
-  case 0x06:  // 000110.. BC[16]
-  case 0x0e:  // 001110.. BALC[16]
-  case 0x26:  // 100110.. BEQZC[16]
-  case 0x2e:  // 101110.. BNEZC[16]
-  case 0x36:  // 110110.. BEQ[16]/BNE[16]
-    return true;
-  default:
-    return false;
-  }
-}
-
-static bool mayMatch32BitBranch_NM(uint64_t Bits) {
-  switch ((Bits >> (16-6)) & 0x3f) {
-  case 0x02:  // 000010.. M.BALC[32]
-  case 0x0a:  // 001010.. BC[32]/BALC[32]
-  case 0x22:  // 100010.. BEQC[32]/BGEQ[32]/BGEU[32]
-  case 0x2a:  // 101010.. BLT[32]/BLTU[32]/BNE[32]
-  case 0x32:
-    // 110010.. BBEQZC[32]/BBNEZC[32]/BEQIC[32]/BGEIC[32]/BGEIU[32]/
-    //          BLTI[32]/BLTIU[32]/BNEI[32]
-    return true;
-  default:
-    return false;
-  }
-}
-
 void MipsAsmPrinter::emitKCFITypeId(const MachineFunction &MF) {
   const Function &F = MF.getFunction();
   if (const MDNode *MD = F.getMetadata(LLVMContext::MD_kcfi_type)) {
@@ -1631,25 +1602,17 @@ void MipsAsmPrinter::emitKCFITypeId(const MachineFunction &MF) {
     if (Subtarget->hasNanoMips()) {
 
       if (NMipsGuardKCFIPrefetch) {
-	// If typeid might be interpreted as a branch instruction
-	// by prefetcher, insert a "bc" jumping to itself as a guard
-	uint64_t Encoding = TypeID->getZExtValue();
-	bool Is16BitInstr = (Encoding >> 12) & 1;
+	// TypeId is arbitrary data which might decode as invalid
+	// instructions. Guard against despatching it by inserting a
+	// "BC" jumping to itself as a barrier.
+	MCSymbol *Label = OutContext.createTempSymbol();
+	OutStreamer->emitLabel(Label);
 
-	if (mayMatch32BitBranch_NM(Encoding)
-	    || mayMatch16BitBranch_NM(Encoding)
-	    || Is16BitInstr && (mayMatch16BitBranch_NM(Encoding >> 16)
-				|| mayMatch32BitBranch_NM(Encoding >> 16))) {
-
-	  MCSymbol *Label = OutContext.createTempSymbol();
-	  OutStreamer->emitLabel(Label);
-
-	  MCInst GuardBC;
-	  GuardBC.setOpcode(Mips::BC16_NM);
-	  const MCExpr *LabelRef = MCSymbolRefExpr::create(Label, OutContext);
-	  GuardBC.addOperand(MCOperand::createExpr(LabelRef));
-	  EmitToStreamer(*OutStreamer, GuardBC);
-	}
+	MCInst GuardBC;
+	GuardBC.setOpcode(Mips::BC16_NM);
+	const MCExpr *LabelRef = MCSymbolRefExpr::create(Label, OutContext);
+	GuardBC.addOperand(MCOperand::createExpr(LabelRef));
+	EmitToStreamer(*OutStreamer, GuardBC);
       }
 
       // NanoMips function alignment requirements are only 16

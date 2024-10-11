@@ -87,7 +87,17 @@ TargetInfo *elf::getTarget() {
     return getSPARCV9TargetInfo();
   case EM_X86_64:
     return getX86_64TargetInfo();
+  case EM_NANOMIPS:
+    switch (config->ekind) {
+    case ELF32LEKind:
+      return getNanoMipsTargetInfo<ELF32LE>();
+    // TODO: Support for other endiannesses and bit sizes for
+    // the nanoMIPS target
+    default:
+      llvm_unreachable("unsupported nanoMIPS target");
+    }
   }
+
   llvm_unreachable("unknown target machine");
 }
 

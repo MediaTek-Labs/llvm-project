@@ -1400,7 +1400,7 @@
 				# CHECK-NEXT: fixup A - offset: 0, value: %pcrel_hi(test), kind: fixup_NANOMIPS_PCHI20
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
 				# DISAS: {{.*}}  80 e0 02 00  	aluipc	$a0, %pcrel_hi({{.*}})
-				# DISAS: {{.*}}  R_NANOMIPS_PCHI20	test
+				# DISAS: {{.*}}  R_NANOMIPS_PC_HI20	test
 	aluipc $a1, %hi(0x87654321)	# CHECK: aluipc $a1, %pcrel_hi(0x87654) # encoding: [0xa5,0xe0,0xef,0x40]
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
 				# DISAS: {{.*}}  a5 e0 ef 40  	aluipc	$a1, %pcrel_hi({{.*}})

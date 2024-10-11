@@ -208,6 +208,7 @@ struct Config {
   bool emitRelocs;
   bool enableNewDtags;
   bool executeOnly;
+  bool expand;
   bool exportDynamic;
   bool fixCortexA53Errata843419;
   bool fixCortexA8;
@@ -229,6 +230,11 @@ struct Config {
   bool mergeArmExidx;
   bool mipsN32Abi = false;
   bool mmapOutputFile;
+  bool nanoMipsFixHw110880;
+  bool nanoMipsFixHw113064;
+  bool nanoMipsInsn32;
+  bool nanoMipsRelaxLo12;
+  bool nanoMipsStrictAddressModes;
   bool nmagic;
   bool noDynamicLinker = false;
   bool noinhibitExec;
@@ -319,6 +325,7 @@ struct Config {
   unsigned ltoPartitions;
   unsigned ltoo;
   unsigned optimize;
+  unsigned nanoMipsExpandReg;
   StringRef thinLTOJobs;
   unsigned timeTraceGranularity;
   int32_t splitStackAdjustSize;

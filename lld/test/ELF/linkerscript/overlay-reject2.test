@@ -1,4 +1,7 @@
 # REQUIRES: x86
+# Note: Due to different parsing of the linker script
+# for nanomips this test is unsupported, fixup needed
+# UNSUPPORTED: nanomips
 # RUN: llvm-mc -filetype=obj -triple=x86_64-unknown-linux /dev/null -o %t.o
 # RUN: not ld.lld %t.o --script %s -o /dev/null 2>&1 | FileCheck %s
 

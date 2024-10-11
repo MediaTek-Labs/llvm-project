@@ -1,5 +1,9 @@
 set(LLVM_TARGET_DEFINITIONS Options.td)
 tablegen(LLVM Options.inc -gen-opt-parser-defs)
+
+set(LLVM_TARGET_DEFINITIONS NanoMipsTransformationProperties.td)
+tablegen(LLVM NanoMipsTransformationProperties.inc -gen-nanomips-transformation-properties)
+
 add_public_tablegen_target(ELFOptionsTableGen)
 
 if(LLVM_ENABLE_ZLIB)
@@ -28,6 +32,8 @@ add_lld_library(lldELF
   Arch/Mips.cpp
   Arch/MipsArchTree.cpp
   Arch/MSP430.cpp
+  Arch/NanoMips.cpp
+  NanoMipsTransformations.cpp
   Arch/PPC.cpp
   Arch/PPC64.cpp
   Arch/RISCV.cpp

@@ -40,6 +40,7 @@ template <class ELFT> struct RelsOrRelas {
   bool areRelocsRel() const { return rels.size(); }
 };
 
+struct NanoMipsRelaxAux;
 // This is the base class of all sections that lld handles. Some are sections in
 // input files, some are sections in the produced output file and some exist
 // just as a convenience for implementing special ways of combining some
@@ -224,6 +225,7 @@ public:
     // Auxiliary information for RISC-V linker relaxation. RISC-V does not use
     // jumpInstrMod.
     RISCVRelaxAux *relaxAux;
+    NanoMipsRelaxAux *nanoMipsRelaxAux;
 
     // The compressed content size when `compressed` is true.
     size_t compressedSize;
@@ -395,8 +397,10 @@ public:
   static InputSection discarded;
 
 private:
-  template <class ELFT, class RelTy>
-  void copyRelocations(uint8_t *buf, llvm::ArrayRef<RelTy> rels);
+  template <class ELFT, class RelTy> void copyRelocations(uint8_t *buf);
+
+  template <class ELFT, class RelTy, class RelIt>
+  void copyRelocations(uint8_t *buf, llvm::iterator_range<RelIt> rels);
 
   template <class ELFT> void copyShtGroup(uint8_t *buf);
 };

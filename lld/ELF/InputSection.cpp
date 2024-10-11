@@ -349,29 +349,65 @@ InputSectionBase *InputSection::getRelocatedSection() const {
   return sections[info];
 }
 
+template <class ELFT, class RelTy>
+void InputSection::copyRelocations(uint8_t *buf) {
+  if ((config->relax && !config->relocatable && config->emachine == EM_RISCV) ||
+      ((config->relax || config->expand) && !config->relocatable &&
+       config->emachine == EM_NANOMIPS)) {
+    // On RISC-V, relaxation might change relocations: copy from internal ones
+    // that are updated by relaxation.
+    // Similar to RISC-V, nanoMIPS also copies from internal ones that are
+    // updated by transformations
+    InputSectionBase *sec = getRelocatedSection();
+    copyRelocations<ELFT, RelTy>(buf, llvm::make_range(sec->relocations.begin(),
+                                                       sec->relocations.end()));
+  } else {
+    // Convert the raw relocations in the input section into Relocation objects
+    // suitable to be used by copyRelocations below.
+    struct MapRel {
+      const ObjFile<ELFT> &file;
+      Relocation operator()(const RelTy &rel) const {
+        // RelExpr is not used so set to a dummy value.
+        return Relocation{R_NONE, rel.getType(config->isMips64EL), rel.r_offset,
+                          getAddend<ELFT>(rel), &file.getRelocTargetSym(rel)};
+      }
+    };
+
+    using RawRels = ArrayRef<RelTy>;
+    using MapRelIter =
+        llvm::mapped_iterator<typename RawRels::iterator, MapRel>;
+    auto mapRel = MapRel{*getFile<ELFT>()};
+    RawRels rawRels = getDataAs<RelTy>();
+    auto rels = llvm::make_range(MapRelIter(rawRels.begin(), mapRel),
+                                 MapRelIter(rawRels.end(), mapRel));
+    copyRelocations<ELFT, RelTy>(buf, rels);
+  }
+}
+
 // This is used for -r and --emit-relocs. We can't use memcpy to copy
 // relocations because we need to update symbol table offset and section index
 // for each relocation. So we copy relocations one by one.
-template <class ELFT, class RelTy>
-void InputSection::copyRelocations(uint8_t *buf, ArrayRef<RelTy> rels) {
+template <class ELFT, class RelTy, class RelIt>
+void InputSection::copyRelocations(uint8_t *buf,
+                                   llvm::iterator_range<RelIt> rels) {
   const TargetInfo &target = *elf::target;
   InputSectionBase *sec = getRelocatedSection();
   (void)sec->contentMaybeDecompress(); // uncompress if needed
 
-  for (const RelTy &rel : rels) {
-    RelType type = rel.getType(config->isMips64EL);
+  for (const Relocation &rel : rels) {
+    RelType type = rel.type;
     const ObjFile<ELFT> *file = getFile<ELFT>();
-    Symbol &sym = file->getRelocTargetSym(rel);
+    Symbol &sym = *rel.sym;
 
     auto *p = reinterpret_cast<typename ELFT::Rela *>(buf);
     buf += sizeof(RelTy);
 
     if (RelTy::IsRela)
-      p->r_addend = getAddend<ELFT>(rel);
+      p->r_addend = rel.addend;
 
     // Output section VA is zero for -r, so r_offset is an offset within the
     // section, but for --emit-relocs it is a virtual address.
-    p->r_offset = sec->getVA(rel.r_offset);
+    p->r_offset = sec->getVA(rel.offset);
     p->setSymbolAndType(in.symTab->getSymbolIndex(&sym), type,
                         config->isMips64EL);
 
@@ -408,8 +444,8 @@ void InputSection::copyRelocations(uint8_t *buf, ArrayRef<RelTy> rels) {
         continue;
       }
 
-      int64_t addend = getAddend<ELFT>(rel);
-      const uint8_t *bufLoc = sec->content().begin() + rel.r_offset;
+      int64_t addend = rel.addend;
+      const uint8_t *bufLoc = sec->content().begin() + rel.offset;
       if (!RelTy::IsRela)
         addend = target.getImplicitAddend(bufLoc, type);
 
@@ -432,7 +468,7 @@ void InputSection::copyRelocations(uint8_t *buf, ArrayRef<RelTy> rels) {
       if (RelTy::IsRela)
         p->r_addend = sym.getVA(addend) - section->getOutputSection()->addr;
       else if (config->relocatable && type != target.noneRel)
-        sec->addReloc({R_ABS, type, rel.r_offset, addend, &sym});
+        sec->addReloc({R_ABS, type, rel.offset, addend, &sym});
     } else if (config->emachine == EM_PPC && type == R_PPC_PLTREL24 &&
                p->r_addend >= 0x8000 && sec->file->ppc32Got2) {
       // Similar to R_MIPS_GPREL{16,32}. If the addend of R_PPC_PLTREL24
@@ -638,6 +674,13 @@ uint64_t InputSectionBase::getRelocTargetVA(const InputFile *file, RelType type,
     return a;
   case R_RELAX_HINT:
     return 0;
+  // It is marked as composite as it always goes with another relocation
+  case R_NANOMIPS_NEG_COMPOSITE:
+    return -sym.getVA(-a);
+  case R_NANOMIPS_ASHIFTR:
+    return static_cast<int64_t>(
+               SignExtend64(sym.getVA(a), config->wordsize * 8)) >>
+           1;
   case R_ARM_SBREL:
     return sym.getVA(a) - getARMStaticBase(sym);
   case R_GOT:
@@ -705,6 +748,10 @@ uint64_t InputSectionBase::getRelocTargetVA(const InputFile *file, RelType type,
   case R_MIPS_TLSLD:
     return in.mipsGot->getVA() + in.mipsGot->getTlsIndexOffset(file) -
            in.mipsGot->getGp(file);
+  case R_NANOMIPS_GPREL:
+    return sym.getVA(a) - ElfSym::nanoMipsGp->getVA(0);
+  case R_NANOMIPS_PAGE_PC:
+    return sym.getVA(a) - getNanoMipsPage(p + 4);
   case R_AARCH64_PAGE_PC: {
     uint64_t val = sym.isUndefWeak() ? p + a : sym.getVA(a);
     return getAArch64Page(val) - getAArch64Page(p);
@@ -841,7 +888,12 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
       break;
     }
 
-  for (const RelTy &rel : rels) {
+  // Next two vars are used only for nanoMIPS
+  uint64_t valFromBefore = 0;
+  bool prevRelocOnlyCalculating = false;
+
+  for (auto it = rels.begin(), end = rels.end(); it != end; it++) {
+    const RelTy &rel = *it;
     RelType type = rel.getType(config->isMips64EL);
 
     // GCC 8.0 or earlier have a bug that they emit R_386_GOTPC relocations
@@ -905,6 +957,48 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
     // For a relocatable link, only tombstone values are applied.
     if (config->relocatable)
       continue;
+
+    // We might have more than one relocation
+    // consisting the final relocation
+    if (config->emachine == EM_NANOMIPS) {
+      // No R_SIZE for now for nanoMIPS
+      if (expr == R_ABS || expr == R_NANOMIPS_NEG_COMPOSITE ||
+          expr == R_NANOMIPS_ASHIFTR || expr == R_DTPREL ||
+          expr == R_GOTPLTREL) {
+        uint64_t val = 0;
+
+        uint64_t secAddr = getOutputSection()->addr;
+        if (auto *sec = dyn_cast<InputSection>(this))
+          secAddr += sec->outSecOff;
+        const uint64_t addrLoc = secAddr + offset;
+
+        if (prevRelocOnlyCalculating) {
+          val = SignExtend64<bits>(this->getRelocTargetVA(
+              file, type, valFromBefore, addrLoc, sym, expr));
+        } else {
+          val = SignExtend64<bits>(
+              this->getRelocTargetVA(file, type, addend, addrLoc, sym, expr));
+        }
+        auto next = it + 1;
+        if (next != rels.end() && next->r_offset == rel.r_offset) {
+          const RelTy &nextRel = *next;
+          RelType nextType = nextRel.getType(config->isMips64EL);
+          Symbol &nextSym = getFile<ELFT>()->getRelocTargetSym(nextRel);
+          RelExpr nextExpr = target.getRelExpr(nextType, nextSym, bufLoc);
+          if (nextExpr == R_ABS || nextExpr == R_NANOMIPS_NEG_COMPOSITE ||
+              nextExpr == R_NANOMIPS_ASHIFTR || expr == R_DTPREL ||
+              nextExpr == R_GOTPLTREL) {
+
+            prevRelocOnlyCalculating = true;
+            valFromBefore = val;
+            continue;
+          }
+        }
+        prevRelocOnlyCalculating = false;
+        target.relocateNoSym(bufLoc, type, val);
+        continue;
+      }
+    }
 
     if (expr == R_SIZE) {
       target.relocateNoSym(bufLoc, type,
@@ -1086,11 +1180,11 @@ template <class ELFT> void InputSection::writeTo(uint8_t *buf) {
   // If -r or --emit-relocs is given, then an InputSection
   // may be a relocation section.
   if (LLVM_UNLIKELY(type == SHT_RELA)) {
-    copyRelocations<ELFT>(buf, getDataAs<typename ELFT::Rela>());
+    copyRelocations<ELFT, typename ELFT::Rela>(buf);
     return;
   }
   if (LLVM_UNLIKELY(type == SHT_REL)) {
-    copyRelocations<ELFT>(buf, getDataAs<typename ELFT::Rel>());
+    copyRelocations<ELFT, typename ELFT::Rel>(buf);
     return;
   }
 
@@ -1176,6 +1270,38 @@ void EhInputSection::split(ArrayRef<RelTy> rels) {
       break;
     }
     uint64_t size = endian::read32<ELFT::TargetEndianness>(d.data());
+
+    if (config->emachine == EM_NANOMIPS) {
+      // nanoMIPS may have an unresolved relocation for size of CIE/FDE,
+      // calculate the value here, so proper values can be used
+      const uint64_t off = d.data() - content().data();
+      while (relI != rels.size() && rels[relI].r_offset < off)
+        ++relI;
+
+      if (relI != rels.size()) {
+
+        // Resolving (composite) nanoMIPS relocation
+        const unsigned bits = sizeof(typename ELFT::uint) * 8;
+        uint64_t calculatedVal = getAddend<ELFT>(rels[relI]);
+        for (unsigned int relJ = relI;
+             relJ != rels.size() && rels[relJ].r_offset == off; ++relJ) {
+          const RelTy &rel = rels[relJ];
+          Symbol &sym = getFile<ELFT>()->getRelocTargetSym(rel);
+          RelType type = rel.getType(config->isMips64EL);
+          RelExpr expr = target->getRelExpr(type, sym, 0);
+          assert(expr != R_PC && expr != R_NANOMIPS_PAGE_PC &&
+                 "PC relocs not expected for determining size of .eh_frame "
+                 "entries");
+          calculatedVal = SignExtend64<bits>(
+              getRelocTargetVA(file, type, calculatedVal, 0, sym, expr));
+        }
+
+        // If the relocation exists, use its calculated value
+        // for the size
+        if (rels[relI].r_offset == off)
+          size = calculatedVal;
+      }
+    }
     if (size == 0) // ZERO terminator
       break;
     uint32_t id = endian::read32<ELFT::TargetEndianness>(d.data() + 4);

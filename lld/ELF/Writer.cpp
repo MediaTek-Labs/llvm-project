@@ -189,6 +189,8 @@ void elf::addReservedSymbols() {
     addOptionalRegular("_SDA_BASE_", nullptr, 0, STV_HIDDEN);
   } else if (config->emachine == EM_PPC64) {
     addPPC64SaveRestore();
+  } else if (config->emachine == EM_NANOMIPS && !ElfSym::nanoMipsGp) {
+    ElfSym::nanoMipsGp = addAbsolute("_gp");
   }
 
   // The Power Architecture 64-bit v2 ABI defines a TableOfContents (TOC) which
@@ -313,6 +315,12 @@ template <class ELFT> void elf::createSyntheticSections() {
       add(*in.mipsOptions);
     if ((in.mipsReginfo = MipsReginfoSection<ELFT>::create()))
       add(*in.mipsReginfo);
+  }
+
+  // Add nanoMIPS-specific sections.
+  if (config->emachine == EM_NANOMIPS) {
+    if (auto *sec = NanoMipsAbiFlagsSection<ELFT>::get())
+      add(*sec);
   }
 
   StringRef relaDynName = config->isRela ? ".rela.dyn" : ".rel.dyn";
@@ -1102,6 +1110,44 @@ template <class ELFT> void Writer<ELFT>::setReservedSymbolSections() {
       }
     }
   }
+
+  // Setup nanoMIPS _gp if not set up by linker script yet
+  // TODO: Check the constraints that are marked in documentation, chapter 5.3
+  // Sections -> Special sections
+  // http://codescape.mips.com/components/toolchain/nanomips/2019.03-01/docs/MIPS_nanoMIPS_ABI_supplement_01_03_DN00179.pdf
+  // also, check if we can do something about the order of the small data area
+  // sections
+  // TODO: Needs testing and verification
+  if (ElfSym::nanoMipsGp && !ElfSym::nanoMipsGp->scriptDefined) {
+    const char *smallDataArea[] = {".got", ".ssdata", ".ssbss", ".sdata",
+                                   ".sbss"};
+    // Refers to the smallDataArea section that is found
+    int foundSec = sizeof(smallDataArea) / sizeof(smallDataArea[0]);
+    size_t foundSecIdx = 0;
+    for (auto [i, osec] : llvm::enumerate(outputSections)) {
+      for (int j = 0; j < foundSec; j++) {
+        if (osec->name == smallDataArea[j]) {
+          foundSec = j;
+          foundSecIdx = i;
+          break;
+        }
+      }
+
+      // Best find is the got section, we search for it until the end
+      if (foundSec == 0)
+        break;
+    }
+
+    // We didn't find any of the small data area sections
+    // _gp is then set to 0
+    if (foundSec == 5) {
+      ElfSym::nanoMipsGp->section = nullptr;
+      ElfSym::nanoMipsGp->value = 0;
+    } else {
+      ElfSym::nanoMipsGp->section = outputSections[foundSecIdx];
+      ElfSym::nanoMipsGp->value = 0;
+    }
+  }
 }
 
 // We want to find how similar two ranks are.
@@ -1632,7 +1678,9 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
 
     // With Thunk Size much smaller than branch range we expect to
     // converge quickly; if we get to 15 something has gone wrong.
-    if (changed && pass >= 15) {
+    // Note: Increased to 30 as nanoMIPS has expansions also
+    // this still doesn't guarantee if it will be expanded
+    if (changed && pass >= 30) {
       error(target->needsThunks ? "thunk creation not converged"
                                 : "relaxation not converged");
       break;
@@ -2037,6 +2085,11 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
         addPhdrForSection(part, SHT_MIPS_OPTIONS, PT_MIPS_OPTIONS, PF_R);
         addPhdrForSection(part, SHT_MIPS_ABIFLAGS, PT_MIPS_ABIFLAGS, PF_R);
       }
+
+      if (config->emachine == EM_NANOMIPS) {
+        addPhdrForSection(part, SHT_NANOMIPS_ABIFLAGS, PT_NANOMIPS_ABIFLAGS,
+                          PF_R);
+      }
     }
     Out::programHeaders->size = sizeof(Elf_Phdr) * mainPart->phdrs.size();
 
@@ -2338,9 +2391,21 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
     uint64_t newFlags = computeFlags(sec->getPhdrFlags());
     bool sameLMARegion =
         load && !sec->lmaExpr && sec->lmaRegion == load->firstSec->lmaRegion;
+    // FIXME: Added specifics for EM_NANOMIPS, as parsing OVERLAY in linker
+    // script is different for this architecture. New load program header is
+    // needed so OVERLAY sections can have same virtual addresses but different
+    // load addresses
+    // FIXME: Also nanoMIPS, added a case where when output section alignment is
+    // not the same as the first section's in the load program header, then a
+    // new load program header is created, as this can result in lmas
+    // overlapping
     if (!(load && newFlags == flags && sec != relroEnd &&
           sec->memRegion == load->firstSec->memRegion &&
-          (sameLMARegion || load->lastSec == Out::programHeaders))) {
+          (sameLMARegion || load->lastSec == Out::programHeaders)) ||
+        (config->emachine == EM_NANOMIPS &&
+         (sec->inOverlay || sec->type == SHT_NOBITS ||
+          load->firstSec->type == SHT_NOBITS ||
+          sec->addralign != load->firstSec->addralign))) {
       load = addHdr(PT_LOAD, newFlags);
       flags = newFlags;
     }
@@ -2518,7 +2583,10 @@ static uint64_t computeFileOffset(OutputSection *os, uint64_t off) {
   // If two sections share the same PT_LOAD the file offset is calculated
   // using this formula: Off2 = Off1 + (VA2 - VA1).
   OutputSection *first = os->ptLoad->firstSec;
-  return first->offset + os->addr - first->addr;
+  uint64_t result = first->offset + os->addr - first->addr;
+  if (config->emachine == EM_NANOMIPS && os->inOverlay)
+    result = first->offset + os->getLMA() - first->getLMA();
+  return result;
 }
 
 template <class ELFT> void Writer<ELFT>::assignFileOffsetsBinary() {
@@ -2666,6 +2734,10 @@ static void checkOverlap(StringRef name, std::vector<SectionOffset> &sections,
     // If both sections are in OVERLAY we allow the overlapping of virtual
     // addresses, because it is what OVERLAY was designed for.
     if (isVirtualAddr && a.sec->inOverlay && b.sec->inOverlay)
+      continue;
+
+    if (config->emachine == EM_NANOMIPS &&
+        (a.sec->type == SHT_NOBITS || b.sec->type == SHT_NOBITS))
       continue;
 
     errorOrWarn("section " + a.sec->name + " " + name +

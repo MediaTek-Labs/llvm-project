@@ -1,5 +1,5 @@
-// RUN: %clang_cc1 -emit-llvm -o - %s -fsanitize=kcfi | FileCheck  -- check-prefix=CHECK-ENABLED %s
-// RUN: %clang_cc1 -emit-llvm -o - %s -fsanitize=kcfi -fsanitize-kcfi-disable-check | FileCheck  -- check-prefix=CHECK-DISABLED %s
+// RUN: %clang_cc1 -emit-llvm -o - %s -fsanitize=kcfi -fsanitize-trap=kcfi | FileCheck  --check-prefix=CHECK-ENABLED %s
+// RUN: %clang_cc1 -emit-llvm -o - %s -fsanitize=kcfi -fsanitize-trap=kcfi -fsanitize-kcfi-disable-check | FileCheck  --check-prefix=CHECK-DISABLED %s
 
 // CHECK-ENABLED: {{define.*@callee.*!kcfi_type}}
 // CHECK-DISABLED: {{define.*@callee.*!kcfi_type}}
@@ -17,8 +17,8 @@ void *p = callee;
 // CHECK-DISABLED: {{define.*@caller.*!kcfi_type}}
 int caller() {
   void (*callee)(int) = p;
-  // CHECK-DISABLED-NOT: @llvm.trap
-  // CHECK-ENABLED: @llvm.trap
+  // CHECK-DISABLED-NOT: @{{llvm\..*trap}}
+  // CHECK-ENABLED: @llvm.debugtrap
   callee(77);
   return 0;
 }

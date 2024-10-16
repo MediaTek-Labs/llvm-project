@@ -1182,6 +1182,7 @@ MipsSETargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
   default:
     return MipsTargetLowering::EmitInstrWithCustomInserter(MI, BB);
   case Mips::BPOSGE32_PSEUDO:
+  case Mips::BPOSGE32_PSEUDO_NM:
     return emitBPOSGE32(MI, BB);
   case Mips::SNZ_B_PSEUDO:
     return emitMSACBranchPseudo(MI, BB, Mips::BNZ_B);
@@ -3284,7 +3285,17 @@ MipsSETargetLowering::emitBPOSGE32(MachineInstr &MI,
 
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
-  const TargetRegisterClass *RC = &Mips::GPR32RegClass;
+  const TargetRegisterClass *RC;
+  uint16_t AddOpcode, Bposge32Opcode, Zero;
+  if (Subtarget.hasDSPNanoMips()) {
+    RC = &Mips::GPRNM32RegClass;
+    AddOpcode = Mips::ADDIU_NM;
+    Zero = Mips::ZERO_NM;
+  } else {
+    RC=  &Mips::GPR32RegClass;
+    AddOpcode = Mips::ADDiu;
+    Zero = Mips::ZERO;
+  }
   DebugLoc DL = MI.getDebugLoc();
   const BasicBlock *LLVM_BB = BB->getBasicBlock();
   MachineFunction::iterator It = std::next(MachineFunction::iterator(BB));
@@ -3307,21 +3318,28 @@ MipsSETargetLowering::emitBPOSGE32(MachineInstr &MI,
   FBB->addSuccessor(Sink);
   TBB->addSuccessor(Sink);
 
+  if (Subtarget.hasDSPNanoMips())
+    Bposge32Opcode = Mips::BPOSGE32C_NM;
+  else if (Subtarget.hasDSPR3())
+    Bposge32Opcode = Mips::BPOSGE32C_MMR3;
+  else if (Subtarget.hasDSP()|| Subtarget.hasDSPR2())
+    Bposge32Opcode = Mips::BPOSGE32;
+  else
+    llvm_unreachable("Unexpected target emitting BPOSGE32");
+
   // Insert the real bposge32 instruction to $BB.
-  BuildMI(BB, DL, TII->get(Mips::BPOSGE32)).addMBB(TBB);
-  // Insert the real bposge32c instruction to $BB.
-  BuildMI(BB, DL, TII->get(Mips::BPOSGE32C_MMR3)).addMBB(TBB);
+  BuildMI(BB, DL, TII->get(Bposge32Opcode)).addMBB(TBB);
 
   // Fill $FBB.
   Register VR2 = RegInfo.createVirtualRegister(RC);
-  BuildMI(*FBB, FBB->end(), DL, TII->get(Mips::ADDiu), VR2)
-    .addReg(Mips::ZERO).addImm(0);
+  BuildMI(*FBB, FBB->end(), DL, TII->get(AddOpcode), VR2)
+    .addReg(Zero).addImm(0);
   BuildMI(*FBB, FBB->end(), DL, TII->get(Mips::B)).addMBB(Sink);
 
   // Fill $TBB.
   Register VR1 = RegInfo.createVirtualRegister(RC);
-  BuildMI(*TBB, TBB->end(), DL, TII->get(Mips::ADDiu), VR1)
-    .addReg(Mips::ZERO).addImm(1);
+  BuildMI(*TBB, TBB->end(), DL, TII->get(AddOpcode), VR1)
+    .addReg(Zero).addImm(1);
 
   // Insert phi function to $Sink.
   BuildMI(*Sink, Sink->begin(), DL, TII->get(Mips::PHI),

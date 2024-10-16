@@ -108,6 +108,14 @@ class APPEND_NM_ENC : InstNM_Enc, _Pool_P32A<0b101> {
   let Inst{9-3} = 0b1000010;
 }
 
+class BPOSGE32C_NM_ENC : InstNM_Enc, _Pool_P32<0b10010> {
+  bits<15> offset;
+
+  let Inst{20-14} = 0b0010001;
+  let Inst{13...1} = offset{13...1};
+  let Inst{0} =  offset{14};
+}
+
 class SHLL_QB_R2_NM_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
                               Operand ImmOp, ImmLeaf ImmPattern,
                               bit SideEffects = 0> {
@@ -369,6 +377,15 @@ def EXTR_RS_W_NM   : EXTR_RS_W_NM_ENC        , EXTR_RS_W_DESC  <NanoMipsRO_TYPES
 
 def RDDSP_NM       : RDDSP_NM_ENC            , RDDSP_NM_DESC;
 def WRDSP_NM       : WRDSP_NM_ENC            , WRDSP_NM_DESC;
+
+def BPOSGE32C_NM   : BPOSGE32C_NM_ENC        , BPOSGE32C_MMR3_DESC<brtarget14_nm>;
+
+// Pseudos.
+let AdditionalPredicates = [HasDSPNanoMips] in {
+def BPOSGE32_PSEUDO_NM :
+  BPOSGE32_PSEUDO_DESC_BASE<int_mips_bposge32, NanoMipsRO_TYPES>,
+  Uses<[DSPPos]>;
+}
 
 let AdditionalPredicates = [HasDSPNanoMips, HasDSP] in {
   def PseudoMTLOHI_DSP_NM : PseudoMTLOHI<ACC64DSPNM, GPRNM32>;

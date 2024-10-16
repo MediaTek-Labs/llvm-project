@@ -226,6 +226,8 @@ bool MipsInstrInfo::reverseBranchCondition(
     SmallVectorImpl<MachineOperand> &Cond) const {
   assert( (Cond.size() && Cond.size() <= 3) &&
           "Invalid Mips branch condition!");
+  if (Cond[0].getImm() == Mips::BPOSGE32C_NM)
+    return true; // Not reversible
   Cond[0].setImm(getOppositeBranchOpc(Cond[0].getImm()));
   return false;
 }
@@ -452,6 +454,8 @@ bool MipsInstrInfo::isBranchOffsetInRange(unsigned BranchOpc,
   case Mips::BPOSGE32_MM:
   case Mips::BPOSGE32C_MMR3:
     return isInt<17>(BrOffset);
+  case Mips::BPOSGE32C_NM:
+    return isInt<15>(BrOffset);
 
   // cnMIPS branches.
   case Mips::BBIT0:

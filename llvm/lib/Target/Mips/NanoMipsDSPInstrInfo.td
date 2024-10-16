@@ -418,6 +418,17 @@ def : DSPShiftPat<SHRL_QB_NM, v4i8,  MipsSHRL_DSP,      imm,      HasDSPNanoMips
 def : DSPShiftPat<SHLL_QB_NM, v4i8,  int_mips_shll_qb,  immZExt3, HasDSPNanoMips>;
 def : DSPShiftPat<SHRL_QB_NM, v4i8,  int_mips_shrl_qb,  immZExt3, HasDSPNanoMips>;
 
+def : EXTR_W_TY1_R1_Pat<MipsEXTP,       EXTP_NM,       HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTP,       EXTPV_NM,      HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTPDP,     EXTPDP_NM,     HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTPDP,     EXTPDPV_NM,    HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_W,     EXTR_W_NM,     HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_W,     EXTRV_W_NM,    HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_R_W,   EXTR_R_W_NM,   HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_R_W,   EXTRV_R_W_NM,  HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_RS_W,  EXTR_RS_W_NM,  HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_RS_W,  EXTRV_RS_W_NM, HasDSPNanoMips, NanoMipsRO_TYPES>;
+
 let isPseudo = 1, isCodeGenOnly = 1, hasNoSchedulingInfo = 1 in {
   // Pseudo instructions for loading and storing accumulator registers.
   def LOAD_ACC64DSPNM  : Load<"", ACC64DSPNMOpnd>;

@@ -753,7 +753,7 @@ unsigned MipsSEInstrInfo::getAnalyzableBrOpc(unsigned Opc) const {
           Opc == Mips::BGEUC_NM || Opc == Mips::BGEIUC_NM ||
           Opc == Mips::BLTC_NM || Opc == Mips::BLTIC_NM ||
           Opc == Mips::BLTUC_NM || Opc == Mips::BLTIUC_NM ||
-          Opc == Mips::BC_NM ) ? Opc : 0;
+          Opc == Mips::BC_NM || Opc == Mips::BPOSGE32C_NM) ? Opc : 0;
 }
 
 void MipsSEInstrInfo::expandRetRA(MachineBasicBlock &MBB,

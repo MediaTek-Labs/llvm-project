@@ -149,7 +149,7 @@ def : InstRW<[GenericWriteALU], (instrs ADD_NM, ADDu16_NM, ADDu4x4_NM, ADDu_NM,
                                  MULT_DSP_NM, MULTU_DSP_NM, MODSUB_NM, APPEND_NM,
                                  MADD_DSP_NM, MADDU_DSP_NM, MSUB_DSP_NM, MSUBU_DSP_NM,
                                  BITREV_NM, INSV_NM, PACKRL_PH_NM,
-                                 RDDSP_NM, WRDSP_NM,
+                                 RDDSP_NM, WRDSP_NM, BPOSGE32C_NM,
                                  MFHI_NM, MFLO_NM, MTHI_NM, MTLO_NM,
                                  MTHLIP_NM, SHILOV_NM, SHILO_NM)>;
 

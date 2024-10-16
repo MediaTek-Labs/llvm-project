@@ -377,9 +377,9 @@ class WRDSP_MM_DESC {
   bit isMoveReg = 1;
 }
 
-class BPOSGE32C_MMR3_DESC {
+class BPOSGE32C_MMR3_DESC<Operand ImmOpnd = brtarget1SImm16> {
   dag OutOperandList = (outs);
-  dag InOperandList = (ins brtarget1SImm16:$offset);
+  dag InOperandList = (ins ImmOpnd:$offset);
   string AsmString = !strconcat("bposge32c", "\t$offset");
   InstrItinClass Itinerary = NoItinerary;
   bit isBranch = 1;

@@ -527,8 +527,8 @@ class MTHI_DESC_BASE<string instr_asm, RegisterOperand ROACC,
   bit isMoveReg = 1;
 }
 
-class BPOSGE32_PSEUDO_DESC_BASE<SDPatternOperator OpNode> :
-  MipsPseudo<(outs GPR32Opnd:$dst), (ins), [(set GPR32Opnd:$dst, (OpNode))]> {
+class BPOSGE32_PSEUDO_DESC_BASE<SDPatternOperator OpNode, RO_TYPES RO> :
+  MipsPseudo<(outs RO.GPR:$dst), (ins), [(set RO.GPR:$dst, (OpNode))]> {
   bit hasNoSchedulingInfo = 1;
   bit usesCustomInserter = 1;
 }
@@ -1225,8 +1225,11 @@ class PREPEND_DESC<RO_TYPES RO = MipsRO_TYPES> :
   APPEND_DESC_BASE<"prepend", int_mips_prepend, uimm5, timmZExt5, NoItinerary, RO>;
 
 // Pseudos.
-def BPOSGE32_PSEUDO : BPOSGE32_PSEUDO_DESC_BASE<int_mips_bposge32>,
-                      Uses<[DSPPos]>;
+let AdditionalPredicates = [HasDSPNonNanoMips] in {
+def BPOSGE32_PSEUDO :
+  BPOSGE32_PSEUDO_DESC_BASE<int_mips_bposge32, MipsRO_TYPES>,
+  Uses<[DSPPos]>;
+}
 
 // Instruction defs.
 // MIPS DSP Rev 1

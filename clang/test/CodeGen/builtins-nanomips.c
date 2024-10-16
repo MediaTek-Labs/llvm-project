@@ -131,6 +131,8 @@ void foo() {
 // CHECK: call void @llvm.mips.wrdsp
   a64_r = __builtin_mips_mthlip(a64_a, i32_b);
 // CHECK: call i64 @llvm.mips.mthlip
+  i32_r = __builtin_mips_bposge32();
+// CHECK: call i32 @llvm.mips.bposge32
 
   // MIPS DSP Rev 2
 

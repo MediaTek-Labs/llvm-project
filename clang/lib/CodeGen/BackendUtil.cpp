@@ -80,6 +80,7 @@
 #include "llvm/Transforms/Instrumentation/ThreadSanitizer.h"
 #include "llvm/Transforms/ObjCARC.h"
 #include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/CorrelatedValuePropagation.h"
 #include "llvm/Transforms/Scalar/EarlyCSE.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Scalar/JumpThreading.h"
@@ -968,6 +969,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       PB.registerScalarOptimizerLateEPCallback(
           [Trap, Recover](FunctionPassManager &FPM, OptimizationLevel Level) {
             FPM.addPass(BoundsCheckingPass(Trap, Recover));
+            FPM.addPass(CorrelatedValuePropagationPass());
           });
     }
 

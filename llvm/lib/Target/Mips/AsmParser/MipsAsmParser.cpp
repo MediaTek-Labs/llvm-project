@@ -6093,10 +6093,13 @@ bool MipsAsmParser::expandSneI(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
 // do not map the DSP registers contigously to gpr registers.
 static unsigned getRegisterForMxtrDSP(MCInst &Inst, bool IsMFDSP) {
   switch (Inst.getOpcode()) {
-    case Mips::MFTLO:
-    case Mips::MTTLO:
     case Mips::MFTLO_NM:
     case Mips::MTTLO_NM:
+      if (Inst.getOperand(IsMFDSP ? 1 : 0).getReg() == Mips::AC0)
+        return Mips::HARD_ZERO;
+      LLVM_FALLTHROUGH;
+    case Mips::MFTLO:
+    case Mips::MTTLO:
       switch (Inst.getOperand(IsMFDSP ? 1 : 0).getReg()) {
         case Mips::AC0:
           return Mips::ZERO;

@@ -86,6 +86,7 @@ let Namespace = "Mips" in {
   // General Purpose Registers
   let isConstant = true in
   def ZERO : MipsGPRReg< 0, "zero">, DwarfRegNum<[0]>;
+  def HARD_ZERO : MipsGPRReg< 0, "0">, DwarfRegNum<[0]>;
   def AT   : MipsGPRReg< 1, "1">,    DwarfRegNum<[1]>;
   def V0   : MipsGPRReg< 2, "2">,    DwarfRegNum<[2]>;
   def V1   : MipsGPRReg< 3, "3">,    DwarfRegNum<[3]>;

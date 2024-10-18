@@ -80,6 +80,7 @@
 #include "llvm/Transforms/Instrumentation/ThreadSanitizer.h"
 #include "llvm/Transforms/Instrumentation/TypeSanitizer.h"
 #include "llvm/Transforms/ObjCARC.h"
+#include "llvm/Transforms/Scalar/CorrelatedValuePropagation.h"
 #include "llvm/Transforms/Scalar/EarlyCSE.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Scalar/JumpThreading.h"
@@ -1056,6 +1057,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
         FPM.addPass(BoundsCheckingPass(Options));
         FPM.addPass(InstCombinePass());
         FPM.addPass(GVNPass());
+        FPM.addPass(CorrelatedValuePropagationPass());
       });
 
     // Don't add sanitizers if we are here from ThinLTO PostLink. That already

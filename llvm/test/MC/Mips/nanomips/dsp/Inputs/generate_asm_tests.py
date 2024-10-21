@@ -1,15 +1,23 @@
 #!/usr/bin/python3
+
+# generates assembly test for DSP ASE instructions
+# provided by instructions.csv
+# dump into llvm/test/MC/Mips/nanomips/dsp_asm.s
+# and run <build path>/bin/llvm-lit llvm/test/asm.s
+
 import csv
 import os
 import re
 import random
 LITS = {'0', '1', 'x'}
-
+TESTS_PER_INSTR = 3
 GPR = re.compile('GPR\[(rs|rd|rt)\]\((\d+)\)')
 ACC = re.compile('ACC\[(ac)\]\((\d+)\)')
-MASK = re.compile('(mask)\((\d+)\)')
+IMM = re.compile('(mask|sa|shift|size|s)\((\d+)(u|l)\)')
+ADDRESS = re.compile('(s)\((\d+)(u|l)\)')
+LABEL='.LBB0_2'
 
-def parse_encoding(encoding):
+def parse_encoding(encoding, name):
     encoding = encoding.replace(' ','')
     parts = encoding.split('|')
     operands = []
@@ -25,18 +33,44 @@ def parse_encoding(encoding):
         if m:
             operands.append({'type': 'ACC', 'name': m.group(1), 'width': int(m.group(2))})
             continue
-        m = MASK.match(part)
+        m = ADDRESS.match(part)
         if m:
-            operands.append({'type': 'IMM', 'name': m.group(1), 'width': int(m.group(2))})
+            operands.append({'type': 'ADDRESS', 'name': m.group(1), 'width': int(m.group(2))})
+            continue
+        m = IMM.match(part)
+        if m:
+            signed = {'u': False, 'l': True}[m.group(3)]
+            operands.append({'type': 'IMM',
+                             'name': m.group(1),
+                             'width': int(m.group(2)),
+                             'signed': signed})
             continue
         print (encoding)
         assert False, "unexpected pattern " + part
     return operands
 
 
-def get_immediate(n):
-    num = random.getrandbits(n)
-    return format(num, f'0{n}b'), num
+def get_immediate(n, is_signed = False):
+    if is_signed:
+        # Calculate the range based on the width n
+        min_val = -2**(n-1)
+        max_val = 2**(n-1) - 1
+        # Generate a random number within the range
+        random_number = random.randint(min_val, max_val)
+
+        # Convert to 2's complement binary representation
+        if random_number < 0:
+            # Calculate 2's complement for negative numbers
+            string_representation = bin(random_number & (2**n - 1))[2:]
+        else:
+            # Format positive numbers to maintain width n
+            string_representation = format(random_number, f'0{n}b')
+    else:
+        random_number = random.getrandbits(n)
+        string_representation = format(random_number, f'0{n}b')
+
+    return string_representation, random_number
+
 
 def insert_operand_to_format(instr_format, name, val, is_register = False):
     prefix = '$' if is_register else ''
@@ -64,14 +98,38 @@ NM_REG_NAMES = {
     30:"fp", 31:"ra"
 }
 
+
+'''
+BPOSGE32C: we can't test actual value of the address since it's
+subjected to relocation.
+Instead, every pair of address bits is marked as 'A'.
+To make it more complicated, a prefix of the 'A's string is appended
+to the suffix of non-address bits in binary form, up to the size of the address.
+Then the suffix the the 'A's string is a emitted in a separate chunk
+'''
+def  bposge32c_fixup(hex_chunks, address_operand):
+    width = address_operand['width']
+    assert (width < 16 and width > 8), \
+        f'Unexepected address operand width {width} of bposge32c'
+    retained_bits = 16 - width
+    bin_chunk2 = format(int(hex_chunks[2], 16), '08b')
+    new_chunk2 ='0b' + bin_chunk2[0:retained_bits]
+    new_chunk2 += 'A'*((width - retained_bits)>>1)
+    new_chunk3 = 'A'* (retained_bits>>1)
+    return [hex_chunks[0], hex_chunks[1], new_chunk2, new_chunk3]
+
+
 def get_instance(instr, max_format):
     binary_string = ''
     instr_format = instr['format']
     for operand in instr['operands']:
         if operand['type'] == 'literal':
              binary_string += operand['value']
+        elif operand['type'] == 'ADDRESS':
+             binary_string += '0' * operand['width']
+             instr_format = insert_operand_to_format(instr_format, operand['name'], LABEL)
         elif operand['type'] == 'IMM':
-             string, num = get_immediate(operand['width'])
+             string, num = get_immediate(operand['width'], operand['signed'])
              binary_string += string
              instr_format = insert_operand_to_format(instr_format, operand['name'], str(num))
         elif operand['type'] in ['GPR', 'ACC']:
@@ -83,10 +141,16 @@ def get_instance(instr, max_format):
                  string = 'ac' + str(num)
              assert string is not None, "No match for register number " + str(num)
              instr_format = insert_operand_to_format(instr_format, operand['name'], string, True)
+    assert len(binary_string) == 32, \
+        f'Unexepected binary length ({str(len(binary_string))}): {binary_string}'
     instr_format = instr_format.replace("@", instr['name'])
-    instr_format = instr_format.ljust(max_format + 10)
+    instr_format = instr_format.ljust(max_format + 14)
+    if instr['name'].startswith("#"):
+        return f"  {instr_format} # yet to be implemened"
     chunks = split8(binary_string)
     hex_chunks = tohex(chunks)
+    if instr['name'].startswith('bposge32c'):
+        hex_chunks = bposge32c_fixup(hex_chunks, instr['operands'][-1])
     test_line = f'  {instr_format} # CHECK: {instr_format}'
     test_line +=  "# encoding: [{e1},{e0},{e3},{e2}]"
     return test_line.format(e2 = hex_chunks[2], e3 = hex_chunks[3],
@@ -122,15 +186,21 @@ file_path = os.path.join(file_path, 'instructions.csv')
 data = read_file(file_path)
 
 for row in data:
-    row['operands'] = parse_encoding(row['encoding'])
+    row['operands'] = parse_encoding(row['encoding'], row['name'])
 
 max_format = max(len(item['format']) for item in data)
 
-test_lines =  [ get_instances(row, max_format, 3) for row in data ]
+test_lines =  [ get_instances(row, max_format, TESTS_PER_INSTR) for row in data ]
 test_lines = '\n'.join(test_lines)
-test = f'''# RUN: llvm-mc -show-encoding -triple=nanomips-elf -mattr=dsp %s | FileCheck %s
+test = f'''# DO NOT MODIFY!
+# This test was auto-generated by {os.path.basename(__file__)}
+# Please modify its input (instructions.csv) instead, and re-generate.
+# RUN: llvm-mc -show-encoding -triple=nanomips-elf -mattr=dsp %s | FileCheck %s
 #
 # CHECK:   .text
   .set noat
-{test_lines}'''
+{test_lines}
+{LABEL}:
+  balc    abort
+'''
 print(test)

@@ -342,11 +342,12 @@ class REPL_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
 }
 
 class SHLL_QB_R3_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
-                           InstrItinClass itin, RegisterOperand RO> {
+                           InstrItinClass itin, RegisterOperand RO,
+                           RegisterOperand GPRO> {
   dag OutOperandList = (outs RO:$rd);
-  dag InOperandList =  (ins RO:$rt, GPR32Opnd:$rs_sa);
+  dag InOperandList =  (ins RO:$rt, GPRO:$rs_sa);
   string AsmString = !strconcat(instr_asm, "\t$rd, $rt, $rs_sa");
-  list<dag> Pattern = [(set RO:$rd, (OpNode RO:$rt, GPR32Opnd:$rs_sa))];
+  list<dag> Pattern = [(set RO:$rd, (OpNode RO:$rt, GPRO:$rs_sa))];
   InstrItinClass Itinerary = itin;
   string BaseOpcode = instr_asm;
 }
@@ -718,7 +719,7 @@ class SHLL_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHLLV_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shllv.qb", int_mips_shll_qb,
-                       NoItinerary, RO.DSPR>,
+                       NoItinerary, RO.DSPR, RO.GPR>,
   Defs<[DSPOutFlag22]>;
 
 class SHRL_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
@@ -727,7 +728,7 @@ class SHRL_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHRLV_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shrlv.qb", int_mips_shrl_qb,
-                       NoItinerary, RO.DSPR>;
+                       NoItinerary, RO.DSPR, RO.GPR>;
 
 class SHLL_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R2_DESC_BASE<"shll.ph", null_frag, immZExt4,
@@ -736,7 +737,7 @@ class SHLL_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHLLV_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shllv.ph", int_mips_shll_ph,
-                       NoItinerary, RO.DSPR>,
+                       NoItinerary, RO.DSPR, RO.GPR>,
   Defs<[DSPOutFlag22]>;
 
 class SHLL_S_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
@@ -747,7 +748,7 @@ class SHLL_S_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHLLV_S_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shllv_s.ph", int_mips_shll_s_ph,
-                       NoItinerary, RO.DSPR>,
+                       NoItinerary, RO.DSPR, RO.GPR>,
   Defs<[DSPOutFlag22]>;
 
 class SHRA_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
@@ -756,7 +757,7 @@ class SHRA_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHRAV_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shrav.ph", int_mips_shra_ph,
-                       NoItinerary, RO.DSPR>;
+                       NoItinerary, RO.DSPR, RO.GPR>;
 
 class SHRA_R_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R2_DESC_BASE<"shra_r.ph", int_mips_shra_r_ph,
@@ -765,7 +766,7 @@ class SHRA_R_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHRAV_R_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shrav_r.ph", int_mips_shra_r_ph,
-                       NoItinerary, RO.DSPR>;
+                       NoItinerary, RO.DSPR, RO.GPR>;
 
 class SHLL_S_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R2_DESC_BASE<"shll_s.w", int_mips_shll_s_w,
@@ -775,7 +776,7 @@ class SHLL_S_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHLLV_S_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shllv_s.w", int_mips_shll_s_w,
-                       NoItinerary, RO.GPR>,
+                       NoItinerary, RO.GPR, RO.GPR>,
   Defs<[DSPOutFlag22]>;
 
 class SHRA_R_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
@@ -785,7 +786,7 @@ class SHRA_R_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHRAV_R_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shrav_r.w", int_mips_shra_r_w,
-                       NoItinerary, RO.GPR>;
+                       NoItinerary, RO.GPR, RO.GPR>;
 
 // Multiplication
 class MULEU_S_PH_QBL_DESC<RO_TYPES RO = MipsRO_TYPES> :
@@ -1195,7 +1196,7 @@ class SHRA_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHRAV_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shrav.qb", int_mips_shra_qb,
-                       NoItinerary, RO.DSPR>;
+                       NoItinerary, RO.DSPR, RO.GPR>;
 
 class SHRA_R_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R2_DESC_BASE<"shra_r.qb", int_mips_shra_r_qb,
@@ -1204,7 +1205,7 @@ class SHRA_R_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHRAV_R_QB_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shrav_r.qb", int_mips_shra_r_qb,
-                       NoItinerary, RO.DSPR>;
+                       NoItinerary, RO.DSPR, RO.GPR>;
 
 class SHRL_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R2_DESC_BASE<"shrl.ph", null_frag, immZExt4,
@@ -1212,7 +1213,7 @@ class SHRL_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
 
 class SHRLV_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
   SHLL_QB_R3_DESC_BASE<"shrlv.ph", int_mips_shrl_ph,
-                       NoItinerary, RO.DSPR>;
+                       NoItinerary, RO.DSPR, RO.GPR>;
 
 // Misc
 class APPEND_DESC<RO_TYPES RO = MipsRO_TYPES> :

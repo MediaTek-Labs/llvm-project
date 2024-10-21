@@ -301,6 +301,16 @@ entry:
 
 declare <2 x i16> @llvm.mips.subq.s.ph(<2 x i16>, <2 x i16>) nounwind
 
+define i32 @test__builtin_mips_subq_s_w1(i32 %i0, i32 %a0, i32 %a1) nounwind {
+entry:
+; CHECK: subq_s.w $
+
+  %0 = tail call i32 @llvm.mips.subq.s.w(i32 %a0, i32 %a1)
+  ret i32 %0
+}
+
+declare i32 @llvm.mips.subq.s.w(i32, i32) nounwind
+
 define { i32 } @test__builtin_mips_subu_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
 ; CHECK: subu.qb $
@@ -511,6 +521,138 @@ entry:
 
 declare <2 x i16> @llvm.mips.shll.s.ph(<2 x i16>, i32) nounwind
 
+define i32 @test__builtin_mips_shll_s_w1(i32 %i0, i32 %a0) nounwind {
+entry:
+; CHECK: shll_s.w
+
+  %0 = tail call i32 @llvm.mips.shll.s.w(i32 %a0, i32 15)
+  ret i32 %0
+}
+
+declare i32 @llvm.mips.shll.s.w(i32, i32) nounwind
+
+define i32 @test__builtin_mips_shll_s_w2(i32 %i0, i32 %a0, i32 %a1) nounwind {
+entry:
+; CHECK: shllv_s.w $
+
+  %0 = tail call i32 @llvm.mips.shll.s.w(i32 %a0, i32 %a1)
+  ret i32 %0
+}
+
+define { i32 } @test__builtin_mips_shra_ph1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: shra.ph $
+
+  %0 = bitcast i32 %a0.coerce to <2 x i16>
+  %1 = tail call <2 x i16> @llvm.mips.shra.ph(<2 x i16> %0, i32 7)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.shra.ph(<2 x i16>, i32) nounwind readnone
+
+define { i32 } @test__builtin_mips_shra_ph2(i32 %i0, i32 %a0.coerce, i32 %a1) nounwind readnone {
+entry:
+; CHECK: shrav.ph $
+
+  %0 = bitcast i32 %a0.coerce to <2 x i16>
+  %1 = tail call <2 x i16> @llvm.mips.shra.ph(<2 x i16> %0, i32 %a1)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+define { i32 } @test__builtin_mips_shra_r_ph1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: shra_r.ph $
+
+  %0 = bitcast i32 %a0.coerce to <2 x i16>
+  %1 = tail call <2 x i16> @llvm.mips.shra.r.ph(<2 x i16> %0, i32 7)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.shra.r.ph(<2 x i16>, i32) nounwind readnone
+
+define { i32 } @test__builtin_mips_shra_r_ph2(i32 %i0, i32 %a0.coerce, i32 %a1) nounwind readnone {
+entry:
+; CHECK: shrav_r.ph $
+
+  %0 = bitcast i32 %a0.coerce to <2 x i16>
+  %1 = tail call <2 x i16> @llvm.mips.shra.r.ph(<2 x i16> %0, i32 %a1)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+define { i32 } @test__builtin_mips_shra_qb1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: shra.qb $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <4 x i8> @llvm.mips.shra.qb(<4 x i8> %0, i32 3)
+  %2 = bitcast <4 x i8> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <4 x i8> @llvm.mips.shra.qb(<4 x i8>, i32) nounwind readnone
+
+define { i32 } @test__builtin_mips_shra_r_qb1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: shra_r.qb $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <4 x i8> @llvm.mips.shra.r.qb(<4 x i8> %0, i32 3)
+  %2 = bitcast <4 x i8> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <4 x i8> @llvm.mips.shra.r.qb(<4 x i8>, i32) nounwind readnone
+
+define { i32 } @test__builtin_mips_shra_qb2(i32 %i0, i32 %a0.coerce, i32 %a1) nounwind readnone {
+entry:
+; CHECK: shrav.qb $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <4 x i8> @llvm.mips.shra.qb(<4 x i8> %0, i32 %a1)
+  %2 = bitcast <4 x i8> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+define { i32 } @test__builtin_mips_shra_r_qb2(i32 %i0, i32 %a0.coerce, i32 %a1) nounwind readnone {
+entry:
+; CHECK: shrav_r.qb $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <4 x i8> @llvm.mips.shra.r.qb(<4 x i8> %0, i32 %a1)
+  %2 = bitcast <4 x i8> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+define i32 @test__builtin_mips_shra_r_w1(i32 %i0, i32 %a0) nounwind readnone {
+entry:
+; CHECK: shra_r.w $
+
+  %0 = tail call i32 @llvm.mips.shra.r.w(i32 %a0, i32 15)
+  ret i32 %0
+}
+
+declare i32 @llvm.mips.shra.r.w(i32, i32) nounwind readnone
+
+define i32 @test__builtin_mips_shra_r_w2(i32 %i0, i32 %a0, i32 %a1) nounwind readnone {
+entry:
+; CHECK: shrav_r.w $
+
+  %0 = tail call i32 @llvm.mips.shra.r.w(i32 %a0, i32 %a1)
+  ret i32 %0
+}
+
 define { i32 } @test__builtin_mips_shrl_qb1(i32 %i0, i32 %a0.coerce) nounwind readnone {
 entry:
 ; CHECK: shrl.qb $
@@ -522,7 +664,30 @@ entry:
   ret { i32 } %.fca.0.insert
 }
 
+define { i32 } @test__builtin_mips_shrl_qb2(i32 %i0, i32 %a0.coerce, i32 %a1) nounwind readnone {
+entry:
+; CHECK: shrlv.qb $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <4 x i8> @llvm.mips.shrl.qb(<4 x i8> %0, i32 %a1)
+  %2 = bitcast <4 x i8> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
 declare <4 x i8> @llvm.mips.shrl.qb(<4 x i8>, i32) nounwind readnone
+
+define { i32 } @test__builtin_mips_shrl_ph2(i32 %i0, i32 %a0.coerce, i32 %a1) nounwind readnone {
+entry:
+; CHECK: shrlv.ph $
+
+  %0 = bitcast i32 %a0.coerce to <2 x i16>
+  %1 = tail call <2 x i16> @llvm.mips.shrl.ph(<2 x i16> %0, i32 %a1)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
 
 define { i32 } @test__builtin_mips_mul_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:

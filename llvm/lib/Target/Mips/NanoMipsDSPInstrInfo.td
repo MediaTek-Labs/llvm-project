@@ -33,12 +33,12 @@ class CMPGU_PRECRQ_Desc<string opstr,
 	 [(set ROOUT:$rd, (OpNode ROIN:$rs, ROIN:$rt))],
          NoItinerary, 0>;
 
-class CMPGU_PICK_PRECRQ_Enc<bits<7> psel>: _Pool_P32A<0b101> {
+class SHLLV_S_W_NM_FMT<bits<7> psel>: InstNM_Enc, _Pool_P32A<0b101> {
   bits<5> rd;
-  bits<5> rs;
+  bits<5> rs_sa;
   bits<5> rt;
   let Inst{25...21} = rt;
-  let Inst{20...16} = rs;
+  let Inst{20...16} = rs_sa;
   let Inst{15...11} = rd;
   let Inst{9...3} = psel;
 }
@@ -96,6 +96,21 @@ class INSV_NM_FMT<bits<7> op>: InstNM_Enc, _Pool_P32A<0b111> {
 
 class EXTR_W_TY1_VAR_NM_FMT<bits<5> op> : EXTR_W_TY1_NM_FMT<0b010, op>;
 class EXTR_W_TY1_LIT_NM_FMT<bits<5> op> : EXTR_W_TY1_NM_FMT<0b001, op>;
+
+class SHLL_S_W_NM_FMT <bits<7> psel> : InstNM_Enc, _Pool_P32A<0b101> {
+
+  bits<5> rt; // input register, rs is the new name,
+              // use rt to match Mips definitions
+  bits<5> rd; // output register, rt is the new name,
+              // use rd to match Mips definitions
+  bits<5> rs_sa; //shift amount, sa is the new name,
+                 // use rs_sa to match Mips definitions
+
+  let Inst{25-21} = rd;
+  let Inst{20-16} = rt;
+  let Inst{15-11} = rs_sa;
+  let Inst{9-3} = psel;
+}
 
 class APPEND_NM_ENC : InstNM_Enc, _Pool_P32A<0b101> {
   bits<5> rt;
@@ -214,6 +229,45 @@ class SHL_QB_FMT<bits<1> signed>: InstNM_Enc, _Pool_P32A<0b111> {
   let Inst{11...3} = 0b100001111;
 }
 
+class SHRA_QB_FMT<bits<1> round>: InstNM_Enc, _Pool_P32A<0b111> {
+  bits<5> rd; // output register, rt is the new name,
+              // use rd to match Mips definitions
+  bits<5> rt; // input register, rs is the new name,
+              // use rt to match Mips definitions
+  bits<3> rs_sa; //shift amount, sa is the new name,
+                 // use rs_sa to match Mips definitions
+  let Inst{25...21} = rd;
+  let Inst{20...16} = rt;
+  let Inst{15...13} = rs_sa;
+  let Inst{12} = round;
+  let Inst{11...3} = 0b000111111;
+}
+
+class SHRAV_NM_FMT<bits<8> psel>: InstNM_Enc, _Pool_P32A<0b101> {
+  bits<5> rd;
+  bits<5> rt;
+  bits<5> rs_sa; //shift amount register, rs is the new name,
+                 // use rs_sa to match Mips definitions
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs_sa;
+  let Inst{15...11} = rd;
+  let Inst{10...3} = psel;
+}
+
+class SHRA_PH_FMT<bits<1> round>: InstNM_Enc, _Pool_P32A<0b101> {
+  bits<5> rd; // output register, rt is the new name,
+              // use rd to match Mips definitions
+  bits<5> rt; // input register, rs is the new name,
+              // use rt to match Mips definitions
+  bits<4> rs_sa; //shift amount, sa is the new name,
+                 // use rs_sa to match Mips definitions
+  let Inst{25...21} = rd;
+  let Inst{20...16} = rt;
+  let Inst{15...12} = rs_sa;
+  let Inst{10} = round;
+  let Inst{9...3} = 0b1100110;
+}
+
 class RDWR_DSP_FMT<bits<1> psel>: InstNM_Enc, _Pool_P32A<0b111> {
   bits<7> mask;
   bits<5> rt;
@@ -277,8 +331,14 @@ class ADDQ_PH_NM_ENC     : ADDU_QB_NM_FMT     <0b00000001>;
 class ADDQ_S_PH_NM_ENC   : ADDU_QB_NM_FMT     <0b10000001>;
 class SUBQ_PH_NM_ENC     : ADDU_QB_NM_FMT     <0b01000001>;
 class SUBQ_S_PH_NM_ENC   : ADDU_QB_NM_FMT     <0b11000001>;
-class MUL_PH_NM_ENC      : ADDU_QB_NM_FMT    <0b00000101>;
-class MUL_S_PH_NM_ENC    : ADDU_QB_NM_FMT    <0b10000101>;
+class MUL_PH_NM_ENC      : ADDU_QB_NM_FMT     <0b00000101>;
+class MUL_S_PH_NM_ENC    : ADDU_QB_NM_FMT     <0b10000101>;
+class SHRAV_PH_NM_ENC    : SHRAV_NM_FMT       <0b00110001>;
+class SHRAV_R_PH_NM_ENC  : SHRAV_NM_FMT       <0b10110001>;
+class SHRAV_QB_NM_ENC    : SHRAV_NM_FMT       <0b00111001>;
+class SHRAV_R_QB_NM_ENC  : SHRAV_NM_FMT       <0b10111001>;
+class SHRA_R_W_NM_ENC    : SHLL_S_W_NM_FMT    <0b1011110>;
+class SHLL_S_W_NM_ENC    : SHLL_S_W_NM_FMT    <0b1111110>;
 
 class PRECRQ_PH_W_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0011101>;
 class SHLL_QB_NM_ENC     : SHL_QB_FMT         <0b0>;
@@ -286,6 +346,14 @@ class SHRL_QB_NM_ENC     : SHL_QB_FMT         <0b1>;
 class SHRL_PH_NM_ENC     : SHRL_PH_FMT;
 class SHLL_PH_NM_ENC     : SHLL_PH_FMT        <0b0>;
 class SHLL_S_PH_NM_ENC   : SHLL_PH_FMT        <0b1>;
+class SHRA_QB_NM_ENC     : SHRA_QB_FMT        <0b0>;
+class SHRA_R_QB_NM_ENC   : SHRA_QB_FMT        <0b1>;
+class SHRA_PH_NM_ENC     : SHRA_PH_FMT        <0b0>;
+class SHRA_R_PH_NM_ENC   : SHRA_PH_FMT        <0b1>;
+class SHLLV_S_W_NM_ENC   : SHLLV_S_W_NM_FMT   <0b1111010>;
+class SHRLV_PH_NM_ENC    : SHLLV_S_W_NM_FMT   <0b1100010>;
+class SHRLV_QB_NM_ENC    : SHLLV_S_W_NM_FMT   <0b1101010>;
+class SHRAV_R_W_NM_ENC   : SHLLV_S_W_NM_FMT   <0b1011010>;
 class MFHI_NM_ENC        : MF_FMT             <0b00>;
 class MFLO_NM_ENC        : MF_FMT             <0b01>;
 class MTHI_NM_ENC        : MT_FMT             <0b10>;
@@ -303,6 +371,7 @@ class CMP_LE_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0010000>;
 class CMP_LT_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0001000>;
 class PACKRL_PH_NM_ENC   : CMP_EQ_QB_R3_NM_FMT<0b0110101>;
 class MODSUB_NM_ENC      : CMP_EQ_QB_R3_NM_FMT<0b1010010>;
+class SUBQ_S_W_NM_ENC    : CMP_EQ_QB_R3_NM_FMT<0b1101000>;
 class RDDSP_NM_ENC       : RDWR_DSP_FMT       <0b0>;
 class WRDSP_NM_ENC       : RDWR_DSP_FMT       <0b1>;
 
@@ -327,6 +396,7 @@ def ADDQ_PH_NM     : ADDQ_PH_NM_ENC          , ADDQ_PH_DESC    <NanoMipsRO_TYPES
 def ADDQ_S_PH_NM   : ADDQ_S_PH_NM_ENC        , ADDQ_S_PH_DESC  <NanoMipsRO_TYPES>;
 def SUBQ_PH_NM     : SUBQ_PH_NM_ENC          , SUBQ_PH_DESC    <NanoMipsRO_TYPES>;
 def SUBQ_S_PH_NM   : SUBQ_S_PH_NM_ENC        , SUBQ_S_PH_DESC  <NanoMipsRO_TYPES>;
+def SUBQ_S_W_NM    : SUBQ_S_W_NM_ENC         , SUBQ_S_W_DESC   <NanoMipsRO_TYPES>;
 def MODSUB_NM      : MODSUB_NM_ENC           , MODSUB_DESC     <NanoMipsRO_TYPES>;
 def MUL_PH_NM      : MUL_PH_NM_ENC           , MUL_PH_DESC     <NanoMipsRO_TYPES>;
 def MUL_S_PH_NM    : MUL_S_PH_NM_ENC         , MUL_S_PH_DESC   <NanoMipsRO_TYPES>;
@@ -336,6 +406,21 @@ def SHRL_QB_NM     : SHRL_QB_NM_ENC          , SHRL_QB_NM_DESC;
 def SHRL_PH_NM     : SHRL_PH_NM_ENC          , SHRL_PH_NM_DESC;
 def SHLL_PH_NM     : SHLL_PH_NM_ENC          , SHLL_PH_NM_DESC;
 def SHLL_S_PH_NM   : SHLL_S_PH_NM_ENC        , SHLL_S_PH_NM_DESC;
+def SHLL_S_W_NM    : SHLL_S_W_NM_ENC         , SHLL_S_W_DESC   <NanoMipsRO_TYPES>;
+def SHLLV_S_W_NM   : SHLLV_S_W_NM_ENC        , SHLLV_S_W_DESC  <NanoMipsRO_TYPES>;
+def SHRLV_PH_NM    : SHRLV_PH_NM_ENC         , SHRLV_PH_DESC   <NanoMipsRO_TYPES>;
+def SHRLV_QB_NM    : SHRLV_QB_NM_ENC         , SHRLV_QB_DESC   <NanoMipsRO_TYPES>;
+def SHRA_QB_NM     : SHRA_QB_NM_ENC          , SHRA_QB_DESC    <NanoMipsRO_TYPES>;
+def SHRA_R_QB_NM   : SHRA_R_QB_NM_ENC        , SHRA_R_QB_DESC  <NanoMipsRO_TYPES>;
+def SHRA_PH_NM     : SHRA_PH_NM_ENC          , SHRA_PH_DESC    <NanoMipsRO_TYPES>;
+def SHRA_R_PH_NM   : SHRA_R_PH_NM_ENC        , SHRA_R_PH_DESC  <NanoMipsRO_TYPES>;
+def SHRA_R_W_NM    : SHRA_R_W_NM_ENC         , SHRA_R_W_DESC   <NanoMipsRO_TYPES>;
+def SHRAV_QB_NM    : SHRAV_QB_NM_ENC         , SHRAV_QB_DESC   <NanoMipsRO_TYPES>;
+def SHRAV_R_QB_NM  : SHRAV_R_QB_NM_ENC       , SHRAV_R_QB_DESC <NanoMipsRO_TYPES>;
+def SHRAV_PH_NM    : SHRAV_PH_NM_ENC         , SHRAV_PH_DESC   <NanoMipsRO_TYPES>;
+def SHRAV_R_PH_NM  : SHRAV_R_PH_NM_ENC       , SHRAV_R_PH_DESC <NanoMipsRO_TYPES>;
+def SHRAV_R_W_NM   : SHRAV_R_W_NM_ENC        , SHRAV_R_W_DESC  <NanoMipsRO_TYPES>;
+
 def APPEND_NM      : APPEND_NM_ENC           , APPEND_DESC     <NanoMipsRO_TYPES>;
 def MFHI_NM        : MFHI_NM_ENC             , MFHI_NM_DESC    <NanoMipsRO_TYPES>;
 def MFLO_NM        : MFLO_NM_ENC             , MFLO_NM_DESC    <NanoMipsRO_TYPES>;
@@ -427,12 +512,16 @@ def : DSPBinPat<SUBU_QB_NM, v4i8,  int_mips_subu_qb, HasDSPNanoMips>;
 def : DSPBinPat<SUBU_QB_NM, v4i8,  sub             , HasDSPNanoMips>;
 
 def : DSPShiftPat<SHLL_PH_NM, v2i16, MipsSHLL_DSP,      imm,      HasDSPNanoMips>;
+def : DSPShiftPat<SHRA_PH_NM, v2i16, MipsSHRA_DSP,      imm,      HasDSPNanoMips>;
 def : DSPShiftPat<SHRL_PH_NM, v2i16, MipsSHRL_DSP,      imm,      HasDSPNanoMips>;
 def : DSPShiftPat<SHLL_PH_NM, v2i16, int_mips_shll_ph,  immZExt4, HasDSPNanoMips>;
+def : DSPShiftPat<SHRA_PH_NM, v2i16, int_mips_shra_ph,  immZExt4, HasDSPNanoMips>;
 def : DSPShiftPat<SHRL_PH_NM, v2i16, int_mips_shrl_ph,  immZExt4, HasDSPNanoMips>;
 def : DSPShiftPat<SHLL_QB_NM, v4i8,  MipsSHLL_DSP,      imm,      HasDSPNanoMips>;
+def : DSPShiftPat<SHRA_QB_NM, v4i8,  MipsSHRA_DSP,      imm,      HasDSPNanoMips>;
 def : DSPShiftPat<SHRL_QB_NM, v4i8,  MipsSHRL_DSP,      imm,      HasDSPNanoMips>;
 def : DSPShiftPat<SHLL_QB_NM, v4i8,  int_mips_shll_qb,  immZExt3, HasDSPNanoMips>;
+def : DSPShiftPat<SHRA_QB_NM, v4i8,  int_mips_shra_qb,  immZExt3, HasDSPNanoMips>;
 def : DSPShiftPat<SHRL_QB_NM, v4i8,  int_mips_shrl_qb,  immZExt3, HasDSPNanoMips>;
 
 def : EXTR_W_TY1_R1_Pat<MipsEXTP,       EXTP_NM,       HasDSPNanoMips, NanoMipsRO_TYPES>;

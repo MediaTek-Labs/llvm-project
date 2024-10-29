@@ -13,9 +13,10 @@ LITS = {'0', '1', 'x'}
 TESTS_PER_INSTR = 3
 GPR = re.compile('GPR\[(rs|rd|rt)\]\((\d+)\)')
 ACC = re.compile('ACC\[(ac)\]\((\d+)\)')
-IMM = re.compile('(mask|sa|shift|size|s)\((\d+)(u|l)\)')
+IMM = re.compile('(mask|sa|shift|size|s|u)\((\d+)(u|l)\)')
 ADDRESS = re.compile('(s)\((\d+)(u|l)\)')
 LABEL='.LBB0_2'
+INSTR_WITH_ADRESS=['bposge32c']
 
 def parse_encoding(encoding, name):
     encoding = encoding.replace(' ','')
@@ -34,7 +35,7 @@ def parse_encoding(encoding, name):
             operands.append({'type': 'ACC', 'name': m.group(1), 'width': int(m.group(2))})
             continue
         m = ADDRESS.match(part)
-        if m:
+        if m and name in INSTR_WITH_ADRESS:
             operands.append({'type': 'ADDRESS', 'name': m.group(1), 'width': int(m.group(2))})
             continue
         m = IMM.match(part)
@@ -74,7 +75,7 @@ def get_immediate(n, is_signed = False):
 
 def insert_operand_to_format(instr_format, name, val, is_register = False):
     prefix = '$' if is_register else ''
-    instr_format = instr_format.replace('$' + name, prefix + '{value}')
+    instr_format = instr_format.replace('%' + name, prefix + '{value}')
     return instr_format.format(value = val)
 
 
@@ -142,7 +143,8 @@ def get_instance(instr, max_format):
              assert string is not None, "No match for register number " + str(num)
              instr_format = insert_operand_to_format(instr_format, operand['name'], string, True)
     assert len(binary_string) == 32, \
-        f'Unexepected binary length ({str(len(binary_string))}): {binary_string}'
+        f'Unexepected binary length ({str(len(binary_string))})' + \
+        f' instead of 32 in {instr["name"]}:\n\t {binary_string}'
     instr_format = instr_format.replace("@", instr['name'])
     instr_format = instr_format.ljust(max_format + 14)
     if instr['name'].startswith("#"):
@@ -152,9 +154,14 @@ def get_instance(instr, max_format):
     if instr['name'].startswith('bposge32c'):
         hex_chunks = bposge32c_fixup(hex_chunks, instr['operands'][-1])
     test_line = f'  {instr_format} # CHECK: {instr_format}'
+    line_len = len(test_line)
     test_line +=  "# encoding: [{e1},{e0},{e3},{e2}]"
-    return test_line.format(e2 = hex_chunks[2], e3 = hex_chunks[3],
-                            e0 = hex_chunks[0], e1 = hex_chunks[1])
+    test_line = test_line.format(e2 = hex_chunks[2], e3 = hex_chunks[3],
+                                 e0 = hex_chunks[0], e1 = hex_chunks[1])
+    binary_comment = '\n' + (' ' * line_len) + f'# 0b{binary_string}'
+    test_line += binary_comment
+    return test_line
+
 
 def get_instances(instr, max_format, count):
     tests = [get_instance(instr, max_format) for i in range(count)]

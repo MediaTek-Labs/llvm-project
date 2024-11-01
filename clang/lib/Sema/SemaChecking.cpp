@@ -3857,8 +3857,16 @@ bool Sema::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
     return false;
   case Mips::BI__builtin_mips_addq_ph:
   case Mips::BI__builtin_mips_addq_s_ph:
+  case Mips::BI__builtin_mips_addqh_ph:
+  case Mips::BI__builtin_mips_addqh_r_ph:
+  case Mips::BI__builtin_mips_addqh_w:
+  case Mips::BI__builtin_mips_addqh_r_w:
+  case Mips::BI__builtin_mips_addu_ph:
+  case Mips::BI__builtin_mips_addu_s_ph:
   case Mips::BI__builtin_mips_addu_qb:
   case Mips::BI__builtin_mips_addu_s_qb:
+  case Mips::BI__builtin_mips_adduh_qb:
+  case Mips::BI__builtin_mips_adduh_r_qb:
   case Mips::BI__builtin_mips_append:
   case Mips::BI__builtin_mips_bitrev:
   case Mips::BI__builtin_mips_bposge32:
@@ -3904,8 +3912,16 @@ bool Sema::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_subq_ph:
   case Mips::BI__builtin_mips_subq_s_ph:
   case Mips::BI__builtin_mips_subq_s_w:
+  case Mips::BI__builtin_mips_subqh_ph:
+  case Mips::BI__builtin_mips_subqh_r_ph:
+  case Mips::BI__builtin_mips_subqh_w:
+  case Mips::BI__builtin_mips_subqh_r_w:
   case Mips::BI__builtin_mips_subu_qb:
   case Mips::BI__builtin_mips_subu_s_qb:
+  case Mips::BI__builtin_mips_subu_ph:
+  case Mips::BI__builtin_mips_subu_s_ph:
+  case Mips::BI__builtin_mips_subuh_qb:
+  case Mips::BI__builtin_mips_subuh_r_qb:
   case Mips::BI__builtin_mips_wrdsp:
     return true;
   }

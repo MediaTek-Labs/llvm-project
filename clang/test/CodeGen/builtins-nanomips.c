@@ -22,7 +22,22 @@ void foo() {
   ui32 ui32_r, ui32_a, ui32_b, ui32_c;
   a64 a64_r, a64_a, a64_b;
 
-  // MIPS DSP Rev 1
+  v2q15_a = (v2q15) {0x3334, 0x4444};
+  v2q15_b = (v2q15) {0x1111, 0x2222};
+  v2q15_r = __builtin_mips_addqh_ph(v2q15_a, v2q15_b);
+// CHECK: call <2 x i16> @llvm.mips.addqh.ph
+  v2q15_a = (v2q15) {0x3334, 0x4444};
+  v2q15_b = (v2q15) {0x1111, 0x2222};
+  v2q15_r = __builtin_mips_addqh_r_ph(v2q15_a, v2q15_b);
+// CHECK: call <2 x i16> @llvm.mips.addqh.r.ph
+  q31_a = 0x11111112;
+  q31_b = 0x99999999;
+  q31_r = __builtin_mips_addqh_w(q31_a, q31_b);
+// CHECK: call i32 @llvm.mips.addqh.w
+  q31_a = 0x11111112;
+  q31_b = 0x99999999;
+  q31_r = __builtin_mips_addqh_r_w(q31_a, q31_b);
+// CHECK: call i32 @llvm.mips.addqh.r.w
 
   v4i8_a = (v4i8) {1, 2, 3, 0xFF};
   v4i8_b = (v4i8) {2, 4, 6, 8};
@@ -34,6 +49,24 @@ void foo() {
 // CHECK: call <4 x i8> @llvm.mips.subu.qb
   v4i8_r = __builtin_mips_subu_s_qb(v4i8_a, v4i8_b);
 // CHECK: call <4 x i8> @llvm.mips.subu.s.qb
+
+  v2i16_a = (v2i16) {0xffff, 0x2468};
+  v2i16_b = (v2i16) {0x1234, 0x1111};
+  v2i16_r = __builtin_mips_addu_ph(v2i16_a, v2i16_b);
+// CHECK: call <2 x i16> @llvm.mips.addu.ph
+  v2i16_a = (v2i16) {0xffff, 0x2468};
+  v2i16_b = (v2i16) {0x1234, 0x1111};
+  v2i16_r = __builtin_mips_addu_s_ph(v2i16_a, v2i16_b);
+// CHECK: call <2 x i16> @llvm.mips.addu.s.ph
+
+  v4i8_a = (v4i8) {0x11, 0x22, 0x33, 0xff};
+  v4i8_b = (v4i8) {0x11, 0x33, 0x99, 0xff};
+  v4i8_r = __builtin_mips_adduh_qb(v4i8_a, v4i8_b);
+// CHECK: call <4 x i8> @llvm.mips.adduh.qb
+  v4i8_a = (v4i8) {0x11, 0x22, 0x33, 0xff};
+  v4i8_b = (v4i8) {0x11, 0x33, 0x99, 0xff};
+  v4i8_r = __builtin_mips_adduh_r_qb(v4i8_a, v4i8_b);
+// CHECK: call <4 x i8> @llvm.mips.adduh.r.qb
 
   v2q15_a = (v2q15) {0x0000, 0x8000};
   v2q15_b = (v2q15) {0x8000, 0x8000};
@@ -180,6 +213,41 @@ void foo() {
   i32_b = 8;
   v2i16_r = __builtin_mips_shrl_ph (v2i16_a, i32_b);
 // CHECK: call <2 x i16> @llvm.mips.shrl.ph
+
+  v2i16_a = (v2i16) {0x1357, 0x4455};
+  v2i16_b = (v2i16) {0x3333, 0x4444};
+  v2i16_r = __builtin_mips_subu_ph(v2i16_a, v2i16_b);
+// CHECK: call <2 x i16> @llvm.mips.subu.ph
+  v2i16_a = (v2i16) {0x1357, 0x4455};
+  v2i16_b = (v2i16) {0x3333, 0x4444};
+  v2i16_r = __builtin_mips_subu_s_ph(v2i16_a, v2i16_b);
+// CHECK: call <2 x i16> @llvm.mips.subu.s.ph
+
+  v4i8_a = (v4i8) {0x33 ,0x44, 0x55, 0x66};
+  v4i8_b = (v4i8) {0x99 ,0x15, 0x85, 0xff};
+  v4i8_r = __builtin_mips_subuh_qb(v4i8_a, v4i8_b);
+// CHECK: call <4 x i8> @llvm.mips.subuh.qb
+  v4i8_a = (v4i8) {0x33 ,0x44, 0x55, 0x66};
+  v4i8_b = (v4i8) {0x99 ,0x15, 0x85, 0xff};
+  v4i8_r = __builtin_mips_subuh_r_qb(v4i8_a, v4i8_b);
+// CHECK: call <4 x i8> @llvm.mips.subuh.r.qb
+
+  v2q15_a = (v2q15) {0x3334, 0x4444};
+  v2q15_b = (v2q15) {0x1111, 0x2222};
+  v2q15_r = __builtin_mips_subqh_ph(v2q15_a, v2q15_b);
+// CHECK: call <2 x i16> @llvm.mips.subqh.ph
+  v2q15_a = (v2q15) {0x3334, 0x4444};
+  v2q15_b = (v2q15) {0x1111, 0x2222};
+  v2q15_r = __builtin_mips_subqh_r_ph(v2q15_a, v2q15_b);
+// CHECK: call <2 x i16> @llvm.mips.subqh.r.ph
+  q31_a = 0x11111112;
+  q31_b = 0x99999999;
+  q31_r = __builtin_mips_subqh_w(q31_a, q31_b);
+// CHECK: call i32 @llvm.mips.subqh.w
+  q31_a = 0x11111112;
+  q31_b = 0x99999999;
+  q31_r = __builtin_mips_subqh_r_w(q31_a, q31_b);
+// CHECK: call i32 @llvm.mips.subqh.r.w
 
 //  a64_a = 0xFFFFF81230000000LL;
 ///  i32_r = __builtin_mips_extr_s_h(a64_a, 4);

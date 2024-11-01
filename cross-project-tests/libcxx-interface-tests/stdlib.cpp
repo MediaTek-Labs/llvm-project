@@ -111,7 +111,8 @@ int main(){
     assert(numConverted1 != -1);
 
     wchar_t wideChar2 = 'B';
-    char multibyteChar[MB_CUR_MAX] = {0};
+    char multibyteChar[MB_CUR_MAX];
+    memset (multibyteChar, 0, MB_CUR_MAX);
     int numConverted2 = std::wctomb(multibyteChar, wideChar2);
     assert(numConverted2 != -1);
 

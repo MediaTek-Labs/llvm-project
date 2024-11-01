@@ -28,7 +28,7 @@ int test_unique_ptr(){
     if (myClassPtr) {
         myClassPtr->display();
     }
-
+    return 0;
     // The unique_ptr will automatically release the memory when it goes out of scope
 }
 

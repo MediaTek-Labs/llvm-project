@@ -1,6 +1,7 @@
 // RUN: %clang -fno-use-init-array -g -c %s -o %t.o
 // RUN: %clang -fno-use-init-array -g -o %t -nostdlib %crt1 %crti %crtbegin %t.o -lc %libgcc %crtend %crtn
 // RUN: %run %t 2>&1 | FileCheck %s
+// UNSUPPORTED: arm, aarch64, nanomips
 
 #include <stdio.h>
 

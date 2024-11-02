@@ -1,5 +1,6 @@
 // RUN: %clang_builtins %s %librt -fnested-functions -o %t && %run %t
 // REQUIRES: librt_has_trampoline_setup
+// UNSUPPORTED: nanomips
 
 #include <stdio.h>
 #include <string.h>

@@ -697,11 +697,6 @@ class _Pool_P_SHIFT<bits<4> psel> : _Pool_P_U12<0b1100> {
   let Inst{4...0} = shift;
 }
 
-class _Pool_P_SLL<bits<5> rt, bits<5> shift> : _Pool_P_SHIFT<0b0000> {
-  let Inst{25...21} = rt;
-  let Inst{4...0} = shift;
-}
-
 class _Pool_P_ROTX<bits<2> psel> : _Pool_P_U12<0b1101> {
   let Inst{11} = psel{1};
   let Inst{5} = psel{0};
@@ -1759,14 +1754,13 @@ def ADDIU48_NM : ArithLogicINM<"addiu[48]", sym32_nm, GPRNM48Opnd,
 			RegConstraint<"$rs = $rt">;
 
 class AddImmediateGP<string opstr, Operand Od, RegisterOperand RO,
-		     ComplexPattern offset_type,
-		     SDPatternOperator OpNode = null_frag> :
+		     ComplexPattern offset_type> :
   InstNM<(outs RO:$rt), (ins GPRNMGPOpnd:$rs, Od:$offset),
 	 !strconcat(opstr, "\t$rt, $rs, $offset"),
 	 [(set RO:$rt, (add GPRNMGPOpnd:$rs, offset_type:$offset))]>;
 
 def ADDIUGPB_NM : AddImmediateGP<"addiu[gp.b]", sym32_gp18_nm, GPRNM32Opnd,
-				offsetgp18, add>,
+				offsetgp18>,
 				_Pool_P_GP_BH<0b011>, NoEncode<"$rs"> {
   bits<5> rt;
   bits<18> offset;
@@ -1949,7 +1943,7 @@ class IndirectCall32_Enc<bits<4> isel> : _Pool_P_J<isel>
   let Inst{20...16} = rs;
 }
 
-class IndirectCall16_Enc<bits<1> isel> : _Pool_P16_BR<0b0000>
+class IndirectCall16_Enc : _Pool_P16_BR<0b0000>
 {
   bits<5> rt;
   bits<5> rs;
@@ -1973,7 +1967,7 @@ def PseudoIndirectBranchNM :
 
 let hasPostISelHook = 1, isCall = 1, isCTI = 1, Defs = [RA_NM] in {
   def JALRC16_NM : IndirectCallNM<"jalrc", GPRNMRAOpnd, GPRNM32Opnd>,
-			 IndirectCall16_Enc<1>;
+			 IndirectCall16_Enc;
   def JALRC_NM : IndirectCallNM<"jalrc", GPRNM32Opnd, GPRNM32Opnd>,
 	         IndirectCall32_Enc<0b0000>;
   def JALRCHB_NM : IndirectCallNM<"jalrc.hb", GPRNM32Opnd, GPRNM32Opnd>,
@@ -2953,11 +2947,10 @@ def BYTEREVH_NM : NanoMipsInstAlias<"byterevh $rt, $rs",
 				(ROTX_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 8, 24, 0)>;
 
 class CacheOpNM<string opstr, Operand Od, DAGOperand MO,
-		    ComplexPattern Addr = addr,
 		    InstrItinClass itin = NoItinerary> :
     InstNM<(outs), (ins Od:$op, MO:$addr), !strconcat(opstr, "\t$op, $addr"),
 	   [], itin>;
-def CACHE_NM : CacheOpNM<"cache", uimm5, mem_nms9, addrsimm9, II_CACHE>,
+def CACHE_NM : CacheOpNM<"cache", uimm5, mem_nms9, II_CACHE>,
 	       _Pool_P_LS_S1<0b0111> {
   bits<5> op;
   bits<14> addr;
@@ -2969,7 +2962,7 @@ def CACHE_NM : CacheOpNM<"cache", uimm5, mem_nms9, addrsimm9, II_CACHE>,
   let Inst{7...0} = offset{7...0};
 }
 
-def PREFs9_NM : CacheOpNM<"pref", uimm5, mem_nms9, addrsimm9, II_PREF>,
+def PREFs9_NM : CacheOpNM<"pref", uimm5, mem_nms9, II_PREF>,
 	       _Pool_P_LS_S0<0b0011> {
   bits<5> op;
   bits<14> addr;
@@ -2981,7 +2974,7 @@ def PREFs9_NM : CacheOpNM<"pref", uimm5, mem_nms9, addrsimm9, II_PREF>,
   let Inst{7...0} = offset{7...0};
 }
 
-def PREF_NM : CacheOpNM<"pref", uimm5, mem_nmu12, addruimm12, II_PREF>,
+def PREF_NM : CacheOpNM<"pref", uimm5, mem_nmu12, II_PREF>,
 	       _Pool_P_LS_U12<0b0011> {
   bits<5> op;
   bits<17> addr;
@@ -2993,12 +2986,12 @@ def PREF_NM : CacheOpNM<"pref", uimm5, mem_nmu12, addruimm12, II_PREF>,
 }
 
 class SyncOpNM<string opstr, DAGOperand MO,
-		ComplexPattern Addr = addr,
 		InstrItinClass itin = NoItinerary> :
     InstNM<(outs), (ins MO:$addr), !strconcat(opstr, "\t$addr"),
 	   [], itin>;
 
-def SYNCIs9_NM : SyncOpNM<"synci", mem_nms9, addrsimm9, II_SYNCI>,
+
+def SYNCIs9_NM : SyncOpNM<"synci", mem_nms9, II_SYNCI>,
 	       _Pool_P_LS_S0<0b0011> {
   bits<14> addr;
   bits<5> base = addr{13...9};
@@ -3009,7 +3002,7 @@ def SYNCIs9_NM : SyncOpNM<"synci", mem_nms9, addrsimm9, II_SYNCI>,
   let Inst{7...0} = offset{7...0};
 }
 
-def SYNCI_NM : SyncOpNM<"synci", mem_nmu12, addruimm12, II_SYNCI>,
+def SYNCI_NM : SyncOpNM<"synci", mem_nmu12, II_SYNCI>,
 	       _Pool_P_LS_U12<0b0011> {
   bits<17> addr;
   bits<5> base = addr{16...12};

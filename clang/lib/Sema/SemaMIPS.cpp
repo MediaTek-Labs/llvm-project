@@ -68,6 +68,9 @@ bool SemaMIPS::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   switch (BuiltinID) {
   default:
     return false;
+  case Mips::BI__builtin_mips_absq_s_ph:
+  case Mips::BI__builtin_mips_absq_s_qb:
+  case Mips::BI__builtin_mips_absq_s_w:  
   case Mips::BI__builtin_mips_addq_ph:
   case Mips::BI__builtin_mips_addq_s_ph:
   case Mips::BI__builtin_mips_addqh_ph:
@@ -108,6 +111,16 @@ bool SemaMIPS::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_packrl_ph:
   case Mips::BI__builtin_mips_pick_ph:
   case Mips::BI__builtin_mips_pick_qb:
+  case Mips::BI__builtin_mips_preceq_w_phl:
+  case Mips::BI__builtin_mips_preceq_w_phr:
+  case Mips::BI__builtin_mips_precequ_ph_qbl:
+  case Mips::BI__builtin_mips_precequ_ph_qbla:
+  case Mips::BI__builtin_mips_precequ_ph_qbr:
+  case Mips::BI__builtin_mips_precequ_ph_qbra:
+  case Mips::BI__builtin_mips_preceu_ph_qbl:
+  case Mips::BI__builtin_mips_preceu_ph_qbla:
+  case Mips::BI__builtin_mips_preceu_ph_qbr:
+  case Mips::BI__builtin_mips_preceu_ph_qbra:
   case Mips::BI__builtin_mips_precrq_ph_w:
   case Mips::BI__builtin_mips_rddsp:
   case Mips::BI__builtin_mips_shilo:

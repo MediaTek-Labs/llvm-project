@@ -86,6 +86,17 @@ void foo() {
   i32_r = __builtin_mips_modsub(i32_a, i32_b);
 // CHECK: call i32 @llvm.mips.modsub
 
+  v2q15_a = (v2q15) {0xFFFF, 0x8000};
+  v2q15_r = __builtin_mips_absq_s_ph(v2q15_a);
+// CHECK: call <2 x i16> @llvm.mips.absq.s.ph
+  q31_a = 0x80000000;
+  q31_r = __builtin_mips_absq_s_w(q31_a);
+// CHECK: call i32 @llvm.mips.absq.s.w
+
+  v4i8_a = (v4i8) {1, 2, 3, 4};
+  v4i8_b = __builtin_mips_absq_s_qb(v4i8_a);
+// CHECK: call <4 x i8> @llvm.mips.absq.s.qb
+
   a64_a = 0x12345678;
   i32_b = 0x80000000;
   i32_c = 0x11112222;
@@ -111,6 +122,29 @@ void foo() {
   q31_b = 0x11112222;
   v2q15_r = __builtin_mips_precrq_ph_w(q31_a, q31_b);
 // CHECK: call <2 x i16> @llvm.mips.precrq.ph.w
+
+  v2q15_a = (v2q15) {0x1234, 0x5678};
+  q31_r = __builtin_mips_preceq_w_phl(v2q15_a);
+// CHECK: call i32 @llvm.mips.preceq.w.phl
+  q31_r = __builtin_mips_preceq_w_phr(v2q15_a);
+// CHECK: call i32 @llvm.mips.preceq.w.phr
+  v4i8_a = (v4i8) {0x12, 0x34, 0x56, 0x78};
+  v2q15_r = __builtin_mips_precequ_ph_qbl(v4i8_a);
+// CHECK: call <2 x i16> @llvm.mips.precequ.ph.qbl
+  v2q15_r = __builtin_mips_precequ_ph_qbr(v4i8_a);
+// CHECK: call <2 x i16> @llvm.mips.precequ.ph.qbr
+  v2q15_r = __builtin_mips_precequ_ph_qbla(v4i8_a);
+// CHECK: call <2 x i16> @llvm.mips.precequ.ph.qbla
+  v2q15_r = __builtin_mips_precequ_ph_qbra(v4i8_a);
+// CHECK: call <2 x i16> @llvm.mips.precequ.ph.qbra
+  v2q15_r = __builtin_mips_preceu_ph_qbl(v4i8_a);
+// CHECK: call <2 x i16> @llvm.mips.preceu.ph.qbl
+  v2q15_r = __builtin_mips_preceu_ph_qbr(v4i8_a);
+// CHECK: call <2 x i16> @llvm.mips.preceu.ph.qbr
+  v2q15_r = __builtin_mips_preceu_ph_qbla(v4i8_a);
+// CHECK: call <2 x i16> @llvm.mips.preceu.ph.qbla
+  v2q15_r = __builtin_mips_preceu_ph_qbra(v4i8_a);
+// CHECK: call <2 x i16> @llvm.mips.preceu.ph.qbra
 
   v4i8_a = (v4i8) {1, 2, 3, 4};
   v4i8_r = __builtin_mips_shll_qb(v4i8_a, 2);

@@ -60,6 +60,17 @@ class CMP_EQ_QB_R2_NM_FMT<bits<7> psel>: InstNM_Enc, _Pool_P32A<0b101> {
   let Inst{9...3} = psel;
 }
 
+class ABSQ_S_NM_FMT<bits<7> psel>: InstNM_Enc, _Pool_P32A<0b111> {
+  bits<5> rt; // input register, rs is the new name,
+              // use rt to match Mips definitions
+  bits<5> rd; // output register, rt is the new name,
+              // use rd to match Mips definitions
+  let Inst{25...21} = rd;
+  let Inst{20...16} = rt;
+  let Inst{15...9} = psel;
+  let Inst{8...3} = 0b100111;
+}
+
 class EXTR_W_TY1_NM_FMT<bits<3> op1, bits<5> op2>: InstNM_Enc, _Pool_P32A<0b111> {
   bits<5> rt;
   bits<2> ac;
@@ -323,6 +334,19 @@ class MADD_DSP_NM_ENC<bits<5> psel>: InstNM_Enc, _Pool_P32A<0b111> {
   let Inst{13...9} = psel;
   let Inst{8...3} = 0b010111;
 }
+class ABSQ_S_PH_NM_ENC   : ABSQ_S_NM_FMT      <0b0001000>;
+class ABSQ_S_QB_NM_ENC      : ABSQ_S_NM_FMT   <0b0000000>;
+class ABSQ_S_W_NM_ENC       : ABSQ_S_NM_FMT   <0b0010000>;
+class PRECEQ_W_PHL_NM_ENC   : ABSQ_S_NM_FMT   <0b0101000>;
+class PRECEQ_W_PHR_NM_ENC   : ABSQ_S_NM_FMT   <0b0110000>;
+class PRECEQU_PH_QBL_NM_ENC : ABSQ_S_NM_FMT   <0b0111000>;
+class PRECEQU_PH_QBLA_NM_ENC: ABSQ_S_NM_FMT   <0b0111001>;
+class PRECEQU_PH_QBR_NM_ENC : ABSQ_S_NM_FMT   <0b1001000>;
+class PRECEQU_PH_QBRA_NM_ENC: ABSQ_S_NM_FMT   <0b1001001>;
+class PRECEU_PH_QBL_NM_ENC  : ABSQ_S_NM_FMT   <0b1011000>;
+class PRECEU_PH_QBLA_NM_ENC : ABSQ_S_NM_FMT   <0b1011001>;
+class PRECEU_PH_QBR_NM_ENC  : ABSQ_S_NM_FMT   <0b1101000>;
+class PRECEU_PH_QBRA_NM_ENC : ABSQ_S_NM_FMT   <0b1101001>;
 class ADDU_QB_NM_ENC     : ADDU_QB_NM_FMT     <0b00011001>;
 class ADDU_S_QB_NM_ENC   : ADDU_QB_NM_FMT     <0b10011001>;
 class SUBU_QB_NM_ENC     : ADDU_QB_NM_FMT     <0b01011001>;
@@ -403,6 +427,20 @@ class EXTPDPV_NM_ENC    : EXTR_W_TY1_VAR_NM_FMT<0b11100>;
 class EXTPDP_NM_ENC     : EXTR_W_TY1_LIT_NM_FMT<0b11011>;
 class BITREV_NM_ENC     : BITREV_FMT           <0b0011000>;
 class INSV_NM_ENC       : INSV_NM_FMT          <0b0100000>;
+
+def ABSQ_S_PH_NM         : ABSQ_S_PH_NM_ENC        , ABSQ_S_PH_DESC  <NanoMipsRO_TYPES>;
+def ABSQ_S_QB_NM         : ABSQ_S_QB_NM_ENC        , ABSQ_S_QB_DESC  <NanoMipsRO_TYPES>;
+def ABSQ_S_W_NM          : ABSQ_S_W_NM_ENC         , ABSQ_S_W_DESC   <NanoMipsRO_TYPES>;
+def PRECEQ_W_PHL_NM      : PRECEQ_W_PHL_NM_ENC     , PRECEQ_W_PHL_DESC   <NanoMipsRO_TYPES>;
+def PRECEQ_W_PHR_NM      : PRECEQ_W_PHR_NM_ENC     , PRECEQ_W_PHR_DESC   <NanoMipsRO_TYPES>;
+def PRECEQU_PH_QBL_NM    : PRECEQU_PH_QBL_NM_ENC   , PRECEQU_PH_QBL_DESC <NanoMipsRO_TYPES>;
+def PRECEQU_PH_QBLA_NM   : PRECEQU_PH_QBLA_NM_ENC  , PRECEQU_PH_QBLA_DESC<NanoMipsRO_TYPES>;
+def PRECEQU_PH_QBR_NM    : PRECEQU_PH_QBR_NM_ENC   , PRECEQU_PH_QBR_DESC <NanoMipsRO_TYPES>;
+def PRECEQU_PH_QBRA_NM   : PRECEQU_PH_QBRA_NM_ENC  , PRECEQU_PH_QBRA_DESC<NanoMipsRO_TYPES>;
+def PRECEU_PH_QBL_NM     : PRECEU_PH_QBL_NM_ENC    , PRECEU_PH_QBL_DESC  <NanoMipsRO_TYPES>;
+def PRECEU_PH_QBLA_NM    : PRECEU_PH_QBLA_NM_ENC   , PRECEU_PH_QBLA_DESC <NanoMipsRO_TYPES>;
+def PRECEU_PH_QBR_NM     : PRECEU_PH_QBR_NM_ENC    , PRECEU_PH_QBR_DESC  <NanoMipsRO_TYPES>;
+def PRECEU_PH_QBRA_NM    : PRECEU_PH_QBRA_NM_ENC   , PRECEU_PH_QBRA_DESC <NanoMipsRO_TYPES>;
 
 def ADDU_PH_NM     : ADDU_PH_NM_ENC          , ADDU_PH_DESC    <NanoMipsRO_TYPES>;
 def ADDU_S_PH_NM   : ADDU_S_PH_NM_ENC        , ADDU_S_PH_DESC  <NanoMipsRO_TYPES>;

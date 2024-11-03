@@ -1,6 +1,42 @@
 ; RUN: llc -march=nanomips -mattr=+dsp -verify-machineinstrs < %s | \
 ; RUN:     FileCheck %s
 
+define { i32 } @test__builtin_mips_absq_s_ph1(i32 %i0, i32 %a0.coerce) nounwind {
+entry:
+; CHECK: absq_s.ph $
+
+  %0 = bitcast i32 %a0.coerce to <2 x i16>
+  %1 = tail call <2 x i16> @llvm.mips.absq.s.ph(<2 x i16> %0)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.absq.s.ph(<2 x i16>) nounwind
+
+define i32 @test__builtin_mips_absq_s_w1(i32 %i0, i32 %a0) nounwind {
+entry:
+; CHECK: absq_s.w $
+
+  %0 = tail call i32 @llvm.mips.absq.s.w(i32 %a0)
+  ret i32 %0
+}
+
+declare i32 @llvm.mips.absq.s.w(i32) nounwind
+
+define { i32 } @test__builtin_mips_absq_s_qb1(i32 %i0, i32 %a0.coerce) nounwind {
+entry:
+; CHECK: absq_s.qb $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <4 x i8> @llvm.mips.absq.s.qb(<4 x i8> %0)
+  %2 = bitcast <4 x i8> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <4 x i8> @llvm.mips.absq.s.qb(<4 x i8>) nounwind
+
 define i32 @test__builtin_mips_extr_w1(i32 %i0, i32, i64 %a0) nounwind {
 entry:
 ; CHECK: extr.w $
@@ -8,6 +44,133 @@ entry:
   %1 = tail call i32 @llvm.mips.extr.w(i64 %a0, i32 15)
   ret i32 %1
 }
+
+define i32 @test__builtin_mips_preceq_w_phl1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: preceq.w.phl $
+
+  %0 = bitcast i32 %a0.coerce to <2 x i16>
+  %1 = tail call i32 @llvm.mips.preceq.w.phl(<2 x i16> %0)
+  ret i32 %1
+}
+
+declare i32 @llvm.mips.preceq.w.phl(<2 x i16>) nounwind readnone
+
+define i32 @test__builtin_mips_preceq_w_phr1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: preceq.w.phr $
+
+  %0 = bitcast i32 %a0.coerce to <2 x i16>
+  %1 = tail call i32 @llvm.mips.preceq.w.phr(<2 x i16> %0)
+  ret i32 %1
+}
+
+declare i32 @llvm.mips.preceq.w.phr(<2 x i16>) nounwind readnone
+
+define { i32 } @test__builtin_mips_precequ_ph_qbl1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: precequ.ph.qbl $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <2 x i16> @llvm.mips.precequ.ph.qbl(<4 x i8> %0)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.precequ.ph.qbl(<4 x i8>) nounwind readnone
+
+define { i32 } @test__builtin_mips_precequ_ph_qbr1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: precequ.ph.qbr $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <2 x i16> @llvm.mips.precequ.ph.qbr(<4 x i8> %0)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.precequ.ph.qbr(<4 x i8>) nounwind readnone
+
+define { i32 } @test__builtin_mips_precequ_ph_qbla1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: precequ.ph.qbla $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <2 x i16> @llvm.mips.precequ.ph.qbla(<4 x i8> %0)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.precequ.ph.qbla(<4 x i8>) nounwind readnone
+
+define { i32 } @test__builtin_mips_precequ_ph_qbra1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: precequ.ph.qbra $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <2 x i16> @llvm.mips.precequ.ph.qbra(<4 x i8> %0)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.precequ.ph.qbra(<4 x i8>) nounwind readnone
+
+define { i32 } @test__builtin_mips_preceu_ph_qbl1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: preceu.ph.qbl $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <2 x i16> @llvm.mips.preceu.ph.qbl(<4 x i8> %0)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.preceu.ph.qbl(<4 x i8>) nounwind readnone
+
+define { i32 } @test__builtin_mips_preceu_ph_qbr1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: preceu.ph.qbr $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <2 x i16> @llvm.mips.preceu.ph.qbr(<4 x i8> %0)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.preceu.ph.qbr(<4 x i8>) nounwind readnone
+
+define { i32 } @test__builtin_mips_preceu_ph_qbla1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: preceu.ph.qbla $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <2 x i16> @llvm.mips.preceu.ph.qbla(<4 x i8> %0)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.preceu.ph.qbla(<4 x i8>) nounwind readnone
+
+define { i32 } @test__builtin_mips_preceu_ph_qbra1(i32 %i0, i32 %a0.coerce) nounwind readnone {
+entry:
+; CHECK: preceu.ph.qbra $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = tail call <2 x i16> @llvm.mips.preceu.ph.qbra(<4 x i8> %0)
+  %2 = bitcast <2 x i16> %1 to i32
+  %.fca.0.insert = insertvalue { i32 } undef, i32 %2, 0
+  ret { i32 } %.fca.0.insert
+}
+
+declare <2 x i16> @llvm.mips.preceu.ph.qbra(<4 x i8>) nounwind readnone
+
 
 declare i32 @llvm.mips.extr.w(i64, i32) nounwind
 

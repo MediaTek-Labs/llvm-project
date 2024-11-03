@@ -895,7 +895,7 @@ class GPRNMAsmOperandClass<string Cname, string RegClass,
   let SuperClasses = Supers;
 }
 
-class COP0SelAsmOperandClass<string Cname, string RegClass,
+class COP0SelAsmOperandClass<string Cname,
       list<AsmOperandClass> Supers = []> : MipsAsmRegOperand {
   let Name = Cname;
   let PredicateMethod = "isCOP0SelAsmReg";
@@ -1027,7 +1027,7 @@ def GPRNM32Opnd : RegisterOperand<GPRNM32> {
 }
 
 def COP0SelOpnd : RegisterOperand<COP0Sel> {
-  let ParserMatchClass = COP0SelAsmOperandClass<"COP0SelReg", "COP0SelRegClassID",
+  let ParserMatchClass = COP0SelAsmOperandClass<"COP0SelReg",
 					      [GPRNM32Opnd.ParserMatchClass]>;
 }
 

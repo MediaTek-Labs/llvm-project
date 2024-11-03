@@ -1417,20 +1417,20 @@ class SaveRestore16_Enc<bits<1> isel> : _Pool_P16_SR<isel> {
 
 def SAVE16_NM : SaveRestore<"save", uimm8s4_nm, nmreglist16>, SaveRestore16_Enc<0b0>;
 def RESTOREJRC16_NM : SaveRestore<"restore.jrc", uimm8s4_nm, nmreglist16>, SaveRestore16_Enc<0b1>;
-def SAVE16_NOREG_NM : MipsInstAlias<"save $adj",
+def SAVE16_NOREG_NM : NanoMipsInstAlias<"save $adj",
 				    (SAVE16_NM uimm8s4_nm:$adj, 0)>;
-def RESTOREJRC16_NOREG_NM : MipsInstAlias<"restore.jrc $adj",
+def RESTOREJRC16_NOREG_NM : NanoMipsInstAlias<"restore.jrc $adj",
 					  (RESTOREJRC16_NM uimm8s4_nm:$adj, 0)>;
 
 def SAVE_NM : SaveRestore<"save", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b00>;
 def RESTORE_NM : SaveRestore<"restore", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b10>;
 def RESTOREJRC_NM : SaveRestore<"restore.jrc", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b11>;
 
-def SAVE_NOREG_NM : MipsInstAlias<"save $adj",
+def SAVE_NOREG_NM : NanoMipsInstAlias<"save $adj",
 				  (SAVE_NM uimm12s3_nm:$adj, 0)>;
-def RESTORE_NOREG_NM : MipsInstAlias<"restore $adj",
+def RESTORE_NOREG_NM : NanoMipsInstAlias<"restore $adj",
 				     (RESTORE_NM uimm12s3_nm:$adj, 0)>;
-def RESTOREJRC_NOREG_NM : MipsInstAlias<"restore.jrc $adj",
+def RESTOREJRC_NOREG_NM : NanoMipsInstAlias<"restore.jrc $adj",
 					(RESTOREJRC_NM uimm12s3_nm:$adj, 0)>;
 
 class LoadMultipleNM<string opstr> :
@@ -1552,9 +1552,8 @@ let isCommutable=1, TwoOperandAliasConstraint = "$rt = $dst" in {
 }
 
 class CommuteBinOpAlias<string op, InstNM OpCode, RegisterOperand RO> :
-	MipsInstAlias<!strconcat(op, "\t$rd, $rt, $rs"),
-		(OpCode RO:$rd, RO:$rs, RO:$rt), 0>,
-		ISA_NANOMIPS;
+	NanoMipsInstAlias<!strconcat(op, "\t$rd, $rt, $rs"),
+		(OpCode RO:$rd, RO:$rs, RO:$rt), 0>;
 
 def : CommuteBinOpAlias<"and", AND16_NM, GPRNM16R3Opnd>;
 def : CommuteBinOpAlias<"or", OR16_NM, GPRNM16R3Opnd>;
@@ -1630,9 +1629,8 @@ def MODU_NM  : DivMod<"modu", urem>,
 def SOV_NM   : ArithLogicR32_Desc<"sov", GPRNM32Opnd>,
 	       ArithLogicR32_Enc<0b111110>;
 }
-def NOT_NM   : MipsInstAlias<"not $rt, $rs",
-			    (NOR_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, ZERO_NM)>,
-			    ISA_NANOMIPS;
+def NOT_NM   : NanoMipsInstAlias<"not $rt, $rs",
+			    (NOR_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, ZERO_NM)>;
 
 def : NMPat<(not GPRNM32Opnd:$rt), (NOR_NM GPRNM32Opnd:$rt, ZERO_NM)>;
 
@@ -1793,12 +1791,10 @@ class Op32_Addr_Enc<bits<5> isel> : _Pool_P32<isel> {
   let Inst{0} = addr{21};
 }
 
-def : MipsInstAlias<"addiu.b $rt, $rs, $offset",
-			(ADDIUGPB_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp_nm:$offset)>,
-			ISA_NANOMIPS;
-def : MipsInstAlias<"addiu.w $rt, $rs, $offset",
-			(ADDIUGPW_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp_nm:$offset)>,
-			ISA_NANOMIPS;
+def : NanoMipsInstAlias<"addiu.b $rt, $rs, $offset",
+			(ADDIUGPB_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp_nm:$offset)>;
+def : NanoMipsInstAlias<"addiu.w $rt, $rs, $offset",
+			(ADDIUGPW_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp_nm:$offset)>;
 
 let isReMaterializable = 1 in {
   def LAPC32_NM : LoadAddressPCRelNM<"lapc.h", GPRNM32Opnd, sym32_pc22_nm,
@@ -1807,9 +1803,8 @@ let isReMaterializable = 1 in {
 				     addrsym>, Op48_Addr_Enc<0b00011>;
 }
 
-def ADDIUPC48_NM : MipsInstAlias<"addiupc $rt, $addr",
-			    (LAPC48_NM GPRNM48Opnd: $rt, sym32_pc_nm:$addr), 0>,
-			    ISA_NANOMIPS;
+def ADDIUPC48_NM : NanoMipsInstAlias<"addiupc $rt, $addr",
+			    (LAPC48_NM GPRNM48Opnd: $rt, sym32_pc_nm:$addr), 0>;
 def : MnemonicAlias<"lapc", "lapc.h">, Requires<[HasNanoMips]>;
 
 def LSA_NM : LoadScaledAddressNM<"lsa", GPRNM32Opnd>, LoadScaledAddress_Enc;
@@ -1824,8 +1819,8 @@ def CLO_NM : CountLeading1NM<"clo", GPRNM32Opnd>, CLZO_Enc<0b0100101>;
 def TEQ_NM : Trap_Desc<"teq", GPRNM32Opnd, uimm5>, Trap_Enc<0b0>;
 def TNE_NM : Trap_Desc<"tne", GPRNM32Opnd, uimm5>, Trap_Enc<0b1>;
 
-def : MipsInstAlias<"teq $rt, $rs",
-		    (TEQ_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 0), 0>, ISA_NANOMIPS;
+def : NanoMipsInstAlias<"teq $rt, $rs",
+		    (TEQ_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 0), 0>;
 
 def MOVEBALC_NM : InstNM<(outs GPRNM1R1Opnd:$rd),
 			    (ins GPRNM4ZOpnd:$rt, calltarget21_nm:$addr),
@@ -1873,10 +1868,9 @@ def ADDIUGP48_NM : LoadAddressGPRelNM<"addiu[gp48]", GPRNM48Opnd, sym32_gp_nm,
 				      addrgprel>, Op48_Addr_Enc<0b00010>,
 				      NoEncode<"$rs">;
 
-def ADDIUB32_NM : MipsInstAlias<"addiu.b32 $rt, $rs, $addr",
+def ADDIUB32_NM : NanoMipsInstAlias<"addiu.b32 $rt, $rs, $addr",
 				(ADDIUGP48_NM GPRNM48Opnd:$rt,
-				GPRNMGPOpnd:$rs, sym32_gp_nm:$addr)>,
-				ISA_NANOMIPS;
+				GPRNMGPOpnd:$rs, sym32_gp_nm:$addr)>;
 
 class LUI_Enc<bits<1> isel> : _Pool_P_LUI<isel> {
   bits<5> rt;
@@ -1912,8 +1906,8 @@ def RDHWR_NM : ReadHardwareNM<GPRNM32Opnd, COP0Opnd>,
   let Inst{15...11} = sel;
 }
 
-def : MipsInstAlias<"rdhwr $rt, $hs",
-			(RDHWR_NM GPRNM32Opnd:$rt, COP0Opnd:$hs, 0), 0>, ISA_NANOMIPS;
+def : NanoMipsInstAlias<"rdhwr $rt, $hs",
+			(RDHWR_NM GPRNM32Opnd:$rt, COP0Opnd:$hs, 0), 0>;
 
 def ADJCALLSTACKDOWN_NM : AdjustStack<callseq_start>;
 def ADJCALLSTACKUP_NM   : AdjustStack<callseq_end>;
@@ -1988,9 +1982,9 @@ let hasPostISelHook = 1, isCall = 1, isCTI = 1, Defs = [RA_NM] in {
                                  [(MipsJmpLink GPRNM32Opnd:$rs)]>,
     PseudoInstExpansion<(JALRC16_NM RA_NM, GPRNM32Opnd:$rs)>;
 }
-def : MipsInstAlias<"jalrc $rt", (JALRC16_NM RA_NM, GPRNM32Opnd:$rt), 0>, ISA_NANOMIPS;
-def : MipsInstAlias<"jalrc.hb $rt", (JALRCHB_NM RA_NM, GPRNM32Opnd:$rt), 0>, ISA_NANOMIPS;
-def : MipsInstAlias<"jrc.hb $rs", (JALRCHB_NM ZERO_NM, GPRNM32Opnd:$rs), 1>, ISA_NANOMIPS;
+def : NanoMipsInstAlias<"jalrc $rt", (JALRC16_NM RA_NM, GPRNM32Opnd:$rt), 0>;
+def : NanoMipsInstAlias<"jalrc.hb $rt", (JALRCHB_NM RA_NM, GPRNM32Opnd:$rt), 0>;
+def : NanoMipsInstAlias<"jrc.hb $rs", (JALRCHB_NM ZERO_NM, GPRNM32Opnd:$rs), 1>;
 def : MnemonicAlias<"jalr", "jalrc">, Requires<[HasNanoMips]>;
 def : MnemonicAlias<"jalr.hb", "jalrc.hb">, Requires<[HasNanoMips]>;
 
@@ -2218,12 +2212,10 @@ def BLTC_NM : CBranchNM<"bltc", brtarget14_nm, setlt, GPRNM32Opnd>,
 def BLTUC_NM : CBranchNM<"bltuc", brtarget14_nm, setult, GPRNM32Opnd>,
 	       B14_Enc<0b111>;
 
-def : MipsInstAlias<"beqc $rt, $rs, $offset",
-      (BEQC16_NM GPRNM16R3Opnd:$rs, GPRNM16R3Opnd:$rt, brtarget4s1_nm:$offset), 1>,
-      ISA_NANOMIPS;
-def : MipsInstAlias<"bnec $rt, $rs, $offset",
-      (BNEC16_NM GPRNM16R3Opnd:$rs, GPRNM16R3Opnd:$rt, brtarget4s1_nm:$offset), 1>,
-      ISA_NANOMIPS;
+def : NanoMipsInstAlias<"beqc $rt, $rs, $offset",
+      (BEQC16_NM GPRNM16R3Opnd:$rs, GPRNM16R3Opnd:$rt, brtarget4s1_nm:$offset), 1>;
+def : NanoMipsInstAlias<"bnec $rt, $rs, $offset",
+      (BNEC16_NM GPRNM16R3Opnd:$rs, GPRNM16R3Opnd:$rt, brtarget4s1_nm:$offset), 1>;
 
 def BEQZC16_NM : CBranchZeroAsmNM<"beqzc", brtarget7_nm, seteq, GPRNM16R3Opnd>,
 	     BZ16_Enc<0b10010>;
@@ -2270,8 +2262,8 @@ def : NanoMipsInstAlias<"bnezc $rt, $offset",
 			(BNEC_NM ZERO_NM, GPRNM32Opnd:$rt,
 			brtarget14_nm:$offset), 1>;
 
-def : MipsInstAlias<"bgtzc $rt, $offset",
-		(BLTC_NM ZERO_NM, GPRNM32Opnd:$rt, brtarget14_nm:$offset), 0>, ISA_NANOMIPS;
+def : NanoMipsInstAlias<"bgtzc $rt, $offset",
+		(BLTC_NM ZERO_NM, GPRNM32Opnd:$rt, brtarget14_nm:$offset), 0>;
 
 def BEQIC_NM : CBranchImmNM<"beqic", brtarget11_nm, seteq, GPRNM32Opnd, uimm7, immZExt7>,
 	       BRI_Enc<0b000>;
@@ -2807,8 +2799,8 @@ def DI_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins),
 def EI_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins),
                    "ei\t$rt", []>, ToggleInterrupts_Enc<0b01011>;
 
-def : MipsInstAlias<"ei", (EI_NM ZERO_NM)>, ISA_NANOMIPS;
-def : MipsInstAlias<"di", (DI_NM ZERO_NM)>, ISA_NANOMIPS;
+def : NanoMipsInstAlias<"ei", (EI_NM ZERO_NM)>;
+def : NanoMipsInstAlias<"di", (DI_NM ZERO_NM)>;
 
 // Instruction with no operands
 class MnemonicOnly<string opstr>:
@@ -2953,15 +2945,12 @@ def ROTX_NM : InstNM<(outs GPRNM32Opnd:$rt),
   let Inst{6} = stripe;
 }
 
-def BITREVB_NM : MipsInstAlias<"bitrevb $rt, $rs",
-				(ROTX_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 7, 8, 1)>,
-				ISA_NANOMIPS;
-def BITREVH_NM : MipsInstAlias<"bitrevh $rt, $rs",
-				(ROTX_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 15, 16, 0)>,
-				ISA_NANOMIPS;
-def BYTEREVH_NM : MipsInstAlias<"byterevh $rt, $rs",
-				(ROTX_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 8, 24, 0)>,
-				ISA_NANOMIPS;
+def BITREVB_NM : NanoMipsInstAlias<"bitrevb $rt, $rs",
+				(ROTX_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 7, 8, 1)>;
+def BITREVH_NM : NanoMipsInstAlias<"bitrevh $rt, $rs",
+				(ROTX_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 15, 16, 0)>;
+def BYTEREVH_NM : NanoMipsInstAlias<"byterevh $rt, $rs",
+				(ROTX_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 8, 24, 0)>;
 
 class CacheOpNM<string opstr, Operand Od, DAGOperand MO,
 		    ComplexPattern Addr = addr,
@@ -3036,7 +3025,7 @@ def WAIT_NM : InstNM<(outs), (ins uimm10:$cd),
   bits<10> cd;
   let Inst{25...16} = cd;
 }
-def : MipsInstAlias<"wait", (WAIT_NM 0)>, ISA_NANOMIPS;
+def : NanoMipsInstAlias<"wait", (WAIT_NM 0)>;
 
 def SYNC_NM : InstNM<(outs), (ins uimm5:$stype), "sync\t$stype",
 	   [], II_SYNC>, _Pool_P_SHIFT<0b0000> {
@@ -3046,12 +3035,12 @@ def SYNC_NM : InstNM<(outs), (ins uimm5:$stype), "sync\t$stype",
   let Inst{4...0} = 0b00110;
 }
 
-def : MipsInstAlias<"sync", (SYNC_NM 0)>, ISA_NANOMIPS;
-def : MipsInstAlias<"sync_wmb", (SYNC_NM 0x4)>, ISA_NANOMIPS;
-def : MipsInstAlias<"sync_mb", (SYNC_NM 0x10)>, ISA_NANOMIPS;
-def : MipsInstAlias<"sync_acquire", (SYNC_NM 0x11)>, ISA_NANOMIPS;
-def : MipsInstAlias<"sync_release", (SYNC_NM 0x12)>, ISA_NANOMIPS;
-def : MipsInstAlias<"sync_rmb", (SYNC_NM 0x13)>, ISA_NANOMIPS;
+def : NanoMipsInstAlias<"sync", (SYNC_NM 0)>;
+def : NanoMipsInstAlias<"sync_wmb", (SYNC_NM 0x4)>;
+def : NanoMipsInstAlias<"sync_mb", (SYNC_NM 0x10)>;
+def : NanoMipsInstAlias<"sync_acquire", (SYNC_NM 0x11)>;
+def : NanoMipsInstAlias<"sync_release", (SYNC_NM 0x12)>;
+def : NanoMipsInstAlias<"sync_rmb", (SYNC_NM 0x13)>;
 
 class WriteToCP0<string opstr, RegisterOperand RO, RegisterOperand CO> :
   InstNM<(outs), (ins RO:$rt, CO:$c0s, uimm5:$sel),
@@ -3097,10 +3086,10 @@ let isAsmParserOnly = 1 in {
   def MTHC0_NM : WriteToCP0<"mthc0", GPRNM32Opnd, COP0Opnd>, ReadWriteCP0_Enc<0b000111>;
 }
 
-def : MipsInstAlias<"mfc0 $rt, $c0s", (MFC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
-def : MipsInstAlias<"mfhc0 $rt, $c0s", (MFHC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
-def : MipsInstAlias<"mtc0 $rt, $c0s", (MTC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
-def : MipsInstAlias<"mthc0 $rt, $c0s", (MTHC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>, ISA_NANOMIPS;
+def : NanoMipsInstAlias<"mfc0 $rt, $c0s", (MFC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>;
+def : NanoMipsInstAlias<"mfhc0 $rt, $c0s", (MFHC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>;
+def : NanoMipsInstAlias<"mtc0 $rt, $c0s", (MTC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>;
+def : NanoMipsInstAlias<"mthc0 $rt, $c0s", (MTHC0_NM GPRNM32Opnd:$rt, COP0Opnd:$c0s, 0)>;
 
 def GINVI_NM : InstNM<(outs), (ins GPRNM32Opnd:$rs), "ginvi\t$rs", []>,
 		_Pool_POOL32Axf_5_group0<0b01111>, ASE_GINV {

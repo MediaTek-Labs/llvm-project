@@ -63,7 +63,9 @@ class NMPat<dag pattern, dag result> : Pat<pattern, result>, PredicateControl,
                                        ISA_NANOMIPS;
 
 class NanoMipsInstAlias<string asm, dag result, bit emit = 0b1>:
-	MipsInstAlias<asm, result, emit>, ISA_NANOMIPS;
+	MipsInstAlias<asm, result, emit>, ISA_NANOMIPS {
+  let AsmVariantName = "nanomips";
+}
 
 class NanoMipsMTInst : InstNM<(outs), (ins), "", [], NoItinerary>, InstSize32 {
   bit hasSideEffects = 1;

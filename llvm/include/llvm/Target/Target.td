@@ -684,6 +684,13 @@ class Instruction : InstructionEncoding {
   /// ID, so that instruction that is defined earlier can be sorted earlier
   /// in the assembly matching table.
   bit HasPositionOrder = false;
+
+  /// AltMnemonics: Specifies a list of alternative mnemonic strings that
+  /// map to the same machine instruction. These are different from
+  /// MnemonicAliases which target a specific mnemonic and are required
+  /// for architectures like NanoMIPS which have multiple instruction
+  /// variants with the same base mnemonic form.
+  list<string> AltMnemonics = [];
 }
 
 /// Defines a Pat match between compressed and uncompressed instruction.

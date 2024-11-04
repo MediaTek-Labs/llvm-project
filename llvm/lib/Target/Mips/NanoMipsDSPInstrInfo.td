@@ -71,6 +71,22 @@ class ABSQ_S_NM_FMT<bits<7> psel>: InstNM_Enc, _Pool_P32A<0b111> {
   let Inst{8...3} = 0b100111;
 }
 
+class DPA_MAQ_NM_FMT<bits<3> op1, bits<5> op2>: InstNM_Enc, _Pool_P32A<0b111> {
+  bits<5> rt;
+  bits<5> rs;
+  bits<2> ac;
+
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs;
+  let Inst{15...14} = ac;
+  let Inst{13...9} = op2;
+  let Inst{8...6} = op1;
+  let Inst{5...3} = 0b111;
+}
+
+class DPA_NM_FMT<bits<5> op>: DPA_MAQ_NM_FMT<0b010, op>;
+class MAQ_NM_FMT<bits<5> op>: DPA_MAQ_NM_FMT<0b001, op>;
+
 class EXTR_W_TY1_NM_FMT<bits<3> op1, bits<5> op2>: InstNM_Enc, _Pool_P32A<0b111> {
   bits<5> rt;
   bits<2> ac;
@@ -347,6 +363,26 @@ class PRECEU_PH_QBL_NM_ENC  : ABSQ_S_NM_FMT   <0b1011000>;
 class PRECEU_PH_QBLA_NM_ENC : ABSQ_S_NM_FMT   <0b1011001>;
 class PRECEU_PH_QBR_NM_ENC  : ABSQ_S_NM_FMT   <0b1101000>;
 class PRECEU_PH_QBRA_NM_ENC : ABSQ_S_NM_FMT   <0b1101001>;
+class DPA_W_PH_NM_ENC       : DPA_NM_FMT      <0b00000>;
+class DPAQ_S_W_PH_NM_ENC    : DPA_NM_FMT      <0b00001>;
+class DPAQ_SA_L_W_NM_ENC    : DPA_NM_FMT      <0b01001>;
+class DPAQX_S_W_PH_NM_ENC   : DPA_NM_FMT      <0b10001>;
+class DPAQX_SA_W_PH_NM_ENC  : DPA_NM_FMT      <0b11001>;
+class DPAU_H_QBL_NM_ENC     : DPA_NM_FMT      <0b10000>;
+class DPAU_H_QBR_NM_ENC     : DPA_NM_FMT      <0b11000>;
+class DPAX_W_PH_NM_ENC      : DPA_NM_FMT      <0b01000>;
+class DPS_W_PH_NM_ENC       : DPA_NM_FMT      <0b00010>;
+class DPSQ_S_W_PH_NM_ENC    : DPA_NM_FMT      <0b00011>;
+class DPSQ_SA_L_W_NM_ENC    : DPA_NM_FMT      <0b01011>;
+class DPSQX_S_W_PH_NM_ENC   : DPA_NM_FMT      <0b10011>;
+class DPSQX_SA_W_PH_NM_ENC  : DPA_NM_FMT      <0b11011>;
+class DPSU_H_QBL_NM_ENC     : DPA_NM_FMT      <0b10010>;
+class DPSU_H_QBR_NM_ENC     : DPA_NM_FMT      <0b11010>;
+class DPSX_W_PH_NM_ENC      : DPA_NM_FMT      <0b01010>;
+class MAQ_S_W_PHL_NM_ENC    : MAQ_NM_FMT      <0b01101>;
+class MAQ_SA_W_PHL_NM_ENC   : MAQ_NM_FMT      <0b11101>;
+class MAQ_S_W_PHR_NM_ENC    : MAQ_NM_FMT      <0b00101>;
+class MAQ_SA_W_PHR_NM_ENC   : MAQ_NM_FMT      <0b10101>;
 class ADDU_QB_NM_ENC     : ADDU_QB_NM_FMT     <0b00011001>;
 class ADDU_S_QB_NM_ENC   : ADDU_QB_NM_FMT     <0b10011001>;
 class SUBU_QB_NM_ENC     : ADDU_QB_NM_FMT     <0b01011001>;
@@ -441,6 +477,27 @@ def PRECEU_PH_QBL_NM     : PRECEU_PH_QBL_NM_ENC    , PRECEU_PH_QBL_DESC  <NanoMi
 def PRECEU_PH_QBLA_NM    : PRECEU_PH_QBLA_NM_ENC   , PRECEU_PH_QBLA_DESC <NanoMipsRO_TYPES>;
 def PRECEU_PH_QBR_NM     : PRECEU_PH_QBR_NM_ENC    , PRECEU_PH_QBR_DESC  <NanoMipsRO_TYPES>;
 def PRECEU_PH_QBRA_NM    : PRECEU_PH_QBRA_NM_ENC   , PRECEU_PH_QBRA_DESC <NanoMipsRO_TYPES>;
+
+def DPA_W_PH_NM      : DPA_W_PH_NM_ENC      , DPA_W_PH_DESC     <NanoMipsRO_TYPES>;
+def DPAQ_S_W_PH_NM   : DPAQ_S_W_PH_NM_ENC   , DPAQ_S_W_PH_DESC  <NanoMipsRO_TYPES>;
+def DPAQ_SA_L_W_NM   : DPAQ_SA_L_W_NM_ENC   , DPAQ_SA_L_W_DESC  <NanoMipsRO_TYPES>;
+def DPAQX_S_W_PH_NM  : DPAQX_S_W_PH_NM_ENC  , DPAQX_S_W_PH_DESC <NanoMipsRO_TYPES>;
+def DPAQX_SA_W_PH_NM : DPAQX_SA_W_PH_NM_ENC , DPAQX_SA_W_PH_DESC<NanoMipsRO_TYPES>;
+def DPAU_H_QBL_NM    : DPAU_H_QBL_NM_ENC    , DPAU_H_QBL_DESC   <NanoMipsRO_TYPES>;
+def DPAU_H_QBR_NM    : DPAU_H_QBR_NM_ENC    , DPAU_H_QBR_DESC   <NanoMipsRO_TYPES>;
+def DPAX_W_PH_NM     : DPAX_W_PH_NM_ENC     , DPAX_W_PH_DESC    <NanoMipsRO_TYPES>;
+def DPS_W_PH_NM      : DPS_W_PH_NM_ENC      , DPS_W_PH_DESC     <NanoMipsRO_TYPES>;
+def DPSQ_S_W_PH_NM   : DPSQ_S_W_PH_NM_ENC   , DPSQ_S_W_PH_DESC  <NanoMipsRO_TYPES>;
+def DPSQ_SA_L_W_NM   : DPSQ_SA_L_W_NM_ENC   , DPSQ_SA_L_W_DESC  <NanoMipsRO_TYPES>;
+def DPSQX_S_W_PH_NM  : DPSQX_S_W_PH_NM_ENC  , DPSQX_S_W_PH_DESC <NanoMipsRO_TYPES>;
+def DPSQX_SA_W_PH_NM : DPSQX_SA_W_PH_NM_ENC , DPSQX_SA_W_PH_DESC<NanoMipsRO_TYPES>;
+def DPSU_H_QBL_NM    : DPSU_H_QBL_NM_ENC    , DPSU_H_QBL_DESC   <NanoMipsRO_TYPES>;
+def DPSU_H_QBR_NM    : DPSU_H_QBR_NM_ENC    , DPSU_H_QBR_DESC   <NanoMipsRO_TYPES>;
+def DPSX_W_PH_NM     : DPSX_W_PH_NM_ENC     , DPSX_W_PH_DESC    <NanoMipsRO_TYPES>;
+def MAQ_S_W_PHL_NM   : MAQ_S_W_PHL_NM_ENC   , MAQ_S_W_PHL_DESC  <NanoMipsRO_TYPES>;
+def MAQ_SA_W_PHL_NM  : MAQ_SA_W_PHL_NM_ENC  , MAQ_SA_W_PHL_DESC <NanoMipsRO_TYPES>;
+def MAQ_S_W_PHR_NM   : MAQ_S_W_PHR_NM_ENC   , MAQ_S_W_PHR_DESC  <NanoMipsRO_TYPES>;
+def MAQ_SA_W_PHR_NM  : MAQ_SA_W_PHR_NM_ENC  , MAQ_SA_W_PHR_DESC <NanoMipsRO_TYPES>;
 
 def ADDU_PH_NM     : ADDU_PH_NM_ENC          , ADDU_PH_DESC    <NanoMipsRO_TYPES>;
 def ADDU_S_PH_NM   : ADDU_S_PH_NM_ENC        , ADDU_S_PH_DESC  <NanoMipsRO_TYPES>;

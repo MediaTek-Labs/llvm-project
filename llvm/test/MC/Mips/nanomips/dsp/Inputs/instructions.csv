@@ -28,6 +28,26 @@ extrv_rs.w     ,"@ $rt, $ac, $rs"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|10|
 extrv.w        ,"@ $rt, $ac, $rs"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|00|111|010|111|111
 extpv          ,"@ $rt, $ac, $rs"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|10|100|010|111|111
 extpdpv        ,"@ $rt, $ac, $rs"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|11|100|010|111|111
+dpa.w.ph       ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|00|000|010|111|111
+dpaq_s.w.ph    ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|00|001|010|111|111
+dpaq_sa.l.w    ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|01|001|010|111|111
+dpaqx_s.w.ph   ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|10|001|010|111|111
+dpaqx_sa.w.ph  ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|11|001|010|111|111
+dpau.h.qbl     ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|10|000|010|111|111
+dpau.h.qbr     ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|11|000|010|111|111
+dpax.w.ph      ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|01|000|010|111|111
+dps.w.ph       ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|00|010|010|111|111
+dpsq_s.w.ph    ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|00|011|010|111|111
+dpsq_sa.l.w    ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|01|011|010|111|111
+dpsqx_s.w.ph   ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|10|011|010|111|111
+dpsqx_sa.w.ph  ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|11|011|010|111|111
+dpsu.h.qbl     ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|10|010|010|111|111
+dpsu.h.qbr     ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|11|010|010|111|111
+dpsx.w.ph      ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|01|010|010|111|111
+maq_s.w.phl    ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|01|101|001|111|111
+maq_sa.w.phl   ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|11|101|001|111|111
+maq_s.w.phr    ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|00|101|001|111|111
+maq_sa.w.phr   ,"@ $ac, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|ACC[ac](2)|10|101|001|111|111
 extp           ,"@ $rt, $ac, $size" ,001000|GPR[rt](5)|size(5u)  |ACC[ac](2)|10|011|001|111|111
 extr.w         ,"@ $rt, $ac, $shift",001000|GPR[rt](5)|shift(5u) |ACC[ac](2)|00|111|001|111|111
 extr_r.w       ,"@ $rt, $ac, $shift",001000|GPR[rt](5)|shift(5u) |ACC[ac](2)|01|111|001|111|111

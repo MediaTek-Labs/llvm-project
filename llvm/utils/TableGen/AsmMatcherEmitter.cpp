@@ -573,6 +573,17 @@ struct MatchableInfo {
     assert(!isa<const CodeGenInstAlias *>(DefRec));
   }
 
+  MatchableInfo(const MatchableInfo &RHS, StringRef AliasName)
+      : AsmVariantID(RHS.AsmVariantID), AsmString(RHS.AsmString),
+        TheDef(RHS.TheDef), DefRec(RHS.DefRec), ResOperands(RHS.ResOperands),
+        Mnemonic(AliasName), AsmOperands(RHS.AsmOperands),
+        RequiredFeatures(RHS.RequiredFeatures),
+        ConversionFnKind(RHS.ConversionFnKind),
+        HasDeprecation(RHS.HasDeprecation),
+        UseInstAsmMatchConverter(RHS.UseInstAsmMatchConverter) {
+    assert(!DefRec.is<const CodeGenInstAlias *>());
+  }
+
   ~MatchableInfo() {
     delete dyn_cast_if_present<const CodeGenInstAlias *>(DefRec);
   }
@@ -1661,6 +1672,18 @@ void AsmMatcherInfo::buildInfo() {
 
         // Add the alias to the matchables list.
         NewMatchables.push_back(std::move(AliasII));
+      }
+      auto AltMnemonics = II->TheDef->getValueAsListOfStrings("AltMnemonics");
+      for (auto AltMnemonic : AltMnemonics) {
+	AltMnemonic = StringRef(AltMnemonic).trim();
+	// don't handle empty alternative names
+	if (AltMnemonic.empty())
+	  continue;
+	// Start by making a copy of the original matchable.
+        auto Alias = std::make_unique<MatchableInfo>(*II, AltMnemonic);
+
+        // Add the alias to the matchables list.
+        NewMatchables.push_back(std::move(Alias));
       }
     } else
       // FIXME: The tied operands checking is not yet integrated with the

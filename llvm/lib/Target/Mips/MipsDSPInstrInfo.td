@@ -470,12 +470,13 @@ class WRDSP_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
   string BaseOpcode = instr_asm;
 }
 
-class DPA_W_PH_DESC_BASE<string instr_asm, SDPatternOperator OpNode> {
-  dag OutOperandList = (outs ACC64DSPOpnd:$ac);
-  dag InOperandList = (ins GPR32Opnd:$rs, GPR32Opnd:$rt, ACC64DSPOpnd:$acin);
+class DPA_W_PH_DESC_BASE<string instr_asm, SDPatternOperator OpNode,
+                         RO_TYPES RO> {
+  dag OutOperandList = (outs RO.ACC64DSP:$ac);
+  dag InOperandList = (ins RO.GPR:$rs, RO.GPR:$rt, RO.ACC64DSP:$acin);
   string AsmString = !strconcat(instr_asm, "\t$ac, $rs, $rt");
-  list<dag> Pattern = [(set ACC64DSPOpnd:$ac,
-                        (OpNode GPR32Opnd:$rs, GPR32Opnd:$rt, ACC64DSPOpnd:$acin))];
+  list<dag> Pattern = [(set RO.ACC64DSP:$ac,
+                        (OpNode RO.GPR:$rs, RO.GPR:$rt, RO.ACC64DSP:$acin))];
   string Constraints = "$acin = $ac";
   string BaseOpcode = instr_asm;
 }
@@ -816,19 +817,24 @@ class MULQ_RS_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
                     NoItinerary, RO.DSPR, RO.DSPR>,
   IsCommutable, Defs<[DSPOutFlag21]>;
 
-class MULSAQ_S_W_PH_DESC : DPA_W_PH_DESC_BASE<"mulsaq_s.w.ph", MipsMULSAQ_S_W_PH>,
+class MULSAQ_S_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"mulsaq_s.w.ph", MipsMULSAQ_S_W_PH, RO>,
                            Defs<[DSPOutFlag16_19]>;
 
-class MAQ_S_W_PHL_DESC : DPA_W_PH_DESC_BASE<"maq_s.w.phl", MipsMAQ_S_W_PHL>,
+class MAQ_S_W_PHL_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"maq_s.w.phl", MipsMAQ_S_W_PHL, RO>,
                          Defs<[DSPOutFlag16_19]>;
 
-class MAQ_S_W_PHR_DESC : DPA_W_PH_DESC_BASE<"maq_s.w.phr", MipsMAQ_S_W_PHR>,
+class MAQ_S_W_PHR_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"maq_s.w.phr", MipsMAQ_S_W_PHR, RO>,
                          Defs<[DSPOutFlag16_19]>;
 
-class MAQ_SA_W_PHL_DESC : DPA_W_PH_DESC_BASE<"maq_sa.w.phl", MipsMAQ_SA_W_PHL>,
+class MAQ_SA_W_PHL_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"maq_sa.w.phl", MipsMAQ_SA_W_PHL, RO>,
                           Defs<[DSPOutFlag16_19]>;
 
-class MAQ_SA_W_PHR_DESC : DPA_W_PH_DESC_BASE<"maq_sa.w.phr", MipsMAQ_SA_W_PHR>,
+class MAQ_SA_W_PHR_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"maq_sa.w.phr", MipsMAQ_SA_W_PHR, RO>,
                           Defs<[DSPOutFlag16_19]>;
 
 // Move from/to hi/lo.
@@ -838,24 +844,32 @@ class MTHI_DESC<RO_TYPES RO = MipsRO_TYPES> : MTHI_DESC_BASE<"mthi", RO.HI32DSP,
 class MTLO_DESC<RO_TYPES RO = MipsRO_TYPES> : MTHI_DESC_BASE<"mtlo", RO.LO32DSP, RO.GPR, NoItinerary>;
 
 // Dot product with accumulate/subtract
-class DPAU_H_QBL_DESC : DPA_W_PH_DESC_BASE<"dpau.h.qbl", MipsDPAU_H_QBL>;
+class DPAU_H_QBL_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpau.h.qbl", MipsDPAU_H_QBL, RO>;
 
-class DPAU_H_QBR_DESC : DPA_W_PH_DESC_BASE<"dpau.h.qbr", MipsDPAU_H_QBR>;
+class DPAU_H_QBR_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpau.h.qbr", MipsDPAU_H_QBR, RO>;
 
-class DPSU_H_QBL_DESC : DPA_W_PH_DESC_BASE<"dpsu.h.qbl", MipsDPSU_H_QBL>;
+class DPSU_H_QBL_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpsu.h.qbl", MipsDPSU_H_QBL, RO>;
 
-class DPSU_H_QBR_DESC : DPA_W_PH_DESC_BASE<"dpsu.h.qbr", MipsDPSU_H_QBR>;
+class DPSU_H_QBR_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpsu.h.qbr", MipsDPSU_H_QBR, RO>;
 
-class DPAQ_S_W_PH_DESC : DPA_W_PH_DESC_BASE<"dpaq_s.w.ph", MipsDPAQ_S_W_PH>,
+class DPAQ_S_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpaq_s.w.ph", MipsDPAQ_S_W_PH, RO>,
                          Defs<[DSPOutFlag16_19]>;
 
-class DPSQ_S_W_PH_DESC : DPA_W_PH_DESC_BASE<"dpsq_s.w.ph", MipsDPSQ_S_W_PH>,
+class DPSQ_S_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpsq_s.w.ph", MipsDPSQ_S_W_PH, RO>,
                          Defs<[DSPOutFlag16_19]>;
 
-class DPAQ_SA_L_W_DESC : DPA_W_PH_DESC_BASE<"dpaq_sa.l.w", MipsDPAQ_SA_L_W>,
+class DPAQ_SA_L_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpaq_sa.l.w", MipsDPAQ_SA_L_W, RO>,
                          Defs<[DSPOutFlag16_19]>;
 
-class DPSQ_SA_L_W_DESC : DPA_W_PH_DESC_BASE<"dpsq_sa.l.w", MipsDPSQ_SA_L_W>,
+class DPSQ_SA_L_W_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpsq_sa.l.w", MipsDPSQ_SA_L_W, RO>,
                          Defs<[DSPOutFlag16_19]>;
 
 class MULT_DSP_DESC<RO_TYPES RO = MipsRO_TYPES>  : MULT_DESC_BASE<"mult", MipsMult, NoItinerary, RO>;
@@ -1145,29 +1159,36 @@ class MULQ_S_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
   IsCommutable, Defs<[DSPOutFlag21]>;
 
 // Dot product with accumulate/subtract
-class DPA_W_PH_DESC : DPA_W_PH_DESC_BASE<"dpa.w.ph", MipsDPA_W_PH>;
+class DPA_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpa.w.ph", MipsDPA_W_PH, RO>;
 
-class DPS_W_PH_DESC : DPA_W_PH_DESC_BASE<"dps.w.ph", MipsDPS_W_PH>;
+class DPS_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dps.w.ph", MipsDPS_W_PH, RO>;
 
-class DPAQX_S_W_PH_DESC : DPA_W_PH_DESC_BASE<"dpaqx_s.w.ph", MipsDPAQX_S_W_PH>,
+class DPAQX_S_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpaqx_s.w.ph", MipsDPAQX_S_W_PH, RO>,
                           Defs<[DSPOutFlag16_19]>;
 
-class DPAQX_SA_W_PH_DESC : DPA_W_PH_DESC_BASE<"dpaqx_sa.w.ph",
-                                              MipsDPAQX_SA_W_PH>,
+class DPAQX_SA_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpaqx_sa.w.ph", MipsDPAQX_SA_W_PH, RO>,
                            Defs<[DSPOutFlag16_19]>;
 
-class DPAX_W_PH_DESC : DPA_W_PH_DESC_BASE<"dpax.w.ph", MipsDPAX_W_PH>;
+class DPAX_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpax.w.ph", MipsDPAX_W_PH, RO>;
 
-class DPSX_W_PH_DESC : DPA_W_PH_DESC_BASE<"dpsx.w.ph", MipsDPSX_W_PH>;
+class DPSX_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpsx.w.ph", MipsDPSX_W_PH, RO>;
 
-class DPSQX_S_W_PH_DESC : DPA_W_PH_DESC_BASE<"dpsqx_s.w.ph", MipsDPSQX_S_W_PH>,
+class DPSQX_S_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpsqx_s.w.ph", MipsDPSQX_S_W_PH, RO>,
                           Defs<[DSPOutFlag16_19]>;
 
-class DPSQX_SA_W_PH_DESC : DPA_W_PH_DESC_BASE<"dpsqx_sa.w.ph",
-                                              MipsDPSQX_SA_W_PH>,
+class DPSQX_SA_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"dpsqx_sa.w.ph", MipsDPSQX_SA_W_PH, RO>,
                            Defs<[DSPOutFlag16_19]>;
 
-class MULSA_W_PH_DESC : DPA_W_PH_DESC_BASE<"mulsa.w.ph", MipsMULSA_W_PH>;
+class MULSA_W_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :
+  DPA_W_PH_DESC_BASE<"mulsa.w.ph", MipsMULSA_W_PH, RO>;
 
 // Precision reduce/expand
 class PRECR_QB_PH_DESC<RO_TYPES RO = MipsRO_TYPES> :

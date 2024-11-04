@@ -607,6 +607,9 @@ class RegConstraint<string C> {
 class NoEncode<string E> {
   string DisableEncoding = E;
 }
+class AltMnemonics<list<string> A> {
+  list<string> AltMnemonics = A;
+}
 
 //===----------------------------------------------------------------------===//
 //
@@ -1410,16 +1413,21 @@ class SaveRestore16_Enc<bits<1> isel> : _Pool_P16_SR<isel> {
   let Inst{3...0} = regs{3...0};
 }
 
-def SAVE16_NM : SaveRestore<"save", uimm8s4_nm, nmreglist16>, SaveRestore16_Enc<0b0>;
-def RESTOREJRC16_NM : SaveRestore<"restore.jrc", uimm8s4_nm, nmreglist16>, SaveRestore16_Enc<0b1>;
+def SAVE16_NM : SaveRestore<"save", uimm8s4_nm, nmreglist16>, SaveRestore16_Enc<0b0>,
+				AltMnemonics<["save[16]"]>;
+def RESTOREJRC16_NM : SaveRestore<"restore.jrc", uimm8s4_nm, nmreglist16>, SaveRestore16_Enc<0b1>,
+				AltMnemonics<["restore.jrc[16]"]>;
 def SAVE16_NOREG_NM : NanoMipsInstAlias<"save $adj",
 				    (SAVE16_NM uimm8s4_nm:$adj, 0)>;
 def RESTOREJRC16_NOREG_NM : NanoMipsInstAlias<"restore.jrc $adj",
 					  (RESTOREJRC16_NM uimm8s4_nm:$adj, 0)>;
 
-def SAVE_NM : SaveRestore<"save", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b00>;
-def RESTORE_NM : SaveRestore<"restore", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b10>;
-def RESTOREJRC_NM : SaveRestore<"restore.jrc", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b11>;
+def SAVE_NM : SaveRestore<"save", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b00>,
+				AltMnemonics<["save[32]"]>;
+def RESTORE_NM : SaveRestore<"restore", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b10>,
+				AltMnemonics<["restore[32]"]>;
+def RESTOREJRC_NM : SaveRestore<"restore.jrc", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b11>,
+				AltMnemonics<["restore.jrc[32]"]>;
 
 def SAVE_NOREG_NM : NanoMipsInstAlias<"save $adj",
 				  (SAVE_NM uimm12s3_nm:$adj, 0)>;
@@ -1536,14 +1544,18 @@ class LoadAddressAbsNM<string opstr, RegisterOperand RO, DAGOperand MO, ComplexP
 
 // 16-bit register operations
 def NOT16_NM : ArithLogicR16U_Desc<"not", GPRNM16R3Opnd, not>,
-	       ArithLogicR16_Enc<0b00>;
+	       ArithLogicR16_Enc<0b00>,
+	       AltMnemonics<["not[16]"]>;
 let isCommutable=1, TwoOperandAliasConstraint = "$rt = $dst" in {
     def XOR16_NM : ArithLogicR16_Desc<"xor", GPRNM16R3Opnd, xor>,
-	           ArithLogicR16_Enc<0b01>;
+	           ArithLogicR16_Enc<0b01>,
+		   AltMnemonics<["xor[16]"]>;
     def AND16_NM : ArithLogicR16_Desc<"and", GPRNM16R3Opnd, and>,
-	           ArithLogicR16_Enc<0b10>;
+	           ArithLogicR16_Enc<0b10>,
+		   AltMnemonics<["and[16]"]>;
     def OR16_NM  : ArithLogicR16_Desc<"or", GPRNM16R3Opnd, or>,
-	           ArithLogicR16_Enc<0b11>;
+	           ArithLogicR16_Enc<0b11>,
+		   AltMnemonics<["or[16]"]>;
 }
 
 class CommuteBinOpAlias<string op, InstNM OpCode, RegisterOperand RO> :
@@ -1551,8 +1563,11 @@ class CommuteBinOpAlias<string op, InstNM OpCode, RegisterOperand RO> :
 		(OpCode RO:$rd, RO:$rs, RO:$rt), 0>;
 
 def : CommuteBinOpAlias<"and", AND16_NM, GPRNM16R3Opnd>;
+def : CommuteBinOpAlias<"and[16]", AND16_NM, GPRNM16R3Opnd>;
 def : CommuteBinOpAlias<"or", OR16_NM, GPRNM16R3Opnd>;
+def : CommuteBinOpAlias<"or[16]", OR16_NM, GPRNM16R3Opnd>;
 def : CommuteBinOpAlias<"xor", XOR16_NM, GPRNM16R3Opnd>;
+def : CommuteBinOpAlias<"xor[16]", XOR16_NM, GPRNM16R3Opnd>;
 
 class ANDI16_Enc<bits<5> isel> : _Pool_P16<isel>
 {
@@ -1588,25 +1603,31 @@ def ROTRV_NM : ArithLogicR32_Desc<"rotrv", GPRNM32Opnd, rotr>,
 def ADD_NM   : ArithLogicR32_Desc<"add", GPRNM32Opnd>,
 	       ArithLogicR32_Enc<0b010010>;
 def ADDu_NM  : ArithLogicR32_Desc<"addu", GPRNM32Opnd, add>,
-	       ArithLogicR32_Enc<0b010110>;
+	       ArithLogicR32_Enc<0b010110>,
+	       AltMnemonics<["addu[32]"]>;
 def SUB_NM   : ArithLogicR32_Desc<"sub", GPRNM32Opnd>,
 	       ArithLogicR32_Enc<0b011010>;
 def SUBu_NM  : ArithLogicR32_Desc<"subu", GPRNM32Opnd, sub>,
-	       ArithLogicR32_Enc<0b011110>;
+	       ArithLogicR32_Enc<0b011110>,
+	       AltMnemonics<["subu[32]"]>;
 def AND_NM   : ArithLogicR32_Desc<"and", GPRNM32Opnd, and>,
-	       ArithLogicR32_Enc<0b100110>;
+	       ArithLogicR32_Enc<0b100110>,
+	       AltMnemonics<["and[32]"]>;
 def OR_NM    : ArithLogicR32_Desc<"or", GPRNM32Opnd, or>,
-	       ArithLogicR32_Enc<0b101010>;
+	       ArithLogicR32_Enc<0b101010>,
+	       AltMnemonics<["or[32]"]>;
 def NOR_NM   : ArithLogicR32_Desc<"nor", GPRNM32Opnd>,
 	       ArithLogicR32_Enc<0b101110>;
 def XOR_NM   : ArithLogicR32_Desc<"xor", GPRNM32Opnd, xor>,
-	       ArithLogicR32_Enc<0b110010>;
+	       ArithLogicR32_Enc<0b110010>,
+	       AltMnemonics<["xor[32]"]>;
 def SLT_NM   : ArithLogicR32_Desc<"slt", GPRNM32Opnd, setlt>,
 	       ArithLogicR32_Enc<0b110110>;
 def SLTU_NM  : ArithLogicR32_Desc<"sltu", GPRNM32Opnd, setult>,
 	       ArithLogicR32_Enc<0b111010>;
 def MUL_NM   : ArithLogicR32_Desc<"mul", GPRNM32Opnd, mul>,
-	       ArithLogicR32_Enc<0b000011>;
+	       ArithLogicR32_Enc<0b000011>,
+	       AltMnemonics<["mul[32]"]>;
 def MUH_NM   : ArithLogicR32_Desc<"muh", GPRNM32Opnd, mulhs>,
 	       ArithLogicR32_Enc<0b000111>;
 def MULU_NM  : ArithLogicR32_Desc<"mulu", GPRNM32Opnd>,
@@ -1632,18 +1653,23 @@ def : NMPat<(not GPRNM32Opnd:$rt), (NOR_NM GPRNM32Opnd:$rt, ZERO_NM)>;
 // 16-bit register operations
 let isCommutable=1 in {
 def SUBu16_NM  : AddSubR16_Desc<"subu", GPRNM16R3Opnd, sub>,
-		 AddSubR16_Enc<0b1>;
+		 AddSubR16_Enc<0b1>,
+		 AltMnemonics<["subu[16]"]>;
 def ADDu16_NM : AddSubR16_Desc<"addu", GPRNM16R3Opnd, add>,
-		AddSubR16_Enc<0b0>;
+		AddSubR16_Enc<0b0>,
+	        AltMnemonics<["addu[16]"]>;
 def ADDu4x4_NM : Arith4x4_Desc<"addu", GPRNM4Opnd, add>,
-		 Arith4x4_Enc<0b00>, NoEncode<"$rt">;
+		 Arith4x4_Enc<0b00>, NoEncode<"$rt">,
+	         AltMnemonics<["addu[4x4]"]>;
 def MUL4x4_NM  : Arith4x4_Desc<"mul", GPRNM4Opnd, mul>,
-		  Arith4x4_Enc<0b01>, NoEncode<"$rt">;
+		 Arith4x4_Enc<0b01>, NoEncode<"$rt">,
+	         AltMnemonics<["mul[4x4]"]>;
 }
 
 def : CommuteBinOpAlias<"addu", ADDu4x4_NM, GPRNM4Opnd>;
+def : CommuteBinOpAlias<"addu[4x4]", ADDu4x4_NM, GPRNM4Opnd>;
 def : CommuteBinOpAlias<"mul", MUL4x4_NM, GPRNM4Opnd>;
-
+def : CommuteBinOpAlias<"mul[4x4]", MUL4x4_NM, GPRNM4Opnd>;
 
 // P.U12 pool of instructions
 let TwoOperandAliasConstraint = "$rs = $rt" in {
@@ -1667,14 +1693,18 @@ def SEQI_NM  : CondLogicI32_Desc<"seqi", uimm12_nm, GPRNM32Opnd, imm32ZExt12, se
 // P.SHIFT pool of instructions
 def SLL16_NM : ArithLogicAsmNM<"sll", uimm3shift_nm, GPRNM16R3Opnd, GPRNM16R3Opnd,
 	       imm32ZExt3, shl>,
-	       ShiftI16_Enc<0b0>;
+	       ShiftI16_Enc<0b0>,
+	       AltMnemonics<["sll[16]"]>;
 def SLL_NM  : ShiftI_Desc<"sll", uimm5, GPRNM32Opnd, imm32ZExt5, shl>,
-	      ShiftI32_Enc<0b0000>;
+	      ShiftI32_Enc<0b0000>,
+	      AltMnemonics<["sll[32]"]>;
 def SRL16_NM : ArithLogicAsmNM<"srl", uimm3shift_nm, GPRNM16R3Opnd, GPRNM16R3Opnd, 
 	       imm32ZExt3, srl>,
-	       ShiftI16_Enc<0b1>;
+	       ShiftI16_Enc<0b1>,
+	       AltMnemonics<["srl[16]"]>;
 def SRL_NM  : ShiftI_Desc<"srl", uimm5, GPRNM32Opnd, imm32ZExt5, srl>,
-	      ShiftI32_Enc<0b0010>;
+	      ShiftI32_Enc<0b0010>,
+	      AltMnemonics<["srl[32]"]>;
 def SRA_NM  : ShiftI_Desc<"sra", uimm5, GPRNM32Opnd, imm32ZExt5, sra>,
 	      ShiftI32_Enc<0b0100>;
 def ROTR_NM : ShiftI_Desc<"rotr", uimm5, GPRNM32Opnd, imm32ZExt5, rotr>,
@@ -1792,14 +1822,15 @@ def : NanoMipsInstAlias<"addiu.w $rt, $rs, $offset",
 
 let isReMaterializable = 1 in {
   def LAPC32_NM : LoadAddressPCRelNM<"lapc.h", GPRNM32Opnd, sym32_pc22_nm,
-				     addrsym>, Op32_Addr_Enc<0b00001>;
+				     addrsym>, Op32_Addr_Enc<0b00001>,
+				     AltMnemonics<["lapc[32]", "lapc"]>;
   def LAPC48_NM : LoadAddressPCRelNM<"lapc.b", GPRNM48Opnd, sym32_pc_nm,
-				     addrsym>, Op48_Addr_Enc<0b00011>;
+				     addrsym>, Op48_Addr_Enc<0b00011>,
+				     AltMnemonics<["lapc[48]", "lapc"]>;
 }
 
 def ADDIUPC48_NM : NanoMipsInstAlias<"addiupc $rt, $addr",
 			    (LAPC48_NM GPRNM48Opnd: $rt, sym32_pc_nm:$addr), 0>;
-def : MnemonicAlias<"lapc", "lapc.h">, Requires<[HasNanoMips]>;
 
 def LSA_NM : LoadScaledAddressNM<"lsa", GPRNM32Opnd>, LoadScaledAddress_Enc;
 
@@ -1842,7 +1873,8 @@ class LI16_Enc<bits<5> isel> : _Pool_P16<isel>
 }
 
 def LI16_NM : LoadImmAsmNM<"li", GPRNM16R3Opnd, nimm7_nm, imm7M1To126>,
-	      LI16_Enc<0b11000>;
+	      LI16_Enc<0b11000>,
+	      AltMnemonics<["li[16]"]>;
 
 let isReMaterializable = 1 in {
   def LI48_NM : LoadAddressAbsNM<"li[48]", GPRNM48Opnd, sym32_nm,
@@ -1858,13 +1890,10 @@ let isReMaterializable = 1 in {
 					  [(set GPRNM32Opnd:$rt, addrsym:$addr)]>;
 }
 
-def ADDIUGP48_NM : LoadAddressGPRelNM<"addiu[gp48]", GPRNM48Opnd, sym32_gp_nm,
+def ADDIUGP48_NM : LoadAddressGPRelNM<"addiu.b32", GPRNM48Opnd, sym32_gp_nm,
 				      addrgprel>, Op48_Addr_Enc<0b00010>,
-				      NoEncode<"$rs">;
-
-def ADDIUB32_NM : NanoMipsInstAlias<"addiu.b32 $rt, $rs, $addr",
-				(ADDIUGP48_NM GPRNM48Opnd:$rt,
-				GPRNMGPOpnd:$rs, sym32_gp_nm:$addr)>;
+				      NoEncode<"$rs">,
+				      AltMnemonics<["addiu[gp48]"]>;
 
 class LUI_Enc<bits<1> isel> : _Pool_P_LUI<isel> {
   bits<5> rt;
@@ -1951,8 +1980,8 @@ class IndirectCall16_Enc : _Pool_P16_BR<0b0000>
   let Inst{4} = rt{0}; // always 1, forced for disassembly of JALRC[16]
 }
 
-def JRC_NM : IndirectBranchNM<"jrc", GPRNM32Opnd>, IndirectBranch16_Enc<0>;
-def : MnemonicAlias<"jr", "jrc">, Requires<[HasNanoMips]>;
+def JRC_NM : IndirectBranchNM<"jrc", GPRNM32Opnd>, IndirectBranch16_Enc<0>,
+	     AltMnemonics<["jr"]>;
 
 // Indirect branch is matched as PseudoIndirectBranchNM and expanded to JRC_NM.
 def PseudoIndirectBranchNM :
@@ -1967,11 +1996,14 @@ def PseudoIndirectBranchNM :
 
 let hasPostISelHook = 1, isCall = 1, isCTI = 1, Defs = [RA_NM] in {
   def JALRC16_NM : IndirectCallNM<"jalrc", GPRNMRAOpnd, GPRNM32Opnd>,
-			 IndirectCall16_Enc;
+			 IndirectCall16_Enc,
+			 AltMnemonics<["jalrc[16]", "jalr"]>;
   def JALRC_NM : IndirectCallNM<"jalrc", GPRNM32Opnd, GPRNM32Opnd>,
-	         IndirectCall32_Enc<0b0000>;
+	         IndirectCall32_Enc<0b0000>,
+		 AltMnemonics<["jalrc[32]", "jalr"]>;
   def JALRCHB_NM : IndirectCallNM<"jalrc.hb", GPRNM32Opnd, GPRNM32Opnd>,
-	           IndirectCall32_Enc<0b0001>;
+	           IndirectCall32_Enc<0b0001>,
+		   AltMnemonics<["jalr.hb"]>;
   def JALRCPseudo : PseudoInstNM<(outs), (ins GPRNM32Opnd:$rs),
                                  [(MipsJmpLink GPRNM32Opnd:$rs)]>,
     PseudoInstExpansion<(JALRC16_NM RA_NM, GPRNM32Opnd:$rs)>;
@@ -1980,7 +2012,6 @@ def : NanoMipsInstAlias<"jalrc $rt", (JALRC16_NM RA_NM, GPRNM32Opnd:$rt), 0>;
 def : NanoMipsInstAlias<"jalrc.hb $rt", (JALRCHB_NM RA_NM, GPRNM32Opnd:$rt), 0>;
 def : NanoMipsInstAlias<"jrc.hb $rs", (JALRCHB_NM ZERO_NM, GPRNM32Opnd:$rs), 1>;
 def : MnemonicAlias<"jalr", "jalrc">, Requires<[HasNanoMips]>;
-def : MnemonicAlias<"jalr.hb", "jalrc.hb">, Requires<[HasNanoMips]>;
 
 def : NMPat<(MipsFullAddr tglobaladdr:$in), (PseudoLA_NM tglobaladdr:$in)>;
 def : NMPat<(MipsFullAddr tglobaltlsaddr:$in), (PseudoLA_NM tglobaltlsaddr:$in)>;
@@ -2166,16 +2197,17 @@ class BBit_Enc<bits<3> isel> : _Pool_P_BRI<isel>
   let Inst{0} =  offset{11};
 }
 
-def BC_NM : BCBase<brtarget25_nm>, BC32_Enc<0b0>;
-def BALC_NM : CallNM<"balc", MipsJmpLink, calltarget25_nm>, BC32_Enc<0b1>;
-def BC16_NM : BCBase<brtarget10_nm>, BC16_Enc<0b00010>;
-def BALC16_NM : CallNM<"balc[16]", MipsJmpLink, calltarget10_nm>, BC16_Enc<0b00110>;
+def BC_NM : BCBase<brtarget25_nm>, BC32_Enc<0b0>, AltMnemonics<["bc[32]", "b", "j"]>;
+def BALC_NM : CallNM<"balc", MipsJmpLink, calltarget25_nm>, BC32_Enc<0b1>,
+	      AltMnemonics<["balc[32]"]>;
+def BC16_NM : BCBase<brtarget10_nm>, BC16_Enc<0b00010>, AltMnemonics<["bc[16]", "j"]>;
+def BALC16_NM : CallNM<"balc[16]", MipsJmpLink, calltarget10_nm>, BC16_Enc<0b00110>,
+		AltMnemonics<["balc[16]"]>;
 
 def : NMPat<(MipsJmpLink (i32 texternalsym:$dst)), (BALC_NM texternalsym:$dst)>;
 
 def : MnemonicAlias<"b", "bc">, Requires<[HasNanoMips]>;
 def : MnemonicAlias<"bal", "balc">, Requires<[HasNanoMips]>;
-def : NanoMipsInstAlias<"j $target", (BC_NM brtarget25_nm:$target), 0>;
 
 class B4_Enc : _Pool_P16<0b11010> {
   bits<3> rs;
@@ -2187,24 +2219,27 @@ class B4_Enc : _Pool_P16<0b11010> {
 }
 
 def BEQC_NM : CBranchNM<"beqc", brtarget14_nm, seteq, GPRNM32Opnd>,
-	      B14_Enc<0b000>;
+	      B14_Enc<0b000>, AltMnemonics<["beqc[32]", "beq"]>;
 def BEQC16_NM : CBranchAsmNM<"beqc", brtarget4s1_nm, seteq, GPRNM16R3Opnd, GPRNM16R3Opnd>,
-	        B4_Enc, DecodeDisambiguates<"BranchConflictNM">;
+	        B4_Enc, DecodeDisambiguates<"BranchConflictNM">,
+		AltMnemonics<["beqc[16]", "beq"]>;
 def BGEC_NM : CBranchNM<"bgec", brtarget14_nm, setge, GPRNM32Opnd>,
-	      B14_Enc<0b010>;
+	      B14_Enc<0b010>, AltMnemonics<["bge"]>;
 def BGEUC_NM : CBranchNM<"bgeuc", brtarget14_nm, setuge, GPRNM32Opnd>,
-	       B14_Enc<0b011>;
+	       B14_Enc<0b011>, AltMnemonics<["bgeu"]>;
 
 def BNEC_NM : CBranchNM<"bnec", brtarget14_nm, setne, GPRNM32Opnd>,
-	      B14_Enc<0b100>;
+	      B14_Enc<0b100>,
+	      AltMnemonics<["bnec[32]", "bne"]>;
 def BNEC16_NM : CBranchAsmNM<"bnec", brtarget4s1_nm, setne, GPRNM16R3Opnd, GPRNM16R3Opnd>,
-	        B4_Enc, DecodeDisambiguates<"BranchConflictNM"> {
+	        B4_Enc, DecodeDisambiguates<"BranchConflictNM">,
+		AltMnemonics<["bnec[16]", "bne"]> {
   let DecoderNamespace = "NanoMips_Conflict_Space";
 }
 def BLTC_NM : CBranchNM<"bltc", brtarget14_nm, setlt, GPRNM32Opnd>,
-	      B14_Enc<0b110>;
+	      B14_Enc<0b110>, AltMnemonics<["blt"]>;
 def BLTUC_NM : CBranchNM<"bltuc", brtarget14_nm, setult, GPRNM32Opnd>,
-	       B14_Enc<0b111>;
+	       B14_Enc<0b111>, AltMnemonics<["bltu"]>;
 
 def : NanoMipsInstAlias<"beqc $rt, $rs, $offset",
       (BEQC16_NM GPRNM16R3Opnd:$rs, GPRNM16R3Opnd:$rt, brtarget4s1_nm:$offset), 1>;
@@ -2212,9 +2247,9 @@ def : NanoMipsInstAlias<"bnec $rt, $rs, $offset",
       (BNEC16_NM GPRNM16R3Opnd:$rs, GPRNM16R3Opnd:$rt, brtarget4s1_nm:$offset), 1>;
 
 def BEQZC16_NM : CBranchZeroAsmNM<"beqzc", brtarget7_nm, seteq, GPRNM16R3Opnd>,
-	     BZ16_Enc<0b10010>;
+	     BZ16_Enc<0b10010>, AltMnemonics<["beqzc[16]"]>;
 def BNEZC16_NM : CBranchZeroAsmNM<"bnezc", brtarget7_nm, setne, GPRNM16R3Opnd>,
-	       BZ16_Enc<0b10110>;
+	       BZ16_Enc<0b10110>, AltMnemonics<["bnezc[16]"]>;
 
 // Encode b[eq|ne]c with $zero operand as b[eq|ne]c16
 let isAsmParserOnly = 1 in {
@@ -2237,9 +2272,9 @@ def : NanoMipsInstAlias<"bnec $rt, $rs, $offset",
 // Encode BEQZC/BNEZC using BEQC/BNEC
 let isAsmParserOnly = 1 in {
 def BEQZC_NM : CBranchZeroNM<"beqzc", brtarget14_nm, seteq, GPRNM32Opnd>,
-	       B14Zero_Enc<0b000>;
+	       B14Zero_Enc<0b000>, AltMnemonics<["beqzc[32]"]>;
 def BNEZC_NM : CBranchZeroNM<"bnezc", brtarget14_nm, setne, GPRNM32Opnd>,
-	       B14Zero_Enc<0b100>;
+	       B14Zero_Enc<0b100>, AltMnemonics<["bnezc[32]"]>;
 }
 
 // Aliases required to disassemble above pattern as BEQZC/BNEZC
@@ -2272,13 +2307,7 @@ def BGEIUC_NM : CBranchImmNM<"bgeiuc", brtarget11_nm, setuge, GPRNM32Opnd, uimm7
 def BLTIUC_NM : CBranchImmNM<"bltiuc", brtarget11_nm, setult, GPRNM32Opnd, uimm7, immZExt7>,
 	        BRI_Enc<0b111>;
 
-def : MnemonicAlias<"beq", "beqc">, Requires<[HasNanoMips]>;
-def : MnemonicAlias<"bne", "bnec">, Requires<[HasNanoMips]>;
-def : MnemonicAlias<"blt", "bltc">, Requires<[HasNanoMips]>;
 def : MnemonicAlias<"bgtz", "bgtzc">, Requires<[HasNanoMips]>;
-def : MnemonicAlias<"bge", "b">, Requires<[HasNanoMips]>;
-def : MnemonicAlias<"bltu", "bltuc">, Requires<[HasNanoMips]>;
-def : MnemonicAlias<"bgeu", "bgeuc">, Requires<[HasNanoMips]>;
 def : MnemonicAlias<"beqz", "beqzc">, Requires<[HasNanoMips]>;
 def : MnemonicAlias<"bnez", "bnezc">, Requires<[HasNanoMips]>;
 
@@ -2371,50 +2400,50 @@ def : NMPat<(brcond (i32 (seteq (and GPRNM32:$rt, simm32power2:$imm), 0)), bb:$o
 //
 //===----------------------------------------------------------------------===//
 def LWSP16_NM : LoadAsmNM<"lw", GPRNM32Opnd, mem_nm_sp5s2, load, II_LW>,
-	        LSSPRegMem16_Enc<0b00101>;
+	        LSSPRegMem16_Enc<0b00101>, AltMnemonics<["lw[sp]"]>;
 def SWSP16_NM : StoreAsmNM<"sw", GPRNM32Opnd, mem_nm_sp5s2, store, II_SW>,
-	        LSSPRegMem16_Enc<0b10101>;
+	        LSSPRegMem16_Enc<0b10101>, AltMnemonics<["sw[sp]"]>;
 def LWGP16_NM : LoadAsmNM<"lw", GPRNM16R3Opnd, mem_nm_gp7s2, load, II_LW>,
-	        LSGPRegMem16_Enc<0b01001>;
+	        LSGPRegMem16_Enc<0b01001>, AltMnemonics<["lw[gp16]"]>;
 def SWGP16_NM : StoreAsmNM<"sw", GPRNM16R3ZOpnd, mem_nm_gp7s2, store, II_SW>,
-	        LSGPRegMem16_Enc<0b11001>;
+	        LSGPRegMem16_Enc<0b11001>, AltMnemonics<["sw[gp16]"]>;
 
 def LW16_NM : LoadAsmNM<"lw", GPRNM16R3Opnd, mem_nm6s2, load, II_LW>,
-    	      LSMem16_Enc<0b00001>;
+    	      LSMem16_Enc<0b00001>, AltMnemonics<["lw[16]"]>;
 def SW16_NM : StoreAsmNM<"sw", GPRNM16R3ZOpnd, mem_nm6s2, store, II_SW>,
-    	      LSMem16_Enc<0b10001>;
+    	      LSMem16_Enc<0b10001>, AltMnemonics<["sw[16]"]>;
 def LH16_NM : LoadAsmNM<"lh", GPRNM16R3Opnd, mem_nm3s1, sextloadi16, II_LH>,
-    	      LHMem16_Enc<0b00>;
+    	      LHMem16_Enc<0b00>, AltMnemonics<["lh[16]"]>;
 def LHU16_NM : LoadAsmNM<"lhu", GPRNM16R3Opnd, mem_nm3s1, zextloadi16, II_LH>,
-    	      LHMem16_Enc<0b10>;
+    	      LHMem16_Enc<0b10>, AltMnemonics<["lhu[16]"]>;
 def SH16_NM : StoreAsmNM<"sh", GPRNM16R3ZOpnd, mem_nm3s1, truncstorei16, II_SH>,
-    	      LHMem16_Enc<0b01>;
+    	      LHMem16_Enc<0b01>, AltMnemonics<["sh[16]"]>;
 
 def LB16_NM : LoadAsmNM<"lb", GPRNM16R3Opnd, mem_nm2, sextloadi8, II_LB>,
-    	      LBMem16_Enc<0b00>;
+    	      LBMem16_Enc<0b00>, AltMnemonics<["lb[16]"]>;
 def LBU16_NM : LoadAsmNM<"lbu", GPRNM16R3Opnd, mem_nm2, zextloadi8, II_LB>,
-    	      LBMem16_Enc<0b10>;
+    	      LBMem16_Enc<0b10>, AltMnemonics<["lbu[16]"]>;
 def SB16_NM : StoreAsmNM<"sb", GPRNM16R3ZOpnd, mem_nm2, truncstorei8, II_SB>,
-	      LBMem16_Enc<0b01>;
+	      LBMem16_Enc<0b01>, AltMnemonics<["sb[16]"]>;
 
 def LWGP_NM : LoadMemoryNM<"lw", GPRNM32Opnd, mem_nm_gp19s2, load, addrgp19s2, II_LW>,
-	      LSMemGP19S2_Enc<0b10>;
+	      LSMemGP19S2_Enc<0b10>, AltMnemonics<["lw[gp]"]>;
 def SWGP_NM : StoreMemoryNM<"sw", GPRNM32Opnd, mem_nm_gp19s2, store, addrgp19s2, II_SW>,
-	      LSMemGP19S2_Enc<0b11>;
+	      LSMemGP19S2_Enc<0b11>, AltMnemonics<["sw[gp]"]>;
 
 def LBGP_NM : LoadMemoryNM<"lb", GPRNM32Opnd, mem_nm_gp18, sextloadi8, addrgp18, II_LB>,
-	      LSMemGP18_Enc<0b000>;
+	      LSMemGP18_Enc<0b000>, AltMnemonics<["lb[gp]"]>;
 def SBGP_NM : StoreMemoryNM<"sb", GPRNM32Opnd, mem_nm_gp18, truncstorei8, addrgp18, II_SB>,
-	      LSMemGP18_Enc<0b001>;
+	      LSMemGP18_Enc<0b001>, AltMnemonics<["sb[gp]"]>;
 def LBUGP_NM : LoadMemoryNM<"lbu", GPRNM32Opnd, mem_nm_gp18, zextloadi8, addrgp18, II_LB>,
-	      LSMemGP18_Enc<0b010>;
+	      LSMemGP18_Enc<0b010>, AltMnemonics<["lbu[gp]"]>;
 
 def LHGP_NM : LoadMemoryNM<"lh", GPRNM32Opnd, mem_nm_gp17s1, sextloadi16, addrgp17s1, II_LH>,
-	      LSMemGP17S1_Enc<0b1000>;
+	      LSMemGP17S1_Enc<0b1000>, AltMnemonics<["lh[gp]"]>;
 def SHGP_NM : StoreMemoryNM<"sh", GPRNM32Opnd, mem_nm_gp17s1, truncstorei16, addrgp17s1, II_SH>,
-	      LSMemGP17S1_Enc<0b1010>;
+	      LSMemGP17S1_Enc<0b1010>, AltMnemonics<["sh[gp]"]>;
 def LHUGP_NM : LoadMemoryNM<"lhu", GPRNM32Opnd, mem_nm_gp17s1, zextloadi16, addrgp17s1, II_LH>,
-	      LSMemGP17S1_Enc<0b1001>;
+	      LSMemGP17S1_Enc<0b1001>, AltMnemonics<["lhu[gp]"]>;
 
 // TODO: addruimm12 and addrsimm9 need to be looked into again. Currently
 //       addruimm12 needs to come before addrsimm9, because addrsimm9 handles
@@ -2422,38 +2451,38 @@ def LHUGP_NM : LoadMemoryNM<"lhu", GPRNM32Opnd, mem_nm_gp17s1, zextloadi16, addr
 //       addruimm12, this will cause addrsimm9 to never get selected.
 
 def LB_NM : LoadMemoryNM<"lb", GPRNM32Opnd, mem_nmu12, sextloadi8, addruimm12, II_LB>,
-		LSMem_U12_Enc<0b0000>;
+		LSMem_U12_Enc<0b0000>, AltMnemonics<["lb[u12]"]>;
 def SB_NM : StoreMemoryNM<"sb", GPRNM32Opnd, mem_nmu12, truncstorei8, addruimm12, II_SB>,
-		LSMem_U12_Enc<0b0001>;
+		LSMem_U12_Enc<0b0001>, AltMnemonics<["sb[u12]"]>;
 def LH_NM : LoadMemoryNM<"lh", GPRNM32Opnd, mem_nmu12, sextloadi16, addruimm12, II_LH>,
-		LSMem_U12_Enc<0b0100>;
+		LSMem_U12_Enc<0b0100>, AltMnemonics<["lh[u12]"]>;
 def SH_NM : StoreMemoryNM<"sh", GPRNM32Opnd, mem_nmu12, truncstorei16, addruimm12, II_SH>,
-		LSMem_U12_Enc<0b0101>;
+		LSMem_U12_Enc<0b0101>, AltMnemonics<["sh[u12]"]>;
 def LW_NM : LoadMemoryNM<"lw", GPRNM32Opnd, mem_nmu12, load, addruimm12, II_LW>,
-	      LSMem_U12_Enc<0b1000>;
+	      LSMem_U12_Enc<0b1000>, AltMnemonics<["lw[u12]"]>;
 def SW_NM : StoreMemoryNM<"sw", GPRNM32Opnd, mem_nmu12, store, addruimm12, II_SW>,
-	      LSMem_U12_Enc<0b1001>;
+	      LSMem_U12_Enc<0b1001>, AltMnemonics<["sw[u12]"]>;
 def LBU_NM : LoadMemoryNM<"lbu", GPRNM32Opnd, mem_nmu12, zextloadi8, addruimm12, II_LBU>,
-		LSMem_U12_Enc<0b0010>;
+		LSMem_U12_Enc<0b0010>, AltMnemonics<["lbu[u12]"]>;
 def LHU_NM : LoadMemoryNM<"lhu", GPRNM32Opnd, mem_nmu12, zextloadi16, addruimm12, II_LHU>,
-		LSMem_U12_Enc<0b0110>;
+		LSMem_U12_Enc<0b0110>, AltMnemonics<["lhu[u12]"]>;
 
 def LBs9_NM : LoadMemoryNM<"lb", GPRNM32Opnd, mem_nms9, sextloadi8, addrsimm9, II_LB>,
-		LSMem_S9_Enc<0b000, 0b0000>;
+		LSMem_S9_Enc<0b000, 0b0000>, AltMnemonics<["lb[s9]"]>;
 def SBs9_NM : StoreMemoryNM<"sb", GPRNM32Opnd, mem_nms9, truncstorei8, addrsimm9, II_SB>,
-		LSMem_S9_Enc<0b000, 0b0001>;
+		LSMem_S9_Enc<0b000, 0b0001>, AltMnemonics<["sb[s9]"]>;
 def LHs9_NM : LoadMemoryNM<"lh", GPRNM32Opnd, mem_nms9, sextloadi16, addrsimm9, II_LH>,
-		LSMem_S9_Enc<0b000, 0b0100>;
+		LSMem_S9_Enc<0b000, 0b0100>, AltMnemonics<["lh[s9]"]>;
 def SHs9_NM : StoreMemoryNM<"sh", GPRNM32Opnd, mem_nms9, truncstorei16, addrsimm9, II_SH>,
-		LSMem_S9_Enc<0b000, 0b0101>;
+		LSMem_S9_Enc<0b000, 0b0101>, AltMnemonics<["sh[s9]"]>;
 def LWs9_NM : LoadMemoryNM<"lw", GPRNM32Opnd, mem_nms9, load, addrsimm9, II_LW>,
-	      LSMem_S9_Enc<0b000, 0b1000>;
+	      LSMem_S9_Enc<0b000, 0b1000>, AltMnemonics<["lw[s9]"]>;
 def SWs9_NM : StoreMemoryNM<"sw", GPRNM32Opnd, mem_nms9, store, addrsimm9, II_SW>,
-	      LSMem_S9_Enc<0b000, 0b1001>;
+	      LSMem_S9_Enc<0b000, 0b1001>, AltMnemonics<["sw[s9]"]>;
 def LBUs9_NM : LoadMemoryNM<"lbu", GPRNM32Opnd, mem_nms9, zextloadi8, addrsimm9, II_LBU>,
-		LSMem_S9_Enc<0b000, 0b0010>;
+		LSMem_S9_Enc<0b000, 0b0010>, AltMnemonics<["lbu[s9]"]>;
 def LHUs9_NM : LoadMemoryNM<"lhu", GPRNM32Opnd, mem_nms9, zextloadi16, addrsimm9, II_LHU>,
-		LSMem_S9_Enc<0b000, 0b0110>;
+		LSMem_S9_Enc<0b000, 0b0110>, AltMnemonics<["lhu[s9]"]>;
 
 def LBX_NM : LoadMemoryNM<"lbx", GPRNM32Opnd, mem_nmrx, sextloadi8, addrindexed, II_LB>,
 		LSMemX_Enc<0, 0b0000>;
@@ -2479,7 +2508,7 @@ def SHXS_NM : StoreMemoryNM<"shxs", GPRNM32Opnd, mem_nmrx, truncstorei16, addrin
 def LHUXS_NM : LoadMemoryNM<"lhuxs", GPRNM32Opnd, mem_nmrx, zextloadi16, addrindexedlsl1, II_LHU>,
 		LSMemX_Enc<0b1, 0b0110>;
 def LWXS16_NM : LoadAsmNM<"lwxs", GPRNM16R3Opnd, mem_nmrx16, load, II_LW>,
-		_Pool_P16C<0b1> {
+		_Pool_P16C<0b1>, AltMnemonics<["lwxs[16]"]> {
   bits<3> rt;
   // Uses same encoding method as LWXS to get 5+5 register bits
   // but only needs the lower 3 bits of each register.
@@ -2489,7 +2518,7 @@ def LWXS16_NM : LoadAsmNM<"lwxs", GPRNM16R3Opnd, mem_nmrx16, load, II_LW>,
   let Inst{3...1} = rt;
 }
 def LWXS_NM : LoadMemoryNM<"lwxs", GPRNM32Opnd, mem_nmrx, load, addrindexedlsl2, II_LW>,
-		LSMemX_Enc<0b1, 0b1000>;
+		LSMemX_Enc<0b1, 0b1000>, AltMnemonics<["lwxs[32]"]>;
 def SWXS_NM : StoreMemoryNM<"swxs", GPRNM32Opnd, mem_nmrx, store, addrindexedlsl2, II_SW>,
 		LSMemX_Enc<0b1, 0b1001>;
 
@@ -2503,13 +2532,17 @@ def UASWM_NM : StoreMultipleNM<"uaswm">, LSMem_S9_Mult_Enc<0b1101>;
 def UALW_NM :  UnalignedLoad<"ualw", NMUnalignedLW>, LSMem_S9_Enc<0b101, 0b0010>;
 def UASW_NM : UnalignedStore<"uasw", NMUnalignedSW>, LSMem_S9_Enc<0b101, 0b0011>;
 
-def SWPC_NM : StorePCBase<GPRNM32Opnd, sym32_pc_nm, addrsym>, Op48_Addr_Enc<0b01111>;
-def LWPC_NM : LoadPCBase<GPRNM32Opnd, sym32_pc_nm, addrsym>, Op48_Addr_Enc<0b01011>;
+def SWPC_NM : StorePCBase<GPRNM32Opnd, sym32_pc_nm, addrsym>, Op48_Addr_Enc<0b01111>,
+	      AltMnemonics<["swpc[48]"]>;
+def LWPC_NM : LoadPCBase<GPRNM32Opnd, sym32_pc_nm, addrsym>, Op48_Addr_Enc<0b01011>,
+	      AltMnemonics<["lwpc[48]"]>;
 
 def LW4x4_NM : LoadAsmNM<"lw", GPRNM4Opnd, mem_nm4s2, load, II_LW>,
-	       LSMem4x4_Enc<0b01101>;
+	       LSMem4x4_Enc<0b01101>,
+	       AltMnemonics<["lw[4x4]"]>;
 def SW4x4_NM : StoreAsmNM<"sw", GPRNM4ZOpnd, mem_nm4s2, store, II_SW>,
-	       LSMem4x4_Enc<0b11101>;
+	       LSMem4x4_Enc<0b11101>,
+	       AltMnemonics<["sw[4x4]"]>;
 
 class MOVE_Enc : _Pool_P16_MV
 {
@@ -2559,7 +2592,8 @@ def MOVEP_NM : InstNM<(outs GPRNM2R1Opnd:$dst1, GPRNM2R2Opnd:$dst2),
 def MOVEPREV_NM : InstNM<(outs GPRNM4Opnd:$dst1, GPRNM4Opnd:$dst2),
 			 (ins GPRNM2R1Opnd:$src1, GPRNM2R2Opnd:$src2),
 			 "movep\t$dst1, $dst2, $src1, $src2", []>,
-			 MOVEPREV_Enc<0b11111>, NoEncode<"$src2">;
+			 MOVEPREV_Enc<0b11111>, NoEncode<"$src2">,
+			 AltMnemonics<["movep[rev]"]>;
 }
 
 class LoadExtend <SDPatternOperator OpNode, InstNM InstLoad,
@@ -2816,13 +2850,15 @@ class SLL_VAR_Enc<bits<5> sh> : _Pool_P_SHIFT<0b0000> {
   let Inst{4...0} = sh;
 }
 
-def NOP32_NM : MnemonicOnly<"nop32">, SLL_VAR_Enc<0>;
+def NOP32_NM : MnemonicOnly<"nop32">, SLL_VAR_Enc<0>,
+	       AltMnemonics<["nop[32]", "nop"]>;
 
 def EHB_NM : MnemonicOnly<"ehb">, SLL_VAR_Enc<3>;
 
 def PAUSE_NM : MnemonicOnly<"pause">, SLL_VAR_Enc<5>;
 
-def NOP_NM : MnemonicOnly<"nop">, _Pool_P16_A2<0b1> {
+def NOP_NM : MnemonicOnly<"nop">, _Pool_P16_A2<0b1>,
+	     AltMnemonics<["nop[16]"]> {
   let Inst{9...5} = 0b00000;
   let Inst{4} = 0b0;
   let Inst{2...0} = 0b000;
@@ -2844,27 +2880,33 @@ def SIGRIE_NM : InstNM<(outs), (ins uimm19_nm:$imm),
                        "sigrie\t$imm", []>, IntExcpFlow_Enc<0b00>;
 
 def BREAK_NM : InstNM<(outs), (ins uimm19_nm:$imm),
-                      "break\t$imm", []>, IntExcpFlow_Enc<0b10>;
+                      "break\t$imm", []>, IntExcpFlow_Enc<0b10>,
+	       AltMnemonics<["break[32]"]>;
 
 def SDBBP_NM : InstNM<(outs), (ins uimm19_nm:$imm),
-                      "sdbbp\t$imm", []>, IntExcpFlow_Enc<0b11>;
+                      "sdbbp\t$imm", []>, IntExcpFlow_Enc<0b11>,
+	       AltMnemonics<["sdbbp[32]"]>;
 
 
 def SYSCALL_NM : InstNM<(outs), (ins uimm18_nm:$imm),
-                       "syscall\t$imm", []>, IntExcpFlow_Enc<0b01> {
+                       "syscall\t$imm", []>, IntExcpFlow_Enc<0b01>,
+		 AltMnemonics<["syscall[32]"]> {
   let Inst{18} = 0b0;
 }
 
 def BREAK16_NM : InstNM<(outs), (ins uimm3_nm:$imm),
-                      "break\t$imm", []>, IntExcpFlow16_Enc<0b10>;
+                      "break\t$imm", []>, IntExcpFlow16_Enc<0b10>,
+		 AltMnemonics<["break[16]"]>;
 def : NanoMipsInstAlias<"break", (BREAK16_NM 0), 0>;
 
 def SDBBP16_NM : InstNM<(outs), (ins uimm3_nm:$imm),
-                      "sdbbp\t$imm", []>, IntExcpFlow16_Enc<0b11>;
+                      "sdbbp\t$imm", []>, IntExcpFlow16_Enc<0b11>,
+		 AltMnemonics<["sdbbp[16]"]>;
 def : NanoMipsInstAlias<"sdbbp", (SDBBP16_NM 0), 0>;
 
 def SYSCALL16_NM : InstNM<(outs), (ins uimm2_nm:$imm),
-                       "syscall\t$imm", []>, IntExcpFlow16_Enc<0b01> {
+                       "syscall\t$imm", []>, IntExcpFlow16_Enc<0b01>,
+		   AltMnemonics<["syscall[16]"]> {
   let Inst{2} = 0b0;
 }
 def : NanoMipsInstAlias<"syscall", (SYSCALL16_NM 0), 0>;
@@ -2963,7 +3005,8 @@ def CACHE_NM : CacheOpNM<"cache", uimm5, mem_nms9, II_CACHE>,
 }
 
 def PREFs9_NM : CacheOpNM<"pref", uimm5, mem_nms9, II_PREF>,
-	       _Pool_P_LS_S0<0b0011> {
+	       _Pool_P_LS_S0<0b0011>,
+		AltMnemonics<["pref[s9]"]> {
   bits<5> op;
   bits<14> addr;
   bits<5> base = addr{13...9};
@@ -2975,7 +3018,8 @@ def PREFs9_NM : CacheOpNM<"pref", uimm5, mem_nms9, II_PREF>,
 }
 
 def PREF_NM : CacheOpNM<"pref", uimm5, mem_nmu12, II_PREF>,
-	       _Pool_P_LS_U12<0b0011> {
+	       _Pool_P_LS_U12<0b0011>,
+	       AltMnemonics<["pref[u12]"]> {
   bits<5> op;
   bits<17> addr;
   bits<5> base = addr{16...12};
@@ -2992,7 +3036,8 @@ class SyncOpNM<string opstr, DAGOperand MO,
 
 
 def SYNCIs9_NM : SyncOpNM<"synci", mem_nms9, II_SYNCI>,
-	       _Pool_P_LS_S0<0b0011> {
+	         _Pool_P_LS_S0<0b0011>,
+		 AltMnemonics<["synci[s9]"]> {
   bits<14> addr;
   bits<5> base = addr{13...9};
   bits<9> offset = addr{8...0};
@@ -3003,7 +3048,8 @@ def SYNCIs9_NM : SyncOpNM<"synci", mem_nms9, II_SYNCI>,
 }
 
 def SYNCI_NM : SyncOpNM<"synci", mem_nmu12, II_SYNCI>,
-	       _Pool_P_LS_U12<0b0011> {
+	       _Pool_P_LS_U12<0b0011>,
+	       AltMnemonics<["synci[u12]"]> {
   bits<17> addr;
   bits<5> base = addr{16...12};
   bits<12> offset = addr{11...0};

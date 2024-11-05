@@ -87,7 +87,8 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTarget() {
   initializeMipsBranchExpansionPass(*PR);
   initializeMicroMipsSizeReducePass(*PR);
   initializeMipsPreLegalizerCombinerPass(*PR);
-  initializeNMOptimizeJumpTablesPass(*PR);
+  initializeNMCompressJumpTablesPass(*PR);
+  initializeNMRedundantJumpTablesPass(*PR);
   initializeMipsPostLegalizerCombinerPass(*PR);
   initializeMipsMulMulBugFixPass(*PR);
   initializeMipsDAGToDAGISelLegacyPass(*PR);
@@ -328,6 +329,8 @@ std::unique_ptr<CSEConfigBase> MipsPassConfig::getCSEConfig() const {
 void MipsPassConfig::addPreSched2() {
   if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOptLevel::None)
     addPass(createNanoMipsLoadStoreOptimizerPass());
+  if (getMipsSubtarget().hasNanoMips())
+    addPass(createNanoMipsOptimizeRedundantJumpTablesPass());
 }
 
 void MipsPassConfig::addIRPasses() {
@@ -404,7 +407,7 @@ MachineFunctionInfo *MipsTargetMachine::createMachineFunctionInfo(
 // machine code is emitted.
 void MipsPassConfig::addPreEmitPass() {
   if (getMipsSubtarget().hasNanoMips())
-    addPass(createNanoMipsOptimizeJumpTablesPass());
+    addPass(createNanoMipsCompressJumpTablesPass());
   // Expand pseudo instructions that are sensitive to register allocation.
   addPass(createMipsExpandPseudoPass());
 

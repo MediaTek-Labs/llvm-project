@@ -295,6 +295,17 @@ class SHRA_PH_FMT<bits<1> round>: InstNM_Enc, _Pool_P32A<0b101> {
   let Inst{9...3} = 0b1100110;
 }
 
+class PRECR_SRA_FMT<bits<1> round>: InstNM_Enc, _Pool_P32A<0b101> {
+  bits<5> rt;
+  bits<5> rs;
+  bits<5> sa;
+  let Inst{25...21} = rt;
+  let Inst{20...16} = rs;
+  let Inst{15...11} = sa;
+  let Inst{10} = round;
+  let Inst{9...3} = 0b1111001;
+}
+
 class RDWR_DSP_FMT<bits<1> psel>: InstNM_Enc, _Pool_P32A<0b111> {
   bits<7> mask;
   bits<5> rt;
@@ -379,6 +390,8 @@ class DPSQX_SA_W_PH_NM_ENC  : DPA_NM_FMT      <0b11011>;
 class DPSU_H_QBL_NM_ENC     : DPA_NM_FMT      <0b10010>;
 class DPSU_H_QBR_NM_ENC     : DPA_NM_FMT      <0b11010>;
 class DPSX_W_PH_NM_ENC      : DPA_NM_FMT      <0b01010>;
+class MULSA_W_PH_NM_ENC     : DPA_NM_FMT      <0b10110>;
+class MULSAQ_S_W_PH_NM_ENC  : DPA_NM_FMT      <0b11110>;
 class MAQ_S_W_PHL_NM_ENC    : MAQ_NM_FMT      <0b01101>;
 class MAQ_SA_W_PHL_NM_ENC   : MAQ_NM_FMT      <0b11101>;
 class MAQ_S_W_PHR_NM_ENC    : MAQ_NM_FMT      <0b00101>;
@@ -416,7 +429,15 @@ class SHRAV_R_QB_NM_ENC  : SHRAV_NM_FMT       <0b10111001>;
 class SHRA_R_W_NM_ENC    : SHLL_S_W_NM_FMT    <0b1011110>;
 class SHLL_S_W_NM_ENC    : SHLL_S_W_NM_FMT    <0b1111110>;
 
-class PRECRQ_PH_W_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0011101>;
+class PRECRQ_PH_W_NM_ENC      : CMP_EQ_QB_R3_NM_FMT<0b0011101>;
+class PRECR_QB_PH_NM_ENC      : CMP_EQ_QB_R3_NM_FMT<0b0001101>;
+class PRECRQ_QB_PH_NM_ENC     : CMP_EQ_QB_R3_NM_FMT<0b0010101>;
+class PRECRQU_S_QB_PH_NM_ENC  : CMP_EQ_QB_R3_NM_FMT<0b0101101>;
+class PRECRQ_RS_PH_W_NM_ENC   : CMP_EQ_QB_R3_NM_FMT<0b0100101>;
+
+class PRECR_SRA_PH_W_NM_ENC   : PRECR_SRA_FMT<0b0>;
+class PRECR_SRA_R_PH_W_NM_ENC : PRECR_SRA_FMT<0b1>;
+
 class SHLL_QB_NM_ENC     : SHL_QB_FMT         <0b0>;
 class SHRL_QB_NM_ENC     : SHL_QB_FMT         <0b1>;
 class SHRL_PH_NM_ENC     : SHRL_PH_FMT;
@@ -438,16 +459,24 @@ class MTHLIP_NM_ENC      : SHILO_R2_NM_FMT    <0b00>;
 class SHILOV_NM_ENC      : SHILO_R2_NM_FMT    <0b01>;
 class SHILO_NM_ENC       : SHILO_R1_NM_FMT;
 class CMPGU_EQ_QB_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0011000>;
-class CMPGU_LT_QB_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0100000>;
-class CMPGU_LE_QB_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0101000>;
-class PICK_QB_NM_ENC     : CMP_EQ_QB_R3_NM_FMT<0b0111101>;
-class PICK_PH_NM_ENC     : CMP_EQ_QB_R3_NM_FMT<0b1000101>;
-class CMP_EQ_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0000000>;
-class CMP_LE_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0010000>;
-class CMP_LT_PH_NM_ENC   : CMP_EQ_QB_R2_NM_FMT<0b0001000>;
-class PACKRL_PH_NM_ENC   : CMP_EQ_QB_R3_NM_FMT<0b0110101>;
-class MODSUB_NM_ENC      : CMP_EQ_QB_R3_NM_FMT<0b1010010>;
-class SUBQ_S_W_NM_ENC    : CMP_EQ_QB_R3_NM_FMT<0b1101000>;
+class CMPGU_LT_QB_NM_ENC    : CMP_EQ_QB_R3_NM_FMT<0b0100000>;
+class CMPGU_LE_QB_NM_ENC    : CMP_EQ_QB_R3_NM_FMT<0b0101000>;
+class PICK_QB_NM_ENC        : CMP_EQ_QB_R3_NM_FMT<0b0111101>;
+class PICK_PH_NM_ENC        : CMP_EQ_QB_R3_NM_FMT<0b1000101>;
+class CMP_EQ_PH_NM_ENC      : CMP_EQ_QB_R2_NM_FMT<0b0000000>;
+class CMP_LE_PH_NM_ENC      : CMP_EQ_QB_R2_NM_FMT<0b0010000>;
+class CMP_LT_PH_NM_ENC      : CMP_EQ_QB_R2_NM_FMT<0b0001000>;
+class PACKRL_PH_NM_ENC      : CMP_EQ_QB_R3_NM_FMT<0b0110101>;
+class MODSUB_NM_ENC         : CMP_EQ_QB_R3_NM_FMT<0b1010010>;
+class SUBQ_S_W_NM_ENC       : CMP_EQ_QB_R3_NM_FMT<0b1101000>;
+class MULEQ_S_W_PHL_NM_ENC  : CMP_EQ_QB_R3_NM_FMT<0b0000100>;
+class MULEQ_S_W_PHR_NM_ENC  : CMP_EQ_QB_R3_NM_FMT<0b0001100>;
+class MULEU_S_PH_QBL_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0010010>;
+class MULEU_S_PH_QBR_NM_ENC : CMP_EQ_QB_R3_NM_FMT<0b0011010>;
+class MULQ_RS_PH_NM_ENC     : CMP_EQ_QB_R3_NM_FMT<0b0100010>;
+class MULQ_RS_W_NM_ENC      : CMP_EQ_QB_R3_NM_FMT<0b0110010>;
+class MULQ_S_PH_NM_ENC      : CMP_EQ_QB_R3_NM_FMT<0b0101010>;
+class MULQ_S_W_NM_ENC       : CMP_EQ_QB_R3_NM_FMT<0b0111010>;
 class RDDSP_NM_ENC       : RDWR_DSP_FMT       <0b0>;
 class WRDSP_NM_ENC       : RDWR_DSP_FMT       <0b1>;
 
@@ -455,6 +484,8 @@ class EXTRV_R_W_NM_ENC  : EXTR_W_TY1_VAR_NM_FMT<0b01111>;
 class EXTR_R_W_NM_ENC   : EXTR_W_TY1_LIT_NM_FMT<0b01111>;
 class EXTRV_RS_W_NM_ENC : EXTR_W_TY1_VAR_NM_FMT<0b10111>;
 class EXTR_RS_W_NM_ENC  : EXTR_W_TY1_LIT_NM_FMT<0b10111>;
+class EXTR_S_H_NM_ENC   : EXTR_W_TY1_LIT_NM_FMT<0b11111>;
+class EXTRV_S_H_NM_ENC  : EXTR_W_TY1_VAR_NM_FMT<0b11111>;
 class EXTRV_W_NM_ENC    : EXTR_W_TY1_VAR_NM_FMT<0b00111>;
 class EXTR_W_NM_ENC     : EXTR_W_TY1_LIT_NM_FMT<0b00111>;
 class EXTPV_NM_ENC      : EXTR_W_TY1_VAR_NM_FMT<0b10100>;
@@ -498,6 +529,8 @@ def MAQ_S_W_PHL_NM   : MAQ_S_W_PHL_NM_ENC   , MAQ_S_W_PHL_DESC  <NanoMipsRO_TYPE
 def MAQ_SA_W_PHL_NM  : MAQ_SA_W_PHL_NM_ENC  , MAQ_SA_W_PHL_DESC <NanoMipsRO_TYPES>;
 def MAQ_S_W_PHR_NM   : MAQ_S_W_PHR_NM_ENC   , MAQ_S_W_PHR_DESC  <NanoMipsRO_TYPES>;
 def MAQ_SA_W_PHR_NM  : MAQ_SA_W_PHR_NM_ENC  , MAQ_SA_W_PHR_DESC <NanoMipsRO_TYPES>;
+def MULSA_W_PH_NM    : MULSA_W_PH_NM_ENC    , MULSA_W_PH_DESC   <NanoMipsRO_TYPES>;
+def MULSAQ_S_W_PH_NM : MULSAQ_S_W_PH_NM_ENC , MULSAQ_S_W_PH_DESC<NanoMipsRO_TYPES>;
 
 def ADDU_PH_NM     : ADDU_PH_NM_ENC          , ADDU_PH_DESC    <NanoMipsRO_TYPES>;
 def ADDU_S_PH_NM   : ADDU_S_PH_NM_ENC        , ADDU_S_PH_DESC  <NanoMipsRO_TYPES>;
@@ -525,10 +558,27 @@ def SUBQH_R_PH_NM  : SUBQH_R_PH_NM_ENC       , SUBQH_R_PH_DESC <NanoMipsRO_TYPES
 def SUBQH_W_NM     : SUBQH_W_NM_ENC          , SUBQH_W_DESC    <NanoMipsRO_TYPES>;
 def SUBQH_R_W_NM   : SUBQH_R_W_NM_ENC        , SUBQH_R_W_DESC  <NanoMipsRO_TYPES>;
 
+def MULEQ_S_W_PHL_NM   : MULEQ_S_W_PHL_NM_ENC  , MULEQ_S_W_PHL_DESC  <NanoMipsRO_TYPES>;
+def MULEQ_S_W_PHR_NM   : MULEQ_S_W_PHR_NM_ENC  , MULEQ_S_W_PHR_DESC  <NanoMipsRO_TYPES>;
+def MULEU_S_PH_QBL_NM  : MULEU_S_PH_QBL_NM_ENC , MULEU_S_PH_QBL_DESC <NanoMipsRO_TYPES>;
+def MULEU_S_PH_QBR_NM  : MULEU_S_PH_QBR_NM_ENC , MULEU_S_PH_QBR_DESC <NanoMipsRO_TYPES>;
+def MULQ_RS_PH_NM      : MULQ_RS_PH_NM_ENC     , MULQ_RS_PH_DESC     <NanoMipsRO_TYPES>;
+def MULQ_RS_W_NM       : MULQ_RS_W_NM_ENC      , MULQ_RS_W_DESC      <NanoMipsRO_TYPES>;
+def MULQ_S_PH_NM       : MULQ_S_PH_NM_ENC      , MULQ_S_PH_DESC      <NanoMipsRO_TYPES>;
+def MULQ_S_W_NM        : MULQ_S_W_NM_ENC       , MULQ_S_W_DESC       <NanoMipsRO_TYPES>;
+
 def MODSUB_NM      : MODSUB_NM_ENC           , MODSUB_DESC     <NanoMipsRO_TYPES>;
 def MUL_PH_NM      : MUL_PH_NM_ENC           , MUL_PH_DESC     <NanoMipsRO_TYPES>;
 def MUL_S_PH_NM    : MUL_S_PH_NM_ENC         , MUL_S_PH_DESC   <NanoMipsRO_TYPES>;
-def PRECRQ_PH_W_NM : PRECRQ_PH_W_NM_ENC      , PRECRQ_PH_W_DESC<NanoMipsRO_TYPES>;
+
+def PRECRQ_PH_W_NM      : PRECRQ_PH_W_NM_ENC     , PRECRQ_PH_W_DESC      <NanoMipsRO_TYPES>;
+def PRECR_QB_PH_NM      : PRECR_QB_PH_NM_ENC     , PRECR_QB_PH_DESC      <NanoMipsRO_TYPES>;
+def PRECR_SRA_PH_W_NM   : PRECR_SRA_PH_W_NM_ENC  , PRECR_SRA_PH_W_DESC   <NanoMipsRO_TYPES>;
+def PRECR_SRA_R_PH_W_NM : PRECR_SRA_R_PH_W_NM_ENC, PRECR_SRA_R_PH_W_DESC <NanoMipsRO_TYPES>;
+def PRECRQ_QB_PH_NM     : PRECRQ_QB_PH_NM_ENC    , PRECRQ_QB_PH_DESC     <NanoMipsRO_TYPES>;
+def PRECRQU_S_QB_PH_NM  : PRECRQU_S_QB_PH_NM_ENC , PRECRQU_S_QB_PH_DESC  <NanoMipsRO_TYPES>;
+def PRECRQ_RS_PH_W_NM   : PRECRQ_RS_PH_W_NM_ENC  , PRECRQ_RS_PH_W_DESC   <NanoMipsRO_TYPES>;
+
 def SHLL_QB_NM     : SHLL_QB_NM_ENC          , SHLL_QB_NM_DESC;
 def SHRL_QB_NM     : SHRL_QB_NM_ENC          , SHRL_QB_NM_DESC;
 def SHRL_PH_NM     : SHRL_PH_NM_ENC          , SHRL_PH_NM_DESC;
@@ -587,6 +637,8 @@ def EXTRV_R_W_NM   : EXTRV_R_W_NM_ENC        , EXTRV_R_W_DESC  <NanoMipsRO_TYPES
 def EXTR_R_W_NM    : EXTR_R_W_NM_ENC         , EXTR_R_W_DESC   <NanoMipsRO_TYPES>;
 def EXTRV_RS_W_NM  : EXTRV_RS_W_NM_ENC       , EXTRV_RS_W_DESC <NanoMipsRO_TYPES>;
 def EXTR_RS_W_NM   : EXTR_RS_W_NM_ENC        , EXTR_RS_W_DESC  <NanoMipsRO_TYPES>;
+def EXTR_S_H_NM    : EXTR_S_H_NM_ENC         , EXTR_S_H_DESC   <NanoMipsRO_TYPES>;
+def EXTRV_S_H_NM   : EXTRV_S_H_NM_ENC        , EXTRV_S_H_DESC  <NanoMipsRO_TYPES>;
 
 def RDDSP_NM       : RDDSP_NM_ENC            , RDDSP_NM_DESC;
 def WRDSP_NM       : WRDSP_NM_ENC            , WRDSP_NM_DESC;
@@ -662,6 +714,8 @@ def : EXTR_W_TY1_R1_Pat<MipsEXTR_R_W,   EXTR_R_W_NM,   HasDSPNanoMips, NanoMipsR
 def : EXTR_W_TY1_R2_Pat<MipsEXTR_R_W,   EXTRV_R_W_NM,  HasDSPNanoMips, NanoMipsRO_TYPES>;
 def : EXTR_W_TY1_R1_Pat<MipsEXTR_RS_W,  EXTR_RS_W_NM,  HasDSPNanoMips, NanoMipsRO_TYPES>;
 def : EXTR_W_TY1_R2_Pat<MipsEXTR_RS_W,  EXTRV_RS_W_NM, HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R1_Pat<MipsEXTR_S_H,   EXTR_S_H_NM,   HasDSPNanoMips, NanoMipsRO_TYPES>;
+def : EXTR_W_TY1_R2_Pat<MipsEXTR_S_H,   EXTRV_S_H_NM,  HasDSPNanoMips, NanoMipsRO_TYPES>;
 
 let isPseudo = 1, isCodeGenOnly = 1, hasNoSchedulingInfo = 1 in {
   // Pseudo instructions for loading and storing accumulator registers.

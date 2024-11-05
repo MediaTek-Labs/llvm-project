@@ -1,4 +1,4 @@
-# RUN: llc -mtriple=nanomips -O2 -run-pass=nm-optimize-jt \
+# RUN: llc -mtriple=nanomips -O2 -run-pass=nm-redundant-jt \
 # RUN:  -verify-machineinstrs %s -o - | FileCheck %s
 
 ---

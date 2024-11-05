@@ -1312,6 +1312,7 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
 
   ctx.arg.executeOnly =
       args.hasFlag(OPT_execute_only, OPT_no_execute_only, false);
+  ctx.arg.expand = args.hasFlag(OPT_expand, OPT_no_expand, true);
   ctx.arg.exportDynamic =
       args.hasFlag(OPT_export_dynamic, OPT_no_export_dynamic, false) ||
       args.hasArg(OPT_shared);
@@ -1375,6 +1376,16 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
       args.hasFlag(OPT_merge_exidx_entries, OPT_no_merge_exidx_entries, true);
   ctx.arg.mmapOutputFile =
       args.hasFlag(OPT_mmap_output_file, OPT_no_mmap_output_file, true);
+  ctx.arg.nanoMipsFixHw110880 =
+      args.hasFlag(OPT_fix_nmips_hw110880, OPT_no_fix_nmips_hw110880, false);
+  ctx.arg.nanoMipsFixHw113064 =
+      args.hasFlag(OPT_fix_nmips_hw113064, OPT_no_fix_nmips_hw113064, false);
+  ctx.arg.nanoMipsInsn32 = args.hasFlag(OPT_insn32, OPT_no_insn32, false);
+  ctx.arg.nanoMipsRelaxLo12 =
+      args.hasFlag(OPT_relax_lo12, OPT_no_relax_lo12, false);
+  ctx.arg.nanoMipsStrictAddressModes =
+      args.hasFlag(OPT_strict_address_modes, OPT_no_strict_address_modes, true);
+  ctx.arg.nanoMipsExpandReg = args::getInteger(args, OPT_expand_reg, 1);    
   ctx.arg.nmagic = args.hasFlag(OPT_nmagic, OPT_no_nmagic, false);
   ctx.arg.noinhibitExec = args.hasArg(OPT_noinhibit_exec);
   ctx.arg.nostdlib = args.hasArg(OPT_nostdlib);

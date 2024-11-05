@@ -55,6 +55,7 @@ add_tablegen(llvm-tblgen LLVM
   InstrInfoEmitter.cpp
   llvm-tblgen.cpp
   MacroFusionPredicatorEmitter.cpp
+  NanoMipsTransformationPropertyEmitter.cpp
   OptionParserEmitter.cpp
   OptionRSTEmitter.cpp
   PseudoLoweringEmitter.cpp

@@ -1172,9 +1172,9 @@ class NanoMipsAbiFlagsSection final : public SyntheticSection {
   using Elf_NanoMips_ABIFlags = llvm::object::Elf_NanoMips_ABIFlags<ELFT>;
 
 public:
-  static NanoMipsAbiFlagsSection *get();
+  static std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>> get(Ctx &ctx);
 
-  NanoMipsAbiFlagsSection(Elf_NanoMips_ABIFlags flags);
+  NanoMipsAbiFlagsSection(Ctx & ctx, Elf_NanoMips_ABIFlags flags);
   size_t getSize() const override { return sizeof(Elf_NanoMips_ABIFlags); }
   const Elf_NanoMips_ABIFlags *getFlags() const { return &flags; };
   void writeTo(uint8_t *buf) override;
@@ -1186,7 +1186,7 @@ public:
   bool isFullNanoMipsISA(const InputSectionBase *isec) const;
 
 private:
-  static NanoMipsAbiFlagsSection *create(Ctx &);
+  static std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>> create(Ctx &);
   static void inferAbiFlags(const ObjFile<ELFT> *objFile,
                             Elf_NanoMips_ABIFlags *inferredABIFlags);
   static void getAbiFlagsISAFromEflags(const ObjFile<ELFT> *objFile,
@@ -1198,13 +1198,13 @@ private:
                               uint32_t outFp);
   static std::string fpAbiString(uint32_t fp);
   Elf_NanoMips_ABIFlags flags;
-  static NanoMipsAbiFlagsSection *abiFlagsUnique;
+  static std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>> abiFlagsUnique;
 
   llvm::DenseMap<ObjFile<ELFT> *, const Elf_NanoMips_ABIFlags *> mapOfAbiFlags;
 };
 
 template <class ELFT>
-NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::abiFlagsUnique =
+std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>>NanoMipsAbiFlagsSection<ELFT>::abiFlagsUnique =
     nullptr;
 
 // .MIPS.options section.

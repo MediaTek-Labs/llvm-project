@@ -162,9 +162,9 @@ MipsAbiFlagsSection<ELFT>::create(Ctx &ctx) {
 // .nanoMIPS.abiflags section.
 template <class ELFT>
 NanoMipsAbiFlagsSection<ELFT>::NanoMipsAbiFlagsSection(
-    Elf_NanoMips_ABIFlags flags)
-    : SyntheticSection(SHF_ALLOC, SHT_NANOMIPS_ABIFLAGS, 8,
-                       ".nanoMIPS.abiflags"),
+    Ctx &ctx, Elf_NanoMips_ABIFlags flags) 
+    : SyntheticSection(ctx, ".nanoMIPS.abiflags", SHF_ALLOC,
+      SHT_NANOMIPS_ABIFLAGS, 8),
       flags(flags) {
   this->entsize = sizeof(Elf_NanoMips_ABIFlags);
 }
@@ -265,8 +265,11 @@ void NanoMipsAbiFlagsSection<ELFT>::inferAbiFlags(
     inferredFlags->cpr1_size = llvm::NanoMips::AFL_REG_64;
 }
 
+// template <class ELFT>
+// std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>>
 template <class ELFT>
-NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create(Ctx &ctx) {
+std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>>
+NanoMipsAbiFlagsSection<ELFT>::create(Ctx &ctx) {
   Elf_NanoMips_ABIFlags flags{};
   bool create = false;
 
@@ -343,7 +346,7 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create(Ctx &ctx) {
   }
 
   if (create) {
-    auto *abiFlagsSec = make<NanoMipsAbiFlagsSection<ELFT>>(flags);
+    auto abiFlagsSec = std::make_unique<NanoMipsAbiFlagsSection<ELFT>>(ctx, flags);
     abiFlagsSec->mapOfAbiFlags = std::move(tmpMap);
     return abiFlagsSec;
   }
@@ -351,14 +354,14 @@ NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::create(Ctx &ctx) {
 }
 
 template <class ELFT>
-NanoMipsAbiFlagsSection<ELFT> *NanoMipsAbiFlagsSection<ELFT>::get() {
+std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>> NanoMipsAbiFlagsSection<ELFT>::get(Ctx &ctx) {
   if (abiFlagsUnique == nullptr) {
-    abiFlagsUnique = create();
+    abiFlagsUnique = create(ctx);
     if (abiFlagsUnique == nullptr)
       warn("Couldn't create .nanoMIPS.abiflags section");
   }
 
-  return abiFlagsUnique;
+  return std::move(abiFlagsUnique);
 }
 
 template <class ELFT>
@@ -5233,3 +5236,8 @@ template void elf::createSyntheticSections<ELF32LE>(Ctx &);
 template void elf::createSyntheticSections<ELF32BE>(Ctx &);
 template void elf::createSyntheticSections<ELF64LE>(Ctx &);
 template void elf::createSyntheticSections<ELF64BE>(Ctx &);
+
+template class elf::NanoMipsAbiFlagsSection<ELF32LE>;
+template class elf::NanoMipsAbiFlagsSection<ELF32BE>;
+template class elf::NanoMipsAbiFlagsSection<ELF64LE>;
+template class elf::NanoMipsAbiFlagsSection<ELF64BE>;

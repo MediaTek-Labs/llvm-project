@@ -8,14 +8,11 @@
 
 #include "InputFiles.h"
 #include "InputSection.h"
+#include "NanoMipsTransformations.h"
 #include "OutputSections.h"
 #include "Symbols.h"
-#include "SyntheticSections.h"
 #include "Target.h"
 #include "lld/Common/ErrorHandler.h"
-#include "lld/Common/Memory.h"
-#include "llvm/Object/ELF.h"
-#include "llvm/Support/Endian.h"
 
 using namespace llvm;
 using namespace llvm::support::endian;
@@ -34,27 +31,6 @@ uint64_t elf::getNanoMipsPage(uint64_t expr) {
 namespace {
 
 // Helper functions
-
-template <endianness E> uint32_t readShuffle32(Ctx &ctx, const uint8_t *loc) {
-  // Similar to microMIPS, little endian instructions are encoded as
-  // big endian so that the opcode comes first and that the hardware could
-  // know sooner if it is a 16bit, 32bit or 48bit instruction
-  uint32_t v = read32(ctx, loc);
-  if constexpr (E == llvm::endianness::little)
-    return (v << 16) | (v >> 16);
-  return v;
-}
-
-template <endianness E> void writeShuffle32(Ctx &ctx, uint8_t *loc, uint64_t val) {
-  uint16_t *words = (uint16_t *)loc;
-  if constexpr (E == llvm::endianness::little)
-    std::swap(words[0], words[1]);
-
-  write32(ctx, loc, val);
-
-  if constexpr (E == llvm::endianness::little)
-    std::swap(words[0], words[1]);
-}
 
 template <endianness E> void writeImmOf48bitIns(Ctx &ctx, uint8_t *loc, uint64_t val) {
   // Different than the shuffle, the 48 bit instruction have
@@ -104,11 +80,11 @@ uint32_t getNanoMipsMach(uint32_t eflags) {
 
 // used for: R_NANOMIPS_HI20, R_NANOMIPS_PC_HI20 and R_NANOMIPS_GPREL_HI20
 template <endianness E> void writeValueHi20(Ctx &ctx, uint8_t *loc, uint64_t val) {
-  uint32_t instr = readShuffle32<E>(ctx, loc);
+  uint32_t instr = nanoMipsReadShuffle32<E>(ctx, loc);
   uint32_t data = (val & ~1) | ((val >> 31) & 1);
   data = (data & ~0xffc) | ((val >> 19) & 0xffc);
   uint32_t masked = (instr & ~0x1ffffd) | (data & 0x1ffffd);
-  writeShuffle32<E>(ctx, loc, masked);
+  nanoMipsWriteShuffle32<E>(ctx, loc, masked);
 }
 
 // used for: R_NANOMIPS_PC4_S1 and R_NANOMIPS_GPREL7_S2
@@ -132,11 +108,11 @@ void writePcRel16(Ctx &ctx, uint8_t *loc, uint64_t val, uint8_t bitsSize) {
 // R_NANOMIPS_PC11_S1
 template <endianness E>
 void writePcRel32(Ctx &ctx, uint8_t *loc, uint64_t val, uint8_t bitsSize) {
-  uint32_t instr = readShuffle32<E>(ctx, loc);
+  uint32_t instr = nanoMipsReadShuffle32<E>(ctx, loc);
   val = (val & ~1) | ((val >> bitsSize) & 1);
   uint32_t mask = (0xffffffff >> (32 - bitsSize));
   uint32_t data = (instr & ~mask) | (val & mask);
-  writeShuffle32<E>(ctx, loc, data);
+  nanoMipsWriteShuffle32<E>(ctx, loc, data);
 }
 
 // used for: R_NANOMIPS_LO12, R_NANOMIPS_GPREL19_S2, R_NANOMIPS_GPREL18,
@@ -144,10 +120,10 @@ void writePcRel32(Ctx &ctx, uint8_t *loc, uint64_t val, uint8_t bitsSize) {
 template <endianness E>
 void writeValue32Shifted(Ctx &ctx, uint8_t *loc, uint64_t val, uint8_t bitsSize,
                          uint8_t shift) {
-  uint32_t instr = readShuffle32<E>(ctx, loc);
+  uint32_t instr = nanoMipsReadShuffle32<E>(ctx, loc);
   uint32_t mask = (0xffffffff >> (32 - bitsSize)) << shift;
   uint32_t data = (instr & ~mask) | (val & mask);
-  writeShuffle32<E>(ctx, loc, data);
+  nanoMipsWriteShuffle32<E>(ctx, loc, data);
 }
 // used for checking values of: pcrel relocations and gprel ones also
 // R_NANOMIPS_LO12
@@ -200,17 +176,26 @@ public:
   void relocate(uint8_t *loc, const Relocation &rel,
                 uint64_t val) const override;
 
+  bool relaxOnce(int pass) const override {
+    return this->transformController.relaxOnce(pass);
+  }
   void relocateAlloc(InputSectionBase &sec, uint8_t *buf) const override;
 
   uint32_t calcEFlags() const override;
 
+private:
+  NanoMipsTransformController<ELFT> transformController;
 };
 } // namespace
 
-template <class ELFT> NanoMips<ELFT>::NanoMips(Ctx &ctx) : TargetInfo(ctx) {
+template <class ELFT> NanoMips<ELFT>::NanoMips(Ctx &ctx) 
+: TargetInfo(ctx), transformController(ctx) {
+  assert(ctx.arg.nanoMipsExpandReg >= 0 && ctx.arg.nanoMipsExpandReg < 32 &&
+    "nanoMIPS regs range from 0 to 32");
   //  TODO: When needed initialize symbolicRel, iRelativeRel, relativeRel, etc.
   copyRel = R_NANOMIPS_COPY;
   defaultMaxPageSize = 65536;
+  this->transformController.initState();
 }
 
 template <class ELFT>
@@ -252,6 +237,10 @@ RelExpr NanoMips<ELFT>::getRelExpr(RelType type, const Symbol &s,
   case R_NANOMIPS_GPREL_LO12:
   case R_NANOMIPS_GPREL7_S2:
     return R_NANOMIPS_GPREL;
+  case R_NANOMIPS_NOTRAMP:
+  case R_NANOMIPS_NONE:
+    return R_NONE;
+
   case R_NANOMIPS_ALIGN:
   case R_NANOMIPS_MAX:
   case R_NANOMIPS_FILL:
@@ -261,9 +250,10 @@ RelExpr NanoMips<ELFT>::getRelExpr(RelType type, const Symbol &s,
   case R_NANOMIPS_FIXED:
   case R_NANOMIPS_INSN32:
   case R_NANOMIPS_INSN16:
-  case R_NANOMIPS_NOTRAMP:
-  case R_NANOMIPS_NONE:
-    return R_NONE;
+    // Used to save these relocations in relocation vector as
+    // R_NONE relocs are discareded from this vector, and
+    // these relocs are needed for relaxations/transformations
+    return R_RELAX_HINT;
   default:
     Err(ctx) << getErrorLoc(ctx, loc) << "unknown relocation (" << type.v
              << ") against symbol " << &s;  

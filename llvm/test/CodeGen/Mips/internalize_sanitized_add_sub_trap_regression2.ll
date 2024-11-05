@@ -1,4 +1,4 @@
-; RUN: llc -enable-nmips-addsubtrap=1 %s
+; RUN: llc -enable-nmips-addsubtrap=1 %s -o %t
 ; crashed since chain operand and result were not created in lowering to machine code
 
 target datalayout = "e-m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S128"

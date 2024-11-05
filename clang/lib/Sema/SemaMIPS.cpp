@@ -112,6 +112,7 @@ bool SemaMIPS::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_extpdp:
   case Mips::BI__builtin_mips_extr_rs_w:
   case Mips::BI__builtin_mips_extr_r_w:
+  case Mips::BI__builtin_mips_extr_s_h:
   case Mips::BI__builtin_mips_extr_w:
   case Mips::BI__builtin_mips_insv:
   case Mips::BI__builtin_mips_madd:
@@ -126,6 +127,16 @@ bool SemaMIPS::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_mthlip:
   case Mips::BI__builtin_mips_mul_ph:
   case Mips::BI__builtin_mips_mul_s_ph:
+  case Mips::BI__builtin_mips_muleq_s_w_phl:
+  case Mips::BI__builtin_mips_muleq_s_w_phr:
+  case Mips::BI__builtin_mips_muleu_s_ph_qbl:
+  case Mips::BI__builtin_mips_muleu_s_ph_qbr:
+  case Mips::BI__builtin_mips_mulq_rs_ph:
+  case Mips::BI__builtin_mips_mulq_rs_w:
+  case Mips::BI__builtin_mips_mulq_s_ph:
+  case Mips::BI__builtin_mips_mulq_s_w:
+  case Mips::BI__builtin_mips_mulsa_w_ph:
+  case Mips::BI__builtin_mips_mulsaq_s_w_ph:
   case Mips::BI__builtin_mips_mult:
   case Mips::BI__builtin_mips_multu:
   case Mips::BI__builtin_mips_packrl_ph:
@@ -141,7 +152,13 @@ bool SemaMIPS::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_preceu_ph_qbla:
   case Mips::BI__builtin_mips_preceu_ph_qbr:
   case Mips::BI__builtin_mips_preceu_ph_qbra:
+  case Mips::BI__builtin_mips_precr_qb_ph:
+  case Mips::BI__builtin_mips_precr_sra_ph_w:
+  case Mips::BI__builtin_mips_precr_sra_r_ph_w:
   case Mips::BI__builtin_mips_precrq_ph_w:
+  case Mips::BI__builtin_mips_precrq_qb_ph:
+  case Mips::BI__builtin_mips_precrq_rs_ph_w:
+  case Mips::BI__builtin_mips_precrqu_s_qb_ph:
   case Mips::BI__builtin_mips_rddsp:
   case Mips::BI__builtin_mips_shilo:
   case Mips::BI__builtin_mips_shll_ph:

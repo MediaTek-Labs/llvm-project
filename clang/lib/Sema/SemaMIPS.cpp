@@ -83,6 +83,9 @@ bool SemaMIPS::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_addu_s_qb:
   case Mips::BI__builtin_mips_adduh_qb:
   case Mips::BI__builtin_mips_adduh_r_qb:
+  case Mips::BI__builtin_mips_addq_s_w:
+  case Mips::BI__builtin_mips_addsc:
+  case Mips::BI__builtin_mips_addwc:
   case Mips::BI__builtin_mips_append:
   case Mips::BI__builtin_mips_bitrev:
   case Mips::BI__builtin_mips_bposge32:
@@ -159,6 +162,9 @@ bool SemaMIPS::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_precrq_qb_ph:
   case Mips::BI__builtin_mips_precrq_rs_ph_w:
   case Mips::BI__builtin_mips_precrqu_s_qb_ph:
+  case Mips::BI__builtin_mips_raddu_w_qb:
+  case Mips::BI__builtin_mips_repl_ph:
+  case Mips::BI__builtin_mips_repl_qb:
   case Mips::BI__builtin_mips_rddsp:
   case Mips::BI__builtin_mips_shilo:
   case Mips::BI__builtin_mips_shll_ph:

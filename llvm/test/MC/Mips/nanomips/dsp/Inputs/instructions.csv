@@ -12,6 +12,9 @@ preceu.ph.qbl  ,"@ $rt, $rs"        ,001000|GPR[rt](5)|GPR[rs](5)|          1011
 preceu.ph.qbla ,"@ $rt, $rs"        ,001000|GPR[rt](5)|GPR[rs](5)|          1011001|100|111|111
 preceu.ph.qbr  ,"@ $rt, $rs"        ,001000|GPR[rt](5)|GPR[rs](5)|          1101000|100|111|111
 preceu.ph.qbra ,"@ $rt, $rs"        ,001000|GPR[rt](5)|GPR[rs](5)|          1101001|100|111|111
+raddu.w.qb     ,"@ $rt, $rs"        ,001000|GPR[rt](5)|GPR[rs](5)|          1111000|100|111|111
+replv.ph       ,"@ $rt, $rs"        ,001000|GPR[rt](5)|GPR[rs](5)|          0000001|100|111|111
+replv.qb       ,"@ $rt, $rs"        ,001000|GPR[rt](5)|GPR[rs](5)|          0001001|100|111|111
 append         ,"@ $rt, $rs, $sa"   ,001000|GPR[rt](5)|GPR[rs](5)|sa(5u)         |x|1000010|101
 shll_s.w       ,"@ $rt, $rs, $sa"   ,001000|GPR[rt](5)|GPR[rs](5)|sa(5u)         |x|1111110|101
 shra_r.w       ,"@ $rt, $rs, $sa"   ,001000|GPR[rt](5)|GPR[rs](5)|sa(5u)         |x|1011110|101
@@ -100,6 +103,7 @@ packrl.ph      ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)    
 pick.qb        ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|0111101|101
 pick.ph        ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1000101|101
 shllv_s.w      ,"@ $rd, $rt, $rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1111010|101
+shllv.qb       ,"@ $rd, $rt, $rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1110010|101
 shrlv.ph       ,"@ $rd, $rt, $rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1100010|101
 shrlv.qb       ,"@ $rd, $rt, $rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1101010|101
 subq_s.w       ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1101000|101
@@ -112,6 +116,9 @@ mulq_rs.ph     ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)    
 mulq_rs.w      ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|0110010|101
 mulq_s.ph      ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|0101010|101
 mulq_s.w       ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|0111010|101
+addq_s.w       ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1100000|101
+addsc          ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1110000|101
+addwc          ,"@ $rd, $rs, $rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1111000|101
 shll.qb        ,"@ $rt, $rs, $sa"   ,001000|GPR[rt](5)|GPR[rs](5)|sa(3u)     |0|100|001|111|111
 shrl.qb        ,"@ $rt, $rs, $sa"   ,001000|GPR[rt](5)|GPR[rs](5)|sa(3u)     |1|100|001|111|111
 shra.qb        ,"@ $rt, $rs, $sa"   ,001000|GPR[rt](5)|GPR[rs](5)|sa(3u)     |0|000|111|111|111
@@ -127,6 +134,8 @@ cmp.le.ph      ,"@ $rs, $rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx        
 cmp.lt.ph      ,"@ $rs, $rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx           |0001000|101
 rddsp          ,"@ $rt, $mask"      ,001000|GPR[rt](5)|mask(7u)             |00|011|001|111|111
 wrdsp          ,"@ $rt, $mask"      ,001000|GPR[rt](5)|mask(7u)             |01|011|001|111|111
+repl.ph        ,"@ $rt, $s"         ,001000|GPR[rt](5)|s(10l)                    |x|0000111|101
+repl.qb        ,"@ $rt, $u"         ,001000|GPR[rt](5)|u(8u)                 |x|010|111|111|111
 mfhi           ,"@ $rt, $ac"        ,001000|GPR[rt](5)|xxxxx     |ACC[ac](2)|00|000|001|111|111
 mflo           ,"@ $rt, $ac"        ,001000|GPR[rt](5)|xxxxx     |ACC[ac](2)|01|000|001|111|111
 shilo          ,"@ $ac, $shift"     ,001000|xxxx      |shift(6l) |ACC[ac](2)  |xxxx|0000011|101

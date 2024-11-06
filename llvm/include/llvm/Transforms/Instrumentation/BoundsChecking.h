@@ -17,12 +17,14 @@ class Function;
 /// A pass to instrument code and perform run-time bounds checking on loads,
 /// stores, and other memory intrinsics.
 struct BoundsCheckingPass : PassInfoMixin<BoundsCheckingPass> {
-  BoundsCheckingPass(bool Trap = true, bool Recover = false)
-      : Trap(Trap), Recover(Recover) {}
+  BoundsCheckingPass(bool Trap = true, bool Recover = false, bool SizeAsTrapCode = true, int TrapCode = 0)
+      : Trap(Trap), Recover(Recover), SizeAsTrapCode(SizeAsTrapCode), TrapCode(TrapCode) {}
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
   static bool isRequired() { return true; }
   bool Trap = true;
   bool Recover = false;
+  bool SizeAsTrapCode = true;
+  int TrapCode = 0;
 };
 
 } // end namespace llvm

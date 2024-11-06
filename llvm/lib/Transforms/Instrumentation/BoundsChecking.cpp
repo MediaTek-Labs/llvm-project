@@ -142,10 +142,9 @@ static void insertBoundsCheck(Value *Or, BuilderTy &IRB,
 
 static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
                               ScalarEvolution &SE, bool Trap = true,
-                              bool Recover = false) {
+                              bool Recover = false, int TrapCode = 0) {
   if (F.hasFnAttribute(Attribute::NoSanitizeBounds))
     return false;
-
   const DataLayout &DL = F.getParent()->getDataLayout();
   ObjectSizeOpts EvalOpts;
   EvalOpts.RoundToAlign = true;
@@ -184,8 +183,8 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
   // flags, this will either create a single block for the entire function or
   // will create a fresh block every time it is called.
   BasicBlock *TrapBB = nullptr;
-  auto GetHandlerBB = [&TrapBB, Trap, Recover](BuilderTy &IRB,
-                                               BasicBlock *Cont = nullptr) {
+  auto GetHandlerBB = [&TrapBB, Trap, Recover, TrapCode](
+      BuilderTy &IRB, BasicBlock *Cont = nullptr) {
     if (Trap && TrapBB && SingleTrapBB && !Recover)
       return TrapBB;
 
@@ -201,7 +200,7 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
     if (Trap) {
       auto *F = Intrinsic::getDeclaration(Fn->getParent(), Intrinsic::ubsantrap);
       CallInst *TrapCall =
-	IRB.CreateCall(F, ConstantInt::get(IRB.getInt8Ty(), Fn->size()));
+	IRB.CreateCall(F, ConstantInt::get(IRB.getInt8Ty(), TrapCode));
       TrapCall->setDoesNotReturn();
       TrapCall->setDoesNotThrow();
       TrapCall->setDebugLoc(DebugLoc);
@@ -242,7 +241,8 @@ PreservedAnalyses BoundsCheckingPass::run(Function &F, FunctionAnalysisManager &
   auto &TLI = AM.getResult<TargetLibraryAnalysis>(F);
   auto &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
 
-  if (!addBoundsChecking(F, TLI, SE, Trap, Recover))
+  if (!addBoundsChecking(F, TLI, SE, Trap, Recover,
+			 TrapCode = SizeAsTrapCode? F.size() : TrapCode))
     return PreservedAnalyses::all();
 
   return PreservedAnalyses::none();

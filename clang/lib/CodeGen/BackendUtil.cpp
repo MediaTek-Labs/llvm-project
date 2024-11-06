@@ -968,7 +968,8 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
           CodeGenOpts.SanitizeRecover.has(SanitizerKind::LocalBounds);
       PB.registerScalarOptimizerLateEPCallback(
           [Trap, Recover](FunctionPassManager &FPM, OptimizationLevel Level) {
-            FPM.addPass(BoundsCheckingPass(Trap, Recover));
+            FPM.addPass(BoundsCheckingPass(Trap, Recover, false,
+					   SanitizerKind::SO_LocalBounds));
             FPM.addPass(CorrelatedValuePropagationPass());
           });
     }

@@ -3880,6 +3880,9 @@ bool Sema::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_cmpgu_eq_qb:
   case Mips::BI__builtin_mips_cmpgu_le_qb:
   case Mips::BI__builtin_mips_cmpgu_lt_qb:
+  case Mips::BI__builtin_mips_cmpgdu_eq_qb:
+  case Mips::BI__builtin_mips_cmpgdu_le_qb:
+  case Mips::BI__builtin_mips_cmpgdu_lt_qb:
   case Mips::BI__builtin_mips_cmp_le_ph:
   case Mips::BI__builtin_mips_cmp_lt_ph:
   case Mips::BI__builtin_mips_dpa_w_ph:

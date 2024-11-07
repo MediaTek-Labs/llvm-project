@@ -86,11 +86,16 @@ addqh.w        ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)    
 addqh_r.w      ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |1|0010001|101
 subqh.w        ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |0|1010001|101
 subqh_r.w      ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |1|1010001|101
+shllv.ph       ,"@ %rd, %rt, %rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |0|1110001|101
+shllv_s.ph     ,"@ %rd, %rt, %rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |1|1110001|101
 shrav.ph       ,"@ %rd, %rt, %rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |0|0110001|101
 shrav_r.ph     ,"@ %rd, %rt, %rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |1|0110001|101
 shrav.qb       ,"@ %rd, %rt, %rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |0|0111001|101
 shrav_r.qb     ,"@ %rd, %rt, %rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |1|0111001|101
 shrav_r.w      ,"@ %rd, %rt, %rs"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1011010|101
+cmpgdu.eq.qb   ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|0110000|101
+cmpgdu.le.qb   ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|1000000|101
+cmpgdu.lt.qb   ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|0111000|101
 cmpgu.eq.qb    ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|0011000|101
 cmpgu.le.qb    ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|0101000|101
 cmpgu.lt.qb    ,"@ %rd, %rs, %rt"   ,001000|GPR[rt](5)|GPR[rs](5)|GPR[rd](5)     |x|0100000|101

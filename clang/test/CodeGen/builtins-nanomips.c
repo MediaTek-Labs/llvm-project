@@ -297,6 +297,19 @@ void foo() {
   q31_r = __builtin_mips_mulq_s_w(q31_a, q31_b);
 // CHECK: call i32 @llvm.mips.mulq.s.w
 
+  v4i8_a = (v4i8) {0x11, 0x22, 0x33, 0x44};
+  v4i8_b = (v4i8) {0x11, 0x33, 0x33, 0x44};
+  i32_r = __builtin_mips_cmpgdu_eq_qb(v4i8_a, v4i8_b);
+// CHECK: call i32 @llvm.mips.cmpgdu.eq.qb
+  v4i8_a = (v4i8) {0x11, 0x22, 0x33, 0x44};
+  v4i8_b = (v4i8) {0x11, 0x33, 0x33, 0x44};
+  i32_r = __builtin_mips_cmpgdu_lt_qb(v4i8_a, v4i8_b);
+// CHECK: call i32 @llvm.mips.cmpgdu.lt.qb
+  v4i8_a = (v4i8) {0x11, 0x22, 0x33, 0x54};
+  v4i8_b = (v4i8) {0x11, 0x33, 0x33, 0x44};
+  i32_r = __builtin_mips_cmpgdu_le_qb(v4i8_a, v4i8_b);
+// CHECK: call i32 @llvm.mips.cmpgdu.le.qb
+
   a64_a = 0;
   v4i8_b = (v4i8) {1, 2, 3, 4};
   v4i8_c = (v4i8) {4, 5, 6, 7};

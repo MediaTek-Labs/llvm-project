@@ -189,6 +189,9 @@ def : InstRW<[GenericWriteALU], (instrs ADD_NM, ADDu16_NM, ADDu4x4_NM, ADDu_NM,
                                  REPLV_PH_NM, REPLV_QB_NM, REPL_PH_NM, REPL_QB_NM,
                                  RDDSP_NM, WRDSP_NM, BPOSGE32C_NM,
                                  MFHI_NM, MFLO_NM, MTHI_NM, MTLO_NM,
+                                 PseudoPICK_PH_NM, PseudoPICK_QB_NM,
+                                 PseudoCMP_EQ_PH_NM, PseudoCMP_LE_PH_NM, PseudoCMP_LT_PH_NM,
+                                 PseudoCMPU_EQ_QB_NM, PseudoCMPU_LE_QB_NM, PseudoCMPU_LT_QB_NM,
                                  MTHLIP_NM, SHILOV_NM, SHILO_NM)>;
 
 def : InstRW<[GenericWriteALU], (instrs CRC32B_NM, CRC32H_NM, CRC32W_NM, CRC32CB_NM,

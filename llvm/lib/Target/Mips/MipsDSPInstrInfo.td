@@ -1437,14 +1437,14 @@ let DecoderNamespace = "MipsDSP", Arch = "dsp",
 }
 
 // Pseudo CMP and PICK instructions.
-class PseudoCMP<Instruction RealInst> :
-  PseudoDSP<(outs DSPCC:$cmp), (ins DSPROpnd:$rs, DSPROpnd:$rt), []>,
-  PseudoInstExpansion<(RealInst DSPROpnd:$rs, DSPROpnd:$rt)>,
+class PseudoCMP<Instruction RealInst, RO_TYPES RO = MipsRO_TYPES> :
+  PseudoDSP<(outs DSPCC:$cmp), (ins RO.DSPR:$rs, RO.DSPR:$rt), []>,
+  PseudoInstExpansion<(RealInst RO.DSPR:$rs, RO.DSPR:$rt)>,
   NeverHasSideEffects;
 
-class PseudoPICK<Instruction RealInst> :
-  PseudoDSP<(outs DSPROpnd:$rd), (ins DSPCC:$cmp, DSPROpnd:$rs, DSPROpnd:$rt), []>,
-  PseudoInstExpansion<(RealInst DSPROpnd:$rd, DSPROpnd:$rs, DSPROpnd:$rt)>,
+class PseudoPICK<Instruction RealInst, RO_TYPES RO = MipsRO_TYPES> :
+  PseudoDSP<(outs RO.DSPR:$rd), (ins DSPCC:$cmp, RO.DSPR:$rs, RO.DSPR:$rt), []>,
+  PseudoInstExpansion<(RealInst RO.DSPR:$rd, RO.DSPR:$rs, RO.DSPR:$rt)>,
   NeverHasSideEffects;
 
 def PseudoCMP_EQ_PH : PseudoCMP<CMP_EQ_PH>;

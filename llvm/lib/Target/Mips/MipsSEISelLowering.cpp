@@ -149,13 +149,14 @@ MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
     setTargetDAGCombine(
         {ISD::SHL, ISD::SRA, ISD::SRL, ISD::SETCC, ISD::VSELECT});
 
-    if (Subtarget.hasMips32r2()) {
+    if (Subtarget.hasMips32r2() || Subtarget.hasNanoMips()) {
       setOperationAction(ISD::ADDC, MVT::i32, Legal);
       setOperationAction(ISD::ADDE, MVT::i32, Legal);
     }
   }
 
-  if (Subtarget.hasDSPR2())
+  if (Subtarget.hasDSPR2() ||
+      (Subtarget.hasNanoMips() && Subtarget.hasDSP()))
     setOperationAction(ISD::MUL, MVT::v2i16, Legal);
 
   if (Subtarget.hasMSA()) {
@@ -1033,7 +1034,10 @@ static SDValue performSRACombine(SDNode *N, SelectionDAG &DAG,
     }
   }
 
-  if ((Ty != MVT::v2i16) && ((Ty != MVT::v4i8) || !Subtarget.hasDSPR2()))
+  if ((Ty != MVT::v2i16) &&
+      ((Ty != MVT::v4i8) ||
+       !(Subtarget.hasDSPR2() ||
+         (Subtarget.hasNanoMips() && Subtarget.hasDSP()))))
     return SDValue();
 
   return performDSPShiftCombine(MipsISD::SHRA_DSP, N, Ty, DAG, Subtarget);
@@ -1080,10 +1084,6 @@ static SDValue performSETCCCombine(SDNode *N, SelectionDAG &DAG,
     return SDValue();
 
   if (!isLegalDSPCondCode(Ty, cast<CondCodeSDNode>(N->getOperand(2))->get()))
-    return SDValue();
-
-  // no support yet for CC DSP
-  if (Subtarget.hasNanoMips())
     return SDValue();
 
   return DAG.getNode(MipsISD::SETCC_DSP, SDLoc(N), Ty, N->getOperand(0),

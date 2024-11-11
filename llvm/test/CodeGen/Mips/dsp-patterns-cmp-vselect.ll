@@ -1,8 +1,11 @@
-; RUN: llc -march=mips -mattr=dsp < %s | FileCheck %s
+; RUN: llc -march=mips -mattr=dsp < %s | FileCheck %s --check-prefixes CHECK,MIPS
+; RUN: llc -mcpu=nanomips -mattr=+dsp < %s | FileCheck %s --check-prefixes CHECK,NMIPS
 
 ; CHECK-LABEL: select_v2q15_eq_:
-; CHECK: cmp.eq.ph ${{[0-9]+}}, ${{[0-9]+}}
-; CHECK: pick.ph ${{[0-9]+}}, $6, $7
+;  MIPS: cmp.eq.ph ${{[0-9]+}}, ${{[0-9]+}}
+; NMIPS: cmp.eq.ph ${{.+}}, ${{.+}}
+;  MIPS: pick.ph ${{[0-9]+}}, $6, $7
+; NMIPS: pick.ph ${{.+}}, $a2, $a3
 
 define { i32 } @select_v2q15_eq_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -18,8 +21,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v2q15_lt_:
-; CHECK: cmp.lt.ph $4, $5
-; CHECK: pick.ph ${{[0-9]+}}, $6, $7
+;  MIPS: cmp.lt.ph $4, $5
+; NMIPS: cmp.lt.ph $a0, $a1
+;  MIPS: pick.ph ${{[0-9]+}}, $6, $7
+; NMIPS: pick.ph ${{.+}}, $a2, $a3
 
 define { i32 } @select_v2q15_lt_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -35,8 +40,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v2q15_le_:
-; CHECK: cmp.le.ph $4, $5
-; CHECK: pick.ph ${{[0-9]+}}, $6, $7
+;  MIPS: cmp.le.ph $4, $5
+; NMIPS: cmp.le.ph $a0, $a1
+;  MIPS: pick.ph ${{[0-9]+}}, $6, $7
+; NMIPS: pick.ph ${{.+}}, $a2, $a3
 
 define { i32 } @select_v2q15_le_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -52,8 +59,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v2q15_ne_:
-; CHECK: cmp.eq.ph ${{[0-9]+}}, ${{[0-9]+}}
-; CHECK: pick.ph ${{[0-9]+}}, $7, $6
+;  MIPS: cmp.eq.ph ${{[0-9]+}}, ${{[0-9]+}}
+; NMIPS: cmp.eq.ph ${{.+}}, ${{.+}}
+;  MIPS: pick.ph ${{[0-9]+}}, $7, $6
+; NMIPS: pick.ph ${{.+}}, $a3, $a2
 
 define { i32 } @select_v2q15_ne_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -69,8 +78,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v2q15_gt_:
-; CHECK: cmp.le.ph $4, $5
-; CHECK: pick.ph ${{[0-9]+}}, $7, $6
+;  MIPS: cmp.le.ph $4, $5
+; NMIPS: cmp.le.ph $a0, $a1
+;  MIPS: pick.ph ${{[0-9]+}}, $7, $6
+; NMIPS: pick.ph ${{.+}}, $a3, $a2
 
 define { i32 } @select_v2q15_gt_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -86,8 +97,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v2q15_ge_:
-; CHECK: cmp.lt.ph $4, $5
-; CHECK: pick.ph ${{[0-9]+}}, $7, $6
+;  MIPS: cmp.lt.ph $4, $5
+; NMIPS: cmp.lt.ph $a0, $a1
+;  MIPS: pick.ph ${{[0-9]+}}, $7, $6
+; NMIPS: pick.ph ${{.+}}, $a3, $a2
 
 define { i32 } @select_v2q15_ge_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -103,8 +116,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v4ui8_eq_:
-; CHECK: cmpu.eq.qb ${{[0-9]+}}, ${{[0-9]+}}
-; CHECK: pick.qb ${{[0-9]+}}, $6, $7
+;  MIPS: cmpu.eq.qb ${{[0-9]+}}, ${{[0-9]+}}
+; NMIPS: cmpu.eq.qb ${{.+}}, ${{.+}}
+;  MIPS: pick.qb ${{[0-9]+}}, $6, $7
+; NMIPS: pick.qb ${{.+}}, $a2, $a3
 
 define { i32 } @select_v4ui8_eq_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -120,8 +135,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v4ui8_lt_:
-; CHECK: cmpu.lt.qb $4, $5
-; CHECK: pick.qb ${{[0-9]+}}, $6, $7
+;  MIPS: cmpu.lt.qb $4, $5
+; NMIPS: cmpu.lt.qb $a0, $a1
+;  MIPS: pick.qb ${{[0-9]+}}, $6, $7
+; NMIPS: pick.qb ${{.+}}, $a2, $a3
 
 define { i32 } @select_v4ui8_lt_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -137,8 +154,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v4ui8_le_:
-; CHECK: cmpu.le.qb $4, $5
-; CHECK: pick.qb ${{[0-9]+}}, $6, $7
+;  MIPS: cmpu.le.qb $4, $5
+; NMIPS: cmpu.le.qb $a0, $a1
+;  MIPS: pick.qb ${{[0-9]+}}, $6, $7
+; NMIPS: pick.qb ${{.+}}, $a2, $a3
 
 define { i32 } @select_v4ui8_le_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -154,8 +173,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v4ui8_ne_:
-; CHECK: cmpu.eq.qb ${{[0-9]+}}, ${{[0-9]+}}
-; CHECK: pick.qb ${{[0-9]+}}, $7, $6
+;  MIPS: cmpu.eq.qb ${{[0-9]+}}, ${{[0-9]+}}
+; NMIPS: cmpu.eq.qb ${{.+}}, ${{.+}}
+;  MIPS: pick.qb ${{[0-9]+}}, $7, $6
+; NMIPS: pick.qb ${{.+}}, $a3, $a2
 
 define { i32 } @select_v4ui8_ne_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -171,8 +192,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v4ui8_gt_:
-; CHECK: cmpu.le.qb $4, $5
-; CHECK: pick.qb ${{[0-9]+}}, $7, $6
+;  MIPS: cmpu.le.qb $4, $5
+; NMIPS: cmpu.le.qb $a0, $a1
+;  MIPS: pick.qb ${{[0-9]+}}, $7, $6
+; NMIPS: pick.qb ${{.+}}, $a3, $a2
 
 define { i32 } @select_v4ui8_gt_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -188,8 +211,10 @@ entry:
 }
 
 ; CHECK-LABEL: select_v4ui8_ge_:
-; CHECK: cmpu.lt.qb $4, $5
-; CHECK: pick.qb ${{[0-9]+}}, $7, $6
+;  MIPS: cmpu.lt.qb $4, $5
+; NMIPS: cmpu.lt.qb $a0, $a1
+;  MIPS: pick.qb ${{[0-9]+}}, $7, $6
+; NMIPS: pick.qb ${{.+}}, $a3, $a2
 
 define { i32 } @select_v4ui8_ge_(i32 %a0.coerce, i32 %a1.coerce, i32 %a2.coerce, i32 %a3.coerce) {
 entry:
@@ -341,8 +366,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v2q15_eq_:
-; CHECK: cmp.eq.ph ${{[0-9]+}}, ${{[0-9]+}}
-; CHECK: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmp.eq.ph ${{[0-9]+}}, ${{[0-9]+}}
+; NMIPS: cmp.eq.ph ${{.+}}, ${{.+}}
+;  MIPS: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.ph ${{.+}}, ${{.+}}, $zero
 
 define { i32 } @compare_v2q15_eq_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -356,8 +383,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v2q15_lt_:
-; CHECK: cmp.lt.ph $4, $5
-; CHECK: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmp.lt.ph $4, $5
+; NMIPS: cmp.lt.ph $a0, $a1
+;  MIPS: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.ph ${{.+}}, ${{.+}}, $zero
 
 define { i32 } @compare_v2q15_lt_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -371,8 +400,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v2q15_le_:
-; CHECK: cmp.le.ph $4, $5
-; CHECK: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmp.le.ph $4, $5
+; NMIPS: cmp.le.ph $a0, $a1
+;  MIPS: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.ph ${{.+}}, ${{.+}}, $zero
 
 define { i32 } @compare_v2q15_le_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -386,8 +417,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v2q15_ne_:
-; CHECK: cmp.eq.ph ${{[0-9]+}}, ${{[0-9]+}}
-; CHECK: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmp.eq.ph ${{[0-9]+}}, ${{[0-9]+}}
+; NMIPS: cmp.eq.ph ${{.+}}, ${{.+}}
+;  MIPS: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.ph ${{.+}}, $zero, ${{.+}}
 
 define { i32 } @compare_v2q15_ne_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -401,8 +434,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v2q15_gt_:
-; CHECK: cmp.le.ph $4, $5
-; CHECK: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmp.le.ph $4, $5
+; NMIPS: cmp.le.ph $a0, $a1
+;  MIPS: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.ph ${{.+}}, $zero, $a{{[a-z0-9]+}}
 
 define { i32 } @compare_v2q15_gt_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -416,8 +451,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v2q15_ge_:
-; CHECK: cmp.lt.ph $4, $5
-; CHECK: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmp.lt.ph $4, $5
+; NMIPS: cmp.lt.ph $a0, $a1
+;  MIPS: pick.ph ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.ph ${{.+}}, $zero, ${{.+}}
 
 define { i32 } @compare_v2q15_ge_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -431,8 +468,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v4ui8_eq_:
-; CHECK: cmpu.eq.qb ${{[0-9]+}}, ${{[0-9]+}}
-; CHECK: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmpu.eq.qb ${{[0-9]+}}, ${{[0-9]+}}
+; NMIPS: cmpu.eq.qb ${{.+}}, ${{.+}}
+;  MIPS: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.qb ${{.+}}, ${{.+}}, $zero
 
 define { i32 } @compare_v4ui8_eq_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -446,8 +485,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v4ui8_lt_:
-; CHECK: cmpu.lt.qb $4, $5
-; CHECK: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmpu.lt.qb $4, $5
+; NMIPS: cmpu.lt.qb $a0, $a1
+;  MIPS: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.qb ${{.+}}, ${{.+}}, $zero
 
 define { i32 } @compare_v4ui8_lt_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -461,8 +502,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v4ui8_le_:
-; CHECK: cmpu.le.qb $4, $5
-; CHECK: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmpu.le.qb $4, $5
+; NMIPS: cmpu.le.qb $a0, $a1
+;  MIPS: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.qb ${{.+}}, ${{.+}}, $zero
 
 define { i32 } @compare_v4ui8_le_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -476,8 +519,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v4ui8_ne_:
-; CHECK: cmpu.eq.qb ${{[0-9]+}}, ${{[0-9]+}}
-; CHECK: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmpu.eq.qb ${{[0-9]+}}, ${{[0-9]+}}
+; NMIPS: cmpu.eq.qb ${{.+}}, ${{.+}}
+;  MIPS: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.qb ${{.+}}, $zero, ${{.+}}
 
 define { i32 } @compare_v4ui8_ne_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -491,8 +536,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v4ui8_gt_:
-; CHECK: cmpu.le.qb $4, $5
-; CHECK: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmpu.le.qb $4, $5
+; NMIPS: cmpu.le.qb $a0, $a1
+;  MIPS: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.qb ${{.+}}, $zero, ${{.+}}
 
 define { i32 } @compare_v4ui8_gt_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:
@@ -506,8 +553,10 @@ entry:
 }
 
 ; CHECK-LABEL: compare_v4ui8_ge_:
-; CHECK: cmpu.lt.qb $4, $5
-; CHECK: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+;  MIPS: cmpu.lt.qb $4, $5
+; NMIPS: cmpu.lt.qb $a0, $a1
+;  MIPS: pick.qb ${{[0-9]+}}, ${{[a-z0-9]+}}, ${{[a-z0-9]+}}
+; NMIPS: pick.qb ${{.+}}, $zero, ${{.+}}
 
 define { i32 } @compare_v4ui8_ge_(i32 %a0.coerce, i32 %a1.coerce) {
 entry:

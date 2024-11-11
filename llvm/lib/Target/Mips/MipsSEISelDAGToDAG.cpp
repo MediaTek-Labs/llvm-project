@@ -224,7 +224,8 @@ void MipsSEDAGToDAGISel::selectAddE(SDNode *Node, const SDLoc &DL) const {
   // instruction.
   if (Opc == ISD::ADDC) {
     SDValue Ops[3] = {LHS, RHS, InFlag};
-    CurDAG->SelectNodeTo(Node, Mips::ADDWC, VT, MVT::Glue, Ops);
+    unsigned CarryAddOpc = Subtarget->hasNanoMips() ? Mips::ADDWC_NM : Mips::ADDWC;
+    CurDAG->SelectNodeTo(Node, CarryAddOpc, VT, MVT::Glue, Ops);
     return;
   }
 
@@ -272,7 +273,8 @@ void MipsSEDAGToDAGISel::selectAddE(SDNode *Node, const SDLoc &DL) const {
                                          SDValue(DSPCtrlFinal, 0), CstOne);
 
   SDValue Operands[3] = {LHS, RHS, SDValue(WrDSP, 0)};
-  CurDAG->SelectNodeTo(Node, Mips::ADDWC, VT, MVT::Glue, Operands);
+  unsigned CarryAddOpc = Subtarget->hasNanoMips() ? Mips::ADDWC_NM : Mips::ADDWC;
+  CurDAG->SelectNodeTo(Node, CarryAddOpc, VT, MVT::Glue, Operands);
 }
 
 /// Match frameindex

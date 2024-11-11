@@ -798,3 +798,58 @@ let DecoderNamespace = "MipsDSP", Arch = "dsp",
   def SWDSP_NM : Store<"sw", DSPRNMOpnd, null_frag, II_SW>,
 	      LSMem_U12_Enc<0b1001>;
 }
+
+def PseudoCMP_EQ_PH_NM  : PseudoCMP<CMP_EQ_PH_NM,  NanoMipsRO_TYPES>;
+def PseudoCMP_LT_PH_NM  : PseudoCMP<CMP_LT_PH_NM,  NanoMipsRO_TYPES>;
+def PseudoCMP_LE_PH_NM  : PseudoCMP<CMP_LE_PH_NM,  NanoMipsRO_TYPES>;
+def PseudoCMPU_EQ_QB_NM : PseudoCMP<CMPU_EQ_QB_NM, NanoMipsRO_TYPES>;
+def PseudoCMPU_LT_QB_NM : PseudoCMP<CMPU_LT_QB_NM, NanoMipsRO_TYPES>;
+def PseudoCMPU_LE_QB_NM : PseudoCMP<CMPU_LE_QB_NM, NanoMipsRO_TYPES>;
+
+def PseudoPICK_PH_NM : PseudoPICK<PICK_PH_NM, NanoMipsRO_TYPES>;
+def PseudoPICK_QB_NM : PseudoPICK<PICK_QB_NM, NanoMipsRO_TYPES>;
+
+// SETCC/SELECT_CC patterns.
+// Copies of DSPSetCCPat, DSPSetCCPatInv
+// Could not parametrize the operands since DSPR and DSPRNM
+// do not belong to the same type
+class DSPSetCCPatNM<Instruction Cmp, Instruction Pick, ValueType ValTy,
+                 CondCode CC, Predicate Pred> :
+  DSPPat<(ValTy (MipsSETCC_DSP ValTy:$a, ValTy:$b, CC)),
+         (ValTy (Pick (ValTy (Cmp ValTy:$a, ValTy:$b)),
+                     (ValTy (COPY_TO_REGCLASS (ADDIU_NM ZERO_NM, -1), DSPRNM)),
+                     (ValTy ZERO_NM))), Pred>;
+
+class DSPSetCCPatInvNM<Instruction Cmp, Instruction Pick, ValueType ValTy,
+                    CondCode CC, Predicate Pred> :
+  DSPPat<(ValTy (MipsSETCC_DSP ValTy:$a, ValTy:$b, CC)),
+         (ValTy (Pick (ValTy (Cmp ValTy:$a, ValTy:$b)),
+                     (ValTy ZERO_NM),
+                     (ValTy (COPY_TO_REGCLASS (ADDIU_NM ZERO_NM, -1), DSPRNM)))),
+         Pred>;
+
+def : DSPSetCCPatNM<PseudoCMP_EQ_PH_NM,     PseudoPICK_PH_NM, v2i16, SETEQ,  HasDSPNanoMips>;
+def : DSPSetCCPatNM<PseudoCMP_LT_PH_NM,     PseudoPICK_PH_NM, v2i16, SETLT,  HasDSPNanoMips>;
+def : DSPSetCCPatNM<PseudoCMP_LE_PH_NM,     PseudoPICK_PH_NM, v2i16, SETLE,  HasDSPNanoMips>;
+def : DSPSetCCPatInvNM<PseudoCMP_EQ_PH_NM,  PseudoPICK_PH_NM, v2i16, SETNE,  HasDSPNanoMips>;
+def : DSPSetCCPatInvNM<PseudoCMP_LT_PH_NM,  PseudoPICK_PH_NM, v2i16, SETGE,  HasDSPNanoMips>;
+def : DSPSetCCPatInvNM<PseudoCMP_LE_PH_NM,  PseudoPICK_PH_NM, v2i16, SETGT,  HasDSPNanoMips>;
+def : DSPSetCCPatNM<PseudoCMPU_EQ_QB_NM,    PseudoPICK_QB_NM, v4i8,  SETEQ,  HasDSPNanoMips>;
+def : DSPSetCCPatNM<PseudoCMPU_LT_QB_NM,    PseudoPICK_QB_NM, v4i8,  SETULT, HasDSPNanoMips>;
+def : DSPSetCCPatNM<PseudoCMPU_LE_QB_NM,    PseudoPICK_QB_NM, v4i8,  SETULE, HasDSPNanoMips>;
+def : DSPSetCCPatInvNM<PseudoCMPU_EQ_QB_NM, PseudoPICK_QB_NM, v4i8,  SETNE,  HasDSPNanoMips>;
+def : DSPSetCCPatInvNM<PseudoCMPU_LT_QB_NM, PseudoPICK_QB_NM, v4i8,  SETUGE, HasDSPNanoMips>;
+def : DSPSetCCPatInvNM<PseudoCMPU_LE_QB_NM, PseudoPICK_QB_NM, v4i8,  SETUGT, HasDSPNanoMips>;
+
+def : DSPSelectCCPat<PseudoCMP_EQ_PH_NM,     PseudoPICK_PH_NM, v2i16, SETEQ , HasDSPNanoMips>;
+def : DSPSelectCCPat<PseudoCMP_LT_PH_NM,     PseudoPICK_PH_NM, v2i16, SETLT , HasDSPNanoMips>;
+def : DSPSelectCCPat<PseudoCMP_LE_PH_NM,     PseudoPICK_PH_NM, v2i16, SETLE , HasDSPNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMP_EQ_PH_NM,  PseudoPICK_PH_NM, v2i16, SETNE , HasDSPNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMP_LT_PH_NM,  PseudoPICK_PH_NM, v2i16, SETGE , HasDSPNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMP_LE_PH_NM,  PseudoPICK_PH_NM, v2i16, SETGT , HasDSPNanoMips>;
+def : DSPSelectCCPat<PseudoCMPU_EQ_QB_NM,    PseudoPICK_QB_NM, v4i8,  SETEQ , HasDSPNanoMips>;
+def : DSPSelectCCPat<PseudoCMPU_LT_QB_NM,    PseudoPICK_QB_NM, v4i8,  SETULT, HasDSPNanoMips>;
+def : DSPSelectCCPat<PseudoCMPU_LE_QB_NM,    PseudoPICK_QB_NM, v4i8,  SETULE, HasDSPNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMPU_EQ_QB_NM, PseudoPICK_QB_NM, v4i8,  SETNE , HasDSPNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMPU_LT_QB_NM, PseudoPICK_QB_NM, v4i8,  SETUGE, HasDSPNanoMips>;
+def : DSPSelectCCPatInv<PseudoCMPU_LE_QB_NM, PseudoPICK_QB_NM, v4i8,  SETUGT, HasDSPNanoMips>;

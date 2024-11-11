@@ -396,6 +396,15 @@ void foo() {
   i32_r = __builtin_mips_append(i32_a, i32_b, 16);
 // CHECK: call i32 @llvm.mips.append
 
+  v4i8_a = (v4i8) {1, 4, 10, 8};
+  v4i8_b = (v4i8) {1, 2, 100, 8};
+  __builtin_mips_cmpu_eq_qb(v4i8_a, v4i8_b);
+// CHECK: call void @llvm.mips.cmpu.eq.qb
+  __builtin_mips_cmpu_lt_qb(v4i8_a, v4i8_b);
+// CHECK: call void @llvm.mips.cmpu.lt.qb
+  __builtin_mips_cmpu_le_qb(v4i8_a, v4i8_b);
+// CHECK: call void @llvm.mips.cmpu.le.qb
+
   i32_r = __builtin_mips_cmpgu_eq_qb(v4i8_a, v4i8_b);
 // CHECK: call i32 @llvm.mips.cmpgu.eq.qb
   i32_r = __builtin_mips_cmpgu_lt_qb(v4i8_a, v4i8_b);

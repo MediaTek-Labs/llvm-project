@@ -137,6 +137,9 @@ precr_sra_r.ph.w,"@ %rt, %rs, %sa"  ,001000|GPR[rt](5)|GPR[rs](5)|sa(5u)        
 cmp.eq.ph      ,"@ %rs, %rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx           |0000000|101
 cmp.le.ph      ,"@ %rs, %rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx           |0010000|101
 cmp.lt.ph      ,"@ %rs, %rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx           |0001000|101
+cmpu.eq.qb     ,"@ %rs, %rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx           |1001000|101
+cmpu.le.qb     ,"@ %rs, %rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx           |1011000|101
+cmpu.lt.qb     ,"@ %rs, %rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx           |1010000|101
 rddsp          ,"@ %rt, %mask"      ,001000|GPR[rt](5)|mask(7u)             |00|011|001|111|111
 wrdsp          ,"@ %rt, %mask"      ,001000|GPR[rt](5)|mask(7u)             |01|011|001|111|111
 repl.ph        ,"@ %rt, %s"         ,001000|GPR[rt](5)|s(10l)                    |x|0000111|101

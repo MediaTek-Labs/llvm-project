@@ -1251,6 +1251,47 @@ entry:
 
 declare <4 x i8> @llvm.mips.precrqu.s.qb.ph(<2 x i16>, <2 x i16>) nounwind
 
+define i32 @test__builtin_mips_cmpu_eq_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
+entry:
+; CHECK: cmpu.eq.qb $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = bitcast i32 %a1.coerce to <4 x i8>
+  tail call void @llvm.mips.cmpu.eq.qb(<4 x i8> %0, <4 x i8> %1)
+  %2 = tail call i32 @llvm.mips.rddsp(i32 31)
+  ret i32 %2
+}
+
+declare void @llvm.mips.cmpu.eq.qb(<4 x i8>, <4 x i8>) nounwind
+
+declare i32 @llvm.mips.rddsp(i32) nounwind readonly
+
+define i32 @test__builtin_mips_cmpu_lt_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
+entry:
+; CHECK: cmpu.lt.qb $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = bitcast i32 %a1.coerce to <4 x i8>
+  tail call void @llvm.mips.cmpu.lt.qb(<4 x i8> %0, <4 x i8> %1)
+  %2 = tail call i32 @llvm.mips.rddsp(i32 31)
+  ret i32 %2
+}
+
+declare void @llvm.mips.cmpu.lt.qb(<4 x i8>, <4 x i8>) nounwind
+
+define i32 @test__builtin_mips_cmpu_le_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
+entry:
+; CHECK: cmpu.le.qb $
+
+  %0 = bitcast i32 %a0.coerce to <4 x i8>
+  %1 = bitcast i32 %a1.coerce to <4 x i8>
+  tail call void @llvm.mips.cmpu.le.qb(<4 x i8> %0, <4 x i8> %1)
+  %2 = tail call i32 @llvm.mips.rddsp(i32 31)
+  ret i32 %2
+}
+
+declare void @llvm.mips.cmpu.le.qb(<4 x i8>, <4 x i8>) nounwind
+
 define i32 @test__builtin_mips_cmpgu_eq_qb1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:
 ; CHECK: cmpgu.eq.qb $
@@ -1299,7 +1340,6 @@ entry:
 }
 
 declare void @llvm.mips.cmp.eq.ph(<2 x i16>, <2 x i16>) nounwind
-declare i32 @llvm.mips.rddsp(i32) nounwind readonly
 
 define i32 @test__builtin_mips_cmp_lt_ph1(i32 %i0, i32 %a0.coerce, i32 %a1.coerce) nounwind {
 entry:

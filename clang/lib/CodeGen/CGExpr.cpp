@@ -3917,7 +3917,8 @@ llvm::Value *CodeGenFunction::sourceLocMetadataValue(const Expr *E) {
   SourceLocation Loc = E->getExprLoc();
   // TODO: even invalid Loc can still have filename, line and column
   // should we implement extraction and DILocation generation?
-  llvm::DebugLoc DL = getDebugInfo()->SourceLocToDebugLoc(Loc);
+  llvm::DebugLoc DL = getDebugInfo()? getDebugInfo()->SourceLocToDebugLoc(Loc)
+    : llvm::DebugLoc();
   return llvm::MetadataAsValue::get(getLLVMContext(), DL.getAsMDNode());
 }
 

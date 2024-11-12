@@ -15,6 +15,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/CodeGen/WarnUBSanTrap.h"
+#include "llvm/Analysis/PostDominators.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/IRBuilder.h"
@@ -32,14 +33,35 @@ using namespace llvm;
 
 void WarnUBSanTrapPass::WarnUnguardedTrapInstr(Function &F, Value *DILocOp) {
   auto *DILoc = cast<MDNode>(cast<MetadataAsValue>(DILocOp)->getMetadata());
+  DebugLoc DL = DILoc->getNumOperands() != 0 ? DebugLoc(DILoc) : DebugLoc();
   DiagnosticInfoUnsupported Diag(F, "Operation overflow is not guarded",
-                                 DebugLoc(DILoc), DS_Warning);
+                                 DL, DS_Warning);
   DiagnosticPrinterRawOStream DP(errs());
   Diag.print(DP);
   errs() << "\n";
 }
 
-PreservedAnalyses WarnUBSanTrapPass::run(Module &M, ModuleAnalysisManager &AM) {
+void WarnUBSanTrapPass::WarnUnconditionalTraps(Module &M,
+                                               ModuleAnalysisManager &AM) {
+  Function *Trap = M.getFunction(Intrinsic::getName(Intrinsic::ubsantrap));
+  if (Trap)
+    for (Use &U : Trap->uses()) {
+      CallInst *CI = dyn_cast<CallInst>(U.getUser());
+      Function *F = CI->getFunction();
+      auto &FAM = (AM.getResult<FunctionAnalysisManagerModuleProxy>(M)
+                   .getManager());
+      auto &PDTR = FAM.getResult<PostDominatorTreeAnalysis>(*F);
+      if (PDTR.dominates(CI->getParent(), &(F->getEntryBlock()))) {
+        DiagnosticInfoUnsupported Diag(
+            *F, "Sanitizer trap will always be triggered",
+            CI->getDebugLoc(), DS_Warning);
+        DiagnosticPrinterRawOStream DP(errs());
+        Diag.print(DP);
+      }
+  }
+}
+
+bool WarnUBSanTrapPass::WarnUnguardedTraps(Module &M, ModuleAnalysisManager &AM) {
   int Change = false;
   StringRef TrapUniqueName = Intrinsic::getName(
       SuppressWarnedTraps ? Intrinsic::ubsantrap_unique_return
@@ -70,5 +92,12 @@ PreservedAnalyses WarnUBSanTrapPass::run(Module &M, ModuleAnalysisManager &AM) {
     TrapUnique->eraseFromParent();
     Change = true;
   }
+  return Change;
+}
+
+PreservedAnalyses WarnUBSanTrapPass::run(Module &M, ModuleAnalysisManager &AM) {
+  bool Change = WarnUnguardedTraps(M, AM);
+  if (!SuppressWarnedTraps)
+    WarnUnconditionalTraps(M, AM);
   return Change ? PreservedAnalyses::none() : PreservedAnalyses::all();
 }

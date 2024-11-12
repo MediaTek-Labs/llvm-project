@@ -15,6 +15,8 @@ namespace llvm {
 
 class WarnUBSanTrapPass : public PassInfoMixin<WarnUBSanTrapPass> {
   void WarnUnguardedTrapInstr(Function &F, Value *);
+  bool WarnUnguardedTraps(Module &M, ModuleAnalysisManager &AM);
+  void WarnUnconditionalTraps(Module &M, ModuleAnalysisManager &AM);
 
 public:
   PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);

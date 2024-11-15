@@ -215,6 +215,11 @@ void foo() {
   q31_r = __builtin_mips_shll_s_w(q31_a, 2);
 // CHECK: call i32 @llvm.mips.shll.s.w
 
+  i32_a = 0x12345678;
+  i32_b = 0x87654321;
+  i32_r = __builtin_mips_prepend(i32_a, i32_b, 16);
+// CHECK: call i32 @llvm.mips.prepend
+
   v4i8_a = (v4i8) {0x12, 0x45, 0x77, 0x99};
   v4i8_r = __builtin_mips_shra_qb(v4i8_a, 1);
 // CHECK: call <4 x i8> @llvm.mips.shra.qb
@@ -395,6 +400,11 @@ void foo() {
   i32_b = 0x87654321;
   i32_r = __builtin_mips_append(i32_a, i32_b, 16);
 // CHECK: call i32 @llvm.mips.append
+
+  i32_a = 0x12345678;
+  i32_b = 0x87654321;
+  i32_r = __builtin_mips_balign(i32_a, i32_b, 3);
+// CHECK: call i32 @llvm.mips.balign
 
   v4i8_a = (v4i8) {1, 4, 10, 8};
   v4i8_b = (v4i8) {1, 2, 100, 8};

@@ -365,6 +365,9 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool expandAlignNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
                      const MCSubtargetInfo *STI);
 
+  bool expandBAlignPrependNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+                       const MCSubtargetInfo *STI, bool IsAlign);
+
   bool expandAndiNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
                     const MCSubtargetInfo *STI);
 
@@ -3190,6 +3193,10 @@ MipsAsmParser::tryExpandInstruction(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     return expandSaaAddr(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   case Mips::ALIGN_NM:
     return expandAlignNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
+  case Mips::BALIGN_NM:
+    return expandBAlignPrependNM(Inst, IDLoc, Out, STI, true) ? MER_Fail : MER_Success;
+  case Mips::PREPEND_NM:
+    return expandBAlignPrependNM(Inst, IDLoc, Out, STI, false) ? MER_Fail : MER_Success;
   case Mips::PseudoANDI_NM:
     return expandAndiNM(Inst, IDLoc, Out, STI) ? MER_Fail : MER_Success;
   case Mips::PseudoLI_NM:
@@ -6447,6 +6454,48 @@ bool MipsAsmParser::expandAlignNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
     TOut.emitRRRI(Mips::EXTW_NM, rd, rs, rt, ((4 - bp) << 3), IDLoc, STI);
   else
     TOut.emitRR(Mips::MOVE_NM, rd, rt, IDLoc, STI);
+  return false;
+}
+
+
+/// Expand PREPEND as EXTW / MOVE
+/// Expand BALIGN as EXTW / PACKRL / MOVE
+bool MipsAsmParser::expandBAlignPrependNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
+				  const MCSubtargetInfo *STI,  bool IsAlign) {
+  assert(Inst.getNumOperands() == 3 && "expected three operands");
+  assert(Inst.getOperand(0).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(1).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(2).isImm() && "expected immediate operand kind");
+  if (IsAlign) {
+    assert(isUInt<2>(Inst.getOperand(2).getImm()) &&
+           "expected immediate operand [0..3]");
+  } else {
+    assert(isUInt<5>(Inst.getOperand(2).getImm()) &&
+           "expected immediate operand [0..31]");
+  }
+
+  MipsTargetStreamer &TOut = getTargetStreamer();
+  unsigned rt = Inst.getOperand(0).getReg();
+  unsigned rs = Inst.getOperand(1).getReg();
+  unsigned sa = Inst.getOperand(2).getImm();
+
+  if (sa != 0) {
+    if (IsAlign) {
+      switch (sa) {
+      case 2:
+        TOut.emitRRR(Mips::PACKRL_PH_NM, rt, rt, rs, IDLoc, STI);
+        break;
+      case 1:
+      case 3:
+        TOut.emitRRRI(Mips::EXTW_NM, rt, rs, rt, ((4 - sa) << 3), IDLoc, STI);
+        break;
+      default:
+        llvm_unreachable("unexpected balign shift amount");
+      }
+    } else
+    TOut.emitRRRI(Mips::EXTW_NM, rt, rs, rt, sa, IDLoc, STI);
+  } else
+    TOut.emitRR(Mips::MOVE_NM, rt, rt, IDLoc, STI);
   return false;
 }
 

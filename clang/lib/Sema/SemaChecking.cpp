@@ -3875,6 +3875,7 @@ bool Sema::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_addwc:
   case Mips::BI__builtin_mips_append:
   case Mips::BI__builtin_mips_bitrev:
+  case Mips::BI__builtin_mips_balign:
   case Mips::BI__builtin_mips_bposge32:
   case Mips::BI__builtin_mips_cmpgu_eq_qb:
   case Mips::BI__builtin_mips_cmpgu_le_qb:
@@ -3955,6 +3956,7 @@ bool Sema::CheckNanomipsBuiltinCpu(unsigned BuiltinID, CallExpr *TheCall) {
   case Mips::BI__builtin_mips_precrq_qb_ph:
   case Mips::BI__builtin_mips_precrq_rs_ph_w:
   case Mips::BI__builtin_mips_precrqu_s_qb_ph:
+  case Mips::BI__builtin_mips_prepend:
   case Mips::BI__builtin_mips_raddu_w_qb:
   case Mips::BI__builtin_mips_repl_ph:
   case Mips::BI__builtin_mips_repl_qb:

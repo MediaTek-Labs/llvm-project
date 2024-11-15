@@ -1755,3 +1755,23 @@ entry:
 }
 
 declare i32 @llvm.mips.bitrev(i32) nounwind readnone
+
+define i32 @test__builtin_mips_balign1(i32 %i0, i32 %a0, i32 %a1) nounwind readnone {
+entry:
+; CHECK: balign $a{{[0-9]+}}
+
+  %0 = tail call i32 @llvm.mips.balign(i32 %a0, i32 %a1, i32 1)
+  ret i32 %0
+}
+
+declare i32 @llvm.mips.balign(i32, i32, i32) nounwind readnone
+
+define i32 @test__builtin_mips_prepend1(i32 %i0, i32 %a0, i32 %a1) nounwind readnone {
+entry:
+; CHECK: prepend $a{{[0-9]+}}
+
+  %0 = tail call i32 @llvm.mips.prepend(i32 %a0, i32 %a1, i32 15)
+  ret i32 %0
+}
+
+declare i32 @llvm.mips.prepend(i32, i32, i32) nounwind readnone

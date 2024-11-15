@@ -2950,6 +2950,16 @@ def ALIGN_NM : NanoMipsAsmPseudoInst<(outs GPRNM32Opnd:$rd),
 			(ins GPRNM32Opnd:$rs, GPRNM32Opnd:$rt, uimm2_nm:$bp),
 			"align\t$rd, $rs, $rt, $bp">;
 
+def BALIGN_NM : NanoMipsAsmPseudoInst<(outs DSPRNMOpnd:$rd),
+			(ins DSPRNMOpnd:$rs, DSPRNMOpnd:$rt, uimm2_nm:$bp),
+			"balign\t$rd, $rs, $rt, $bp">,
+  BALIGN_DESC<NanoMipsRO_TYPES>;
+
+def PREPEND_NM : NanoMipsAsmPseudoInst<(outs DSPRNMOpnd:$rt),
+			(ins DSPRNMOpnd:$rs, uimm5:$sa, DSPRNMOpnd:$src),
+			"prepend\t$rt, $rs, $sa">,
+  PREPEND_DESC<NanoMipsRO_TYPES>;
+
 class ROTX_Enc : _Pool_P_U12<0b1101> {
   bits<5> rt;
   bits<5> rs;

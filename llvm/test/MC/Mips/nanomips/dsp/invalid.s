@@ -15,3 +15,5 @@
   wrdsp $5, 1024           # CHECK: :[[@LINE]]:13: error: expected 7-bit unsigned immediate
   shrl.ph $3, $4, 16       # CHECK: :[[@LINE]]:19: error: expected 4-bit unsigned immediate
   shrl.ph $3, $4, -1       # CHECK: :[[@LINE]]:19: error: expected 4-bit unsigned immediate
+  balign $a0, $a1, 4       # CHECK: :[[@LINE]]:20: error: expected 2-bit unsigned immediate
+  prepend $a0, $a1, 32     # CHECK: :[[@LINE]]:21: error: expected 5-bit unsigned immediate

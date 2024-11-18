@@ -358,12 +358,11 @@ public:
   bool getChangedThisIteration() { return changedThisIteration; }
   void resetChanged() { changed = false; }
   void resetChangedThisIteration() { changedThisIteration = false; }
-  virtual SmallVector<NewInsnToWrite, 3>
-  getTransformInsns(Relocation *reloc,
-                    const NanoMipsTransformTemplate *transformTemplate,
-                    const NanoMipsInsProperty *insProperty,
-                    const NanoMipsRelocProperty *relocProperty,
-                    InputSection *isec, uint64_t insn, uint32_t relNum) const;
+  virtual SmallVector<NewInsnToWrite, 3> getTransformInsns(
+      Relocation *reloc, const NanoMipsTransformTemplate *transformTemplate,
+      const NanoMipsInsProperty *insProperty,
+      const NanoMipsRelocProperty *relocProperty, InputSection *isec,
+      uint64_t insn, uint32_t relNum, unsigned relocSize) const;
   std::string getTypeAsString() const;
 
 protected:
@@ -399,7 +398,7 @@ public:
       const NanoMipsTransformTemplate *transformTemplate,
       const NanoMipsInsProperty *insProperty,
       const NanoMipsRelocProperty *relocProperty, InputSection *isec,
-      uint64_t insn, uint32_t relNum) const override;
+      uint64_t insn, uint32_t relNum, unsigned relocSize) const override;
 
 private:
   const NanoMipsTransformTemplate *

@@ -419,7 +419,7 @@ SmallVector<NewInsnToWrite, 3> NanoMipsTransform::getTransformInsns(
     Relocation *reloc, const NanoMipsTransformTemplate *transformTemplate,
     const NanoMipsInsProperty *insProperty,
     const NanoMipsRelocProperty *relocProperty, InputSection *isec,
-    uint64_t insn, uint32_t relNum) const {
+    uint64_t insn, uint32_t relNum, unsigned relocSize) const {
 
   uint32_t tReg = 0;
   uint32_t sReg = 0;
@@ -508,7 +508,7 @@ SmallVector<NewInsnToWrite, 3> NanoMipsTransform::getTransformInsns(
   uint32_t offset = reloc->offset - (relocProperty->getInstSize() == 6 ? 2 : 0);
 
   // Whether we are inserting a new reloc, or just changing the existing one
-  bool newReloc = false;
+  int newRelocsCnt = 0;
   ArrayRef<NanoMipsInsTemplate> instructionList = transformTemplate->getInsns();
   for (auto &insTemplate : instructionList) {
     uint64_t newInsn = insTemplate.getInstruction(tReg, sReg);
@@ -519,14 +519,14 @@ SmallVector<NewInsnToWrite, 3> NanoMipsTransform::getTransformInsns(
              "There is a reloc for a DISCARD relaxation!");
 
       uint32_t newROffset = (insTemplate.getSize() == 6 ? offset + 2 : offset);
-      if (!newReloc) {
+      if (!newRelocsCnt) {
         reloc->offset = newROffset;
         reloc->type = newRelType;
         // Only param needed is relType, other ones are not important for
         // nanoMIPS
         reloc->expr = ctx.target->getRelExpr(newRelType, *reloc->sym,
                                          isec->content().data() + newROffset);
-        newReloc = true;
+        ++newRelocsCnt;
       } else {
         Relocation newRelocation;
         newRelocation.addend = reloc->addend;
@@ -541,7 +541,22 @@ SmallVector<NewInsnToWrite, 3> NanoMipsTransform::getTransformInsns(
         isec->relocations.push_back(newRelocation);
         // Because we add a relocation, it might invalidate our previous reloc
         reloc = &isec->relocations[relNum];
+        ++newRelocsCnt;
       }
+    }
+
+    // Need to increase reloc section sizes in output section
+    // if --emit-relocs is called
+    if (ctx.arg.emitRelocs) {
+      InputSectionBase *relocIsec = isec->file->getSections()[isec->relSecIdx];
+      // TODO: relocSize, is a constant, can be used as a template parameter
+      // or a constant function argument, or increase size after transformations
+      // -1 is because the first relocation has replaced the previous reloc
+      int sizeToAdd = (newRelocsCnt - 1) * relocSize;
+      // Note: It should be okay to just increase the size of reloc sections
+      // as their contents are not used anymore, relocations vector from input
+      // section is used to write the relocations (if emit relocs is used)
+      relocIsec->size += sizeToAdd;
     }
 
     newInsns.emplace_back(newInsn, offset, insTemplate.getSize());
@@ -979,13 +994,13 @@ SmallVector<NewInsnToWrite, 3> NanoMipsTransformExpand::getTransformInsns(
     Relocation *reloc, const NanoMipsTransformTemplate *transformTemplate,
     const NanoMipsInsProperty *insProperty,
     const NanoMipsRelocProperty *relocProperty, InputSection *isec,
-    uint64_t insn, uint32_t relNum) const {
+    uint64_t insn, uint32_t relNum, unsigned relocSize) const {
 
   RelType oldRelType = reloc->type;
   SmallVector<NewInsnToWrite, 3> newInsns =
       NanoMipsTransform::getTransformInsns(reloc, transformTemplate,
                                            insProperty, relocProperty, isec,
-                                           insn, relNum);
+                                           insn, relNum, relocSize);
 
   // We are adding a symbol for branch over the bc instruction, as this
   // generates a negative branch + bc32 and the negative branch needs to skip
@@ -1323,8 +1338,12 @@ void NanoMipsTransformController<ELFT>::scanAndTransform(
     // Transform
     // Note: Reloc may be invalidated, but we don't need it from this point on
     // To restore it use its relNum, not the one after transform as it changes
+    const unsigned relocSize = sec->template relsOrRelas<ELFT>().areRelocsRel()
+                                   ? sizeof(typename ELFT::Rel)
+                                   : sizeof(typename ELFT::Rela);
     SmallVector<NewInsnToWrite, 3> newInsns = currentState->getTransformInsns(
-        &reloc, transformTemplate, insProperty, relocProp, sec, insn, relNum);
+        &reloc, transformTemplate, insProperty, relocProp, sec, insn, relNum,
+        relocSize);
 
     for (auto &newInsn : newInsns) {
       writeInsn<ELFT::Endianness>(ctx, newInsn.insn, sec->content(),

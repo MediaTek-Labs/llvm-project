@@ -113,6 +113,9 @@ public:
       JumpTableEntryInfo[Idx]->Signed = Sign;
     }
   }
+  unsigned getCalleeSavedStackSize();
+  void setCalleeSavedStackSize(unsigned Size);
+  bool isTwoStepStackSetup(MachineFunction &MF);
 
 private:
   virtual void anchor();
@@ -173,6 +176,7 @@ private:
   };
 
   SmallVector<NanoMipsJumpTableInfo *, 2> JumpTableEntryInfo;
+  unsigned CalleeSavedStackSize = 0;
 };
 
 } // end namespace llvm

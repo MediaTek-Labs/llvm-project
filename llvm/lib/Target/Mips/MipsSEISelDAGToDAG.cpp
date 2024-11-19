@@ -493,7 +493,6 @@ bool MipsSEDAGToDAGISel::selectIntAddrLSL2MM(SDValue Addr, SDValue &Base,
 
 bool MipsSEDAGToDAGISel::selectIntAddrSImm9(SDValue Addr, SDValue &Base,
                                             SDValue &Offset) const {
-  // Don't allow frame indices for now due to limted offsets bits.
   return selectAddrFrameIndexOffset(Addr, Base, Offset, 9) &&
          !isa<FrameIndexSDNode>(Base);
 }

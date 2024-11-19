@@ -51,6 +51,8 @@ struct NMLoadStoreOpt : public MachineFunctionPass {
   bool isReturn(MachineInstr &MI);
   bool isTailCall(MachineInstr &MI);
   bool isMustTailCall(MachineInstr &MI);
+  bool isFramePointerAssignment(MachineInstr &MI);
+  bool isStackPointerInsZero(MachineInstr &MI);
   bool isStackPointerAdjustment(MachineInstr &MI, bool IsRestore);
   bool isCalleeSavedLoadStore(MachineInstr &MI, bool IsRestore);
   void sortCalleeSavedLoadStoreList(InstrList &LoadStoreList);
@@ -80,6 +82,42 @@ bool NMLoadStoreOpt::runOnMachineFunction(MachineFunction &Fn) {
   }
 
   return Modified;
+}
+
+bool NMLoadStoreOpt::isFramePointerAssignment(MachineInstr &MI) {
+  if (MI.getOpcode() != Mips::ADDIU_NM &&
+      MI.getOpcode() != Mips::ADDIUNEG_NM)
+    return false;
+  Register DstReg = MI.getOperand(0).getReg();
+  Register SrcReg = MI.getOperand(1).getReg();
+  if (DstReg != Mips::FP_NM || SrcReg != Mips::SP_NM)
+    return false;
+  int64_t Imm = MI.getOperand(2).getImm();
+  if (Imm >= 0)
+    return false;
+  Imm = std::abs(Imm);
+  // Fp has to be doubleword aligned.
+  if (Imm & 0x7)
+    return false;
+  return true;
+}
+
+bool NMLoadStoreOpt::isStackPointerInsZero(MachineInstr &MI) {
+  if (MI.getOpcode() != Mips::ADDIU_NM &&
+      MI.getOpcode() != Mips::ADDIUNEG_NM)
+    return false;
+  Register DstReg = MI.getOperand(0).getReg();
+  Register Src2Reg = MI.getOperand(4).getReg();
+  if (DstReg != Mips::SP_NM || Src2Reg != Mips::SP_NM)
+    return false;
+  Register Src1Reg = MI.getOperand(1).getReg();
+  if (Src1Reg != Mips::ZERO && Src1Reg != Mips::ZERO_NM)
+    return false;
+  int64_t ImmPos = MI.getOperand(2).getImm();
+  int64_t ImmSize = MI.getOperand(3).getImm();
+  if (ImmPos != 0 || ImmSize <= 0)
+    return false;
+  return true;
 }
 
 bool NMLoadStoreOpt::isStackPointerAdjustment(MachineInstr &MI,
@@ -287,8 +325,12 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
       }
 
       // CFI and debug instructions don't break the sequence.
-      if (MI.isCFIInstruction() || MI.isDebugInstr())
+      if (   MI.isCFIInstruction()
+          || MI.isDebugInstr()
+          || isFramePointerAssignment(MI) // hasFP(..)
+          || isStackPointerInsZero(MI)) {
         continue;
+      }
 
       // Sequence has been broken, no need to continue. We either reached the
       // end or found nothing.

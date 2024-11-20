@@ -2244,6 +2244,15 @@ template <class ELFT> void Writer<ELFT>::addStartEndSymbols() {
   // create an empty PT_ARM_EXIDX.
   if (OutputSection *sec = findSection(ctx, ".ARM.exidx"))
     define("__exidx_start", "__exidx_end", sec);
+  
+  if (ctx.arg.emachine == EM_NANOMIPS) {
+    if (OutputSection *sec = findSection(ctx, ".eh_frame")) {
+      define("__eh_frame_start", "__eh_frame_end", sec);
+  
+    if (OutputSection *sec = findSection(ctx, ".eh_frame_hdr"))
+      define("__eh_frame_hdr_start", "__eh_frame_hdr_end", sec);
+    }
+  }  
 }
 
 // If a section name is valid as a C identifier (which is rare because of

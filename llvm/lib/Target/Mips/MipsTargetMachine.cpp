@@ -92,6 +92,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTarget() {
   initializeMipsMulMulBugFixPass(*PR);
   initializeMipsDAGToDAGISelLegacyPass(*PR);
   initializeRedundantCopyEliminationPass(*PR);
+  initializeNMDspPeepholePass(*PR);
   initializeNMLoadStoreOptPass(*PR);
   initializeNMMoveOptPass(*PR);
 }
@@ -368,6 +369,8 @@ bool MipsPassConfig::addInstSelector() {
 
 void MipsPassConfig::addPreRegAlloc() {
   addPass(createMipsOptimizePICCallPass());
+  if (getMipsSubtarget().hasNanoMips() && getMipsSubtarget().hasDSP())
+    addPass(createNanoMipsDspPeepholePass());
 }
 
 void MipsPassConfig::addPostRegAlloc() {

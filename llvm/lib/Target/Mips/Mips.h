@@ -52,6 +52,7 @@ FunctionPass *createMipsPreLegalizeCombiner();
 FunctionPass *createMipsPostLegalizeCombiner(bool IsOptNone);
 FunctionPass *createMipsMulMulBugPass();
 FunctionPass *createNanoMipsOptimizeJumpTablesPass();
+FunctionPass *createNanoMipsDspPeepholePass();
 FunctionPass *createNanoMipsLoadStoreOptimizerPass();
 FunctionPass *createNanoMipsMoveOptimizerPass();
 FunctionPass *createNanoMipsRegisterReAllocationPass();
@@ -73,6 +74,7 @@ void initializeNMOptimizeJumpTablesPass (PassRegistry&);
 void initializeNanoMipsRegisterReAllocPass(PassRegistry &);
 void initializeRedundantCopyEliminationPass(PassRegistry&);
 void initializeNanoMipsCodeGenPreparePass(PassRegistry &);
+void initializeNMDspPeepholePass(PassRegistry &);
 void initializeNMLoadStoreOptPass(PassRegistry&);
 void initializeNMMoveOptPass(PassRegistry&);
 } // namespace llvm

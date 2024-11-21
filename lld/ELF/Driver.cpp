@@ -50,6 +50,7 @@
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringSwitch.h"
+#include "llvm/BinaryFormat/ELF.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/LTO/LTO.h"
 #include "llvm/Object/Archive.h"
@@ -2069,6 +2070,20 @@ void LinkerDriver::createFiles(opt::InputArgList &args) {
     readLinkerScript(ctx, *defaultScript);
   if (files.empty() && !hasInput && errCount(ctx) == 0)
     ErrAlways(ctx) << "no input files";
+
+  // Compatibility with nanoMIPS linker scripts which use elf32-tradlittlemips
+  // and elf32-tradbigmips as output formats
+  if (ctx.arg.bfdname == "elf32-tradlittlemips" ||
+    ctx.arg.bfdname == "elf32-tradbigmips") {
+  for (const auto &file : files) {
+    InputFile *f = file.get();
+    if (f->ekind == ELFNoneKind)
+      continue;
+    if (f->emachine == EM_NANOMIPS)
+      ctx.arg.emachine = EM_NANOMIPS;
+    break;
+  }
+}  
 }
 
 // If -m <machine_type> was not given, infer it from object files.

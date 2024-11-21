@@ -483,7 +483,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   // Helper function to check whether immediate value needs 48-bit encoding
   // transform
   bool needsHw110880Xform(unsigned Imm) {
-    return (getSTI().hasFeature(Mips::FeatureXformHw110880) &&
+    return (getSTI().hasFeature(Mips::FeatureXformNMipsHW110880) &&
 	    (Imm & 0x50016400) == 0x50012400 &&
 	    (((Imm >> 24) & 0x7) == 0x1 || ((Imm >> 24) & 0x2) == 0x2));
   }

@@ -81,17 +81,31 @@ XformHw110880("nmips-fix-hw110880", cl::Hidden,
 
 cl::opt<bool> NMipsGuardKCFIPrefetch("nmips-guard-kcfi-prefetch",
 				     cl::desc("On NanoMips, guard KCFI signatures against prefetch"),
-				     cl::init(true));
+				     cl::init(false));
+
+cl::opt<bool> NMipsGuardFunctionEndsHW110880(
+    "nmips-hw110880-guard-function-ends",
+    cl::desc("On NanoMips, guard function ends"
+             " to avoid prefetching past the"
+             " function"),
+    cl::init(true));
+
+cl::opt<bool> NMipsAlwaysGuardFunctionEnds(
+    "nmips-always-guard-function-ends",
+    cl::desc("On NanoMips, guard function ends"
+             " to avoid prefetching past the"
+             " function"),
+    cl::init(false));
 
 cl::opt<int> ScatterNopsSeed("scatter-nops-seed",
 			     cl::desc("Pseudo-randomly scatter nops between functions to fuzz"
 				      " cache occupancy"),
 			     cl::init(0));
 
-cl::opt<int> ScatterNopsDensity("scatter-nops-density",
-				cl::desc("Approximate percentage of functions to pad with nop"),
-				cl::value_desc("percentage"),
-				cl::init(0));
+cl::opt<unsigned int> ScatterNopsDensity("scatter-nops-density",
+    cl::desc("Approximate percentage of functions to pad with nop"),
+    cl::value_desc("percentage"),
+    cl::init(0));
 
 void MipsAsmPrinter::emitJumpTableInfo() {
   if (!Subtarget->hasNanoMips() || Subtarget->useAbsoluteJumpTables() ) {
@@ -267,7 +281,7 @@ bool MipsAsmPrinter::tryEmitHw110880Xform(MCStreamer &OutStreamer,
   if (!XformHw110880)
     return false;
 
-  if (!Subtarget->hasXformHw110880())
+  if (!Subtarget->xformNMipsHW110880())
     return false;
 
   if (MI->getOpcode() != Mips::PseudoLI_NM &&
@@ -303,7 +317,7 @@ bool MipsAsmPrinter::tryEmitHw110880Xform(MCStreamer &OutStreamer,
 
   MCInst Load;
   Load.setOpcode(MI->getOpcode() == Mips::PseudoLI_NM
-                 ? Mips::LI48_NM
+                 ? static_cast<unsigned>(Mips::LI48_NM)
                  : MI->getOpcode());
   for (int i = 0; i < LastOp; i++)
     Load.addOperand(MCOperand::createReg(MI->getOperand(i).getReg()));
@@ -794,6 +808,46 @@ void MipsAsmPrinter::emitFunctionBodyStart() {
 void MipsAsmPrinter::emitFunctionBodyEnd() {
   MipsTargetStreamer &TS = getTargetStreamer();
 
+  // Check if we need to insert a guard at the end of functions to
+  // avoid dispatching past the function.
+  if ((NMipsGuardFunctionEndsHW110880 && Subtarget->xformNMipsHW110880())
+      || NMipsAlwaysGuardFunctionEnds) {
+    auto NeedsGuard  =  [](MachineBasicBlock &MBB) {
+      for (auto MII = MBB.instr_rbegin(); MII != MBB.instr_rend(); ++MII) {
+        MachineInstr &MI = *MII;
+        unsigned OpCode = MI.getOpcode();
+        if (MI.isDebugInstr())
+          continue;
+        if (MI.isCall() && OpCode != Mips::TAILCALL_NM) {
+          // Calls will need a guard due to the hardware return prediction stack:
+          //   balc __assert_fail
+          //   <data>:
+          // can allow a mispredicted 'jr ra' to prefetch from <data>
+          // Tail calls don't provoke this because they don't set the
+          // return address register.
+          return true;
+        } else if (MI.isReturn() || MI.isUnconditionalBranch()
+            || OpCode == Mips::RESTOREJRC16_NM
+            || OpCode == Mips::RESTOREJRC_NM) {
+          // Known-good returns and unconditional branches
+          return false;
+        }
+        return true;
+      }
+      return true;
+    };
+
+    if (NeedsGuard(MF->back())) {
+      MCSymbol *Label = OutContext.createTempSymbol();
+      OutStreamer->emitLabel(Label);
+      MCInst GuardBC;
+      GuardBC.setOpcode(Mips::BC16_NM);
+      const MCExpr *LabelRef = MCSymbolRefExpr::create(Label, OutContext);
+      GuardBC.addOperand(MCOperand::createExpr(LabelRef));
+      EmitToStreamer(*OutStreamer, GuardBC);
+    }
+  }
+
   // There are instruction for this macros, but they must
   // always be at the function end, and we can't emit and
   // break with BB logic.
@@ -802,6 +856,7 @@ void MipsAsmPrinter::emitFunctionBodyEnd() {
     TS.emitDirectiveSetMacro();
     TS.emitDirectiveSetReorder();
   }
+
   TS.emitDirectiveEnd(CurrentFnSym->getName());
   // Make sure to terminate any constant pools that were at the end
   // of the function.
@@ -1586,7 +1641,6 @@ void MipsAsmPrinter::PrintDebugValueComment(const MachineInstr *MI,
 void MipsAsmPrinter::emitKCFITypeId(const MachineFunction &MF) {
   const Function &F = MF.getFunction();
   if (const MDNode *MD = F.getMetadata(LLVMContext::MD_kcfi_type)) {
-    ConstantInt *TypeID = mdconst::extract<ConstantInt>(MD->getOperand(0));
     if (Subtarget->hasNanoMips()) {
 
       if (NMipsGuardKCFIPrefetch) {

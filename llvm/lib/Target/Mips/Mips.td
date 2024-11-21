@@ -232,8 +232,8 @@ def FeatureUseIndirectJumpsHazard : SubtargetFeature<"use-indirect-jump-hazard",
 
 def FeaturePCRel : SubtargetFeature<"pcrel", "UsePCRel", "true",
                                     "Use PC-relative addressing mode for address calculations">;
-def FeatureXformHw110880 : SubtargetFeature<"fix-hw110880", "HasXformHw110880", "true",
-					"Avoid specific 48-bit instruction patterns [hw110880]">;
+def FeatureXformNMipsHW110880 : SubtargetFeature<"fix-hw110880", "XformNMipsHW110880", "true",
+                                        "Avoid specific 48-bit instruction patterns [hw110880]">;
 
 def Feature64BitTimeT : SubtargetFeature<"nmips-64bit-time_t", "Use64BitTimeT", "true",
 					"Set to use 64-bit time_t for Y2k38 workaround">;

@@ -219,7 +219,8 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
   // PC-relative addressing mode (nanoMIPS only).
   bool UsePCRel = false;
 
-  bool HasXformHw110880 = false;
+  // Software work-arounds
+  bool XformNMipsHW110880 = false;
 
   // Use 64-bit time_t
   bool Use64BitTimeT = true;
@@ -379,7 +380,7 @@ public:
 
   bool usePCRel() const { return UsePCRel; }
 
-  bool hasXformHw110880() const { return HasXformHw110880; }
+  bool xformNMipsHW110880() const { return XformNMipsHW110880; }
 
   bool enableLongBranchPass() const {
     return !hasNanoMips() && (hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32());

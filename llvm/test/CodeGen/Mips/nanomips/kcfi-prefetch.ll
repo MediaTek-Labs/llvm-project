@@ -1,5 +1,5 @@
-; RUN: llc -mtriple=nanomips -asm-show-inst < %s | FileCheck --check-prefixes=CHECK,ENABLED %s
-; RUN: llc -mtriple=nanomips -nmips-guard-kcfi-prefetch=false -asm-show-inst < %s | FileCheck --check-prefixes=CHECK,DISABLED %s
+; RUN: llc -mtriple=nanomips -nmips-guard-kcfi-prefetch=true -asm-show-inst < %s | FileCheck --check-prefixes=CHECK,ENABLED %s
+; RUN: llc -mtriple=nanomips -asm-show-inst < %s | FileCheck --check-prefixes=CHECK,DISABLED %s
 
 ; ModuleID = 'signatures.bc'
 ;source_filename = "signatures.c"

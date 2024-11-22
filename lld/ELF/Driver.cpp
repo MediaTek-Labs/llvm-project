@@ -244,8 +244,18 @@ bool LinkerDriver::tryAddFatLTOFile(MemoryBufferRef mb, StringRef archiveName,
   return true;
 }
 
+// Adds a file to the end or beginning of the file vector
+inline static void addFileToVec(llvm::SmallVector<std::unique_ptr<InputFile>, 0> &files,
+  std::unique_ptr<InputFile> file, bool toBeginning) {
+  if (LLVM_UNLIKELY(toBeginning)) {
+    files.insert(files.begin(), std::move(file));
+  } else {
+    files.push_back(std::move(file));
+  }
+}
+
 // Opens a file and create a file object. Path has to be resolved already.
-void LinkerDriver::addFile(StringRef path, bool withLOption) {
+void LinkerDriver::addFile(StringRef path, bool withLOption, bool toBeginning) {
   using namespace sys::fs;
 
   std::optional<MemoryBufferRef> buffer = readFile(ctx, path);
@@ -254,7 +264,7 @@ void LinkerDriver::addFile(StringRef path, bool withLOption) {
   MemoryBufferRef mbref = *buffer;
 
   if (ctx.arg.formatBinary) {
-    files.push_back(std::make_unique<BinaryFile>(ctx, mbref));
+    addFileToVec(files, std::make_unique<BinaryFile>(ctx, mbref), toBeginning);
     return;
   }
 
@@ -263,6 +273,10 @@ void LinkerDriver::addFile(StringRef path, bool withLOption) {
     readLinkerScript(ctx, mbref);
     return;
   case file_magic::archive: {
+    if (LLVM_UNLIKELY(toBeginning))
+      error(
+          "Adding archive files with STARTUP directive not supported, file: " +
+          path);
     auto members = getArchiveMembers(ctx, mbref);
     if (inWholeArchive) {
       for (const std::pair<MemoryBufferRef, uint64_t> &p : members) {
@@ -321,15 +335,15 @@ void LinkerDriver::addFile(StringRef path, bool withLOption) {
     auto f = std::make_unique<SharedFile>(
         ctx, mbref, withLOption ? path::filename(path) : path);
     f->init();
-    files.push_back(std::move(f));
+    addFileToVec(files, std::move(f), toBeginning);
     return;
   }
   case file_magic::bitcode:
-    files.push_back(std::make_unique<BitcodeFile>(ctx, mbref, "", 0, inLib));
+    addFileToVec(files, std::make_unique<BitcodeFile>(ctx, mbref, "", 0, inLib), toBeginning);
     break;
   case file_magic::elf_relocatable:
     if (!tryAddFatLTOFile(mbref, "", 0, inLib))
-      files.push_back(createObjFile(ctx, mbref, "", inLib));
+      addFileToVec(files, createObjFile(ctx, mbref, "", inLib), toBeginning);
     break;
   default:
     ErrAlways(ctx) << path << ": unknown file type";
@@ -339,7 +353,7 @@ void LinkerDriver::addFile(StringRef path, bool withLOption) {
 // Add a given library by searching it from input search paths.
 void LinkerDriver::addLibrary(StringRef name) {
   if (std::optional<std::string> path = searchLibrary(ctx, name))
-    addFile(ctx.saver.save(*path), /*withLOption=*/true);
+    addFile(ctx.saver.save(*path), /*withLOption=*/true, /*toBeginning=*/false);
   else
     ctx.e.error("unable to find library -l" + name, ErrorTag::LibNotFound,
                 {name});
@@ -1965,7 +1979,7 @@ void LinkerDriver::createFiles(opt::InputArgList &args) {
       hasInput = true;
       break;
     case OPT_INPUT:
-      addFile(arg->getValue(), /*withLOption=*/false);
+      addFile(arg->getValue(), /*withLOption=*/false, /*toBeginning=*/false);
       hasInput = true;
       break;
     case OPT_defsym: {

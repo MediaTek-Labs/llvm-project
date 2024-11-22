@@ -55,7 +55,7 @@ public:
   void readDefsym();
 
 private:
-  void addFile(StringRef path);
+  void addFile(StringRef path, bool toBeginning);
 
   void readAsNeeded();
   void readEntry();
@@ -63,6 +63,7 @@ private:
   void readGroup();
   void readInclude();
   void readInput();
+  void readStartupInput();
   void readMemory();
   void readOutput();
   void readOutputArch();
@@ -131,6 +132,9 @@ private:
   // If we are currently parsing a PROVIDE|PROVIDE_HIDDEN command,
   // then this member is set to the PROVIDE symbol name.
   std::optional<llvm::StringRef> activeProvideSym;
+
+  // Two startup directives don't make sense, error if this happens
+  bool seenStartup = false;
 };
 } // namespace
 
@@ -270,6 +274,8 @@ void ScriptParser::readLinkerScript() {
       readSearchDir();
     } else if (tok == "SECTIONS") {
       readSections();
+    } else if (tok == "STARTUP") {
+      readStartupInput();
     } else if (tok == "TARGET") {
       readTarget();
     } else if (tok == "VERSION") {
@@ -312,12 +318,12 @@ void ScriptParser::readNoCrossRefs(bool to) {
     ctx.script->noCrossRefs.push_back(std::move(cmd));
 }
 
-void ScriptParser::addFile(StringRef s) {
+void ScriptParser::addFile(StringRef s, bool toBeginning) {
   if (curBuf.isUnderSysroot && s.starts_with("/")) {
     SmallString<128> pathData;
     StringRef path = (ctx.arg.sysroot + s).toStringRef(pathData);
     if (sys::fs::exists(path))
-      ctx.driver.addFile(ctx.saver.save(path), /*withLOption=*/false);
+      ctx.driver.addFile(ctx.saver.save(path), /*withLOption=*/false, toBeginning);
     else
       setError("cannot find " + s + " inside " + ctx.arg.sysroot);
     return;
@@ -325,14 +331,14 @@ void ScriptParser::addFile(StringRef s) {
 
   if (s.starts_with("/")) {
     // Case 1: s is an absolute path. Just open it.
-    ctx.driver.addFile(s, /*withLOption=*/false);
+    ctx.driver.addFile(s, /*withLOption=*/false, toBeginning);
   } else if (s.starts_with("=")) {
     // Case 2: relative to the sysroot.
     if (ctx.arg.sysroot.empty())
-      ctx.driver.addFile(s.substr(1), /*withLOption=*/false);
+      ctx.driver.addFile(s.substr(1), /*withLOption=*/false, toBeginning);
     else
       ctx.driver.addFile(ctx.saver.save(ctx.arg.sysroot + "/" + s.substr(1)),
-                         /*withLOption=*/false);
+                         /*withLOption=*/false, toBeginning);
   } else if (s.starts_with("-l")) {
     // Case 3: search in the list of library paths.
     ctx.driver.addLibrary(s.substr(2));
@@ -344,17 +350,17 @@ void ScriptParser::addFile(StringRef s) {
       SmallString<0> path(directory);
       sys::path::append(path, s);
       if (sys::fs::exists(path)) {
-        ctx.driver.addFile(path, /*withLOption=*/false);
+        ctx.driver.addFile(path, /*withLOption=*/false, toBeginning);
         return;
       }
     }
     // Then search in the current working directory.
     if (sys::fs::exists(s)) {
-      ctx.driver.addFile(s, /*withLOption=*/false);
+      ctx.driver.addFile(s, /*withLOption=*/false, toBeginning);
     } else {
       // Finally, search in the list of library paths.
       if (std::optional<std::string> path = findFromSearchPaths(ctx, s))
-        ctx.driver.addFile(ctx.saver.save(*path), /*withLOption=*/true);
+        ctx.driver.addFile(ctx.saver.save(*path), /*withLOption=*/true, toBeginning);
       else
         setError("unable to find " + s);
     }
@@ -366,7 +372,7 @@ void ScriptParser::readAsNeeded() {
   bool orig = ctx.arg.asNeeded;
   ctx.arg.asNeeded = true;
   while (auto tok = till(")"))
-    addFile(unquote(tok));
+    addFile(unquote(tok), /*toBeginning=*/false);
   ctx.arg.asNeeded = orig;
 }
 
@@ -416,8 +422,20 @@ void ScriptParser::readInput() {
     if (tok == "AS_NEEDED")
       readAsNeeded();
     else
-      addFile(unquote(tok));
+      addFile(unquote(tok), /*toBeginning=*/false);
   }
+}
+
+// Works similar to the INPUT directive, but the file specified
+// in STARTUP is put as the first file to be parsed. Doesn't work
+// for archive files (error is emitted then).
+void ScriptParser::readStartupInput() {
+  if (this->seenStartup)
+    setError("multiple STARTUP directives seen");
+  this->seenStartup = true;
+  expect("(");
+  addFile(unquote(next()), /*toBeginning=*/true);
+  expect(")");
 }
 
 void ScriptParser::readOutput() {

@@ -271,6 +271,58 @@ private:
 };
 
 //===----------------------------------------------------------------------===//
+//                    PlatformLock Implementation
+//===----------------------------------------------------------------------===//
+
+/// InitBytePlatformLock - Inter-thread synchronization managed by a global 
+/// platform specific lock.
+extern "C" void cxa_guard_lock(void);
+extern "C" void cxa_guard_unlock(void);
+
+struct InitBytePlatformLock {
+  InitBytePlatformLock() = delete;
+  InitBytePlatformLock(InitBytePlatformLock const&) = delete;
+  InitBytePlatformLock& operator=(InitBytePlatformLock const&) = delete;
+
+  explicit InitBytePlatformLock(uint8_t* _init_byte_address, uint32_t*) : init_byte_address(_init_byte_address) {}
+
+  /// The init byte portion of cxa_guard_acquire. Returns true if
+  /// initialization has already been completed.
+  bool acquire() {
+    if (*init_byte_address == COMPLETE_BIT)
+      return true;
+
+    cxa_guard_lock();
+
+    if (*init_byte_address == COMPLETE_BIT) {
+      cxa_guard_unlock();
+      return true;
+    }
+
+    if (*init_byte_address & PENDING_BIT)
+      ABORT_WITH_MESSAGE("__cxa_guard_acquire detected recursive initialization");
+
+    *init_byte_address = PENDING_BIT;
+    return false;
+  }
+
+  /// The init byte portion of cxa_guard_release.
+  void release() { 
+      *init_byte_address = COMPLETE_BIT; 
+      cxa_guard_unlock();
+  }
+  /// The init byte portion of cxa_guard_abort.
+  void abort() { 
+      *init_byte_address = UNSET; 
+      cxa_guard_unlock();
+  }
+
+private:
+  /// The address of the byte used during initialization.
+  uint8_t* const init_byte_address;
+};
+
+//===----------------------------------------------------------------------===//
 //                     Global Mutex Implementation
 //===----------------------------------------------------------------------===//
 
@@ -602,6 +654,9 @@ public:
 /// synchronization.
 using NoThreadsGuard = GuardObject<InitByteNoThreads>;
 
+/// PlatformLockGuard - Manages initialization using a platform specific global lock.
+using PlatformLockGuard = GuardObject<InitBytePlatformLock>;
+
 /// GlobalMutexGuard - Manages initialization using a global mutex and
 /// condition variable.
 template <class Mutex, class CondVar, Mutex& global_mutex, CondVar& global_cond,
@@ -625,7 +680,7 @@ struct GlobalStatic {
 template <class T>
 _LIBCPP_CONSTINIT T GlobalStatic<T>::instance = {};
 
-enum class Implementation { NoThreads, GlobalMutex, Futex };
+enum class Implementation { NoThreads, GlobalMutex, Futex, PlatformLock };
 
 template <Implementation Impl>
 struct SelectImplementation;
@@ -633,6 +688,11 @@ struct SelectImplementation;
 template <>
 struct SelectImplementation<Implementation::NoThreads> {
   using type = NoThreadsGuard;
+};
+
+template <>
+struct SelectImplementation<Implementation::PlatformLock> {
+  using type = PlatformLockGuard;
 };
 
 template <>
@@ -651,6 +711,8 @@ struct SelectImplementation<Implementation::Futex> {
 constexpr Implementation CurrentImplementation =
 #if defined(_LIBCXXABI_HAS_NO_THREADS)
     Implementation::NoThreads;
+#elif defined(_LIBCXXABI_USE_PLATFORM_LOCK)
+    Implementation::PlatformLock;
 #elif defined(_LIBCXXABI_USE_FUTEX)
     Implementation::Futex;
 #else

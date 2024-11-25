@@ -48,6 +48,14 @@ _LIBCXXABI_FUNC_VIS void __cxa_guard_abort(guard_type *raw_guard_object) {
   SelectedImplementation imp(raw_guard_object);
   imp.cxa_guard_abort();
 }
+
 }  // extern "C"
 
 }  // __cxxabiv1
+
+extern "C"
+{
+/* Needs to be implemented as a platform specific recursive lock. */
+_LIBCXXABI_WEAK void cxa_guard_lock(void) {}
+_LIBCXXABI_WEAK void cxa_guard_unlock(void) {}
+}  // extern "C"

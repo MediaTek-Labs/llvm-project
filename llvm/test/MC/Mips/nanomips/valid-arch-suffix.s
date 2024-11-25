@@ -1062,6 +1062,24 @@
 	synci[u12] 4092($t5)	# CHECK: synci 4092($t5) # encoding: [0xe3,0x87,0xfc,0x3f]
 				# CHECK-NEXT: <MCInst  #{{.*}} SYNCI_NM
 				# DISAS: {{.*}}  e3 87 fc 3f  	synci	4092($t5)
+	addiupc[32] $a0, 2097154	# CHECK: addiupc $a0, 0x200002 # encoding: [0x9f,0x04,0xfe,0xff]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC_NM
+				# DISAS: {{.*}}  9f 04 fe ff  	lapc.h	$a0, 0x{{.*}}
+	addiupc[48] $a0, 2097154	# CHECK: addiupc $a0, 0x200002 # encoding: [0x83,0x60,0xfc,0xff,0x1f,0x00]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC48_NM
+				# DISAS: {{.*}}  83 60 fc ff 1f 00  	lapc.b	$a0, 0x{{.*}}
+	addiupc[48] $a0, 2097156	# CHECK: addiupc $a0, 0x200004 # encoding: [0x83,0x60,0xfe,0xff,0x1f,0x00]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC48_NM
+				# DISAS: {{.*}}  83 60 fe ff 1f 00  	lapc.b	$a0, 0x{{.*}}
+	addiupc[32] $a0, -2097148	# CHECK: addiupc $a0, 0xffe00004 # encoding: [0x80,0x04,0x01,0x00]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC_NM
+				# DISAS: {{.*}}  80 04 01 00  	lapc.h	$a0, 0x{{.*}}
+	addiupc[48] $a0, -2097148	# CHECK: addiupc $a0, 0xffe00004 # encoding: [0x83,0x60,0xfe,0xff,0xdf,0xff]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC48_NM
+				# DISAS: {{.*}}  83 60 fe ff df ff  	lapc.b	$a0, 0x{{.*}}
+	addiupc[48] $a0, -2097150	# CHECK: addiupc $a0, 0xffe00002 # encoding: [0x83,0x60,0xfc,0xff,0xdf,0xff]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC48_NM
+				# DISAS: {{.*}}  83 60 fc ff df ff  	lapc.b	$a0, 0x{{.*}}
 	jrc $ra
 	.type   g_8,@object
 	.comm   g_8,16,16

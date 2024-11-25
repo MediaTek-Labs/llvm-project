@@ -1799,11 +1799,10 @@ public:
       return isConstantUImm<20>();
   }
 
-
-  template <unsigned Bits, unsigned ShiftLeftAmount>
+  template <unsigned Bits, unsigned ShiftLeftAmount, unsigned Offset = 0>
   bool isScaledSImm() const {
     if (isConstantImm() &&
-        isShiftedInt<Bits, ShiftLeftAmount>(getConstantImm()))
+        isShiftedInt<Bits, ShiftLeftAmount>(getConstantImm() - Offset))
       return true;
     // Operand can also be a symbol or symbol plus
     // offset in case of relocations.
@@ -1811,7 +1810,7 @@ public:
       return false;
     MCValue Res;
     bool Success = getImm()->evaluateAsRelocatable(Res, nullptr, nullptr);
-    return Success && isShiftedInt<Bits, ShiftLeftAmount>(Res.getConstant());
+    return Success && isShiftedInt<Bits, ShiftLeftAmount>(Res.getConstant() - Offset);
   }
 
   bool isRegList16() const {

@@ -1764,6 +1764,31 @@
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  60 e0 01 00  	lui	$t5, %hi(0x80000000)
 
+	addiupc	$a0, 4		# CHECK: addiupc $a0, 0x4	# encoding: [0x80,0x04,0x00,0x00]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC_NM
+				# DISAS: {{.*}}  80 04 00 00  	lapc.h	$a0, 0x{{.*}}
+	addiupc $a0, 2097154	# CHECK: addiupc $a0, 0x200002 # encoding: [0x9f,0x04,0xfe,0xff]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC_NM
+				# DISAS: {{.*}}  9f 04 fe ff  	lapc.h	$a0, 0x{{.*}}
+	addiupc $a0, 2097156	# CHECK: addiupc $a0, 0x200004 # encoding: [0x83,0x60,0xfe,0xff,0x1f,0x00]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC48_NM
+				# DISAS: {{.*}}  83 60 fe ff 1f 00  	lapc.b	$a0, 0x{{.*}}
+	addiupc $a0, 2147283647	# CHECK: addiupc $a0, 0x7ffcf2bf # encoding: [0x83,0x60,0xb9,0xf2,0xfc,0x7f]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC48_NM
+				# DISAS: {{.*}}  83 60 b9 f2 fc 7f  	lapc.b	$a0, 0x{{.*}}
+	addiupc	$a0, -4		# CHECK: addiupc $a0, 0xfffffffc # encoding: [0x9f,0x04,0xf9,0xff]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC_NM
+				# DISAS: {{.*}}  9f 04 f9 ff  	lapc.h	$a0, 0x{{.*}}
+	addiupc $a0, -2097148	# CHECK: addiupc $a0, 0xffe00004 # encoding: [0x80,0x04,0x01,0x00]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC_NM
+				# DISAS: {{.*}}  80 04 01 00  	lapc.h	$a0, 0x{{.*}}
+	addiupc $a0, -2097150	# CHECK: addiupc $a0, 0xffe00002 # encoding: [0x83,0x60,0xfc,0xff,0xdf,0xff]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC48_NM
+				# DISAS: {{.*}}  83 60 fc ff df ff  	lapc.b	$a0, 0x{{.*}}
+	addiupc $a0, -2147283647	# CHECK: addiupc $a0, 0x80030d41 # encoding: [0x83,0x60,0x3b,0x0d,0x03,0x80]
+                                # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC48_NM
+				# DISAS: {{.*}}  83 60 3b 0d 03 80  	lapc.b	$a0, 0x{{.*}}
+
 	jrc $ra
 	.type   g_8,@object
 	.comm   g_8,16,16

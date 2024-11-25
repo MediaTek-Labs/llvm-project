@@ -1224,6 +1224,17 @@ MipsMCCodeEmitter::getUImmWithOffsetEncoding(const MCInst &MI, unsigned OpNo,
   return Value;
 }
 
+template <unsigned Bits, int Offset>
+long
+MipsMCCodeEmitter::getSImmWithOffsetEncoding(const MCInst &MI, unsigned OpNo,
+                                             SmallVectorImpl<MCFixup> &Fixups,
+                                             const MCSubtargetInfo &STI) const {
+  assert(MI.getOperand(OpNo).isImm());
+  long Value = getMachineOpValue(MI, MI.getOperand(OpNo), Fixups, STI);
+  Value -= Offset;
+  return Value;
+}
+
 unsigned
 MipsMCCodeEmitter::getSimm19Lsl2Encoding(const MCInst &MI, unsigned OpNo,
                                          SmallVectorImpl<MCFixup> &Fixups,

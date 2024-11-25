@@ -179,6 +179,10 @@ void MipsInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
     case Mips::SYSCALL_NM:
     case Mips::SYSCALL16_NM:
     case Mips::WAIT_NM:
+    case Mips::LAPC32_NM:
+    case Mips::LAPC48_NM:
+    case Mips::ADDIUPC_NM:
+    case Mips::ADDIUPC48_NM:
       printUImm<32,0,16>(MI, OpNo, STI, O); break;
     default:
     markup(O, Markup::Immediate) << formatImm(Op.getImm()); break;

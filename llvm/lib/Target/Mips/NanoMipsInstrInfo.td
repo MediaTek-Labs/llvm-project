@@ -206,13 +206,12 @@ class NMUImm16AsmOperandClass<list<AsmOperandClass> Supers = []> :
   let SuperClasses = Supers;
 }
 
-class NMSImmAsmOperandClass<int Bits,
-			    list<AsmOperandClass> Supers = [],
-			    int Offset = 0> :
+class NMSImmScaledAsmOperandClass<int Bits, int Shift = 0, int Offset = 0,
+			    list<AsmOperandClass> Supers = []> :
 			    AsmOperandClass {
-  let Name = "NMSImm" # Bits # "_" # Offset;
-  let RenderMethod = "addSImmOperands<" # Bits # ">";
-  let PredicateMethod = "isConstantSImm<" # Bits # "," # Offset # ">";
+  let Name = "NMSImm" # Bits # "_" # Offset # "_s" # Shift;
+  let RenderMethod = "addConstantSImmOperands<" # !add(Bits,Shift) # "," # Offset # ">";
+  let PredicateMethod = "isScaledSImm<" # Bits # "," # Shift # "," # Offset # ">";
   let SuperClasses = Supers;
 }
 
@@ -308,6 +307,10 @@ def uimm16_nm : Operand<i32> {
 def uimm5s1_nm : Operand<i32> {
   let PrintMethod = "printUImm<5>";
   let ParserMatchClass = NMUImmScaledAsmOperandClass<4, 1>;
+}
+def simm22s1_nm : Operand<i32> {
+  let EncoderMethod = "getSImmWithOffsetEncoding<22,4>";
+  let ParserMatchClass = NMSImmScaledAsmOperandClass<21, 1, 4>;
 }
 def uimm5s2_nm : Operand<i32> {
   let PrintMethod = "printUImm<5>";
@@ -520,9 +523,8 @@ def jmptarget_nm   : Operand<OtherVT> {
 } // let OperandType = "OPERAND_PCREL", ...
 
 def simm32_nm : Operand<i32> {
-  let ParserMatchClass = NMSImmAsmOperandClass<32>;
-  let DecoderMethod = "DecodeSimm32";
-  let EncoderMethod = "getSImm32Encoding";
+  let ParserMatchClass = NMSImmScaledAsmOperandClass<32, 0, 6>;
+  let EncoderMethod = "getSImmWithOffsetEncoding<32, 6>";
 }
 
 def uimm32_nm : Operand<i32> {
@@ -1525,6 +1527,11 @@ class LoadAddressPCRelNM<string opstr, RegisterOperand RO,
          !strconcat(opstr, "\t$rt, $addr"),
          [(set RO:$rt, Addr:$addr)]>;
 
+class LoadAddressPCRelImmNM<string opstr, RegisterOperand RO, DAGOperand MO> :
+  InstAsmNM<(outs RO:$rt), (ins MO:$addr),
+         !strconcat(opstr, "\t$rt, $addr"),
+         []>;
+
 class LoadAddressGPRelNM<string opstr, RegisterOperand RO, DAGOperand MO, ComplexPattern Addr> :
   InstNM<(outs RO:$rt), (ins RO:$rs, MO:$addr),
          !strconcat(opstr, "\t$rt, $rs, $addr"),
@@ -1829,8 +1836,14 @@ let isReMaterializable = 1 in {
 				     AltMnemonics<["lapc[48]", "lapc"]>;
 }
 
-def ADDIUPC48_NM : NanoMipsInstAlias<"addiupc $rt, $addr",
-			    (LAPC48_NM GPRNM48Opnd: $rt, sym32_pc_nm:$addr), 0>;
+let isAsmParserOnly = 1 in {
+def ADDIUPC_NM : LoadAddressPCRelImmNM<"addiupc", GPRNM32Opnd, simm22s1_nm>,
+                                       Op32_Addr_Enc<0b00001>,
+                                       AltMnemonics<["addiupc[32]"]>;
+def ADDIUPC48_NM : LoadAddressPCRelImmNM<"addiupc", GPRNM48Opnd, simm32_nm>,
+                                         Op48_Addr_Enc<0b00011>,
+                                         AltMnemonics<["addiupc[48]"]>;
+}
 
 def LSA_NM : LoadScaledAddressNM<"lsa", GPRNM32Opnd>, LoadScaledAddress_Enc;
 

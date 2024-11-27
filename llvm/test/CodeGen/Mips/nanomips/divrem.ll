@@ -1,4 +1,4 @@
-; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | FileCheck %s
+; RUN: llc -mtriple=nanomips -enable-misched=false -asm-show-inst -verify-machineinstrs < %s | FileCheck %s
 
 ; Make sure to generate __udivmoddi4 libcall when udiv and urem 
 ; instructions with the same operands are present 
@@ -9,10 +9,8 @@ define void @test1(i64 %a, i64 %b, i64* %divmod) optsize {
   ; CHECK: move	$a4, $sp
   ; CHECK: balc	__udivmoddi4
   ; CHECK: swm	$a0, 0($s0), 2
-  ; CHECK: lw	$a0, 4($sp)
-  ; CHECK: sw	$a0, 12($s0)
-  ; CHECK: lw	$a0, 0($sp)
-  ; CHECK: sw	$a0, 8($s0)
+  ; CHECK: lwm  $a0, 0($sp), 2
+  ; CHECK: swm  $a0, 8($s0), 2
   ; CHECK: restore.jrc	16, $ra, $s0
   %div = udiv i64 %a, %b
   store i64 %div, i64* %divmod, align 8
@@ -57,19 +55,18 @@ define void @test4(i64 %a, i64 %b, i64* %divmod) optsize {
 	; CHECK: movep	$s4, $s2, $a1, $a2
 	; CHECK: move	$s3, $a0
 	; CHECK: balc	__udivdi3
-	; CHECK: mul	$a2, $a0, $s2
-	; CHECK: subu	$a3, $s3, $a2
-	; CHECK: sw	$a3, 8($s0)
-	; CHECK: mul	$a3, $a0, $s1
-	; CHECK: muhu	$s1, $a0, $s2
-	; CHECK: addu	$a3, $s1, $a3
-	; CHECK: swm	$a0, 0($s0), 2
-	; CHECK: mul	$a0, $a1, $s2
-	; CHECK: addu	$a0, $a3, $a0
-	; CHECK: subu	$a0, $s4, $a0
-	; CHECK: sltu	$a1, $s3, $a2
-	; CHECK: subu	$a0, $a0, $a1
-	; CHECK: sw	$a0, 12($s0)
+  ; CHECK: swm	$a0, 0($s0), 2
+	; CHECK: mul	$a2, $a0, $s1
+	; CHECK: muhu	$a3, $a0, $s2
+	; CHECK: addu	$a2, $a3, $a2
+	; CHECK: mul	$a1, $a1, $s2
+	; CHECK: addu	$a1, $a2, $a1
+	; CHECK: mul	$a0, $a0, $s2
+	; CHECK: subu	$a1, $s4, $a1
+	; CHECK: sltu	$a2, $s3, $a0
+	; CHECK: subu	$a1, $a1, $a2
+	; CHECK: subu	$a0, $s3, $a0
+	; CHECK: swm	$a0, 8($s0), 2
 	; CHECK: restore.jrc	32, $ra, $s0, $s1, $s2, $s3, $s4
   %a.frozen = freeze i64 %a
   %b.frozen = freeze i64 %b
@@ -86,12 +83,12 @@ define void @test4(i64 %a, i64 %b, i64* %divmod) optsize {
 ; instructions with the same operands are present 
 ; and the operands are of type int32
 define void @test5(i32 %a, i32 %b, i32* %divmod) optsize {
-  ; CHECK: modu	$a3, $a0, $a1
+	; CHECK: divu	$a3, $a0, $a1
 	; CHECK: teq	$zero, $a1, 7
-	; CHECK: sw	$a3, 4($a2)
-	; CHECK: divu	$a0, $a0, $a1
+	; CHECK: sw	$a3, 0($a2)
+  ; CHECK: modu	$a0, $a0, $a1
 	; CHECK: teq	$zero, $a1, 7
-	; CHECK: sw	$a0, 0($a2)
+	; CHECK: sw	$a0, 4($a2)
 	; CHECK: jrc	$ra
   %div = udiv i32 %a, %b
   store i32 %div, i32* %divmod, align 4

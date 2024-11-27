@@ -243,6 +243,8 @@ bool MipsSubtarget::isPositionIndependent() const {
 /// This overrides the PostRAScheduler bit in the SchedModel for any CPU.
 bool MipsSubtarget::enablePostRAScheduler() const { return true; }
 
+bool MipsSubtarget::enableMachineScheduler() const { return hasNanoMips(); }
+
 void MipsSubtarget::getCriticalPathRCs(RegClassVector &CriticalPathRCs) const {
   CriticalPathRCs.clear();
   CriticalPathRCs.push_back(isGP64bit() ? &Mips::GPR64RegClass

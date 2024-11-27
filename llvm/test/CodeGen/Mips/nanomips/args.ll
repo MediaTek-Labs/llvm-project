@@ -5,21 +5,21 @@ declare i32 @ints9(i32, i32, i32, i32, i32, i32, i32, i32, i32)
 
 define i32 @test_ints9(i32 %a, i32 %b) {
 ; CHECK: li ${{[ats][0-9]}}, 7
-; CHECK: LI16_NM
-; CHECK: sw ${{[ats][0-9]}}, 0($sp)
-; CHECK: SW_NM
-; CHECK: li $a2, 1
-; CHECK: LI16_NM
-; CHECK: li $a3, 2
-; CHECK: LI16_NM
-; CHECK: li $a4, 3
-; CHECK: ADDIU_NM
-; CHECK: li $a5, 4
-; CHECK: ADDIU_NM
-; CHECK: li $a6, 5
-; CHECK: ADDIU_NM
-; CHECK: li $a7, 6
-; CHECK: ADDIU_NM
+; CHECK: {{ADDIU_NM|LI16_NM}}
+; CHECK-DAG: sw ${{[ats][0-9]}}, 0($sp)
+; CHECK-DAG: SW_NM
+; CHECK-DAG: li $a2, 1
+; CHECK-DAG: LI16_NM
+; CHECK-DAG: li $a3, 2
+; CHECK-DAG: LI16_NM
+; CHECK-DAG: li $a4, 3
+; CHECK-DAG: ADDIU_NM
+; CHECK-DAG: li $a5, 4
+; CHECK-DAG: ADDIU_NM
+; CHECK-DAG: li $a6, 5
+; CHECK-DAG: ADDIU_NM
+; CHECK-DAG: li $a7, 6
+; CHECK-DAG: ADDIU_NM
 ; CHECK: balc ints9
 ; CHECK: BALC_NM
 ; ADJSTACK: ADJCALLSTACKDOWN_NM 16
@@ -34,15 +34,15 @@ declare void @unaligned1(i32, i32, i32, i64, i32, i32, i32, i64)
 define void @unaligned2(i32 %a, i32 %b) {
 ; CHECK-NOT: sw ${{[ats][0-9]}}, 4($sp)
 ; CHECK-NOT: li $a3
-; CHECK: li ${{[ats][0-9]}}, 6
-; CHECK: sw ${{[ats][0-9]}}, 8($sp)
-; CHECK: li ${{[ats][0-9]}}, 5
-; CHECK: sw ${{[ats][0-9]}}, 0($sp)
-; CHECK: sw $zero, 12($sp)
-; CHECK: li $a2, 1
-; CHECK: li $a4, 2
-; CHECK: li $a6, 3
-; CHECK: li $a7, 4
+; CHECK-DAG: sw $zero, 12($sp)
+; CHECK-DAG: li ${{[ats][0-9]}}, 6
+; CHECK-DAG: sw ${{[ats][0-9]}}, 8($sp)
+; CHECK-DAG: li ${{[ats][0-9]}}, 5
+; CHECK-DAG: sw ${{[ats][0-9]}}, 0($sp)
+; CHECK-DAG: li $a2, 1
+; CHECK-DAG: li $a4, 2
+; CHECK-DAG: li $a6, 3
+; CHECK-DAG: li $a7, 4
   call void @unaligned1(i32 %a, i32 %b, i32 1, i64 2, i32 3, i32 4, i32 5, i64 6)
   ret void
 }

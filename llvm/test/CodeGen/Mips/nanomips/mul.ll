@@ -1,4 +1,4 @@
-; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | FileCheck %s
+; RUN: llc -mtriple=nanomips -enable-misched=false -asm-show-inst -verify-machineinstrs < %s | FileCheck %s
 
 define i32 @test_mul(i32 %a, i32 %b) {
 ; CHECK: mul $a0, $a0, $a1

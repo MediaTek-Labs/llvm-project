@@ -342,10 +342,27 @@ StringRef InputFile::getNameForScript() const {
   if (archiveName.empty())
     return getName();
 
-  if (nameForScriptCache.empty())
-    nameForScriptCache = (archiveName + Twine(':') + getName()).str();
+  this->initializeCachedArchiveName();
 
   return nameForScriptCache;
+}
+
+StringRef InputFile::getNameForScriptAlreadyCached() const {
+  if (!nameForScriptCache.empty())
+    return nameForScriptCache;
+
+  assert(archiveName.empty() &&
+         "Archive object file names should be cached before this!");
+
+  return getName();
+}
+
+void InputFile::initializeCachedArchiveName() const {
+  assert(!archiveName.empty() && "File should be from an archive file if "
+                                 "initializing the cached archive name");
+
+  if (nameForScriptCache.empty())
+    nameForScriptCache = (archiveName + Twine(':') + getName()).str();
 }
 
 // An ELF object file may contain a `.deplibs` section. If it exists, the

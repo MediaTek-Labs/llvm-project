@@ -22,7 +22,10 @@
 #include "Writer.h"
 #include "lld/Common/CommonLinkerContext.h"
 #include "lld/Common/Strings.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/Support/Casting.h"
@@ -390,6 +393,10 @@ static inline StringRef getFilename(const InputFile *file) {
   return file ? file->getNameForScript() : StringRef();
 }
 
+static inline StringRef getFilenameAlreadyCached(const InputFile *file) {
+  return file ? file->getNameForScriptAlreadyCached() : StringRef();
+}
+
 bool InputSectionDescription::matchesFile(const InputFile *file) const {
   if (filePat.isTrivialMatchAll())
     return true;
@@ -400,6 +407,14 @@ bool InputSectionDescription::matchesFile(const InputFile *file) const {
   return matchesFileCache->second;
 }
 
+bool InputSectionDescription::matchesFileCacheless(
+    const InputFile *file) const {
+  if (filePat.isTrivialMatchAll())
+    return true;
+
+  return filePat.match(getFilenameAlreadyCached(file));
+}
+
 bool SectionPattern::excludesFile(const InputFile *file) const {
   if (excludedFilePat.empty())
     return false;
@@ -408,6 +423,13 @@ bool SectionPattern::excludesFile(const InputFile *file) const {
     excludesFileCache.emplace(file, excludedFilePat.match(getFilename(file)));
 
   return excludesFileCache->second;
+}
+
+bool SectionPattern::excludesFileCacheless(const InputFile *file) const {
+  if (excludedFilePat.empty())
+    return false;
+
+  return excludedFilePat.match(getFilenameAlreadyCached(file));
 }
 
 bool LinkerScript::shouldKeep(InputSectionBase *s) {
@@ -600,31 +622,229 @@ LinkerScript::createInputSectionList(OutputSection &outCmd) {
   return ret;
 }
 
+// Helper struct to relate input sections with descriptions and patterns
+struct IsecBaseIsecDescPattern {
+  size_t isecIndex = 0;
+  // Because of constraints that can be enforced on sections
+  // (ONLY_IF_R[OW]) we need to try to match to more than one
+  // output section, in case the constraints are not fully satisfied.
+  SmallVector<InputSectionDescription *, 1> isecDescs;
+  SmallVector<size_t, 1> patternIndexes;
+
+  IsecBaseIsecDescPattern(size_t index) : isecIndex(index) {}
+};
+
+// Helper function
+static inline void assignPatternsToInputSections(
+    IsecBaseIsecDescPattern &isecBaseIsecDescPattern,
+    ArrayRef<OutputSection *> osecs,
+    DenseMap<OutputSection *, SmallVector<InputSectionDescription *, 0>>
+        &outSecToISecDescs) {
+  InputSectionBase *isec = ctx.inputSections[isecBaseIsecDescPattern.isecIndex];
+
+  if (!isec->isLive() || isec->parent)
+    return;
+
+  // For --emit-relocs we have to ignore entries like
+  //   .rela.dyn : { *(.rela.data) }
+  // which are common because they are in the default bfd script.
+  // We do not ignore SHT_REL[A] linker-synthesized sections here because
+  // want to support scripts that do custom layout for them.
+  if (isa<InputSection>(isec) &&
+      cast<InputSection>(isec)->getRelocatedSection())
+    return;
+
+  for (OutputSection *osec : osecs) {
+    bool assignedToConstrainedSec = false;
+    if (osec->constraintUnsatisfied &&
+        osec->constraint == ConstraintKind::ReadOnly)
+      continue;
+    for (InputSectionDescription *isd : outSecToISecDescs[osec]) {
+      if (!isd->matchesFileCacheless(isec->file) ||
+          (isec->flags & isd->withFlags) != isd->withFlags ||
+          (isec->flags & isd->withoutFlags) != 0)
+        continue;
+      for (auto [i, pat] : llvm::enumerate(isd->sectionPatterns)) {
+        if (!pat.sectionPat.match(isec->name) ||
+            pat.excludesFileCacheless(isec->file))
+          continue;
+
+        isecBaseIsecDescPattern.isecDescs.push_back(isd);
+        isecBaseIsecDescPattern.patternIndexes.push_back(i);
+        if (osec->constraint != ConstraintKind::NoConstraint) {
+          // This is for ONLY_IF_RO and ONLY_IF_RW. An output section directive
+          // ".foo : ONLY_IF_R[OW] { ... }" is handled only if all member input
+          // sections satisfy a given constraint. If not, a directive is handled
+          // as if it wasn't present from the beginning.
+          bool isRW = isec->flags & SHF_WRITE;
+          if (isRW && osec->constraint == ConstraintKind::ReadOnly)
+            osec->constraintUnsatisfied = true;
+          else if (isRW && osec->constraint == ConstraintKind::ReadWrite)
+            osec->constraintUnsatisfied = false;
+
+          assignedToConstrainedSec = true;
+          break;
+        }
+        return;
+      }
+
+      if (assignedToConstrainedSec)
+        break;
+    }
+  }
+}
+
+// Helper function
+static inline DenseMap<OutputSection *, SmallVector<InputSectionBase *, 0>>
+assignAndSortInputToOutputSections(
+    ArrayRef<OutputSection *> osecs,
+    DenseMap<OutputSection *, SmallVector<InputSectionDescription *, 0>>
+        &outSecToISecDescs) {
+
+  DenseMap<OutputSection *, SmallVector<InputSectionBase *, 0>> outSecToISecs;
+  SmallVector<size_t, 0> sectionIndexes;
+
+  auto sortByPositionThenCommandLine =
+      [&](size_t begin, size_t end, MutableArrayRef<InputSectionBase *> secs) {
+        llvm::sort(
+            MutableArrayRef<size_t>(sectionIndexes).slice(begin, end - begin));
+        for (size_t i = begin; i != end; ++i)
+          secs[i] = ctx.inputSections[sectionIndexes[i]];
+        sortInputSections(secs.slice(begin, end - begin), config->sortSection,
+                          SortSectionPolicy::None);
+      };
+
+  for (OutputSection *osec : osecs) {
+    outSecToISecs[osec] = SmallVector<InputSectionBase *, 0>();
+    // If constraints are unsatisfied ignore this output section
+    if (osec->constraintUnsatisfied)
+      continue;
+    for (InputSectionDescription *isd : outSecToISecDescs[osec]) {
+      size_t sizeAfterPrevSort = 0;
+      sectionIndexes.clear();
+      for (SectionPattern &pat : isd->sectionPatterns) {
+        if (pat.matchedSections.size() == 0)
+          continue;
+
+        size_t sizeBeforeCurrPat = isd->sectionBases.size();
+
+        for (size_t index : pat.matchedSections) {
+          // There might be input sections repeated more than one time in
+          // several output sections, because of constraints, here we check
+          // if they are already mapped.
+          if (!ctx.inputSections[index]->parent) {
+            isd->sectionBases.push_back(ctx.inputSections[index]);
+            ctx.inputSections[index]->parent = osec;
+            sectionIndexes.push_back(index);
+          }
+        }
+        if (pat.sortOuter != SortSectionPolicy::Default) {
+          // Matched sections are ordered by radix sort with the keys being
+          // (SORT*,
+          // --sort-section, input order), where SORT* (if present) is most
+          // significant.
+          //
+          // Matched sections between the previous SORT* and this SORT* are
+          // sorted by
+          // (--sort-alignment, input order).
+
+          sortByPositionThenCommandLine(
+              sizeAfterPrevSort, sizeBeforeCurrPat,
+              MutableArrayRef<InputSectionBase *>(isd->sectionBases));
+
+          // Matched sections by this SORT* pattern are sorted using all 3 keys.
+          // ret[sizeBeforeCurrPat,ret.size()) are already in the input order,
+          // so we just sort by sortOuter and sortInner.
+          sortInputSections(
+              MutableArrayRef<InputSectionBase *>(isd->sectionBases)
+                  .slice(sizeBeforeCurrPat),
+              pat.sortOuter, pat.sortInner);
+
+          sizeAfterPrevSort = isd->sectionBases.size();
+        }
+      }
+      // Matched sections after the last SORT* are sorted by (--sort-alignment,
+      // input order).
+      sortByPositionThenCommandLine(
+          sizeAfterPrevSort, isd->sectionBases.size(),
+          MutableArrayRef<InputSectionBase *>(isd->sectionBases));
+      outSecToISecs[osec].append(isd->sectionBases);
+    }
+  }
+
+  return outSecToISecs;
+}
+DenseMap<OutputSection *, SmallVector<InputSectionBase *, 0>>
+LinkerScript::mapInputToOutputSections(ArrayRef<OutputSection *> osecs) {
+  // Input section descriptions per output sections in the linker script
+  DenseMap<OutputSection *, SmallVector<InputSectionDescription *, 0>>
+      outSecToISecDescs;
+  DenseMap<OutputSection *, SmallVector<InputSectionDescription *, 0>>
+      outSecToUsedISecDescs;
+  // Input sections matched to section patterns and their descriptions
+  SmallVector<IsecBaseIsecDescPattern, 0> isecsToPatterns;
+
+  isecsToPatterns.reserve(ctx.inputSections.size());
+  for (size_t i = 0; i < ctx.inputSections.size(); ++i) {
+    isecsToPatterns.push_back({i});
+    // Initialize name for script for archives to avoid problems because of
+    // multithreading later
+    InputFile *file = ctx.inputSections[i]->file;
+    if (file && !file->archiveName.empty())
+      file->initializeCachedArchiveName();
+  }
+
+  // Initialize the osec if ReadWrite constrained and
+  // map out secs to input sec description
+  for (OutputSection *osec : osecs) {
+    if (osec->constraint == ConstraintKind::ReadWrite)
+      osec->constraintUnsatisfied = true;
+
+    SmallVector<InputSectionDescription *, 0> osecInputSecCmds;
+    for (SectionCommand *cmd : osec->commands) {
+      if (auto *isd = dyn_cast<InputSectionDescription>(cmd))
+        osecInputSecCmds.push_back(isd);
+    }
+
+    outSecToISecDescs.insert({osec, osecInputSecCmds});
+  }
+
+  parallelForEach(isecsToPatterns,
+                  [&](IsecBaseIsecDescPattern &isecBaseIsecDescPattern) {
+                    assignPatternsToInputSections(isecBaseIsecDescPattern,
+                                                  osecs, outSecToISecDescs);
+                  });
+
+  // Add input sections to their matching patterns
+  for (IsecBaseIsecDescPattern &isecBaseIsecDescPattern : isecsToPatterns) {
+    for (auto [i, isecDesc] :
+         llvm::enumerate(isecBaseIsecDescPattern.isecDescs)) {
+      isecDesc->sectionPatterns[isecBaseIsecDescPattern.patternIndexes[i]]
+          .matchedSections.push_back(isecBaseIsecDescPattern.isecIndex);
+    }
+  }
+
+  return assignAndSortInputToOutputSections(osecs, outSecToISecDescs);
+}
+
 // Create output sections described by SECTIONS commands.
 void LinkerScript::processSectionCommands() {
-  auto process = [this](OutputSection *osec) {
-    SmallVector<InputSectionBase *, 0> v = createInputSectionList(*osec);
 
+  auto process = [this](OutputSection *osec,
+                        SmallVector<InputSectionBase *, 0> &v) {
+    // If constraints are unsatisfied, skip this section and make it as if it
+    // never existed, we do this by clearing all of its commands (this is the
+    // easiest way)
+    if (osec->constraintUnsatisfied) {
+      osec->commands.clear();
+      return false;
+    }
     // The output section name `/DISCARD/' is special.
     // Any input section assigned to it is discarded.
     if (osec->name == "/DISCARD/") {
       for (InputSectionBase *s : v)
         discard(*s);
       discardSynthetic(*osec);
-      osec->commands.clear();
-      return false;
-    }
-
-    // This is for ONLY_IF_RO and ONLY_IF_RW. An output section directive
-    // ".foo : ONLY_IF_R[OW] { ... }" is handled only if all member input
-    // sections satisfy a given constraint. If not, a directive is handled
-    // as if it wasn't present from the beginning.
-    //
-    // Because we'll iterate over SectionCommands many more times, the easy
-    // way to "make it as if it wasn't present" is to make it empty.
-    if (!matchConstraints(v, osec->constraint)) {
-      for (InputSectionBase *s : v)
-        s->parent = nullptr;
       osec->commands.clear();
       return false;
     }
@@ -649,23 +869,41 @@ void LinkerScript::processSectionCommands() {
   // or orphans.
   DenseMap<CachedHashStringRef, OutputDesc *> map;
   size_t i = 0;
+
+  SmallVector<OutputSection *, 0> overwriteSectionsVec;
+  overwriteSectionsVec.reserve(overwriteSections.size());
+  for (OutputDesc *osd : overwriteSections)
+    overwriteSectionsVec.push_back(&osd->osec);
+
+  DenseMap<OutputSection *, SmallVector<InputSectionBase *, 0>>
+      outSecToISecsOverwrite = mapInputToOutputSections(overwriteSectionsVec);
   for (OutputDesc *osd : overwriteSections) {
     OutputSection *osec = &osd->osec;
-    if (process(osec) &&
+    if (process(osec, outSecToISecsOverwrite[osec]) &&
         !map.try_emplace(CachedHashStringRef(osec->name), osd).second)
       warn("OVERWRITE_SECTIONS specifies duplicate " + osec->name);
   }
-  for (SectionCommand *&base : sectionCommands)
+
+  SmallVector<OutputSection *, 0> outputSecVec;
+  for (SectionCommand *base : sectionCommands) {
+    if (auto *osd = dyn_cast<OutputDesc>(base))
+      outputSecVec.push_back(&osd->osec);
+  }
+
+  DenseMap<OutputSection *, SmallVector<InputSectionBase *, 0>> outSecToISecs =
+      mapInputToOutputSections(outputSecVec);
+  for (SectionCommand *&base : sectionCommands) {
     if (auto *osd = dyn_cast<OutputDesc>(base)) {
       OutputSection *osec = &osd->osec;
       if (OutputDesc *overwrite = map.lookup(CachedHashStringRef(osec->name))) {
         log(overwrite->osec.location + " overwrites " + osec->name);
         overwrite->osec.sectionIndex = i++;
         base = overwrite;
-      } else if (process(osec)) {
+      } else if (process(osec, outSecToISecs[osec])) {
         osec->sectionIndex = i++;
       }
     }
+  }
 
   // If an OVERWRITE_SECTIONS specified output section is not in
   // sectionCommands, append it to the end. The section will be inserted by

@@ -45,6 +45,7 @@ public:
 
   uint32_t sectionIndex = UINT32_MAX;
   unsigned sortRank;
+  bool constraintUnsatisfied = false;
 
   uint32_t getPhdrFlags() const;
 

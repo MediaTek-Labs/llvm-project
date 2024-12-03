@@ -188,9 +188,13 @@ public:
 
   bool excludesFile(const InputFile &file) const;
 
+  bool excludesFileCacheless(const InputFile *file) const;
+
   StringMatcher sectionPat;
   SortSectionPolicy sortOuter;
   SortSectionPolicy sortInner;
+
+  SmallVector<size_t, 0> matchedSections;
 };
 
 class InputSectionDescription : public SectionCommand {
@@ -228,6 +232,8 @@ public:
   }
 
   bool matchesFile(const InputFile &file) const;
+
+  bool matchesFileCacheless(const InputFile *file) const;
 
   // Input sections that matches at least one of SectionPatterns
   // will be associated with this InputSectionDescription.
@@ -339,6 +345,12 @@ class LinkerScript final {
   findMemoryRegion(OutputSection *sec, MemoryRegion *hint);
 
   bool assignOffsets(OutputSection *sec);
+
+  // Helper function called in processSectionCommands, goes through all input
+  // section descritpiton, maps input sections to them and creates a map with
+  // output sections and their corresponding input sections
+  llvm::DenseMap<OutputSection *, SmallVector<InputSectionBase *, 0>>
+  mapInputToOutputSections(ArrayRef<OutputSection *> osecs);
 
   // This captures the local AddressState and makes it accessible
   // deliberately. This is needed as there are some cases where we cannot just

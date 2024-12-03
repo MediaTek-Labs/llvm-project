@@ -115,6 +115,11 @@ public:
   // Get filename to use for linker script processing.
   StringRef getNameForScript() const;
 
+  StringRef getNameForScriptAlreadyCached() const;
+
+  // Initialize cached archive name for later usage
+  void initializeCachedArchiveName() const;
+
   // Check if a non-common symbol should be extracted to override a common
   // definition.
   bool shouldExtractForCommon(StringRef name) const;

@@ -120,7 +120,7 @@ bool NMRedundantJumpTables::optimizeRedundantEntries(MachineInstr &MI) {
         llvm::MachineOperand &Operand = *OpI;
         if (!Operand.isIdenticalTo(JTOp))
           continue;
-        if (MI.getOpcode() == Mips::BRSC_NM)
+        if (I.getOpcode() == Mips::BRSC_NM)
           BuildMI(MBB, I, Operand.getParent()->getDebugLoc(),
                   TII->get(Mips::BC_NM))
               .addMBB(MBBToJumpTo);

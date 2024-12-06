@@ -1440,6 +1440,8 @@ void TargetPassConfig::addFastRegAlloc() {
 /// optimized register allocation, including coalescing, machine instruction
 /// scheduling, and register allocation itself.
 void TargetPassConfig::addOptimizedRegAlloc() {
+  addPass(&DeadMachineInstructionElimID);
+
   addPass(&DetectDeadLanesID);
 
   addPass(&ProcessImplicitDefsID);

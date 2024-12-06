@@ -370,8 +370,10 @@ bool MipsPassConfig::addInstSelector() {
 
 void MipsPassConfig::addPreRegAlloc() {
   addPass(createMipsOptimizePICCallPass());
-  if (getMipsSubtarget().hasNanoMips() && getMipsSubtarget().hasDSP())
+  if (getMipsSubtarget().hasNanoMips() && getMipsSubtarget().hasDSP() &&
+      getOptLevel() != CodeGenOptLevel::None) {
     addPass(createNanoMipsDspPeepholePass());
+  }
 }
 
 void MipsPassConfig::addPostRegAlloc() {

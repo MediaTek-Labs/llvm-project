@@ -528,7 +528,9 @@ void MipsInstPrinter::printHi20PCRel(const MCInst *MI, uint64_t Address,
                                     raw_ostream &O) {
   const MCOperand& MO = MI->getOperand(OpNum);
   if (MO.isImm())
-    O << "%pcrel_hi(" << formatHex(MO.getImm() + Address) << ")";
+    O << "%pcrel_hi(" << formatHex(Make_64(0, Lo_32(MO.getImm() + Address))) << ")";
+  else if (MO.isExpr() && MO.getExpr()->getKind() == MCExpr::Constant)
+    O << formatHex(static_cast<const MCConstantExpr*>(MO.getExpr())->getValue());
   else
     printOperand(MI, OpNum, STI, O);
 }

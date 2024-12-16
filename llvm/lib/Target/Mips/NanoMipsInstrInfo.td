@@ -233,7 +233,8 @@ def Hi20AsmOperand : AsmOperandClass {
 
 def Hi20PCRelAsmOperand : AsmOperandClass {
   let Name = "Hi20OffsetPCRel";
-  let RenderMethod = "addUImmOperands<20>";
+  let RenderMethod = "addHi20PCRelOperands";
+  let ParserMethod = "parseHi20PCRelOp";
 }
 
 class SymAsmOperandClass<string Type = "", string Suffix = "",
@@ -540,8 +541,9 @@ def simm32s12_nm : Operand<i32> {
 def simm32s12_pcrel_nm : Operand<i32> {
   let ParserMatchClass = Hi20PCRelAsmOperand;
   let PrintMethod = "printHi20PCRel";
-  let DecoderMethod = "DecodeSImm32s12";
   let OperandType   = "OPERAND_PCREL";
+  let DecoderMethod = "DecodeSImm32s12PCRel";
+  let EncoderMethod = "getHi20PCRelEncoding";
 }
 
 def sym32_pc_nm : Operand<pAny> {

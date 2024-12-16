@@ -1524,4 +1524,24 @@ MipsMCCodeEmitter::getSImm32Encoding(const MCInst &MI, unsigned OpNo,
   return Res;
 }
 
+unsigned MipsMCCodeEmitter::
+getHi20PCRelEncoding(const MCInst &MI, unsigned OpNo,
+                     SmallVectorImpl<MCFixup> &Fixups,
+                     const MCSubtargetInfo &STI) const {
+  const MCOperand &MO = MI.getOperand(OpNo);
+  assert(MO.isExpr() &&
+    "getHi20PCRelEncoding expects only expressions or immediates");
+
+  // If the destination is an immediate, divide by 2^12.
+  if (MO.getExpr()->getKind() == MCExpr::Constant) {
+    int64_t Res;
+    if (MO.getExpr()->evaluateAsAbsolute(Res))
+      return Res;
+  }
+
+  Fixups.push_back(MCFixup::create(0, MO.getExpr(),
+                                   MCFixupKind(Mips::fixup_NANOMIPS_PCHI20)));
+  return 0;
+}
+
 #include "MipsGenMCCodeEmitter.inc"

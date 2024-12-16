@@ -14,6 +14,7 @@
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbolELF.h"
 #include "llvm/MC/MCValue.h"
+#include "llvm/MC/MCInstPrinter.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
@@ -123,8 +124,12 @@ void MipsMCExpr::printImpl(raw_ostream &OS, const MCAsmInfo *MAI) const {
   }
 
   OS << '(';
-  if (Expr->evaluateAsAbsolute(AbsVal))
-    OS << AbsVal;
+  if (Expr->evaluateAsAbsolute(AbsVal)) {
+    if (IsNanoMips)
+      OS << format("0x%" PRIx64, AbsVal);
+    else
+      OS << AbsVal;
+  }
   else
     Expr->print(OS, MAI, true);
   OS << ')';
@@ -145,7 +150,8 @@ bool MipsMCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
     return true;
   }
 
-  if (!getSubExpr()->evaluateAsRelocatable(Res, Asm, Fixup))
+  if (!getSubExpr()->evaluateAsRelocatable(Res, Asm, Fixup) 
+      && getKind() != MipsMCExpr::MEK_PCREL_HI)
     return false;
 
   if (Res.getRefKind() != MCSymbolRefExpr::VK_None)
@@ -175,7 +181,6 @@ bool MipsMCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
     case MEK_GOT_OFST:
     case MEK_GOT_PAGE:
     case MEK_GPREL:
-    case MEK_PCREL_HI:
     case MEK_PCREL_LO16:
     case MEK_TLSGD:
     case MEK_TLSLDM:
@@ -196,6 +201,12 @@ bool MipsMCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
       else
 	AbsVal = SignExtend64<16>((AbsVal + 0x8000) >> 16);
       break;
+    case MEK_PCREL_HI:
+      if (!IsNanoMips)
+	return false;
+      Res =
+	MCValue::get(Res.getSymA(), Res.getSymB(), Res.getConstant(), getKind());
+      return true;
     case MEK_HIGHER:
       AbsVal = SignExtend64<16>((AbsVal + 0x80008000LL) >> 32);
       break;

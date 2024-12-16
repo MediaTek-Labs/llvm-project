@@ -1401,13 +1401,14 @@
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
 				# DISAS: {{.*}}  80 e0 02 00  	aluipc	$a0, %pcrel_hi({{.*}})
 				# DISAS: {{.*}}  R_NANOMIPS_PC_HI20	test
-	aluipc $a1, %hi(0x87654321)	# CHECK: aluipc $a1, %pcrel_hi(0x87654) # encoding: [0xa5,0xe0,0xef,0x40]
+	aluipc $a1, %pcrel_hi(0x87654321) # CHECK: aluipc $a1, %pcrel_hi(0x87654321) # encoding: [0b1010AAAA,0xe0,0x02'A',A]
+				# CHECK-NEXT: fixup A - offset: 0, value: %pcrel_hi(0x87654321), kind: fixup_NANOMIPS_PCHI20
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
-				# DISAS: {{.*}}  a5 e0 ef 40  	aluipc	$a1, %pcrel_hi({{.*}})
-	aluipc $a2, 0x80000	# CHECK: aluipc $a2, %pcrel_hi(0x80000) # encoding: [0xc0,0xe0,0x03,0x00]
+				# DISAS: {{.*}}  a0 e0 02 00  	aluipc	$a1, %pcrel_hi({{.*}})
+	aluipc $a2, 0x80000	# CHECK: aluipc $a2, 0x80000 # encoding: [0xc0,0xe0,0x03,0x00]
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
 				# DISAS: {{.*}} c0 e0 03 00   	aluipc	$a2, %pcrel_hi({{.*}})
-	aluipc $a3, 0xfffff	# CHECK: aluipc $a3, %pcrel_hi(0xfffff) # encoding: [0xff,0xe0,0xff,0xff]
+	aluipc $a3, 0xfffff	# CHECK: aluipc $a3, 0xfffff # encoding: [0xff,0xe0,0xff,0xff]
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
 				# DISAS: {{.*}}  ff e0 ff ff  	aluipc	$a3, %pcrel_hi({{.*}})
 	lui $s0, %hi(test)	# CHECK: lui $s0, %hi(test) # encoding: [0b0000AAAA,0xe2,A,A]

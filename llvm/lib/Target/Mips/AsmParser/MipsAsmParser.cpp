@@ -214,6 +214,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   OperandMatchResultTy parseRegisterList(OperandVector &Operands);
   OperandMatchResultTy parseNMRegisterList(OperandVector &Operands);
   OperandMatchResultTy parseHi20Op(OperandVector &Operands);
+  OperandMatchResultTy parseHi20PCRelOp(OperandVector &Operands);
 
   bool searchSymbolAlias(OperandVector &Operands);
 
@@ -1489,6 +1490,12 @@ public:
       Op = MCOperand::createExpr(getImm());
     else
       Op = MCOperand::createImm(getConstantHi20());
+    Inst.addOperand(Op);
+  }
+
+  void addHi20PCRelOperands(MCInst &Inst, unsigned N) const {
+    MCOperand Op;
+    Op = MCOperand::createExpr(getImm());
     Inst.addOperand(Op);
   }
 
@@ -8095,6 +8102,48 @@ MipsAsmParser::parseNMRegisterList(OperandVector &Operands) {
 
   SMLoc E = Parser.getTok().getLoc();
   Operands.push_back(MipsOperand::CreateRegListNM(Regs, S, E, *this));
+  return MatchOperand_Success;
+}
+
+OperandMatchResultTy
+MipsAsmParser::parseHi20PCRelOp(OperandVector &Operands) {
+  MCAsmParser &Parser = getParser();
+  const MCExpr *IdVal;
+
+  SMLoc S = Parser.getTok().getLoc();
+  SMLoc E;
+  if (!Parser.getTok().is(AsmToken::PercentPcrel_Hi)) {
+    // Literal value
+    if (getParser().parseExpression(IdVal))
+      return MatchOperand_ParseFail;
+    const MCConstantExpr *MCE = dyn_cast<MCConstantExpr>(IdVal);
+    if (!MCE)
+      return MatchOperand_ParseFail;
+    int64_t Val = MCE->getValue();
+    Operands.push_back(MipsOperand::CreateImm(MCConstantExpr::create(Val, getContext()), S, E, *this));
+    E = SMLoc::getFromPointer(Parser.getTok().getLoc().getPointer() - 1);
+    return MatchOperand_Success;
+  }
+
+  Parser.Lex();
+  if (Parser.getTok().isNot(AsmToken::LParen)) {
+    Error(Parser.getTok().getLoc(), "'(' expected");
+    return MatchOperand_ParseFail;
+  }
+
+  if (Parser.parseExpression(IdVal))
+    return MatchOperand_ParseFail;
+  Operands.push_back(MipsOperand::CreateImm(createTargetUnaryExpr(IdVal, AsmToken::PercentPcrel_Hi,
+								  getContext()), S, E, *this));
+
+  if (Parser.getTok().is(AsmToken::RParen))
+    Parser.Lex(); // Eat the ')' token.
+  else if (Parser.getTok().isNot(AsmToken::RParen) && Parser.getTok().isNot(AsmToken::EndOfStatement)) {
+    Error(Parser.getTok().getLoc(), "')' expected");
+    return MatchOperand_ParseFail;
+  }
+
+  E = SMLoc::getFromPointer(Parser.getTok().getLoc().getPointer() - 1);
   return MatchOperand_Success;
 }
 

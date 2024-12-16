@@ -343,6 +343,10 @@ public:
 			     SmallVectorImpl<MCFixup> &Fixups,
 			     const MCSubtargetInfo &STI) const;
 
+  unsigned getHi20PCRelEncoding(const MCInst &MI, unsigned OpNo,
+				SmallVectorImpl<MCFixup> &Fixups,
+				const MCSubtargetInfo &STI) const;
+
 private:
   void LowerCompactBranch(MCInst& Inst) const;
 };

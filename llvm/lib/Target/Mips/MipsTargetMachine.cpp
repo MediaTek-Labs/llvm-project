@@ -179,7 +179,7 @@ NanoMipsTargetMachine::NanoMipsTargetMachine(const Target &T, const Triple &TT,
                                              const TargetOptions &Options,
                                              std::optional<Reloc::Model> RM,
                                              std::optional<CodeModel::Model> CM,
-                                             CodeGenOpt::Level OL, bool JIT)
+                                             CodeGenOptLevel OL, bool JIT)
     : MipsTargetMachine(T, TT, CPU, FS, Options, RM, CM, OL, JIT, true) {}
 
 const MipsSubtarget *

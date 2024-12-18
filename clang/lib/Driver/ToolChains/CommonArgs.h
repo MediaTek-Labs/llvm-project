@@ -269,6 +269,7 @@ void renderCommonIntegerOverflowOptions(const llvm::opt::ArgList &Args,
 } // end namespace driver
 } // end namespace clang
 
+[[maybe_unused]]
 clang::CodeGenOptions::FramePointerKind
 getFramePointerKind(const llvm::opt::ArgList &Args, const llvm::Triple &Triple);
 

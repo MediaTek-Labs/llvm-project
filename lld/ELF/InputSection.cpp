@@ -1156,8 +1156,10 @@ void InputSection::relocateNonAlloc(Ctx &ctx, uint8_t *buf,
         if (prevRelocOnlyCalculating)
           addend = valFromBefore;
 
-        val = SignExtend64<bits>(getRelocTargetVA(
-            ctx, Relocation{expr, type, offset, addend, &sym}, addrLoc));
+        val = SignExtend64<bits>(
+              getRelocTargetVA(ctx,
+              Relocation{expr, type, offset, addend, &sym},
+              addrLoc));    
 
         auto nextIt = std::next(it);
         if (nextIt != end && nextIt->r_offset == rel.r_offset) {
@@ -1465,11 +1467,10 @@ void EhInputSection::split(ArrayRef<RelTy> rels) {
                  "PC relocs not expected for determining size of .eh_frame "
                  "entries");
 
-          calculatedVal = SignExtend64<bits>(getRelocTargetVA(
-              s->ctx,
-              Relocation{expr, type, rel.r_offset,
-                         static_cast<int64_t>(calculatedVal.value_or(0)), &sym},
-              0));
+          calculatedVal = SignExtend64<bits>(
+              getRelocTargetVA(s->ctx,
+              Relocation{expr, type, rel.r_offset, 
+                static_cast<int64_t>(calculatedVal.value_or(0)), &sym}, 0)); 
         }
       }
       // If the relocation exists, use its calculated value

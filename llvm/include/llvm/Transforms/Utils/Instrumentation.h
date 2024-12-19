@@ -82,7 +82,7 @@ Value *emitDebugLocData(DebugLoc Loc, Module &M, IRBuilder<T> &Builder) {
   }
   if (!FilenameArray)
     FilenameArray = Constant::getNullValue(
-        PointerType::get(Type::getInt8Ty(Builder.getContext()), 0));
+                    PointerType::get(Type::getInt8Ty(Builder.getContext()), 0));
   auto *Filename =
       new GlobalVariable(M, FilenameArray->getType(), true,
                          GlobalVariable::PrivateLinkage, FilenameArray);

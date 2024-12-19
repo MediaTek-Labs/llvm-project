@@ -1605,6 +1605,10 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
       TargetTriple.isGNUEnvironment())
     return findMipsMtiMultilibs(D, Flags, NonExistent, Result);
 
+  if (TargetTriple.isNanoMips()) {
+    return findMipsMtiMultilibs(D, Flags, NonExistent, Result);
+  }
+
   if (TargetTriple.getVendor() == llvm::Triple::ImaginationTechnologies &&
       TargetTriple.getOS() == llvm::Triple::Linux &&
       TargetTriple.isGNUEnvironment())

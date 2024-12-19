@@ -1534,8 +1534,8 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
   addMultilibFlag(ABIName == "n32", "-mabi=n32", Flags);
   addMultilibFlag(ABIName == "n64", "-mabi=n64", Flags);
   addMultilibFlag(ABIName == "p32", "-mabi=p32", Flags);
-  addMultilibFlag(isSoftFloatABI(Args), "-msoft-float", Flags);
-  addMultilibFlag(!isSoftFloatABI(Args), "-mhard-float", Flags);
+  addMultilibFlag(isSoftFloatABI(Args, TargetTriple), "-msoft-float", Flags);
+  addMultilibFlag(!isSoftFloatABI(Args, TargetTriple), "-mhard-float", Flags);
   addMultilibFlag(isMipsEL(TargetArch), "-EL", Flags);
   addMultilibFlag(!isMipsEL(TargetArch), "-EB", Flags);
 
@@ -1550,7 +1550,7 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
     return findMipsMtiMultilibs(D, Flags, NonExistent, Result);
 
   if (TargetTriple.isNanoMips()) {
-    return findMipsMtiMultilibs(Flags, NonExistent, Result);
+    return findMipsMtiMultilibs(D, Flags, NonExistent, Result);
   }
 
   if (TargetTriple.getVendor() == llvm::Triple::ImaginationTechnologies &&

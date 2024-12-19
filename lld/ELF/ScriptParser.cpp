@@ -361,7 +361,7 @@ void ScriptParser::addFile(StringRef s, bool toBeginning) {
       // Finally, search in the list of library paths.
       if (std::optional<std::string> path = findFromSearchPaths(ctx, s))
         ctx.driver.addFile(ctx.saver.save(*path),
-                           /*withLOption=*/true, toBeginning);
+                          /*withLOption=*/true, toBeginning);
       else
         setError("unable to find " + s);
     }

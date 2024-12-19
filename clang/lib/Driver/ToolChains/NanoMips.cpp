@@ -28,6 +28,7 @@ NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
            const llvm::opt::ArgList &Args) : Generic_ELF(D, Triple, Args) {
   GCCInstallation.init(Triple, Args);
   Multilibs = GCCInstallation.getMultilibs();
+  SelectedMultilibs.assign({GCCInstallation.getMultilib()});
 
   // TODO: This needs to be addressed.
   // SelectedMultilib = GCCInstallation.getMultilib();

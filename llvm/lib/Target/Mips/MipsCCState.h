@@ -140,7 +140,7 @@ public:
                                  CCAssignFn Fn) {
     OriginalArgWasFloat.clear();
     OriginalArgWasF128.clear();
-    PreAnalyzeFormalArgumentsFor64BitLo(Ins);
+    preAnalyzeFormalArgumentsFor64BitLo(Ins);
     OriginalArgWasFloatVector.clear();
     PreAnalyzeFormalArgumentsForF128(Ins);
   }

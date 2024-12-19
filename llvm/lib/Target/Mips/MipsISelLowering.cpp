@@ -4298,7 +4298,7 @@ MipsTargetLowering::parseRegForInlineAsmConstraintNM(StringRef C,
   const auto *RC = getRegClassFor(MVT::i32);
 
   for (const auto &V : *RC)
-    if (RegName.equals_lower(TRI->getRegAsmName(V)))
+    if (RegName.lower() == TRI->getRegAsmName(V))
       return std::make_pair(V, RC);
 
   return std::make_pair(0U, nullptr);
@@ -4800,7 +4800,7 @@ void MipsTargetLowering::writeVarArgRegs(std::vector<SDValue> &OutChains,
     unsigned GPRSaveSize = 4 * (NumGPRArgRegs - Idx);
     MipsFI->setVarArgsGPRSize(GPRSaveSize);
 
-    unsigned StackOffset = State.getNextStackOffset();
+    unsigned StackOffset = State.getStackSize();
     MipsFI->setVarArgsStackIndex(MFI.CreateFixedObject(4, StackOffset, true));
   }
 

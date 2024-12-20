@@ -480,10 +480,10 @@ public:
         {{"ra", "$ra"}, "$31"}
     };
     if (ABI == "o32")
-      return llvm::makeArrayRef(O32RegAliases);
+      return llvm::ArrayRef(O32RegAliases);
     if (ABI == "p32")
-      return llvm::makeArrayRef(P32RegAliases);
-    return llvm::makeArrayRef(NewABIRegAliases);
+      return llvm::ArrayRef(P32RegAliases);
+    return llvm::ArrayRef(NewABIRegAliases);
   }
 
   bool hasInt128Type() const override {

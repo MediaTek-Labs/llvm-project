@@ -246,7 +246,7 @@ public:
   /// of the specified triple.
   MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS, bool little,
                 const MipsTargetMachine &TM, MaybeAlign StackAlignOverride,
-                bool UnalignedLS);
+                bool UnalignedLS=false);
 
   ~MipsSubtarget() override;
 

@@ -84,6 +84,7 @@ static bool useFramePointerForTargetByDefault(const llvm::opt::ArgList &Args,
     return true;
 
   switch (Triple.getArch()) {
+  case llvm::Triple::nanomips:
   case llvm::Triple::xcore:
   case llvm::Triple::wasm32:
   case llvm::Triple::wasm64:

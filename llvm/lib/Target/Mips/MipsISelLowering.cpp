@@ -2522,7 +2522,7 @@ SDValue MipsTargetLowering::lowerVACOPY(SDValue Op, SelectionDAG &DAG) const {
     return DAG.getMemcpy(Op.getOperand(0), DL, Op.getOperand(1),
                          Op.getOperand(2),
                          DAG.getConstant(VaListSize, DL, MVT::i32),
-                         Align(PtrSize), false, false, false,
+                         Align(PtrSize), false, false, nullptr, false,
                          MachinePointerInfo(DestSV), MachinePointerInfo(SrcSV));
   } else {
     return SDValue();

@@ -107,7 +107,7 @@ static InstructionCost selectCost(const Value *Cond,
   const ConstantInt *AI = dyn_cast<ConstantInt>(A),
     *BI = dyn_cast<ConstantInt>(B);
 
-  if (AI && BI) {
+  if (AI && BI && AI->getBitWidth() <= 64 && BI->getBitWidth() <= 64) {
     uint64_t AV = AI->getZExtValue(), BV = BI->getZExtValue();
     if ((AV == 0 && BV == 1) || (AV == 1 && BV == 0)) {
       return TTI::TCC_Free;

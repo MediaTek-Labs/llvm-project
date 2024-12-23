@@ -54,9 +54,9 @@ struct NanoMipsRegisterReAlloc : public MachineFunctionPass {
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.setPreservesAll();
-    AU.addRequired<VirtRegMap>();
-    AU.addRequired<LiveIntervals>();
-    AU.addRequired<LiveRegMatrix>();
+    AU.addRequired<VirtRegMapWrapperLegacy>();
+    AU.addRequired<LiveIntervalsWrapperPass>();
+    AU.addRequired<LiveRegMatrixWrapperLegacy>();
     MachineFunctionPass::getAnalysisUsage(AU);
   }
 
@@ -76,9 +76,9 @@ char NanoMipsRegisterReAlloc::ID = 0;
 
 INITIALIZE_PASS_BEGIN(NanoMipsRegisterReAlloc, "nmregrealloc", "nanoMIPS Register Re-allocation", false,
                       false)
-INITIALIZE_PASS_DEPENDENCY(LiveIntervals)
-INITIALIZE_PASS_DEPENDENCY(VirtRegMap)
-INITIALIZE_PASS_DEPENDENCY(LiveRegMatrix)
+INITIALIZE_PASS_DEPENDENCY(LiveIntervalsWrapperPass)
+INITIALIZE_PASS_DEPENDENCY(VirtRegMapWrapperLegacy)
+INITIALIZE_PASS_DEPENDENCY(LiveRegMatrixWrapperLegacy)
 INITIALIZE_PASS_END(NanoMipsRegisterReAlloc, "nmregrealloc", "nanoMIPS Register Re-allocation", false,
                     false)
 
@@ -86,9 +86,9 @@ bool NanoMipsRegisterReAlloc::runOnMachineFunction(MachineFunction &Fn) {
   STI = &static_cast<const MipsSubtarget &>(Fn.getSubtarget());
   TII = STI->getInstrInfo();
   MRI = &Fn.getRegInfo();
-  LIS = &getAnalysis<LiveIntervals>();
-  VRM = &getAnalysis<VirtRegMap>();
-  LRM = &getAnalysis<LiveRegMatrix>();
+  LIS = &getAnalysis<LiveIntervalsWrapperPass>().getLIS();
+  VRM = &getAnalysis<VirtRegMapWrapperLegacy>().getVRM();
+  LRM = &getAnalysis<LiveRegMatrixWrapperLegacy>().getLRM();
   bool Modified = false;
   for (MachineFunction::iterator MFI = Fn.begin(), E = Fn.end(); MFI != E;
        ++MFI) {

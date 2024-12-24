@@ -730,7 +730,6 @@ getSymGPRel(const MCInst &MI, unsigned OpNo,
     Expr = MO.getExpr();
     Mips::Fixups FixupKind = Mips::Fixups(0);
     unsigned Offset = 0;
-    assert (Expr->getKind() == MipsMCExpr::MEK_GPREL);
     Expr = MO.getExpr();
     switch (MI.getOpcode()) {
     case Mips::ADDIUGPW_NM:

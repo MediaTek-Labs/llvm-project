@@ -6943,8 +6943,8 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
       return Match_RequiresBaseSP;
     return Match_Success;
   case Mips::ADDIUGP48_NM:
-    if (needsHw110880Xform(Inst.getOperand(2).getImm()))
-	return Match_Requires48bXform;
+    if (Inst.getOperand(2).isImm() && needsHw110880Xform(Inst.getOperand(2).getImm()))
+      return Match_Requires48bXform;
     LLVM_FALLTHROUGH;
   case Mips::ADDIUGPB_NM:
   case Mips::ADDIUGPW_NM:
@@ -6958,8 +6958,9 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
   case Mips::LI48_NM:
   case Mips::ADDIU48_NM:
   case Mips::ADDIUPC48_NM:
-    if (needsHw110880Xform(Inst.getOperand(Inst.getNumOperands() - 1).getImm()))
-	return Match_Requires48bXform;
+    if (Inst.getOperand(Inst.getNumOperands() - 1).isImm() &&
+        needsHw110880Xform(Inst.getOperand(Inst.getNumOperands() - 1).getImm()))
+      return Match_Requires48bXform;
   }
 
   uint64_t TSFlags = MII.get(Inst.getOpcode()).TSFlags;

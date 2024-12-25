@@ -51,6 +51,7 @@ struct NMMoveOpt : public MachineFunctionPass {
   static char ID;
   const MipsSubtarget *STI;
   const TargetInstrInfo *TII;
+  const TargetRegisterInfo *TRI;
   NMMoveOpt() : MachineFunctionPass(ID) {}
   StringRef getPassName() const override { return NM_MOVE_OPT_NAME; }
   bool runOnMachineFunction(MachineFunction &) override;
@@ -66,6 +67,7 @@ char NMMoveOpt::ID = 0;
 bool NMMoveOpt::runOnMachineFunction(MachineFunction &Fn) {
   STI = &static_cast<const MipsSubtarget &>(Fn.getSubtarget());
   TII = STI->getInstrInfo();
+  TRI = STI->getRegisterInfo();
   bool Modified = false;
   for (MachineFunction::iterator MFI = Fn.begin(), E = Fn.end(); MFI != E;
        ++MFI) {
@@ -226,9 +228,9 @@ bool NMMoveOpt::generateMoveP(MachineBasicBlock &MBB) {
 
     // Use or define of previous move's destination breaks the pair.
     // Define of previous move's source breaks the pair.
-    if (PrevMove && (MI.readsRegister(PrevMove->getOperand(0).getReg()) ||
-                     MI.modifiesRegister(PrevMove->getOperand(0).getReg()) ||
-                     MI.modifiesRegister(PrevMove->getOperand(1).getReg())))
+    if (PrevMove && (MI.readsRegister(PrevMove->getOperand(0).getReg(), TRI) ||
+                     MI.modifiesRegister(PrevMove->getOperand(0).getReg(), TRI) ||
+                     MI.modifiesRegister(PrevMove->getOperand(1).getReg(), TRI)))
       PrevMove = nullptr;
   }
 

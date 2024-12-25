@@ -52,11 +52,13 @@ public:
 
   bool canMacroFuseCmp(void) const { return true; } // true; }
 
-  InstructionCost getCmpSelInstrCost (
+  InstructionCost getCmpSelInstrCost(
       unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
-      TTI::TargetCostKind CostKind=TTI::TCK_RecipThroughput,
-      const Instruction *I=nullptr,
-      ArrayRef<const Value *> Operands = ArrayRef<const Value*>()) const;
+      TTI::TargetCostKind CostKind = TTI::TCK_RecipThroughput,
+      TTI::OperandValueInfo Op1Info = {TTI::OK_AnyValue, TTI::OP_None},
+      TTI::OperandValueInfo Op2Info = {TTI::OK_AnyValue, TTI::OP_None},
+      const Instruction *I = nullptr,
+      ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) const;
 };
 
 } // end namespace llvm

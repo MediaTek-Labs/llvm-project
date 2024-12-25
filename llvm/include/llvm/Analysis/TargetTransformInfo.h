@@ -2894,13 +2894,11 @@ public:
                                  const Instruction *I = nullptr) override {
     return Impl.getCFInstrCost(Opcode, CostKind, I);
   }
-  InstructionCost getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
-                                     CmpInst::Predicate VecPred,
-                                     TTI::TargetCostKind CostKind,
-                                     OperandValueInfo Op1Info,
-                                     OperandValueInfo Op2Info,
-                                     const Instruction *I,
-                                     ArrayRef<const Value *> Operands) override {
+  InstructionCost getCmpSelInstrCost(
+      unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
+      TTI::TargetCostKind CostKind, OperandValueInfo Op1Info,
+      OperandValueInfo Op2Info, const Instruction *I,
+      ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) override {
     return Impl.getCmpSelInstrCost(Opcode, ValTy, CondTy, VecPred, CostKind,
                                    Op1Info, Op2Info, I, Operands);
   }

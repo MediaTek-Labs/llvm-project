@@ -3158,10 +3158,14 @@ static bool validateAndCostRequiredSelects(BasicBlock *BB, BasicBlock *ThenBB,
     if (ThenV == OrigV)
       continue;
 
-    Cost += TTI.getCmpSelInstrCost(Instruction::Select, PN.getType(), nullptr,
-                                   CmpInst::BAD_ICMP_PREDICATE, CostKind,
-                                   nullptr,
-                                   ArrayRef<const Value *>({BrCond, OrigV, ThenV}));
+    Cost += TTI.getCmpSelInstrCost(
+        Instruction::Select, PN.getType(), nullptr, CmpInst::BAD_ICMP_PREDICATE,
+        CostKind,
+        TTI::OperandValueInfo{TTI::OperandValueKind::OK_AnyValue,
+                              TTI::OperandValueProperties::OP_None},
+        TTI::OperandValueInfo{TTI::OperandValueKind::OK_AnyValue,
+                              TTI::OperandValueProperties::OP_None},
+        nullptr, ArrayRef<const Value *>({BrCond, OrigV, ThenV}));
 
     // Don't convert to selects if we could remove undefined behavior instead.
     if (passingValueIsAlwaysUndefined(OrigV, &PN) ||
@@ -3377,6 +3381,7 @@ bool SimplifyCFGOpt::speculativelyExecuteBB(BranchInst *BI,
       SpeculatedStore != nullptr || !SpeculatedConditionalLoadsStores.empty();
   InstructionCost Cost = 0;
   Convert |= validateAndCostRequiredSelects(BB, ThenBB, EndBB,
+                                            BrCond,
                                             SpeculatedInstructions, Cost, TTI);
   if (!Convert || Cost > Budget)
     return false;

@@ -54,7 +54,8 @@ NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
         std::string(GCCInstallation.getParentLibPath());
     addPathIfExists(D,
                     LibPath + "/../" + GCCTriple.str() + "/" + OSLibDir +
-                    SelectedMultilib.osSuffix() + "/" + OSLibDir,
+                    //SelectedMultilib.osSuffix() + "/" + OSLibDir,
+                    "" + "/" + OSLibDir,
                     Paths);
   }
 
@@ -181,10 +182,10 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
       CmdArgs.push_back("--start-group");
 
       if (NeedsSanitizerDeps)
-        linkSanitizerRuntimeDeps(ToolChain, CmdArgs);
+        linkSanitizerRuntimeDeps(ToolChain, Args, CmdArgs);
 
       if (NeedsXRayDeps)
-        linkXRayRuntimeDeps(ToolChain, CmdArgs);
+        linkXRayRuntimeDeps(ToolChain, Args, CmdArgs);
 
       bool WantPthread = Args.hasArg(options::OPT_pthread) ||
                          Args.hasArg(options::OPT_pthreads);
@@ -195,7 +196,7 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
 
       // FIXME: Only pass GompNeedsRT = true for platforms with libgomp that
       // require librt. Most modern Linux platforms do, but some may not.
-      if (addOpenMPRuntime(CmdArgs, ToolChain, Args, StaticOpenMP,
+      if (addOpenMPRuntime(C, CmdArgs, ToolChain, Args, StaticOpenMP,
                            JA.isHostOffloading(Action::OFK_OpenMP),
                            /* GompNeedsRT= */ true))
         // OpenMP runtimes implies pthreads when using the GNU toolchain.

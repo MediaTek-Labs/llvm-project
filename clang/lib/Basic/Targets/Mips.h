@@ -531,9 +531,9 @@ public:
 
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
-  unsigned getMinGlobalAlign(uint64_t TypeSize) const override {
+  unsigned getMinGlobalAlign(uint64_t TypeSize, bool HasNonWeakDef) const override {
     if (ABI != "p32" || TypeSize < 32)
-      return TargetInfo::getMinGlobalAlign(TypeSize);
+      return TargetInfo::getMinGlobalAlign(TypeSize, HasNonWeakDef);
     return 32u;
   }
 };

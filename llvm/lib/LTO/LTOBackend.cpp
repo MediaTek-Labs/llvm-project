@@ -533,32 +533,32 @@ static void codegen(const Config &Conf, TargetMachine *TM,
     if (EC)
       report_fatal_error(Twine("Failed to open ") + DwoFile + ": " +
                          EC.message());
-  }
+  } 
 
-  if (!LtoExternalAsm.empty()) {
-    LLVM_DEBUG(dbgs() << "Run codegen on module "
-                      << Mod.getModuleIdentifier() << "\n");
-    SmallString<0> AsmBuffer;
-    raw_svector_ostream AsmStream(AsmBuffer);
-    legacy::PassManager CodeGenPasses;
-    CodeGenPasses.add(
-                      createImmutableModuleSummaryIndexWrapperPass(&CombinedIndex));
+  // if (!LtoExternalAsm.empty()) {
+  //   LLVM_DEBUG(dbgs() << "Run codegen on module "
+  //                     << Mod.getModuleIdentifier() << "\n");
+  //   SmallString<0> AsmBuffer;
+  //   raw_svector_ostream AsmStream(AsmBuffer);
+  //   legacy::PassManager CodeGenPasses;
+  //   CodeGenPasses.add(
+  //                     createImmutableModuleSummaryIndexWrapperPass(&CombinedIndex));
 
-    if (Conf.PreCodeGenPassesHook)
-      Conf.PreCodeGenPassesHook(CodeGenPasses);
-    CodeGenFileType CGFileType = Conf.CGFileType;
-    if (CGFileType == CGFT_ObjectFile)
-      CGFileType = CGFT_AssemblyFile;
-    if (TM->addPassesToEmitFile(CodeGenPasses, AsmStream,
-                                DwoOut ? &DwoOut->os() : nullptr,
-                                CGFileType))
-      report_fatal_error("Failed to setup codegen");
+  //   if (Conf.PreCodeGenPassesHook)
+  //     Conf.PreCodeGenPassesHook(CodeGenPasses);
+  //   CodeGenFileType CGFileType = Conf.CGFileType;
+  //   if (CGFileType == CGFT_ObjectFile)
+  //     CGFileType = CGFT_AssemblyFile;
+  //   if (TM->addPassesToEmitFile(CodeGenPasses, AsmStream,
+  //                               DwoOut ? &DwoOut->os() : nullptr,
+  //                               CGFileType))
+  //     report_fatal_error("Failed to setup codegen");
 
-    CodeGenPasses.run(Mod);
+  //   CodeGenPasses.run(Mod);
 
-    if (Conf.CGFileType == CGFT_ObjectFile)
-      assemble(Conf, TM, AddStream, Task, Mod, AsmBuffer);
-  } else {
+  //   if (Conf.CGFileType == CGFT_ObjectFile)
+  //     assemble(Conf, TM, AddStream, Task, Mod, AsmBuffer);
+  // } else {
 Expected<std::unique_ptr<CachedFileStream>> StreamOrErr =
       AddStream(Task, Mod.getModuleIdentifier());
   if (Error Err = StreamOrErr.takeError())
@@ -584,7 +584,7 @@ Expected<std::unique_ptr<CachedFileStream>> StreamOrErr =
                               Conf.CGFileType))
     report_fatal_error("Failed to setup codegen");
   CodeGenPasses.run(Mod);
-  }
+  //}
 
   if (DwoOut)
     DwoOut->keep();

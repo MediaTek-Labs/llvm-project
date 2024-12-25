@@ -585,13 +585,8 @@ bool MipsExpandPseudo::expandAtomicBinOpSubword(
       // min: move BinOpRes, StoreVal
       //      movz BinOpRes, Incr, Scratch4, BinOpRes
       BuildMI(loopMBB, DL, TII->get(OR), BinOpRes)
-<<<<<<< HEAD
           .addReg(StoreVal)
           .addReg(Mips::ZERO);
-=======
-          .addReg(OldVal)
-          .addReg(ZERO);
->>>>>>> 63a8a7c5eca3 (Merge remote-tracking branch 'origin/mtk/nanomips-dev' into nanomips-llvm13)
       BuildMI(loopMBB, DL, TII->get(MOVIncr), BinOpRes)
           .addReg(Incr)
           .addReg(Scratch4)
@@ -644,7 +639,6 @@ bool MipsExpandPseudo::expandAtomicBinOpSubword(
         .addReg(Dest)
         .addReg(ShiftAmnt);
 
-<<<<<<< HEAD
     if (STI->hasMips32r2()) {
       BuildMI(sinkMBB, DL, TII->get(SEOp), Dest).addReg(Dest);
     } else {
@@ -656,23 +650,6 @@ bool MipsExpandPseudo::expandAtomicBinOpSubword(
           .addReg(Dest, RegState::Kill)
           .addImm(ShiftImm);
     }
-=======
-  BuildMI(sinkMBB, DL, TII->get(AND), Dest)
-    .addReg(OldVal).addReg(Mask);
-  BuildMI(sinkMBB, DL, TII->get(SRLV), Dest)
-      .addReg(Dest).addReg(ShiftAmnt);
-
-  if (STI->hasMips32r2() || IsNanoMips) {
-    BuildMI(sinkMBB, DL, TII->get(SEOp), Dest).addReg(Dest);
-  } else {
-    const unsigned ShiftImm = SEOp == Mips::SEH ? 16 : 24;
-    BuildMI(sinkMBB, DL, TII->get(Mips::SLL), Dest)
-        .addReg(Dest, RegState::Kill)
-        .addImm(ShiftImm);
-    BuildMI(sinkMBB, DL, TII->get(Mips::SRA), Dest)
-        .addReg(Dest, RegState::Kill)
-        .addImm(ShiftImm);
->>>>>>> 63a8a7c5eca3 (Merge remote-tracking branch 'origin/mtk/nanomips-dev' into nanomips-llvm13)
   }
 
   LivePhysRegs LiveRegs;

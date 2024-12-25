@@ -169,7 +169,7 @@ private:
     unsigned Size;
     bool Signed;
     NanoMipsJumpTableInfo(unsigned Size, MCSymbol *Sym, bool Sign)
-        : Size(Size), Symbol(Sym), Signed(Sign) {}
+        : Symbol(Sym), Size(Size), Signed(Sign) {}
   };
 
   SmallVector<NanoMipsJumpTableInfo *, 2> JumpTableEntryInfo;

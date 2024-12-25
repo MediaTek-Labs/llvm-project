@@ -301,7 +301,7 @@ std::unique_ptr<CSEConfigBase> MipsPassConfig::getCSEConfig() const {
 }
 
 void MipsPassConfig::addPreSched2() {
-  if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOpt::None)
+  if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOptLevel::None)
     addPass(createNanoMipsLoadStoreOptimizerPass());
 }
 
@@ -327,7 +327,7 @@ void MipsPassConfig::addPreRegAlloc() {
 }
 
 void MipsPassConfig::addPostRegAlloc() {
-  if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOpt::None)
+  if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOptLevel::None)
     addPass(createRedundantCopyEliminationPass());
 }
 
@@ -372,7 +372,7 @@ void MipsPassConfig::addPreEmitPass2() {
   // instructions when the "mfix4300" flag is passed.
   if (EnableMulMulFix)
     addPass(createMipsMulMulBugPass());
-   if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOpt::None)
+   if (getMipsSubtarget().hasNanoMips() && getOptLevel() != CodeGenOptLevel::None)
     addPass(createNanoMipsMoveOptimizerPass());
 
   // The delay slot filler pass can potientially create forbidden slot hazards

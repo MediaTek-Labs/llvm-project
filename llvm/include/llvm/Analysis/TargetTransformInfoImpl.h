@@ -710,7 +710,7 @@ public:
       unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
       TTI::TargetCostKind CostKind, TTI::OperandValueInfo Op1Info,
       TTI::OperandValueInfo Op2Info, const Instruction *I,
-      ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) const {
+      ArrayRef<const Value *> Operands) const {
     return 1;
   }
 
@@ -1408,7 +1408,7 @@ public:
       Type *CondTy = Operands[0]->getType();
       return TargetTTI->getCmpSelInstrCost(Opcode, U->getType(), CondTy,
                                            CmpInst::BAD_ICMP_PREDICATE,
-                                           CostKind, Op1Info, Op2Info, I);
+                                           CostKind, Op1Info, Op2Info, I, Operands);
     }
     case Instruction::ICmp:
     case Instruction::FCmp: {
@@ -1416,10 +1416,10 @@ public:
       const auto Op2Info = TTI::getOperandInfo(Operands[1]);
       Type *ValTy = Operands[0]->getType();
       // TODO: Also handle ICmp/FCmp constant expressions.
-      return TargetTTI->getCmpSelInstrCost(Opcode, ValTy, U->getType(),
-                                           I ? cast<CmpInst>(I)->getPredicate()
-                                             : CmpInst::BAD_ICMP_PREDICATE,
-                                           CostKind, Op1Info, Op2Info, I);
+      return TargetTTI->getCmpSelInstrCost(
+          Opcode, ValTy, U->getType(),
+          I ? cast<CmpInst>(I)->getPredicate() : CmpInst::BAD_ICMP_PREDICATE,
+          CostKind, Op1Info, Op2Info, I, Operands);
     }
     case Instruction::InsertElement: {
       auto *IE = dyn_cast<InsertElementInst>(U);

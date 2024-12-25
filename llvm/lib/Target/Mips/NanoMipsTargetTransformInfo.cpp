@@ -117,11 +117,12 @@ static InstructionCost selectCost(const Value *Cond,
 /// Cost for compare and select. When selecting between constant 0 and
 /// 1 values, this can be implemented as just a comparison, making the
 /// selection free.
-InstructionCost NanoMipsTTIImpl::getCmpSelInstrCost (
+InstructionCost NanoMipsTTIImpl::getCmpSelInstrCost(
     unsigned Opcode, Type *ValTy, Type *CondTy, CmpInst::Predicate VecPred,
     TTI::TargetCostKind CostKind,
-    const Instruction *I,
-    ArrayRef<const Value *> Operands) const {
+    TTI::OperandValueInfo Op1Info,
+    TTI::OperandValueInfo Op2Info,
+    const Instruction *I, ArrayRef<const Value *> Operands) const {
 
   if (I != nullptr) {
     // Decode compare and select

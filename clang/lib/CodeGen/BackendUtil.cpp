@@ -970,6 +970,8 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
           [Trap, Recover](FunctionPassManager &FPM, OptimizationLevel Level) {
             FPM.addPass(BoundsCheckingPass(Trap, Recover, false,
 					   SanitizerKind::SO_LocalBounds));
+            FPM.addPass(InstCombinePass());
+            FPM.addPass(GVNPass());
             FPM.addPass(CorrelatedValuePropagationPass());
           });
     }

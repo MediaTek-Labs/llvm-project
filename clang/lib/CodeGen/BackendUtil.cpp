@@ -1054,6 +1054,8 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
           };
         }
         FPM.addPass(BoundsCheckingPass(Options));
+        FPM.addPass(InstCombinePass());
+        FPM.addPass(GVNPass());
       });
 
     // Don't add sanitizers if we are here from ThinLTO PostLink. That already

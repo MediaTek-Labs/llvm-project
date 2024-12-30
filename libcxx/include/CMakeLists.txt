@@ -345,6 +345,7 @@ set(files
   __expected/expected.h
   __expected/unexpect.h
   __expected/unexpected.h
+  __external_threading
   __filesystem/copy_options.h
   __filesystem/directory_entry.h
   __filesystem/directory_iterator.h

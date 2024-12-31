@@ -518,7 +518,7 @@ void MipsInstPrinter::printHi20(const MCInst *MI, int OpNum,
                                 const MCSubtargetInfo &STI, raw_ostream &O) {
   const MCOperand& MO = MI->getOperand(OpNum);
   if (MO.isImm())
-    O << "%hi(" <<  formatHex(MO.getImm()) << ")";
+    O << "%hi(" <<  formatHex(MO.getImm() << 12) << ")";
   else
     printOperand(MI, OpNum, STI, O);
 }

@@ -1416,13 +1416,13 @@
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  00 e2 00 00  	lui	$s0, %hi(0x0)
 				# DISAS-NEXT: {{.*}}  R_NANOMIPS_HI20	test
-	lui $s1, %hi(0x12345678)	# CHECK: lui $s1, %hi(0x12345) # encoding: [0x34,0xe2,0x44,0x52]
+	lui $s1, %hi(0x12345678)	# CHECK: lui $s1, %hi(0x12345000) # encoding: [0x34,0xe2,0x44,0x52]
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  34 e2 44 52  	lui	$s1, %hi(0x12345000)
-	lui $s2, %hi(0x80001000)	# CHECK: lui $s2, %hi(0x80001) # encoding: [0x40,0xe2,0x01,0x10]
+	lui $s2, %hi(0x80001000)	# CHECK: lui $s2, %hi(0x80001000) # encoding: [0x40,0xe2,0x01,0x10]
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  40 e2 01 10  	lui	$s2, %hi(0x80001000)
-	lui $s3, %hi(0xfffff000)	# CHECK: lui $s3, %hi(0xfffff) # encoding: [0x7f,0xe2,0xfd,0xff]
+	lui $s3, %hi(0xfffff000)	# CHECK: lui $s3, %hi(0xfffff000) # encoding: [0x7f,0xe2,0xfd,0xff]
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  7f e2 fd ff  	lui	$s3, %hi(0xfffff000)
 
@@ -1755,13 +1755,13 @@
 			# CHECK-NEXT: # <MCInst #{{.*}} WAIT_NM
 			# DISAS: {{.*}}  ff 23 7f c3  	wait	1023
 
-	li	$t3, 65536	# CHECK: lui $t3, %hi(0x10) # encoding: [0xe1,0xe1,0x00,0x00]
+	li	$t3, 65536	# CHECK: lui $t3, %hi(0x10000) # encoding: [0xe1,0xe1,0x00,0x00]
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  e1 e1 00 00  	lui	$t3, %hi(0x10000)
-	li	$t4, -4096	# CHECK: lui $t4, %hi(-0x1) # encoding: [0x5f,0xe0,0xfd,0xff]
+	li	$t4, -4096	# CHECK: lui $t4, %hi(-0x1000) # encoding: [0x5f,0xe0,0xfd,0xff]
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  5f e0 fd ff  	lui	$t4, %hi(0xfffff000)
-	li	$t5, -2147483648	# CHECK: lui $t5, %hi(-0x80000) # encoding: [0x60,0xe0,0x01,0x00]
+	li	$t5, -2147483648	# CHECK: lui $t5, %hi(-0x80000000) # encoding: [0x60,0xe0,0x01,0x00]
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  60 e0 01 00  	lui	$t5, %hi(0x80000000)
 

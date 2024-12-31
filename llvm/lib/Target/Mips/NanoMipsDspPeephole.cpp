@@ -52,10 +52,10 @@ MachineInstr *NMDspPeephole::getMIDefiningReg(Register Reg, unsigned Opcode) {
 
 Register NMDspPeephole::firstAccOperand(MachineInstr &MI) {
   for (MachineOperand &MO : MI.operands()) {
-    if (MO.isDef())
+    if (!MO.isReg() || MO.isDef())
       continue;
-    if (MO.isReg()) {
-      Register Reg = MO.getReg();
+    Register Reg = MO.getReg();
+    if (Reg.isVirtual()) {
       const TargetRegisterClass *VirtRegClass = MRI->getRegClass(Reg);
       if (VirtRegClass == &Mips::ACC64DSPNMRegClass) {
         return Reg;

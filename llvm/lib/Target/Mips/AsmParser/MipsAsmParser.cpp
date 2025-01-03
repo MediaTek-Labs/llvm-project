@@ -6950,6 +6950,7 @@ unsigned MipsAsmParser::checkTargetMatchPredicate(MCInst &Inst) {
     return Match_Success;
   case Mips::LI48_NM:
   case Mips::ADDIU48_NM:
+  case Mips::ADDIUPC48_NM:
     if (needsHw110880Xform(Inst.getOperand(Inst.getNumOperands() - 1).getImm()))
 	return Match_Requires48bXform;
   }

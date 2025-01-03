@@ -31,9 +31,9 @@ foo:
 
   # ADDIUPC/LAPC/SWPC are always emitted with PC-relative relocation
   # so checking/handling is deffered to the linker.
-  addiupc $a0, 0x52012400	# CHECK-ANY: lapc.b $a0, 0x52012400	# encoding: [0x83,0x60,A,A,A,A]
-				# CHECK-ANY-NEXT: fixup A - offset: 2, value: 1375806464, kind: fixup_NANOMIPS_PC_I32
-				# CHECK-ANY-NEXT: # <MCInst #{{.*}} LAPC48_NM
+  addiupc $a0, 0x52012400	# CHECK-FIX: error: immediate value in 48-bit instruction requires transform for hw110880
+				# CHECK: addiupc $a0, 0x52012400	# encoding: [0x83,0x60,0xfa,0x23,0x01,0x52]
+				# CHECK-NEXT: # <MCInst #{{.*}} ADDIUPC48_NM
   lapc.b $a0, 0x51012400	# CHECK-ANY: lapc.b $a0, 0x51012400	# encoding: [0x83,0x60,A,A,A,A]
 				# CHECK-ANY-NEXT: fixup A - offset: 2, value: 1359029248, kind: fixup_NANOMIPS_PC_I32
 				# CHECK-ANY-NEXT: # <MCInst #{{.*}} LAPC48_NM

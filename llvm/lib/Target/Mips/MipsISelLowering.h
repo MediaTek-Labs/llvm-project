@@ -758,6 +758,8 @@ class TargetRegisterClass;
                                                 unsigned Size) const;
     MachineBasicBlock *emitAtomicCmpSwap(MachineInstr &MI,
                                          MachineBasicBlock *BB) const;
+    MachineBasicBlock *emitAtomicCmpSwap64NM(MachineInstr &MI,
+                                             MachineBasicBlock *BB) const;
     MachineBasicBlock *emitAtomicCmpSwapPartword(MachineInstr &MI,
                                                  MachineBasicBlock *BB,
                                                  unsigned Size) const;

@@ -508,6 +508,10 @@ MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
     setOperationAction(ISD::ATOMIC_STORE,    MVT::i64,   Expand);
   }
 
+  if (Subtarget.hasNanoMips()) {
+    setOperationAction(ISD::ATOMIC_CMP_SWAP, MVT::i64, Custom);
+  }
+
   if (!Subtarget.hasMips32r2() && !Subtarget.hasNanoMips()) {
     setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i8,  Expand);
     setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i16, Expand);
@@ -1659,10 +1663,46 @@ bool MipsTargetLowering::isIntDivCheap(EVT VT, AttributeList Attr) const {
   return OptSize && Subtarget.hasNanoMips();
 }
 
+static void ReplaceCMP_SWAP_64Results(SDNode *N,
+                                      SmallVectorImpl<SDValue> &Results,
+                                      SelectionDAG &DAG) {
+  assert(N->getValueType(0) == MVT::i64 &&
+         "AtomicCmpSwap on types less than 64 should be legal");
+
+  SDLoc DL(N);
+  SDValue Ops[] = {N->getOperand(1),
+                   DAG.getNode(ISD::EXTRACT_ELEMENT, DL, MVT::i32,
+                               N->getOperand(2), DAG.getIntPtrConstant(0, DL)),
+                   DAG.getNode(ISD::EXTRACT_ELEMENT, DL, MVT::i32,
+                               N->getOperand(2), DAG.getIntPtrConstant(1, DL)),
+                   DAG.getNode(ISD::EXTRACT_ELEMENT, DL, MVT::i32,
+                               N->getOperand(3), DAG.getIntPtrConstant(0, DL)),
+                   DAG.getNode(ISD::EXTRACT_ELEMENT, DL, MVT::i32,
+                               N->getOperand(3), DAG.getIntPtrConstant(1, DL)),
+                   N->getOperand(0)};
+  SDNode *CmpSwap =
+      DAG.getMachineNode(Mips::ATOMIC_CMP_SWAP_I64_NM, DL,
+                         DAG.getVTList(MVT::i32, MVT::i32, MVT::Other), Ops);
+
+  MachineMemOperand *MemOp = cast<MemSDNode>(N)->getMemOperand();
+  DAG.setNodeMemRefs(cast<MachineSDNode>(CmpSwap), {MemOp});
+  Results.push_back(DAG.getNode(ISD::BUILD_PAIR, DL, MVT::i64,
+                                SDValue(CmpSwap, 0), SDValue(CmpSwap, 1)));
+  Results.push_back(SDValue(CmpSwap, 2));
+}
+
 void
 MipsTargetLowering::ReplaceNodeResults(SDNode *N,
                                        SmallVectorImpl<SDValue> &Results,
                                        SelectionDAG &DAG) const {
+  switch (N->getOpcode()) {
+  default:
+    break;
+  case ISD::ATOMIC_CMP_SWAP:
+    ReplaceCMP_SWAP_64Results(N, Results, DAG);
+    return;
+  }
+
   return LowerOperationWrapper(N, Results, DAG);
 }
 
@@ -1837,6 +1877,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicCmpSwap(MI, BB);
   case Mips::ATOMIC_CMP_SWAP_I64:
     return emitAtomicCmpSwap(MI, BB);
+  case Mips::ATOMIC_CMP_SWAP_I64_NM:
+    return emitAtomicCmpSwap64NM(MI, BB);
 
   case Mips::ATOMIC_LOAD_MIN_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -2390,6 +2432,73 @@ MipsTargetLowering::emitAtomicCmpSwap(MachineInstr &MI,
       .addReg(PtrCopy, RegState::Kill)
       .addReg(OldValCopy, RegState::Kill)
       .addReg(NewValCopy, RegState::Kill)
+      .addReg(Scratch, RegState::EarlyClobber | RegState::Define |
+                           RegState::Dead | RegState::Implicit);
+
+  MI.eraseFromParent(); // The instruction is gone now.
+
+  return BB;
+}
+
+// Adapt MipsTargetLowering::emitAtomicCmpSwap to legalized 64 bit type.
+
+MachineBasicBlock *
+MipsTargetLowering::emitAtomicCmpSwap64NM(MachineInstr &MI,
+                                          MachineBasicBlock *BB) const {
+
+  assert(MI.getOpcode() == Mips::ATOMIC_CMP_SWAP_I64_NM &&
+         "Unsupported atomic pseudo for EmitAtomicCmpSwap64NM.");
+
+  const unsigned Size = 4;
+
+  MachineFunction *MF = BB->getParent();
+  MachineRegisterInfo &MRI = MF->getRegInfo();
+  const TargetRegisterClass *RC = getRegClassFor(MVT::getIntegerVT(Size * 8));
+  const TargetInstrInfo *TII = Subtarget.getInstrInfo();
+  DebugLoc DL = MI.getDebugLoc();
+
+  unsigned AtomicOp = MI.getOpcode(); // no need to change to POSTRA variant
+  Register DestLo = MI.getOperand(0).getReg();
+  Register DestHi = MI.getOperand(1).getReg();
+  Register Ptr = MI.getOperand(2).getReg();
+  Register OldValLo = MI.getOperand(3).getReg();
+  Register OldValHi = MI.getOperand(4).getReg();
+  Register NewValLo = MI.getOperand(5).getReg();
+  Register NewValHi = MI.getOperand(6).getReg();
+
+  Register Scratch = MRI.createVirtualRegister(RC);
+  MachineBasicBlock::iterator II(MI);
+
+  // We need to create copies of the various registers and kill them at the
+  // atomic pseudo. If the copies are not made, when the atomic is expanded
+  // after fast register allocation, the spills will end up outside of the
+  // blocks that their values are defined in, causing livein errors.
+
+  Register PtrCopy = MRI.createVirtualRegister(MRI.getRegClass(Ptr));
+  Register OldValLoCopy = MRI.createVirtualRegister(MRI.getRegClass(OldValLo));
+  Register OldValHiCopy = MRI.createVirtualRegister(MRI.getRegClass(OldValHi));
+  Register NewValLoCopy = MRI.createVirtualRegister(MRI.getRegClass(NewValLo));
+  Register NewValHiCopy = MRI.createVirtualRegister(MRI.getRegClass(NewValHi));
+
+  // TODO: remove those copies
+  BuildMI(*BB, II, DL, TII->get(Mips::COPY), PtrCopy).addReg(Ptr);
+  BuildMI(*BB, II, DL, TII->get(Mips::COPY), OldValLoCopy).addReg(OldValLo);
+  BuildMI(*BB, II, DL, TII->get(Mips::COPY), OldValHiCopy).addReg(OldValHi);
+  BuildMI(*BB, II, DL, TII->get(Mips::COPY), NewValLoCopy).addReg(NewValLo);
+  BuildMI(*BB, II, DL, TII->get(Mips::COPY), NewValHiCopy).addReg(NewValHi);
+
+  // The purposes of the flags on the scratch registers is explained in
+  // emitAtomicBinary. In summary, we need a scratch register which is going to
+  // be undef, that is unique among registers chosen for the instruction.
+
+  BuildMI(*BB, II, DL, TII->get(AtomicOp))
+      .addReg(DestLo, RegState::Define | RegState::EarlyClobber)
+      .addReg(DestHi, RegState::Define | RegState::EarlyClobber)
+      .addReg(PtrCopy, RegState::Kill)
+      .addReg(OldValLoCopy, RegState::Kill)
+      .addReg(OldValHiCopy, RegState::Kill)
+      .addReg(NewValLoCopy, RegState::Kill)
+      .addReg(NewValHiCopy, RegState::Kill)
       .addReg(Scratch, RegState::EarlyClobber | RegState::Define |
                            RegState::Dead | RegState::Implicit);
 

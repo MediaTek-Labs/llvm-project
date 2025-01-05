@@ -53,6 +53,9 @@ namespace {
     bool expandAtomicCmpSwap(MachineBasicBlock &MBB,
                              MachineBasicBlock::iterator MBBI,
                              MachineBasicBlock::iterator &NextMBBI);
+    bool expandAtomicCmpSwap64NM(MachineBasicBlock &MBB,
+                                 MachineBasicBlock::iterator MBBI,
+                                 MachineBasicBlock::iterator &NextMBBI);
     bool expandAtomicCmpSwapSubword(MachineBasicBlock &MBB,
                                     MachineBasicBlock::iterator MBBI,
                                     MachineBasicBlock::iterator &NextMBBI);
@@ -318,6 +321,107 @@ bool MipsExpandPseudo::expandAtomicCmpSwap(MachineBasicBlock &BB,
 
   LivePhysRegs LiveRegs;
   computeAndAddLiveIns(LiveRegs, *loop1MBB);
+  computeAndAddLiveIns(LiveRegs, *loop2MBB);
+  computeAndAddLiveIns(LiveRegs, *exitMBB);
+
+  NMBBI = BB.end();
+  I->eraseFromParent();
+  return true;
+}
+
+bool MipsExpandPseudo::expandAtomicCmpSwap64NM(
+    MachineBasicBlock &BB, MachineBasicBlock::iterator I,
+    MachineBasicBlock::iterator &NMBBI) {
+  MachineFunction *MF = BB.getParent();
+
+  DebugLoc DL = I->getDebugLoc();
+
+  unsigned LL, SC, ZERO, BNE, BEQ, MOVE;
+
+  LL = Mips::LLWP_NM;
+  SC = Mips::SCWP_NM;
+  BNE = Mips::BNEC_NM;
+  BEQ = Mips::BEQC_NM;
+  MOVE = Mips::MOVE_NM;
+  ZERO = Mips::ZERO_NM;
+
+  Register DestLo = I->getOperand(0).getReg();
+  Register DestHi = I->getOperand(1).getReg();
+  Register Ptr = I->getOperand(2).getReg();
+  Register OldValLo = I->getOperand(3).getReg();
+  Register OldValHi = I->getOperand(4).getReg();
+  Register NewValLo = I->getOperand(5).getReg();
+  Register NewValHi = I->getOperand(6).getReg();
+  Register Scratch = I->getOperand(7).getReg();
+
+  // insert new blocks after the current block
+  const BasicBlock *LLVM_BB = BB.getBasicBlock();
+  MachineBasicBlock *loop1LoMBB = MF->CreateMachineBasicBlock(LLVM_BB);
+  MachineBasicBlock *loop1HiMBB = MF->CreateMachineBasicBlock(LLVM_BB);
+  MachineBasicBlock *loop2MBB = MF->CreateMachineBasicBlock(LLVM_BB);
+  MachineBasicBlock *exitMBB = MF->CreateMachineBasicBlock(LLVM_BB);
+  MachineFunction::iterator It = ++BB.getIterator();
+  MF->insert(It, loop1LoMBB);
+  MF->insert(It, loop1HiMBB);
+  MF->insert(It, loop2MBB);
+  MF->insert(It, exitMBB);
+
+  // Transfer the remainder of BB and its successor edges to exitMBB.
+  exitMBB->splice(exitMBB->begin(), &BB,
+                  std::next(MachineBasicBlock::iterator(I)), BB.end());
+  exitMBB->transferSuccessorsAndUpdatePHIs(&BB);
+
+  //  thisMBB:
+  //    ...
+  //    fallthrough --> loop1MBB
+  BB.addSuccessor(loop1LoMBB, BranchProbability::getOne());
+  loop1LoMBB->addSuccessor(exitMBB);
+  loop1LoMBB->addSuccessor(loop1HiMBB);
+  loop1LoMBB->normalizeSuccProbs();
+  loop1HiMBB->addSuccessor(loop2MBB);
+  loop1HiMBB->addSuccessor(exitMBB);
+  loop1HiMBB->normalizeSuccProbs();
+  loop2MBB->addSuccessor(loop1LoMBB);
+  loop2MBB->addSuccessor(exitMBB);
+  loop2MBB->normalizeSuccProbs();
+
+  // loop1LoMBB:
+  //   llwp dest_lo, dest_hi, 0(ptr)
+  //   bne dest_lo, oldval_lo, exitMBB
+  BuildMI(loop1LoMBB, DL, TII->get(LL), DestLo)
+      .addDef(DestHi)
+      .addReg(Ptr)
+      .addImm(0);
+  BuildMI(loop1LoMBB, DL, TII->get(BNE))
+      .addReg(DestLo, RegState::Kill)
+      .addReg(OldValLo)
+      .addMBB(exitMBB);
+
+  // loop1HiMBB:
+  //   bne dest_hi, oldval_hi, exitMBB
+  BuildMI(loop1HiMBB, DL, TII->get(BNE))
+      .addReg(DestHi, RegState::Kill)
+      .addReg(OldValHi)
+      .addMBB(exitMBB);
+
+  // loop2MBB:
+  //   move scratch, NewValLo
+  //   scwp Scratch, Scratch, NewValHi , 0(ptr)
+  //   beq Scratch, $0, loop1LoMBB
+  BuildMI(loop2MBB, DL, TII->get(MOVE), Scratch).addReg(NewValLo);
+  BuildMI(loop2MBB, DL, TII->get(SC), Scratch)
+      .addReg(Scratch)
+      .addReg(NewValHi)
+      .addReg(Ptr)
+      .addImm(0);
+  BuildMI(loop2MBB, DL, TII->get(BEQ))
+      .addReg(Scratch, RegState::Kill)
+      .addReg(ZERO)
+      .addMBB(loop1LoMBB);
+
+  LivePhysRegs LiveRegs;
+  computeAndAddLiveIns(LiveRegs, *loop1LoMBB);
+  computeAndAddLiveIns(LiveRegs, *loop1HiMBB);
   computeAndAddLiveIns(LiveRegs, *loop2MBB);
   computeAndAddLiveIns(LiveRegs, *exitMBB);
 
@@ -934,6 +1038,8 @@ bool MipsExpandPseudo::expandMI(MachineBasicBlock &MBB,
   case Mips::ATOMIC_CMP_SWAP_I32_POSTRA:
   case Mips::ATOMIC_CMP_SWAP_I64_POSTRA:
     return expandAtomicCmpSwap(MBB, MBBI, NMBB);
+  case Mips::ATOMIC_CMP_SWAP_I64_NM:
+    return expandAtomicCmpSwap64NM(MBB, MBBI, NMBB);
   case Mips::ATOMIC_CMP_SWAP_I8_POSTRA:
   case Mips::ATOMIC_CMP_SWAP_I16_POSTRA:
     return expandAtomicCmpSwapSubword(MBB, MBBI, NMBB);

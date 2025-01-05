@@ -3244,3 +3244,18 @@ def : NanoMipsInstAlias<"evp", (EVP_NM ZERO_NM), 0>;
 def DVP_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins),
                       "dvp\t$rt", []>, VP_Enc<0b0>;
 def : NanoMipsInstAlias<"dvp", (DVP_NM ZERO_NM), 0>;
+
+// following pattern of ATOMIC_CMP_SWAP_I32 + ATOMIC_CMP_SWAP_I32_POSTRA
+// no need to split instruction into pre-RA and post-RA forms
+// features of both are combined
+def ATOMIC_CMP_SWAP_I64_NM :
+  PseudoInstNM<(outs GPRNM32Opnd:$dst_lo, GPRNM32Opnd:$dst_hi),
+               (ins GPRNM32Opnd:$ptr,
+                GPRNM32Opnd:$cmp_lo, GPRNM32Opnd:$cmp_hi,
+                GPRNM32Opnd:$swap_lo, GPRNM32Opnd:$swap_hi),
+               []> {
+  let usesCustomInserter = 1;
+  let hasNoSchedulingInfo = 1;
+  let mayLoad = 1;
+  let mayStore = 1;
+}

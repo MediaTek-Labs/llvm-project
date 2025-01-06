@@ -575,8 +575,7 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
   if (hasFP(MF)) {
 
     if (STI.hasNanoMips()) {
-
-      BuildMI(MBB, MBBI_2, dl, TII.get(Mips::ADDIU_NM), FP)
+      BuildMI(MBB, MBBI, dl, TII.get(Mips::ADDIU_NM), FP)
           .addReg(SP)
           .addImm(-4096 + StackSize);
 
@@ -584,13 +583,13 @@ void MipsSEFrameLowering::emitPrologue(MachineFunction &MF,
       unsigned CFIIndex =
           MF.addFrameInst(MCCFIInstruction::createDefCfaRegister(
               nullptr, MRI->getDwarfRegNum(FP, true)));
-      BuildMI(MBB, MBBI_2, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
+      BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
           .addCFIIndex(CFIIndex);
 
       // emit ".cfi_def_cfa_offset 4096"
       unsigned CFIIndex_1 =
           MF.addFrameInst(MCCFIInstruction::cfiDefCfaOffset(nullptr, 4096));
-      BuildMI(MBB, MBBI_2, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
+      BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
           .addCFIIndex(CFIIndex_1);
 
     } else {
@@ -786,16 +785,26 @@ void MipsSEFrameLowering::emitEpilogue(MachineFunction &MF,
   unsigned ZERO = ABI.GetNullPtr();
   unsigned MOVE = ABI.GetGPRMoveOp();
 
+  // Get the number of bytes from FrameInfo
+  uint64_t StackSize = MFI.getStackSize();
+
   // if framepointer enabled, restore the stack pointer.
-  if (hasFP(MF) && !STI.hasNanoMips()) {
+  if (hasFP(MF)) {
     // Find the first instruction that restores a callee-saved register.
     MachineBasicBlock::iterator I = MBBI;
 
     for (unsigned i = 0; i < MFI.getCalleeSavedInfo().size(); ++i)
       --I;
 
-    // Insert instruction "move $sp, $fp" at this location.
-    BuildMI(MBB, I, DL, TII.get(MOVE), SP).addReg(FP).addReg(ZERO);
+    if (!STI.hasNanoMips()) {
+      // Insert instruction "move $sp, $fp" at this location.
+      BuildMI(MBB, I, DL, TII.get(MOVE), SP).addReg(FP).addReg(ZERO);
+    } else {
+      // Restore stack pointer from the offset frame pointer
+      BuildMI(MBB, I, DL, TII.get(Mips::ADDIU_NM), SP)
+        .addReg(FP).
+        addImm(4096 - StackSize);
+    }
   }
 
   if (MipsFI->callsEhReturn()) {
@@ -819,9 +828,6 @@ void MipsSEFrameLowering::emitEpilogue(MachineFunction &MF,
 
   if (MF.getFunction().hasFnAttribute("interrupt"))
     emitInterruptEpilogueStub(MF, MBB);
-
-  // Get the number of bytes from FrameInfo
-  uint64_t StackSize = MFI.getStackSize();
 
   if (!StackSize)
     return;

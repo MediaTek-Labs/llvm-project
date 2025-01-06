@@ -7,6 +7,7 @@ entry:
   ; CHECK: save	64, $fp, $ra, $s0, $s1, $s2, $s3, $s4
   ; CHECK: addiu	$fp, $sp, -4032
   ; CHECK: sw	$a0, 32($sp)
+  ; CHECK: addiu	$sp, $fp, 4032
   ; CHECK: restore.jrc	64, $fp, $ra, $s0, $s1, $s2, $s3, $s4
   %a.addr = alloca i32, align 4
   %b.addr = alloca i32, align 4
@@ -33,6 +34,7 @@ entry:
   ; CHECK: save	64, $fp, $ra, $s0, $s1, $s2, $s3, $s4
   ; CHECK: addiu	$fp, $sp, -4032
   ; CHECK: sw	$a0, 4064($fp)
+  ; CHECK: addiu	$sp, $fp, 4032
   ; CHECK: restore.jrc	64, $fp, $ra, $s0, $s1, $s2, $s3, $s4
   %a.addr = alloca i32, align 4
   %b.addr = alloca i32, align 4
@@ -63,6 +65,7 @@ entry:
   ; CHECK: save	64, $fp, $ra, $s0, $s1, $s2, $s3, $s4
   ; CHECK: addiu	$fp, $sp, -4032
   ; CHECK: sw	$a0, 32($sp)
+  ; CHECK: addiu	$sp, $fp, 4032
   ; CHECK: restore.jrc	64, $fp, $ra, $s0, $s1, $s2, $s3, $s4
   %a.addr = alloca i32, align 4
   %b.addr = alloca i32, align 4
@@ -93,6 +96,7 @@ entry:
   ; CHECK: save	192, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
   ; CHECK: addiu	$fp, $sp, -3904
   ; CHECK: sw	$a0, 148($s7)
+  ; CHECK: addiu	$sp, $fp, 3904
   ; CHECK: restore.jrc	192, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
   %a.addr = alloca i32, align 4
   %b.addr = alloca i32, align 4

@@ -3245,17 +3245,32 @@ def DVP_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins),
                       "dvp\t$rt", []>, VP_Enc<0b0>;
 def : NanoMipsInstAlias<"dvp", (DVP_NM ZERO_NM), 0>;
 
+// Atomic instructions with 2 source operands (ATOMIC_SWAP & ATOMIC_LOAD_*).
+// for 64-bit
+class Atomic2Ops64bits :
+  PseudoInstNM<(outs GPRNM32Opnd:$dst_lo, GPRNM32Opnd:$dst_hi),
+               (ins GPRNM32Opnd:$ptr, GPRNM32Opnd:$incr_lo, GPRNM32Opnd:$incr_hi),[]>;
+
 // following pattern of ATOMIC_CMP_SWAP_I32 + ATOMIC_CMP_SWAP_I32_POSTRA
+// and ditto for other pairs.
 // no need to split instruction into pre-RA and post-RA forms
 // features of both are combined
-def ATOMIC_CMP_SWAP_I64_NM :
-  PseudoInstNM<(outs GPRNM32Opnd:$dst_lo, GPRNM32Opnd:$dst_hi),
-               (ins GPRNM32Opnd:$ptr,
-                GPRNM32Opnd:$cmp_lo, GPRNM32Opnd:$cmp_hi,
-                GPRNM32Opnd:$swap_lo, GPRNM32Opnd:$swap_hi),
-               []> {
-  let usesCustomInserter = 1;
-  let hasNoSchedulingInfo = 1;
-  let mayLoad = 1;
-  let mayStore = 1;
+let usesCustomInserter = 1, hasNoSchedulingInfo = 1, mayLoad = 1, mayStore = 1 in {
+  def ATOMIC_CMP_SWAP_I64_NM :
+    PseudoInstNM<(outs GPRNM32Opnd:$dst_lo, GPRNM32Opnd:$dst_hi),
+                 (ins GPRNM32Opnd:$ptr,
+                  GPRNM32Opnd:$cmp_lo, GPRNM32Opnd:$cmp_hi,
+                  GPRNM32Opnd:$swap_lo, GPRNM32Opnd:$swap_hi),
+                 []>;
+  def ATOMIC_LOAD_ADD_I64_NM  : Atomic2Ops64bits;
+  def ATOMIC_LOAD_SUB_I64_NM  : Atomic2Ops64bits;
+  def ATOMIC_LOAD_AND_I64_NM  : Atomic2Ops64bits;
+  def ATOMIC_LOAD_OR_I64_NM   : Atomic2Ops64bits;
+  def ATOMIC_LOAD_XOR_I64_NM  : Atomic2Ops64bits;
+  def ATOMIC_LOAD_NAND_I64_NM : Atomic2Ops64bits;
+  def ATOMIC_LOAD_MIN_I64_NM  : Atomic2Ops64bits;
+  def ATOMIC_LOAD_MAX_I64_NM  : Atomic2Ops64bits;
+  def ATOMIC_LOAD_UMIN_I64_NM : Atomic2Ops64bits;
+  def ATOMIC_LOAD_UMAX_I64_NM : Atomic2Ops64bits;
+  def ATOMIC_SWAP_I64_NM      : Atomic2Ops64bits;
 }

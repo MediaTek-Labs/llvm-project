@@ -63,6 +63,9 @@ namespace {
     bool expandAtomicBinOp(MachineBasicBlock &BB,
                            MachineBasicBlock::iterator I,
                            MachineBasicBlock::iterator &NMBBI, unsigned Size);
+    bool expandAtomicBinOp64NM(MachineBasicBlock &BB,
+                               MachineBasicBlock::iterator I,
+                               MachineBasicBlock::iterator &NMBBI);
     bool expandAtomicBinOpSubword(MachineBasicBlock &BB,
                                   MachineBasicBlock::iterator I,
                                   MachineBasicBlock::iterator &NMBBI);
@@ -828,7 +831,7 @@ bool MipsExpandPseudo::expandAtomicBinOp(MachineBasicBlock &BB,
         AND = Mips::AND_NM;
         NOR = Mips::NOR_NM;
         XOR = Mips::XOR_NM;
-        SUB = Mips::SUB_NM;
+        SUB = Mips::SUBu_NM;
     }
   } else {
     LL = STI->hasMips64r6() ? Mips::LLD_R6 : Mips::LLD;
@@ -1028,6 +1031,234 @@ bool MipsExpandPseudo::expandAtomicBinOp(MachineBasicBlock &BB,
   return true;
 }
 
+bool MipsExpandPseudo::expandAtomicBinOp64NM(
+    MachineBasicBlock &BB, MachineBasicBlock::iterator I,
+    MachineBasicBlock::iterator &NMBBI) {
+  MachineFunction *MF = BB.getParent();
+
+  DebugLoc DL = I->getDebugLoc();
+
+  unsigned LL, SC, ZERO, BEQ, SLT, SLTu, OR, MOVN, MOVZ;
+  LL = Mips::LLWP_NM;
+  SC = Mips::SCWP_NM;
+  BEQ = Mips::BEQC_NM;
+  SLT = Mips::SLT_NM;
+  SLTu = Mips::SLTU_NM;
+  OR = Mips::OR_NM;
+  MOVN = Mips::MOVN_NM;
+  MOVZ = Mips::MOVZ_NM;
+  ZERO = Mips::ZERO_NM;
+  unsigned ADD = Mips::ADDu_NM;
+  unsigned AND = Mips::AND_NM;
+  unsigned NOR = Mips::NOR_NM;
+  unsigned XOR = Mips::XOR_NM;
+  unsigned SUB = Mips::SUBu_NM;
+
+  Register OldValLo = I->getOperand(0).getReg();
+  Register OldValHi = I->getOperand(1).getReg();
+  Register Ptr = I->getOperand(2).getReg();
+  Register IncrLo = I->getOperand(3).getReg();
+  Register IncrHi = I->getOperand(4).getReg();
+  Register ScratchLo = I->getOperand(5).getReg();
+  Register ScratchHi = I->getOperand(6).getReg();
+
+  unsigned Opcode = 0;
+  unsigned ANDOp = 0;
+  unsigned NOROp = 0;
+
+  bool IsOr = false;
+  bool IsNand = false;
+  bool IsMin = false;
+  bool IsMax = false;
+  bool IsUnsigned = false;
+
+  switch (I->getOpcode()) {
+  case Mips::ATOMIC_LOAD_ADD_I64_NM:
+    Opcode = ADD;
+    break;
+  case Mips::ATOMIC_LOAD_SUB_I64_NM:
+    Opcode = SUB;
+    break;
+  case Mips::ATOMIC_LOAD_AND_I64_NM:
+    Opcode = AND;
+    break;
+  case Mips::ATOMIC_LOAD_OR_I64_NM:
+    Opcode = OR;
+    break;
+  case Mips::ATOMIC_LOAD_XOR_I64_NM:
+    Opcode = XOR;
+    break;
+  case Mips::ATOMIC_LOAD_NAND_I64_NM:
+    IsNand = true;
+    ANDOp = AND;
+    NOROp = NOR;
+    break;
+  case Mips::ATOMIC_SWAP_I64_NM:
+    IsOr = true;
+    break;
+  case Mips::ATOMIC_LOAD_UMIN_I64_NM:
+    IsUnsigned = true;
+    [[fallthrough]];
+  case Mips::ATOMIC_LOAD_MIN_I64_NM:
+    IsMin = true;
+    break;
+  case Mips::ATOMIC_LOAD_UMAX_I64_NM:
+    IsUnsigned = true;
+    [[fallthrough]];
+  case Mips::ATOMIC_LOAD_MAX_I64_NM:
+    IsMax = true;
+    break;
+  default:
+    llvm_unreachable("Unknown pseudo atomic!");
+  }
+  const BasicBlock *LLVM_BB = BB.getBasicBlock();
+  MachineBasicBlock *loopMBB = MF->CreateMachineBasicBlock(LLVM_BB);
+  MachineBasicBlock *exitMBB = MF->CreateMachineBasicBlock(LLVM_BB);
+  MachineFunction::iterator It = ++BB.getIterator();
+  MF->insert(It, loopMBB);
+  MF->insert(It, exitMBB);
+
+  exitMBB->splice(exitMBB->begin(), &BB, std::next(I), BB.end());
+  exitMBB->transferSuccessorsAndUpdatePHIs(&BB);
+
+  BB.addSuccessor(loopMBB, BranchProbability::getOne());
+  loopMBB->addSuccessor(exitMBB);
+  loopMBB->addSuccessor(loopMBB);
+  loopMBB->normalizeSuccProbs();
+
+  BuildMI(loopMBB, DL, TII->get(LL), OldValLo)
+      .addDef(OldValHi)
+      .addReg(Ptr)
+      .addImm(0);
+  assert((OldValLo != Ptr) && "Clobbered the wrong ptr reg!");
+  assert((OldValLo != IncrLo) && "Clobbered the wrong reg!");
+  assert((OldValLo != IncrHi) && "Clobbered the wrong reg!");
+  assert((OldValHi != Ptr) && "Clobbered the wrong ptr reg!");
+  assert((OldValHi != IncrLo) && "Clobbered the wrong reg!");
+  assert((OldValHi != IncrHi) && "Clobbered the wrong reg!");
+  if (IsMin || IsMax) {
+    // (un)signed min example:
+    // x1 = hi(o1) < hi(o2)                     // SLT(u)
+    // x2 = low(o1) < low(o2)                   // SLTU
+    // x3 = hi(o1) != hi(o2)                    // XOR
+    // x2 = x3 ? x1 : x2                        // MOVN
+    // final_hi(o1)  = !x1 ? hi(o2) : hi(o1)    // OR+MOVZ
+    // final_low(o1) = !x2 ? low(o2) : low(o1)  // OR+MOVZ
+    assert(I->getNumOperands() == 10 &&
+           "Atomics min|max|umin|umax use additional registers");
+    MCRegister sltuLo = I->getOperand(7).getReg().asMCReg();
+    MCRegister HiDiff = I->getOperand(8).getReg().asMCReg();
+    MCRegister sltHi = I->getOperand(9).getReg().asMCReg();
+    unsigned SLTScratch = IsUnsigned ? SLTu : SLT;
+    unsigned MOVIncr = IsMax ? MOVN : MOVZ;
+
+    //  slt(u) sltHi, OldValHi, IncrHi
+    BuildMI(loopMBB, DL, TII->get(SLTScratch), sltHi)
+        .addReg(OldValHi)
+        .addReg(IncrHi);
+    //  sltu sltuLo, OldValLo, IncrLo
+    BuildMI(loopMBB, DL, TII->get(SLTu), sltuLo)
+        .addReg(OldValLo)
+        .addReg(IncrLo);
+    // xor HiDiff, OldValHi, IncrHi // zero iff high(op1) == high(op2)
+    BuildMI(loopMBB, DL, TII->get(XOR), HiDiff)
+        .addReg(OldValHi)
+        .addReg(IncrHi);
+    // movn sltuLo, sltHi, HiDiff // override with hi comparison if they differ
+    BuildMI(loopMBB, DL, TII->get(MOVN), sltuLo)
+        .addReg(sltHi)
+        .addReg(HiDiff)
+        .addReg(sltuLo);
+    // move ScratchHi, OldValHi
+    BuildMI(loopMBB, DL, TII->get(OR), ScratchHi)
+        .addReg(OldValHi)
+        .addReg(ZERO);
+    // min: movz ScratchHi, IncrHi, sltHi // override OldValHi with IncrHi
+    //                                    // if !(Old < Incr)
+    // max: movz ScratchHi, IncrHi, sltHi // override OldValHi with IncrHi
+    //                                    // if (Old < Incr)
+    BuildMI(loopMBB, DL, TII->get(MOVIncr), ScratchHi)
+        .addReg(IncrHi)
+        .addReg(sltHi)
+        .addReg(ScratchHi);
+    // move ScratchLo, OldValLo
+    BuildMI(loopMBB, DL, TII->get(OR), ScratchLo)
+        .addReg(OldValLo)
+        .addReg(ZERO);
+    // min: movz ScratchLo, IncrLo, sltuLo // override OldValLo with IncrLo
+    //                                   // if !(Old < Incr)
+    // max: movn ScratchLo, IncrLo, sltuLo // override OldValLo with IncrLo
+    //                                   // if (Old < Incr)
+    BuildMI(loopMBB, DL, TII->get(MOVIncr), ScratchLo)
+        .addReg(IncrLo)
+        .addReg(sltuLo)
+        .addReg(ScratchLo);
+  } else if (Opcode) {
+    BuildMI(loopMBB, DL, TII->get(Opcode), ScratchLo)
+        .addReg(OldValLo)
+        .addReg(IncrLo);
+    BuildMI(loopMBB, DL, TII->get(Opcode), ScratchHi)
+        .addReg(OldValHi)
+        .addReg(IncrHi);
+    if (Opcode == ADD || Opcode == SUB) {
+      // so far:
+      // (add|sub)u ScratchLo, IncrLo, OldValLo
+      // (add|sub)u ScratchHi, IncrHi, OldValHi
+      assert(I->getNumOperands() == 8 && "Atomics add use additional register");
+      MCRegister Carry = I->getOperand(7).getReg().asMCReg();
+      // add: sltu Carry, ScratchLo, IncrLo
+      // sub: sltu Carry, OldValLo, IncrLo
+      MCRegister CarryOperand = (Opcode == ADD) ? ScratchLo : OldValLo;
+      BuildMI(loopMBB, DL, TII->get(SLTu), Carry)
+          .addReg(CarryOperand)
+          .addReg(IncrLo);
+      // (add|sub)u ScratchHi, ScratchHi, Carry
+      BuildMI(loopMBB, DL, TII->get(Opcode), ScratchHi)
+          .addReg(ScratchHi)
+          .addReg(Carry);
+    }
+  } else if (IsNand) {
+    assert(ANDOp && NOROp &&
+           "Unknown nand instruction for atomic pseudo expansion");
+    BuildMI(loopMBB, DL, TII->get(ANDOp), ScratchLo)
+        .addReg(OldValLo)
+        .addReg(IncrLo);
+    BuildMI(loopMBB, DL, TII->get(NOROp), ScratchLo)
+        .addReg(ZERO)
+        .addReg(ScratchLo);
+    BuildMI(loopMBB, DL, TII->get(ANDOp), ScratchHi)
+        .addReg(OldValHi)
+        .addReg(IncrHi);
+    BuildMI(loopMBB, DL, TII->get(NOROp), ScratchHi)
+        .addReg(ZERO)
+        .addReg(ScratchHi);
+  } else {
+    assert(IsOr && OR && "Unknown instruction for atomic pseudo expansion!");
+    (void)IsOr;
+    BuildMI(loopMBB, DL, TII->get(OR), ScratchLo).addReg(IncrLo).addReg(ZERO);
+    BuildMI(loopMBB, DL, TII->get(OR), ScratchHi).addReg(IncrHi).addReg(ZERO);
+  }
+
+  BuildMI(loopMBB, DL, TII->get(SC), ScratchLo)
+      .addReg(ScratchLo)
+      .addReg(ScratchHi)
+      .addReg(Ptr)
+      .addImm(0);
+  BuildMI(loopMBB, DL, TII->get(BEQ))
+      .addReg(ScratchLo)
+      .addReg(ZERO)
+      .addMBB(loopMBB);
+
+  NMBBI = BB.end();
+  I->eraseFromParent();
+
+  LivePhysRegs LiveRegs;
+  computeAndAddLiveIns(LiveRegs, *loopMBB);
+  computeAndAddLiveIns(LiveRegs, *exitMBB);
+
+  return true;
+}
+
 bool MipsExpandPseudo::expandMI(MachineBasicBlock &MBB,
                                 MachineBasicBlock::iterator MBBI,
                                 MachineBasicBlock::iterator &NMBB) {
@@ -1078,6 +1309,18 @@ bool MipsExpandPseudo::expandMI(MachineBasicBlock &MBB,
   case Mips::ATOMIC_LOAD_UMIN_I32_POSTRA:
   case Mips::ATOMIC_LOAD_UMAX_I32_POSTRA:
     return expandAtomicBinOp(MBB, MBBI, NMBB, 4);
+  case Mips::ATOMIC_LOAD_ADD_I64_NM:
+  case Mips::ATOMIC_LOAD_SUB_I64_NM:
+  case Mips::ATOMIC_LOAD_AND_I64_NM:
+  case Mips::ATOMIC_LOAD_OR_I64_NM:
+  case Mips::ATOMIC_LOAD_XOR_I64_NM:
+  case Mips::ATOMIC_LOAD_NAND_I64_NM:
+  case Mips::ATOMIC_SWAP_I64_NM:
+  case Mips::ATOMIC_LOAD_UMIN_I64_NM:
+  case Mips::ATOMIC_LOAD_MIN_I64_NM:
+  case Mips::ATOMIC_LOAD_UMAX_I64_NM:
+  case Mips::ATOMIC_LOAD_MAX_I64_NM:
+    return expandAtomicBinOp64NM(MBB, MBBI, NMBB);
   case Mips::ATOMIC_LOAD_ADD_I64_POSTRA:
   case Mips::ATOMIC_LOAD_SUB_I64_POSTRA:
   case Mips::ATOMIC_LOAD_AND_I64_POSTRA:

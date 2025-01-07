@@ -753,6 +753,8 @@ class TargetRegisterClass;
 
     MachineBasicBlock *emitAtomicBinary(MachineInstr &MI,
                                         MachineBasicBlock *BB) const;
+    MachineBasicBlock *emitAtomicBinary64NM(MachineInstr &MI,
+                                            MachineBasicBlock *BB) const;
     MachineBasicBlock *emitAtomicBinaryPartword(MachineInstr &MI,
                                                 MachineBasicBlock *BB,
                                                 unsigned Size) const;

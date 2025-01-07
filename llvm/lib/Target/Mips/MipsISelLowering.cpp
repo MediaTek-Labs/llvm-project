@@ -504,12 +504,26 @@ MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
   setOperationAction(ISD::STACKRESTORE,      MVT::Other, Expand);
 
   if (!Subtarget.isGP64bit()) {
-    setOperationAction(ISD::ATOMIC_LOAD,     MVT::i64,   Expand);
+    if (!Subtarget.hasNanoMips())
+      setOperationAction(ISD::ATOMIC_LOAD, MVT::i64, Expand);
     setOperationAction(ISD::ATOMIC_STORE,    MVT::i64,   Expand);
   }
 
   if (Subtarget.hasNanoMips()) {
     setOperationAction(ISD::ATOMIC_CMP_SWAP, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_ADD, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_SUB, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_AND, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_CLR, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_OR, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_XOR, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_NAND, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_MIN, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_MAX, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_UMIN, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD_UMAX, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_SWAP, MVT::i64, Custom);
+    setOperationAction(ISD::ATOMIC_LOAD, MVT::i64, Custom);
   }
 
   if (!Subtarget.hasMips32r2() && !Subtarget.hasNanoMips()) {
@@ -1663,6 +1677,47 @@ bool MipsTargetLowering::isIntDivCheap(EVT VT, AttributeList Attr) const {
   return OptSize && Subtarget.hasNanoMips();
 }
 
+static void ReplaceBinOp_64Results(SDNode *N, unsigned MipsOpcode,
+                                   SmallVectorImpl<SDValue> &Results,
+                                   SelectionDAG &DAG) {
+  assert(N->getValueType(0) == MVT::i64 &&
+         "Atomic Binary Ops on types less than 64 should be legal");
+
+  SDLoc DL(N);
+  SDValue Ops[] = {N->getOperand(1),
+                   DAG.getNode(ISD::EXTRACT_ELEMENT, DL, MVT::i32,
+                               N->getOperand(2), DAG.getIntPtrConstant(0, DL)),
+                   DAG.getNode(ISD::EXTRACT_ELEMENT, DL, MVT::i32,
+                               N->getOperand(2), DAG.getIntPtrConstant(1, DL)),
+                   N->getOperand(0)};
+  SDNode *BinOp = DAG.getMachineNode(
+      MipsOpcode, DL, DAG.getVTList(MVT::i32, MVT::i32, MVT::Other), Ops);
+
+  MachineMemOperand *MemOp = cast<MemSDNode>(N)->getMemOperand();
+  DAG.setNodeMemRefs(cast<MachineSDNode>(BinOp), {MemOp});
+  Results.push_back(DAG.getNode(ISD::BUILD_PAIR, DL, MVT::i64,
+                                SDValue(BinOp, 0), SDValue(BinOp, 1)));
+  Results.push_back(SDValue(BinOp, 2));
+}
+
+static void ReplaceLOAD_64Results(SDNode *N, SmallVectorImpl<SDValue> &Results,
+                                  SelectionDAG &DAG) {
+  assert(N->getValueType(0) == MVT::i64 &&
+         "Atomic Load on types less than 64 should be legal");
+
+  SDLoc DL(N);
+  SDValue Ops[] = {N->getOperand(1), N->getOperand(0)};
+  SDNode *Load =
+      DAG.getMachineNode(Mips::LLWP_NM, DL,
+                         DAG.getVTList(MVT::i32, MVT::i32, MVT::Other), Ops);
+
+  MachineMemOperand *MemOp = cast<MemSDNode>(N)->getMemOperand();
+  DAG.setNodeMemRefs(cast<MachineSDNode>(Load), {MemOp});
+  Results.push_back(DAG.getNode(ISD::BUILD_PAIR, DL, MVT::i64, SDValue(Load, 0),
+                                SDValue(Load, 1)));
+  Results.push_back(SDValue(Load, 2));
+}
+
 static void ReplaceCMP_SWAP_64Results(SDNode *N,
                                       SmallVectorImpl<SDValue> &Results,
                                       SelectionDAG &DAG) {
@@ -1698,8 +1753,44 @@ MipsTargetLowering::ReplaceNodeResults(SDNode *N,
   switch (N->getOpcode()) {
   default:
     break;
+  case ISD::ATOMIC_LOAD_ADD:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_ADD_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD_SUB:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_SUB_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD_AND:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_AND_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD_OR:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_OR_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD_XOR:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_XOR_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD_NAND:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_NAND_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD_MIN:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_MIN_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD_MAX:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_MAX_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD_UMIN:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_UMIN_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD_UMAX:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_LOAD_UMAX_I64_NM, Results, DAG);
+    return;
+  case ISD::ATOMIC_SWAP:
+    ReplaceBinOp_64Results(N, Mips::ATOMIC_SWAP_I64_NM, Results, DAG);
+    return;
   case ISD::ATOMIC_CMP_SWAP:
     ReplaceCMP_SWAP_64Results(N, Results, DAG);
+    return;
+  case ISD::ATOMIC_LOAD:
+    ReplaceLOAD_64Results(N, Results, DAG);
     return;
   }
 
@@ -1806,6 +1897,7 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
   switch (MI.getOpcode()) {
   default:
     llvm_unreachable("Unexpected instr type to insert");
+
   case Mips::ATOMIC_LOAD_ADD_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
   case Mips::ATOMIC_LOAD_ADD_I16:
@@ -1814,6 +1906,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_ADD_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_ADD_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_LOAD_AND_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -1823,6 +1917,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_AND_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_AND_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_LOAD_OR_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -1832,6 +1928,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_OR_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_OR_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_LOAD_XOR_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -1841,6 +1939,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_XOR_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_XOR_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_LOAD_NAND_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -1850,6 +1950,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_NAND_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_NAND_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_LOAD_SUB_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -1859,6 +1961,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_SUB_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_SUB_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_SWAP_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -1868,6 +1972,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_SWAP_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_SWAP_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_CMP_SWAP_I8:
     return emitAtomicCmpSwapPartword(MI, BB, 1);
@@ -1888,6 +1994,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_MIN_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_MIN_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_LOAD_MAX_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -1897,6 +2005,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_MAX_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_MAX_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_LOAD_UMIN_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -1906,6 +2016,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_UMIN_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_UMIN_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::ATOMIC_LOAD_UMAX_I8:
     return emitAtomicBinaryPartword(MI, BB, 1);
@@ -1915,6 +2027,8 @@ MipsTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     return emitAtomicBinary(MI, BB);
   case Mips::ATOMIC_LOAD_UMAX_I64:
     return emitAtomicBinary(MI, BB);
+  case Mips::ATOMIC_LOAD_UMAX_I64_NM:
+    return emitAtomicBinary64NM(MI, BB);
 
   case Mips::PseudoSDIV:
   case Mips::PseudoUDIV:
@@ -2140,6 +2254,83 @@ MipsTargetLowering::emitAtomicBinary(MachineInstr &MI,
   return BB;
 }
 
+// Adapted MipsTargetLowering::emitAtomicBinary to legalized 64 bit type.
+
+MachineBasicBlock *
+MipsTargetLowering::emitAtomicBinary64NM(MachineInstr &MI,
+                                         MachineBasicBlock *BB) const {
+  MachineFunction *MF = BB->getParent();
+  MachineRegisterInfo &RegInfo = MF->getRegInfo();
+  const TargetInstrInfo *TII = Subtarget.getInstrInfo();
+  DebugLoc DL = MI.getDebugLoc();
+
+  unsigned AtomicOp = MI.getOpcode();
+  int AdditionalRegs = 0;
+  switch (AtomicOp) {
+  case Mips::ATOMIC_LOAD_ADD_I64_NM:
+  case Mips::ATOMIC_LOAD_SUB_I64_NM:
+    AdditionalRegs = 1;
+    break;
+  case Mips::ATOMIC_LOAD_AND_I64_NM:
+  case Mips::ATOMIC_LOAD_OR_I64_NM:
+  case Mips::ATOMIC_LOAD_XOR_I64_NM:
+  case Mips::ATOMIC_LOAD_NAND_I64_NM:
+  case Mips::ATOMIC_SWAP_I64_NM:
+    break;
+  case Mips::ATOMIC_LOAD_MIN_I64_NM:
+  case Mips::ATOMIC_LOAD_MAX_I64_NM:
+  case Mips::ATOMIC_LOAD_UMIN_I64_NM:
+  case Mips::ATOMIC_LOAD_UMAX_I64_NM:
+    AdditionalRegs = 3;
+    break;
+  default:
+    llvm_unreachable("Unknown pseudo atomic for replacement!");
+  }
+
+  Register OldValLo = MI.getOperand(0).getReg();
+  Register OldValHi = MI.getOperand(1).getReg();
+  Register Ptr = MI.getOperand(2).getReg();
+  Register IncrLo = MI.getOperand(3).getReg();
+  Register IncrHi = MI.getOperand(4).getReg();
+  Register ScratchLo =
+      RegInfo.createVirtualRegister(RegInfo.getRegClass(OldValLo));
+  Register ScratchHi =
+      RegInfo.createVirtualRegister(RegInfo.getRegClass(OldValHi));
+
+  // see corresponding comment at MipsTargetLowering::emitAtomicBinary
+  MachineBasicBlock::iterator II(MI);
+  Register PtrCopy = RegInfo.createVirtualRegister(RegInfo.getRegClass(Ptr));
+  Register IncrCopyLo =
+      RegInfo.createVirtualRegister(RegInfo.getRegClass(IncrLo));
+  Register IncrCopyHi =
+      RegInfo.createVirtualRegister(RegInfo.getRegClass(IncrHi));
+
+  BuildMI(*BB, II, DL, TII->get(Mips::COPY), IncrCopyLo).addReg(IncrLo);
+  BuildMI(*BB, II, DL, TII->get(Mips::COPY), IncrCopyHi).addReg(IncrHi);
+  BuildMI(*BB, II, DL, TII->get(Mips::COPY), PtrCopy).addReg(Ptr);
+
+  MachineInstrBuilder MIB =
+      BuildMI(*BB, II, DL, TII->get(AtomicOp))
+          .addReg(OldValLo, RegState::Define | RegState::EarlyClobber)
+          .addReg(OldValHi, RegState::Define | RegState::EarlyClobber)
+          .addReg(PtrCopy)
+          .addReg(IncrCopyLo)
+          .addReg(IncrCopyHi)
+          .addReg(ScratchLo, RegState::Define | RegState::EarlyClobber |
+                                 RegState::Implicit | RegState::Dead)
+          .addReg(ScratchHi, RegState::Define | RegState::EarlyClobber |
+                                 RegState::Implicit | RegState::Dead);
+  for (int i = 0; i < AdditionalRegs; i++) {
+    Register ExtraScratch =
+        RegInfo.createVirtualRegister(RegInfo.getRegClass(OldValLo));
+    MIB.addReg(ExtraScratch, RegState::Define | RegState::EarlyClobber |
+                                 RegState::Implicit | RegState::Dead);
+  }
+
+  MI.eraseFromParent();
+
+  return BB;
+}
 MachineBasicBlock *MipsTargetLowering::emitSignExtendToI32InReg(
     MachineInstr &MI, MachineBasicBlock *BB, unsigned Size, unsigned DstReg,
     unsigned SrcReg) const {
@@ -2440,7 +2631,7 @@ MipsTargetLowering::emitAtomicCmpSwap(MachineInstr &MI,
   return BB;
 }
 
-// Adapt MipsTargetLowering::emitAtomicCmpSwap to legalized 64 bit type.
+// Adapted MipsTargetLowering::emitAtomicCmpSwap to legalized 64 bit type.
 
 MachineBasicBlock *
 MipsTargetLowering::emitAtomicCmpSwap64NM(MachineInstr &MI,

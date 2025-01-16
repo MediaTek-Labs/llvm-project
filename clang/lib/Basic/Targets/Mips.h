@@ -251,7 +251,7 @@ public:
         // Hi/lo and condition register names
         "hi", "lo", "", "$fcc0", "$fcc1", "$fcc2", "$fcc3", "$fcc4", "$fcc5",
         "$fcc6", "$fcc7", "$ac1hi", "$ac1lo", "$ac2hi", "$ac2lo", "$ac3hi",
-        "$ac3lo",
+        "$ac3lo", "$ac0", "$ac1", "$ac2", "$ac3",
         // MSA register names
         "$w0", "$w1", "$w2", "$w3", "$w4", "$w5", "$w6", "$w7", "$w8", "$w9",
         "$w10", "$w11", "$w12", "$w13", "$w14", "$w15", "$w16", "$w17", "$w18",
@@ -275,6 +275,7 @@ public:
     case 'c': // $25 for indirect jumps
     case 'l': // lo register
     case 'x': // hilo register pair
+    case 'A': // DSP ACC register
       Info.setAllowsRegister();
       return true;
     case 'f': // floating-point registers.

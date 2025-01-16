@@ -5021,6 +5021,7 @@ MipsTargetLowering::getConstraintType(StringRef Constraint) const {
   //       jump. This will always be $25 for -mabicalls.
   // 'l' : The lo register. 1 word storage.
   // 'x' : The hilo register pair. Double word storage.
+  // 'A' : DSP ACC registers
   if (Constraint.size() == 1) {
     switch (Constraint[0]) {
       default : break;
@@ -5030,6 +5031,7 @@ MipsTargetLowering::getConstraintType(StringRef Constraint) const {
       case 'c':
       case 'l':
       case 'x':
+      case 'A':
         return C_RegisterClass;
       case 'R':
         return C_Memory;
@@ -5062,6 +5064,7 @@ MipsTargetLowering::getSingleConstraintMatchWeight(
     break;
   case 'd':
   case 'y':
+  case 'A':
     if (type->isIntegerTy())
       weight = CW_Register;
     break;
@@ -5191,6 +5194,9 @@ parseRegForInlineAsmConstraint(StringRef C, MVT VT) const {
     RC = TRI->getRegClass(Mips::FCCRegClassID);
   else if (Prefix == "$w") { // Parse $w0-$w31.
     RC = getRegClassFor((VT == MVT::Other) ? MVT::v16i8 : VT);
+  } else if (Prefix == "$ac") { // Parse $ac0-$ac3.
+    RC = TRI->getRegClass(Subtarget.hasNanoMips() ? Mips::ACC64DSPNMRegClassID
+                                                  : Mips::ACC64DSPRegClassID);
   } else { // Parse $0-$31.
     assert(Prefix == "$");
     RC = getRegClassFor((VT == MVT::Other) ? MVT::i32 : VT);
@@ -5269,6 +5275,11 @@ MipsTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
       // Fixme: Not triggering the use of both hi and low
       // This will generate an error message
       return std::make_pair(0U, nullptr);
+    case 'A': // DSP ACC regsiters
+      if (Subtarget.hasNanoMips())
+        return std::make_pair(0, &Mips::ACC64DSPNMRegClass);
+      else
+        return std::make_pair(0, &Mips::ACC64DSPRegClass);
     }
   }
 
@@ -5393,6 +5404,39 @@ void MipsTargetLowering::LowerAsmOperandForConstraint(SDValue Op,
   }
 
   TargetLowering::LowerAsmOperandForConstraint(Op, Constraint, Ops, DAG);
+}
+
+bool MipsTargetLowering::splitValueIntoRegisterParts(
+    SelectionDAG &DAG, const SDLoc &DL, SDValue Val, SDValue *Parts,
+    unsigned NumParts, MVT PartVT, std::optional<CallingConv::ID> CC) const {
+  EVT ValueVT = Val.getValueType();
+  if (ValueVT == MVT::i64 && PartVT == MVT::Untyped && NumParts == 1) {
+    MVT XLenVT = MVT::i32;
+    // TODO :replace with  DAG.SplitScalar when available (release/17.x+)
+    // auto [Lo, Hi] = DAG.SplitScalar(Val, DL, XLenVT, XLenVT);
+    SDValue Lo = DAG.getNode(ISD::EXTRACT_ELEMENT, DL, XLenVT, Val,
+                             DAG.getConstant(0, DL, MVT::i32));
+    SDValue Hi = DAG.getNode(ISD::EXTRACT_ELEMENT, DL, XLenVT, Val,
+                             DAG.getConstant(1, DL, MVT::i32));
+    Parts[0] = DAG.getNode(MipsISD::MTLOHI, DL, PartVT, Lo, Hi);
+    return true;
+  }
+  return false;
+}
+
+SDValue MipsTargetLowering::joinRegisterPartsIntoValue(
+    SelectionDAG &DAG, const SDLoc &DL, const SDValue *Parts, unsigned NumParts,
+    MVT PartVT, EVT ValueVT, std::optional<CallingConv::ID> CC) const {
+  if (ValueVT == MVT::i64 && PartVT == MVT::Untyped && NumParts == 1) {
+    SDNode *Node = Parts[0].getNode();
+    SDValue DestReg = Node->getOperand(1);
+    if (Node->getOpcode() == ISD::CopyFromReg) {
+      SDValue Lo = DAG.getNode(MipsISD::MFLO, DL, MVT::i32, DestReg);
+      SDValue Hi = DAG.getNode(MipsISD::MFHI, DL, MVT::i32, DestReg);
+      return DAG.getNode(ISD::BUILD_PAIR, DL, MVT::i64, Lo, Hi);
+    }
+  }
+  return SDValue();
 }
 
 bool MipsTargetLowering::isLegalAddressingMode(const DataLayout &DL,

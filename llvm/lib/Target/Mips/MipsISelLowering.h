@@ -304,6 +304,14 @@ class TargetRegisterClass;
                             ISD::NodeType) const override;
     bool mayBeEmittedAsTailCall(const CallInst *CI) const override;
 
+    bool splitValueIntoRegisterParts(
+        SelectionDAG &DAG, const SDLoc &DL, SDValue Val, SDValue *Parts,
+        unsigned NumParts, MVT PartVT,
+        std::optional<CallingConv::ID> CC) const override;
+    SDValue joinRegisterPartsIntoValue(
+        SelectionDAG &DAG, const SDLoc &DL, const SDValue *Parts,
+        unsigned NumParts, MVT PartVT, EVT ValueVT,
+        std::optional<CallingConv::ID> CC) const override;
 
     bool isCheapToSpeculateCttz(Type *Ty) const override;
     bool isCheapToSpeculateCtlz(Type *Ty) const override;
@@ -315,6 +323,17 @@ class TargetRegisterClass;
     /// as a series of gpr sized integers.
     MVT getRegisterTypeForCallingConv(LLVMContext &Context, CallingConv::ID CC,
                                       EVT VT) const override;
+
+    /// Return the number of registers for a given MVT
+    unsigned getNumRegisters(
+        LLVMContext &Context, EVT VT,
+        std::optional<MVT> RegisterVT = std::nullopt) const override {
+      // i64 in untyped reg class (accumulators)
+      if (VT == MVT::i64 && RegisterVT && *RegisterVT == MVT::Untyped) {
+        return 1;
+      }
+      return TargetLowering::getNumRegisters(Context, VT);
+    }
 
     /// Return the number of registers for a given MVT, ensuring vectors are
     /// treated as a series of gpr sized integers.

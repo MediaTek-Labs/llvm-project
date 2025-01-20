@@ -1927,7 +1927,7 @@ basic_ostream<_CharT, _Traits>&
 operator<<(basic_ostream<_CharT, _Traits>& __os, shared_ptr<_Yp> const& __p);
 
 
-#if !defined(_LIBCPP_HAS_NO_THREADS)
+#if !defined(_LIBCPP_HAS_NO_THREADS) && !defined(_LIBCPP_SHARED_PTR_NOT_ATOMIC)
 
 class _LIBCPP_TYPE_VIS __sp_mut
 {

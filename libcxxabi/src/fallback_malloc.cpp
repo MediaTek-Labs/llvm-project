@@ -31,6 +31,13 @@
 //  as two byte offsets within the heap, rather than (4 or 8 byte) pointers.
 
 namespace {
+#ifdef _LIBCXXABI_HAS_NO_FALLBACK_MALLOC
+
+void* fallback_malloc(size_t) { return NULL; }
+void fallback_free(void *) {}
+bool is_fallback_ptr(void *) { return false; }
+
+#else
 
 // When POSIX threads are not available, make the mutex operations a nop
 #ifndef _LIBCXXABI_HAS_NO_THREADS
@@ -247,6 +254,7 @@ size_t print_free_list() {
   std::printf("Total Free space: %d\n", total_free);
   return total_free;
 }
+#endif
 #endif
 } // end unnamed namespace
 

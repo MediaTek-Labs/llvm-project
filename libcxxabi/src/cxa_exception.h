@@ -166,4 +166,8 @@ extern "C" _LIBCXXABI_FUNC_VIS void __cxa_free_dependent_exception (void * depen
 
 }  // namespace __cxxabiv1
 
+#if defined(_LIBCXXABI_EXTERNAL_CXA_GET_GLOBALS)
+extern "C" void * cxa_get_globals();
+#endif
+
 #endif // _CXA_EXCEPTION_H

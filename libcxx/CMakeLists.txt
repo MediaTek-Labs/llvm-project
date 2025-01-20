@@ -305,6 +305,9 @@ else()
   set(LIBCXX_PSTL_BACKEND "serial" CACHE STRING "Which PSTL backend to use")
 endif()
 
+option(LIBCXX_SHARED_PTR_NOT_ATOMIC
+    "Build libc++ without support for atomic operations of shared ptr" OFF)
+
 # Misc options ----------------------------------------------------------------
 # FIXME: Turn -pedantic back ON. It is currently off because it warns
 # about #include_next which is used everywhere.
@@ -756,6 +759,7 @@ config_define(${LIBCXX_HAS_EXTERNAL_THREAD_API} _LIBCPP_HAS_THREAD_API_EXTERNAL)
 config_define(${LIBCXX_HAS_WIN32_THREAD_API} _LIBCPP_HAS_THREAD_API_WIN32)
 config_define(${LIBCXX_HAS_MUSL_LIBC} _LIBCPP_HAS_MUSL_LIBC)
 config_define_if(LIBCXX_NO_VCRUNTIME _LIBCPP_NO_VCRUNTIME)
+config_define_if(LIBCXX_SHARED_PTR_NOT_ATOMIC _LIBCPP_SHARED_PTR_NOT_ATOMIC)
 config_define(${LIBCXX_ENABLE_FILESYSTEM} _LIBCPP_HAS_FILESYSTEM)
 config_define(${LIBCXX_ENABLE_RANDOM_DEVICE} _LIBCPP_HAS_RANDOM_DEVICE)
 config_define(${LIBCXX_ENABLE_LOCALIZATION} _LIBCPP_HAS_LOCALIZATION)

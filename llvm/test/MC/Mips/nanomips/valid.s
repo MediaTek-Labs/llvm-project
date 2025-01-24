@@ -1789,6 +1789,18 @@
 	addiupc $a0, -2147283647	# CHECK: addiupc $a0, 0x80030d41 # encoding: [0x83,0x60,0x3b,0x0d,0x03,0x80]
                                 # CHECK-NEXT: <MCInst #{{.*}} ADDIUPC48_NM
 				# DISAS: {{.*}}  83 60 3b 0d 03 80  	lapc.b	$a0, 0x{{.*}}
+	evp $a1			# CHECK: evp $a1	# encoding: [0xa0,0x20,0x90,0x07]
+                                # CHECK-NEXT: <MCInst #{{.*}} EVP_NM
+				# DISAS: {{.*}}  a0 20 90 07  	evp $a1
+	evp			# CHECK: evp $zero	# encoding: [0x00,0x20,0x90,0x07]
+                                # CHECK-NEXT: <MCInst #{{.*}} EVP_NM
+				# DISAS: {{.*}}  00 20 90 07  	evp $zero
+	dvp $a1			# CHECK: dvp $a1	# encoding: [0xa0,0x20,0x90,0x03]
+                                # CHECK-NEXT: <MCInst #{{.*}} DVP_NM
+				# DISAS: {{.*}}  a0 20 90 03  	dvp $a1
+	dvp			# CHECK: dvp $zero	# encoding: [0x00,0x20,0x90,0x03]
+                                # CHECK-NEXT: <MCInst #{{.*}} DVP_NM
+				# DISAS: {{.*}}  00 20 90 03  	dvp $zero
 
 	jrc $ra
 	.type   g_8,@object

@@ -3196,3 +3196,18 @@ def TLBP_NM : MnemonicOnly<"tlbp">, _Pool_POOL32Axf_5_group0<0b00001>, ASE_TLB;
 def TLBR_NM : MnemonicOnly<"tlbr">, _Pool_POOL32Axf_5_group0<0b01001>, ASE_TLB;
 def TLBWI_NM : MnemonicOnly<"tlbwi">, _Pool_POOL32Axf_5_group0<0b10001>, ASE_TLB;
 def TLBWR_NM : MnemonicOnly<"tlbwr">, _Pool_POOL32Axf_5_group0<0b11001>, ASE_TLB;
+
+class VP_Enc<bits<1> p> : _Pool_POOL32A0_0<0b111010> {
+      bits<5> rt;
+      let Inst{25...21} = rt;
+      let Inst{20...16} = 0b00000;
+      let Inst{15...11} = 0b00000;
+      let Inst{10} = p;
+}
+
+def EVP_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins),
+                      "evp\t$rt", []>, VP_Enc<0b1>;
+def : NanoMipsInstAlias<"evp", (EVP_NM ZERO_NM), 0>;
+def DVP_NM : InstNM<(outs GPRNM32Opnd:$rt), (ins),
+                      "dvp\t$rt", []>, VP_Enc<0b0>;
+def : NanoMipsInstAlias<"dvp", (DVP_NM ZERO_NM), 0>;

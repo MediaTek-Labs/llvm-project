@@ -629,7 +629,7 @@ def : InstRW<[GenericWriteMove], (instrs CFC2_MM, CTC2_MM)>;
 // nanoMIPS
 // =============
 
-def : InstRW<[GenericWriteCOP0], (instrs DI_NM, EI_NM, WAIT_NM)>;
+def : InstRW<[GenericWriteCOP0], (instrs DI_NM, EI_NM, WAIT_NM, EVP_NM, DVP_NM)>;
 def : InstRW<[GenericReadCOP0], (instrs MFC0_NM, MFHC0_NM, MFC0Sel_NM, MFHC0Sel_NM)>;
 def : InstRW<[GenericWriteCOP0], (instrs MTC0_NM, MTHC0_NM, MTC0Sel_NM, MTHC0Sel_NM)>;
 

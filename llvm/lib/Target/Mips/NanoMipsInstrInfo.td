@@ -535,7 +535,6 @@ def uimm32_nm : Operand<i32> {
 def simm32s12_nm : Operand<i32> {
   let ParserMatchClass = Hi20AsmOperand;
   let PrintMethod = "printHi20";
-  let DecoderMethod = "DecodeSImm32s12";
 }
 
 def simm32s12_pcrel_nm : Operand<i32> {

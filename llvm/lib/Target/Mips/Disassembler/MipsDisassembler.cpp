@@ -3136,15 +3136,6 @@ static DecodeStatus DecodeUImmWithReg(MCInst &Inst, unsigned Value,
 							    Decoder);
 }
 
-static DecodeStatus DecodeSImm32s12(MCInst &Inst,
-				   unsigned Insn,
-				   uint64_t Address,
-				   const void *Decoder) {
-  uint64_t Imm = (Insn) << 12;
-  Inst.addOperand(MCOperand::createImm(Imm));
-  return MCDisassembler::Success;
-}
-
 static DecodeStatus DecodeSImm32s12PCRel(MCInst &Inst,
 				   unsigned Insn,
 				   uint64_t Address,

@@ -32,6 +32,23 @@ void MipsMCInstLower::Initialize(MCContext *C) {
   Ctx = C;
 }
 
+static MipsMCExpr::MipsExprKind getTargetKindNM(const MachineOperand &MO) {
+  switch(MO.getTargetFlags()) {
+  default:
+    llvm_unreachable("Invalid target flag!");
+  case MipsII::MO_NO_FLAG:
+    return MipsMCExpr::MEK_None;
+  case MipsII::MO_ABS_HI:
+    return MipsMCExpr::MEK_HI;
+  case MipsII::MO_ABS_LO:
+    return MipsMCExpr::MEK_LO;
+  case MipsII::MO_PCREL_HI:
+    return MipsMCExpr::MEK_PCREL_HI;
+  case MipsII::MO_GPREL:
+    return MipsMCExpr::MEK_GPREL;
+  }
+}
+
 MCOperand MipsMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
                                               MachineOperandType MOTy,
                                               int64_t Offset) const {

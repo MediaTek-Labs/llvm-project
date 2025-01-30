@@ -25,8 +25,9 @@ using namespace llvm;
 #define DEBUG_TYPE "mipsmcexpr"
 
 const MipsMCExpr *MipsMCExpr::create(MipsMCExpr::MipsExprKind Kind,
-                                     const MCExpr *Expr, MCContext &Ctx) {
-  return new (Ctx) MipsMCExpr(Kind, Expr);
+                                     const MCExpr *Expr, MCContext &Ctx,
+				     bool IsNanoMips) {
+  return new (Ctx) MipsMCExpr(Kind, Expr, IsNanoMips);
 }
 
 const MipsMCExpr *MipsMCExpr::createGpOff(MipsMCExpr::MipsExprKind Kind,
@@ -101,7 +102,7 @@ void MipsMCExpr::printImpl(raw_ostream &OS, const MCAsmInfo *MAI) const {
   case MEK_NEG:
     OS << "%neg";
     break;
-  case MEK_PCREL_HI16:
+  case MEK_PCREL_HI:
     OS << "%pcrel_hi";
     break;
   case MEK_PCREL_LO16:
@@ -118,9 +119,6 @@ void MipsMCExpr::printImpl(raw_ostream &OS, const MCAsmInfo *MAI) const {
     break;
   case MEK_TPREL_LO:
     OS << "%tprel_lo";
-    break;
-  case MEK_PCREL_HI:
-    OS << "%pcrel_hi";
     break;
   }
 
@@ -159,8 +157,6 @@ bool MipsMCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
   if (Res.isAbsolute() && Fixup == nullptr) {
     int64_t AbsVal = Res.getConstant();
     switch (Kind) {
-    case MEK_PCREL_HI:
-      llvm_unreachable("nanoMIPS: NYI");
     case MEK_None:
     case MEK_Special:
       llvm_unreachable("MEK_None and MEK_Special are invalid");
@@ -179,7 +175,7 @@ bool MipsMCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
     case MEK_GOT_OFST:
     case MEK_GOT_PAGE:
     case MEK_GPREL:
-    case MEK_PCREL_HI16:
+    case MEK_PCREL_HI:
     case MEK_PCREL_LO16:
     case MEK_TLSGD:
     case MEK_TLSLDM:
@@ -188,11 +184,17 @@ bool MipsMCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
       return false;
     case MEK_LO:
     case MEK_CALL_LO16:
-      AbsVal = SignExtend64<16>(AbsVal);
+      if (IsNanoMips)
+	AbsVal = AbsVal & 0xfff;
+      else
+	AbsVal = SignExtend64<16>(AbsVal);
       break;
     case MEK_CALL_HI16:
     case MEK_HI:
-      AbsVal = SignExtend64<16>((AbsVal + 0x8000) >> 16);
+      if (IsNanoMips)
+	AbsVal = (AbsVal >> 12) & 0xfffff;
+      else
+	AbsVal = SignExtend64<16>((AbsVal + 0x8000) >> 16);
       break;
     case MEK_HIGHER:
       AbsVal = SignExtend64<16>((AbsVal + 0x80008000LL) >> 32);
@@ -252,9 +254,6 @@ static void fixELFSymbolsInTLSFixupsImpl(const MCExpr *Expr, MCAssembler &Asm) {
 
 void MipsMCExpr::fixELFSymbolsInTLSFixups(MCAssembler &Asm) const {
   switch (getKind()) {
-  case MEK_PCREL_HI:
-    llvm_unreachable("nanoMIPS: NYI");
-    break;
   case MEK_None:
   case MEK_Special:
     llvm_unreachable("MEK_None and MEK_Special are invalid");
@@ -274,7 +273,7 @@ void MipsMCExpr::fixELFSymbolsInTLSFixups(MCAssembler &Asm) const {
   case MEK_HIGHEST:
   case MEK_LO:
   case MEK_NEG:
-  case MEK_PCREL_HI16:
+  case MEK_PCREL_HI:
   case MEK_PCREL_LO16:
     // If we do have nested target-specific expressions, they will be in
     // a consecutive chain.

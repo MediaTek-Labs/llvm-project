@@ -1173,25 +1173,25 @@ bool MipsExpandPseudo::expandAtomicBinOp64NM(
     BuildMI(loopMBB, DL, TII->get(OR), ScratchHi)
         .addReg(OldValHi)
         .addReg(ZERO);
-    // min: movz ScratchHi, sltHi, IncrHi // override OldValHi with IncrHi
+    // min: movz ScratchHi, IncrHi, sltHi // override OldValHi with IncrHi
     //                                    // if !(Old < Incr)
-    // max: movz ScratchHi, sltHi, IncrHi // override OldValHi with IncrHi
+    // max: movz ScratchHi, IncrHi, sltHi // override OldValHi with IncrHi
     //                                    // if (Old < Incr)
     BuildMI(loopMBB, DL, TII->get(MOVIncr), ScratchHi)
-        .addReg(sltHi)
         .addReg(IncrHi)
+        .addReg(sltHi)
         .addReg(ScratchHi);
     // move ScratchLo, OldValLo
     BuildMI(loopMBB, DL, TII->get(OR), ScratchLo)
         .addReg(OldValLo)
         .addReg(ZERO);
-    // min: movz ScratchLo, sltuLo, IncrLo // override OldValLo with IncrLo
+    // min: movz ScratchLo, IncrLo, sltuLo // override OldValLo with IncrLo
     //                                   // if !(Old < Incr)
-    // max: movn ScratchLo, sltuLo, IncrLo // override OldValLo with IncrLo
+    // max: movn ScratchLo, IncrLo, sltuLo // override OldValLo with IncrLo
     //                                   // if (Old < Incr)
     BuildMI(loopMBB, DL, TII->get(MOVIncr), ScratchLo)
-        .addReg(sltuLo)
         .addReg(IncrLo)
+        .addReg(sltuLo)
         .addReg(ScratchLo);
   } else if (Opcode) {
     BuildMI(loopMBB, DL, TII->get(Opcode), ScratchLo)

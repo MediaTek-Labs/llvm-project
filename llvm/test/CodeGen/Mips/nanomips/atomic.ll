@@ -29,7 +29,7 @@ define i32 @AtomicLoadSub32(i32 signext %incr) nounwind {
 ; CHECK-NEXT:  .LBB1_1: # %entry
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    ll $a1, 0($a2)
-; CHECK-NEXT:    sub $a3, $a1, $a0
+; CHECK-NEXT:    subu $a3, $a1, $a0
 ; CHECK-NEXT:    sc $a3, 0($a2)
 ; CHECK-NEXT:    beqzc $a3, .LBB1_1
 ; CHECK-NEXT:  # %bb.2: # %entry

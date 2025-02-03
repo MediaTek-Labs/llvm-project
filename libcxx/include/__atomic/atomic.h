@@ -45,7 +45,11 @@ struct __atomic_base // false
 #endif
 
   _LIBCPP_HIDE_FROM_ABI bool is_lock_free() const volatile _NOEXCEPT {
-    return __cxx_atomic_is_lock_free(sizeof(__cxx_atomic_impl<_Tp>));
+    #if defined(__nanomips__)
+    {return __cxx_atomic_is_lock_free(sizeof(__cxx_atomic_impl<_Tp>)) && alignof(__cxx_atomic_impl<_Tp>) >= sizeof(__cxx_atomic_impl<_Tp>);}
+    #else
+    {return __cxx_atomic_is_lock_free(sizeof(__cxx_atomic_impl<_Tp>));
+    #endif
   }
   _LIBCPP_HIDE_FROM_ABI bool is_lock_free() const _NOEXCEPT {
     return static_cast<__atomic_base const volatile*>(this)->is_lock_free();

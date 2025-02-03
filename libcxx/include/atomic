@@ -1528,7 +1528,11 @@ struct __atomic_base  // false
 
     _LIBCPP_INLINE_VISIBILITY
     bool is_lock_free() const volatile _NOEXCEPT
+#if defined(__nanomips__)
+        {return __cxx_atomic_is_lock_free(sizeof(_Tp)) && alignof(_Tp) >= sizeof(_Tp);}
+#else
         {return __cxx_atomic_is_lock_free(sizeof(_Tp));}
+#endif
     _LIBCPP_INLINE_VISIBILITY
     bool is_lock_free() const _NOEXCEPT
         {return static_cast<__atomic_base const volatile*>(this)->is_lock_free();}

@@ -696,29 +696,18 @@ locale::facet::__on_zero_shared() noexcept
 
 int32_t locale::id::__next_id = 0;
 
-namespace
-{
-
-class __fake_bind
-{
-    locale::id* id_;
-    void (locale::id::* pmf_)();
-public:
-    __fake_bind(void (locale::id::* pmf)(), locale::id* id)
-        : id_(id), pmf_(pmf) {}
-
-    void operator()() const
-    {
-        (id_->*pmf_)();
-    }
-};
-
-}
-
 long
 locale::id::__get()
 {
-    call_once(__flag_, __fake_bind(&locale::id::__init, this));
+    while (__libcpp_atomic_load(&__state_) != ready) {
+        state uninit = uninitialised;
+        if (__libcpp_atomic_compare_exchange(&__state_, &uninit,
+                                             initialising)) {
+            __init();
+            __libcpp_atomic_store(&__state_, ready);
+            break;
+        }
+    }
     return __id_ - 1;
 }
 

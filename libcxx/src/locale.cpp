@@ -593,7 +593,15 @@ void locale::facet::__on_zero_shared() noexcept { delete this; }
 constinit int32_t locale::id::__next_id = 0;
 
 long locale::id::__get() {
-  call_once(__flag_, [&] { __id_ = __libcpp_atomic_add(&__next_id, 1); });
+  while (__libcpp_atomic_load(&__state_) != ready) {
+        state uninit = uninitialised;
+        if (__libcpp_atomic_compare_exchange(&__state_, &uninit,
+                                             initialising)) {
+            __id_ = __libcpp_atomic_add(&__next_id, 1);
+            __libcpp_atomic_store(&__state_, ready);
+            break;
+        }
+  }
   return __id_ - 1;
 }
 

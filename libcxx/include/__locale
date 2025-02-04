@@ -129,7 +129,8 @@ private:
 };
 
 class _LIBCPP_EXPORTED_FROM_ABI locale::id {
-  once_flag __flag_;
+  enum state { uninitialised, initialising, ready };
+  state __state_ = uninitialised;
   int32_t __id_;
 
   static int32_t __next_id;

@@ -55,6 +55,7 @@ option(LIBUNWIND_USE_FRAME_HEADER_CACHE "Cache frame headers for unwinding. Requ
 option(LIBUNWIND_REMEMBER_HEAP_ALLOC "Use heap instead of the stack for .cfi_remember_state." OFF)
 option(LIBUNWIND_INSTALL_HEADERS "Install the libunwind headers." ON)
 option(LIBUNWIND_ENABLE_FRAME_APIS "Include libgcc-compatible frame apis." OFF)
+option(LIBUNWIND_NO_DWARF_FDE_CACHE "Don't use DWARF FDE Cache if Dwarf unwinding is on." OFF)
 
 set(LIBUNWIND_LIBDIR_SUFFIX "${LLVM_LIBDIR_SUFFIX}" CACHE STRING
     "Define suffix of library directory name (32/64)")
@@ -327,6 +328,10 @@ if (C_SUPPORTS_COMMENT_LIB_PRAGMA)
   if (LIBUNWIND_HAS_PTHREAD_LIB)
     add_definitions(-D_LIBUNWIND_LINK_PTHREAD_LIB)
   endif()
+endif()
+
+if (LIBUNWIND_NO_DWARF_FDE_CACHE)
+  add_definitions(-D_LIBUNWIND_NO_DWARF_FDE_CACHE)
 endif()
 
 #===============================================================================

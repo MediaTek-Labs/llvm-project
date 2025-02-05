@@ -258,6 +258,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIPInfo(struct _Unwind_Context *context,
 }
 
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
+#if !defined(_LIBUNWIND_NO_DWARF_FDE_CACHE)
 
 /// Called by programs with dynamic code generators that want
 /// to register a dynamically generated FDE.
@@ -277,7 +278,7 @@ _LIBUNWIND_EXPORT void __deregister_frame(const void *fde) {
   _LIBUNWIND_TRACE_API("__deregister_frame(%p)", fde);
   __unw_remove_dynamic_fde((unw_word_t)(uintptr_t)fde);
 }
-
+#endif // !defined(_LIBUNWIND_NO_DWARF_FDE_CACHE)
 
 // The following register/deregister functions are gcc extensions.
 // They have existed on Mac OS X, but have never worked because Mac OS X

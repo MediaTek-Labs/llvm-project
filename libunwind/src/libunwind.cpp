@@ -284,7 +284,7 @@ _LIBUNWIND_WEAK_ALIAS(__unw_save_vfp_as_X, unw_save_vfp_as_X)
 #endif
 
 
-#if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
+#if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND) && !defined(_LIBUNWIND_NO_DWARF_FDE_CACHE)
 /// SPI: walks cached DWARF entries
 _LIBUNWIND_HIDDEN void __unw_iterate_dwarf_unwind_cache(void (*func)(
     unw_word_t ip_start, unw_word_t ip_end, unw_word_t fde, unw_word_t mh)) {
@@ -348,7 +348,7 @@ void __unw_remove_dynamic_eh_frame_section(unw_word_t eh_frame_start) {
       (LocalAddressSpace::pint_t)eh_frame_start);
 }
 
-#endif // defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
+#endif // defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND) && !defined(_LIBUNWIND_NO_DWARF_FDE_CACHE)
 #endif // !defined(__USING_SJLJ_EXCEPTIONS__) && !defined(__wasm__)
 
 #ifdef __APPLE__

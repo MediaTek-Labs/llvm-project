@@ -64,6 +64,7 @@ add_llvm_target(MipsCodeGen
   MipsTargetTransformInfo.cpp
   MicroMipsSizeReduction.cpp
   MipsMulMulBugPass.cpp
+  NanoMipsLoadStoreMultiple.cpp
   NanoMipsLoadStoreOptimizer.cpp
   NanoMipsMoveOptimizer.cpp
   NanoMipsOptimizeJumpTables.cpp

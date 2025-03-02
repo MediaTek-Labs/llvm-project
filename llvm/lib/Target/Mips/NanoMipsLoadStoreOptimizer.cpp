@@ -103,8 +103,9 @@ bool NMLoadStoreOpt::isFramePointerAssignment(MachineInstr &MI) {
 }
 
 bool NMLoadStoreOpt::isStackPointerInsZero(MachineInstr &MI) {
-  if (MI.getOpcode() != Mips::ADDIU_NM &&
-      MI.getOpcode() != Mips::ADDIUNEG_NM)
+  if ((MI.getOpcode() != Mips::ADDIU_NM &&
+       MI.getOpcode() != Mips::ADDIUNEG_NM) ||
+      MI.getNumOperands() < 5)
     return false;
   Register DstReg = MI.getOperand(0).getReg();
   Register Src2Reg = MI.getOperand(4).getReg();

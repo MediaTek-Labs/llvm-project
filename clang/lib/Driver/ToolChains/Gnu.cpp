@@ -1079,6 +1079,11 @@ static bool isNanoMips64BitTime(const ArgList &Args, llvm::Triple::ArchType Arch
 			  options::OPT_mno_use_64bit_time_t, false));
 }
 
+static bool isShortWChar(const ArgList &Args) {
+  return Args.hasFlag(options::OPT_fshort_wchar,
+                      options::OPT_fshort_wchar, false);
+}
+
 static bool isMSP430(llvm::Triple::ArchType Arch) {
   return Arch == llvm::Triple::msp430;
 }
@@ -1428,21 +1433,36 @@ static bool findNanoMipsMultilibs(const Multilib::flags_list &Flags,
   // NanoMips multi-libs
   MultilibSet NanoMipsMultilibs;
   {
-    auto ElNanoSoftTime32 = Multilib("/nanomips-r6-soft-newlib/lib", "", "", 0)
-                          .flag("+march=i7200")
-                          .flag("+mabi=p32")
-                          .flag("+EL")
-                          .flag("+msoft-float");
-    auto ElNanoSoftTime64 = Multilib("/nanomips-r6-soft-time64-newlib/lib",  "", "", 1)
+    auto ElNanoSoftTime32 = Multilib("/nanomips-r6-soft-wchar16-newlib/lib", "", "", 0)
                           .flag("+march=i7200")
                           .flag("+mabi=p32")
                           .flag("+EL")
                           .flag("+msoft-float")
-			  .flag("+muse-64bit-time_t");
+                          .flag("+fshort-wchar");
+
+    auto ElNanoSoftTime64 = Multilib("/nanomips-r6-soft-time64-wchar16-newlib/lib",  "", "", 1)
+                          .flag("+march=i7200")
+                          .flag("+mabi=p32")
+                          .flag("+EL")
+                          .flag("+msoft-float")
+                          .flag("+muse-64bit-time_t")
+                          .flag("+fshort-wchar");
+    auto ElNanoMipsSoftTime32WChar32 = Multilib("/nanomips-r6-soft-newlib/lib", "", "", 0)
+                          .flag("+mabi=p32")
+                          .flag("+EL")
+                          .flag("+msoft-float")
+                          .flag("-fshort-wchar");
+    auto ElNanoMipsSoftTime64WChar32 = Multilib("/nanomips-r6-soft-time64-newlib/lib",  "", "", 1)
+                          .flag("+mabi=p32")
+                          .flag("+EL")
+                          .flag("+msoft-float")
+                          .flag("+muse-64bit-time_t")
+                          .flag("-fshort-wchar");
 
     NanoMipsMultilibs =
         MultilibSet()
-        .Either({ElNanoSoftTime64, ElNanoSoftTime32})
+      .Either({ElNanoSoftTime64, ElNanoSoftTime32,
+            ElNanoMipsSoftTime64WChar32, ElNanoMipsSoftTime32WChar32})
             .setFilePathsCallback([](const Multilib &M) {
               return std::vector<std::string>(
                   {"/../../../../nanomips-elf/lib" + M.gccSuffix()});
@@ -1592,6 +1612,7 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
   addMultilibFlag(!isMipsEL(TargetArch), "EB", Flags);
   addMultilibFlag(isNanoMips(TargetArch), "march=i7200", Flags);
   addMultilibFlag(isNanoMips64BitTime(Args, TargetArch), "muse-64bit-time_t", Flags);
+  addMultilibFlag(isShortWChar(Args), "fshort-wchar", Flags);
 
   if (TargetTriple.isAndroid())
     return findMipsAndroidMultilibs(D.getVFS(), Path, Flags, NonExistent,

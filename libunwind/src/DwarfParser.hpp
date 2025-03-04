@@ -81,7 +81,11 @@ public:
   struct RegisterLocation {
     RegisterSavedWhere location;
     bool initialStateSaved;
+#if defined(_LIBUNWIND_TARGET_NANOMIPS)
+    int32_t value;
+#else
     int64_t value;
+#endif
   };
   /// Information about a frame layout and registers saved determined
   /// by "running" the DWARF FDE "instructions"

@@ -252,12 +252,14 @@ void MipsELFStreamer::emitCodeAlignment(Align ByteAlignment, const MCSubtargetIn
   if (!ELFTargetStreamer->isNanoMipsEnabled() || 
       (Flags & ELF::EF_NANOMIPS_LINKRELAX))
     MCObjectStreamer::emitCodeAlignment(ByteAlignment,STI ,MaxBytesToEmit);
-  else if (ByteAlignment >= 4) {
-    // Code alignment of 2 is always guaranteed
-    // Emit one 16-bit NOP, followed by as many 32-bit NOPs
+  else {
+    // Emit one byte 0 and one 16-bit NOP, followed by as many 32-bit NOPs
     // as required for desired alignment.
-    MCObjectStreamer::emitValueToAlignment(Align(4), 0x9008,
-					   2, 2);
+    MCObjectStreamer::emitValueToAlignment(Align(2), 0x0,
+					   1, 1);
+    if (ByteAlignment >= 4)
+      MCObjectStreamer::emitValueToAlignment(Align(4), 0x9008,
+					     2, 2);
     MCObjectStreamer::emitValueToAlignment(ByteAlignment, 0xc0008000,
 					   4, MaxBytesToEmit);
   }

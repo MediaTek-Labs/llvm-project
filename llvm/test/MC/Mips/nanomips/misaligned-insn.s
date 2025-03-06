@@ -3,6 +3,12 @@
 
 # RUN: llvm-mc -filetype=obj -triple nanomips-elf %s -o - \
 # RUN:     | llvm-objdump --triple nanomips-elf -dr - | FileCheck %s
+# RUN: llvm-mc -filetype=obj -triple nanomips-elf --defsym=RELAX=1  %s -o - \
+# RUN:     | llvm-objdump --triple nanomips-elf -dr - | FileCheck %s
+
+.ifdef RELAX
+	.linkrelax
+.endif
 
 .text
 	.globl __start

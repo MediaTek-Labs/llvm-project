@@ -708,13 +708,21 @@ getFixupKindInfo(MCFixupKind Kind) const {
 bool MipsAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
                                   const MCSubtargetInfo *STI) const {
   if (TheTriple.isNanoMips()) {
+    const char zero[] = {'\x0'};
     const char nop16[] = {'\x08', '\x90'};
     const char nop32[] = {0, '\x80', 0, '\xc0'};
+    // Align a mis-aligned instruction stream by writing a singular 0. This
+    // is required when embedding odd-sized data in to the instruction stream.
+    if (Count % 2) {
+      OS.write(zero, 1);
+      Count -= 1;
+    }
     // Emit one 16-bit NOP, followed by as many 32-bit NOPs
     // as required for desired alignment.
-    if (Count % 4)
+    if (Count % 4) {
       OS.write(nop16, 2);
-    Count -= (Count % 4);
+      Count -= 2;
+    }
     while (Count > 0) {
       OS.write(nop32, 4);
       Count -= 4;

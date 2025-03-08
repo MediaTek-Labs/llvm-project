@@ -59,5 +59,6 @@ MipsMCAsmInfo::MipsMCAsmInfo(const Triple &TheTriple,
     UseLogicalShr = false;
     AllowBracInName = true;
     EnableDwarfFileDirectoryDefault = (Options.DwarfVersion >= 5);
+    HasAggressiveSymbolFolding = false;
   }
 }

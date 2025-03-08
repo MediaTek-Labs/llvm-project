@@ -58,6 +58,7 @@ MipsELFMCAsmInfo::MipsELFMCAsmInfo(const Triple &TheTriple,
     UsesCompInstByteOrder = true;
     UseLogicalShr = false;
     AllowBracInName = true;
+    DwarfFDEPCRangeUseAbsDiff = false;
   }
 }
 

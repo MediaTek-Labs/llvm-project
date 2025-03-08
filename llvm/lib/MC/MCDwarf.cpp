@@ -1798,7 +1798,10 @@ void FrameEmitterImpl::EmitFDE(const MCSymbol &cieStart,
   // PC Range
   const MCExpr *Range =
       makeEndMinusStartExpr(context, *frame.Begin, *frame.End, 0);
-  emitAbsValue(Streamer, Range, PCSize);
+  if (asmInfo->doDwarfFDEPCRangeUseAbsDiff())
+    emitAbsValue(Streamer, Range, PCSize);
+  else
+    Streamer.emitValue(Range, PCSize);
 
   if (IsEH) {
     // Augmentation Data Length

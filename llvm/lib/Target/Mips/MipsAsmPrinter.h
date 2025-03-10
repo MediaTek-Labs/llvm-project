@@ -16,6 +16,7 @@
 #include "Mips16HardFloatInfo.h"
 #include "MipsMCInstLower.h"
 #include "MipsSubtarget.h"
+#include "MCTargetDesc/MipsInstPrinter.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/Support/Compiler.h"
@@ -71,6 +72,9 @@ private:
 
   // tblgen'erated function.
   bool lowerPseudoInstExpansion(const MachineInstr *MI, MCInst &Inst);
+
+  // Override to generate inline assembly for object generation.
+  void emitMCInst(MCStreamer &OutStreamer, const MCInst &MI);
 
   // Emit PseudoReturn, PseudoReturn64, PseudoIndirectBranch,
   // and PseudoIndirectBranch64 as a JR, JR_MM, JALR, or JALR64 as appropriate
@@ -136,10 +140,14 @@ public:
   const MipsFunctionInfo *MipsFI;
   MipsFunctionInfo *MFI;
   MipsMCInstLower MCInstLowering;
+  std::unique_ptr<MipsInstPrinter> InstPrinter;
 
   explicit MipsAsmPrinter(TargetMachine &TM,
                           std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer)), MCInstLowering(*this) {}
+      : AsmPrinter(TM, std::move(Streamer)), MCInstLowering(*this),
+        InstPrinter(std::make_unique<MipsInstPrinter>(
+          *TM.getMCAsmInfo(), *TM.getMCInstrInfo(),
+          *TM.getMCRegisterInfo())) {}
 
   StringRef getPassName() const override { return "Mips Assembly Printer"; }
 

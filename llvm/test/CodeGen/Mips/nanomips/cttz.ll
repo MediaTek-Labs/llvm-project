@@ -9,7 +9,7 @@ define i8 @cttz8(i8 %n) {
 }
 
 define i16 @cttz16(i16 %n) {
-; CHECK: li $a1, 0x10000
+; CHECK: lui $a1, %hi(0x10000)
 ; CHECK: or $a0, $a0, $a1
 ; CHECK: bitrevw $a0, $a0
 ; CHECK: clz $a0, $a0

@@ -17,6 +17,7 @@
 #include "MCTargetDesc/MipsInstPrinter.h"
 #include "MCTargetDesc/MipsMCNaCl.h"
 #include "MCTargetDesc/MipsMCTargetDesc.h"
+#include "MCTargetDesc/MipsELFStreamer.h"
 #include "Mips.h"
 #include "MipsMCInstLower.h"
 #include "MipsMachineFunction.h"
@@ -137,7 +138,13 @@ void MipsAsmPrinter::emitJumpTableInfo() {
 
     unsigned EntrySize = MFI->getJumpTableEntrySize(JTI);
     bool Signed = MFI->getJumpTableIsSigned(JTI);
-    emitJumpTableDir(*OutStreamer, EntrySize, JTBBs.size(), Signed);
+    // Emit the .jumptable directive for assembler parsing. This serves
+    // as a textual marker for the jump-table to allow the assembler
+    // to verify/optimize. Not required in case of direct object
+    // generation, where all information about the table is already
+    // captured in MachineJumpTable.
+    if (OutStreamer->hasRawTextSupport())
+      emitJumpTableDir(*OutStreamer, EntrySize, JTBBs.size(), Signed);
     emitAlignment(Align(std::max(2u, EntrySize)));
     OutStreamer->emitLabel(GetJTISymbol(JTI));
 
@@ -185,6 +192,15 @@ bool MipsAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
 bool MipsAsmPrinter::lowerOperand(const MachineOperand &MO, MCOperand &MCOp) {
   MCOp = MCInstLowering.LowerOperand(MO);
   return MCOp.isValid();
+}
+
+// Emit an instruction as inline assembly fragment
+void MipsAsmPrinter::emitMCInst(MCStreamer &OutStreamer, const MCInst &MI) {
+  SmallString<128> AsmStr;
+  raw_svector_ostream OS(AsmStr);
+  InstPrinter->printInst(&MI, 0, "", MF->getSubtarget(), OS);
+  emitInlineAsm(OS.str(), getSubtargetInfo(), TM.Options.MCOptions, 0,
+                InlineAsm::AsmDialect::AD_ATT);
 }
 
 #include "MipsGenMCPseudoLowering.inc"
@@ -273,7 +289,13 @@ void MipsAsmPrinter::emitJumpTableDest(MCStreamer &OutStreamer,
   LoadI.addOperand(MCOperand::createReg(DestReg));
   LoadI.addOperand(MCOperand::createReg(TableReg));
   LoadI.addOperand(MCOperand::createReg(EntryReg));
-  EmitToStreamer(OutStreamer, LoadI);
+
+  // Scaled load/store patterns do not currently work for lowering on
+  // account of the use of complex address pattern to capture 2 registers
+  // (base and index).  These instructions are not subject to compression
+  // but need to be printed as assembly, nevertheless to get the correct
+  // translation.
+  emitMCInst(OutStreamer, LoadI);
 }
 
 bool MipsAsmPrinter::tryEmitHw110880Xform(MCStreamer &OutStreamer,
@@ -358,12 +380,22 @@ void MipsAsmPrinter::emitJumpTableEntry(MCStreamer &OutStreamer,
                                             ".word ", ".word "};
 
   assert(EntrySize == 1 || EntrySize == 2 || EntrySize == 4);
-
-  SmallString<128> Str;
-  raw_svector_ostream OS(Str);
-  OS << Directives[(EntrySize / 2) * 2 + Signed];
-  Entry->print(OS, MAI);
-  OutStreamer.emitRawText(Str);
+  // This condition preserves the original code-path for nanoMIPS for use
+  // when invoked with -via-file-asm or save-temps.
+  // The main difference between nanoMIPS jump-table entries and any other
+  // data directives supported by the assembler is that we must support both
+  // signed/unsigned types here to map to corresponding nanoMIPS relocations.
+  if (OutStreamer.hasRawTextSupport()) {
+    SmallString<128> Str;
+    raw_svector_ostream OS(Str);
+    OS << Directives[(EntrySize / 2) * 2 + Signed];
+    Entry->print(OS, MAI);
+    OutStreamer.emitRawText(Str);
+  }
+  else {
+    MipsELFStreamer &MEF = static_cast<MipsELFStreamer &>(OutStreamer);
+    MEF.emitValueImpl(Entry, EntrySize, SMLoc(), Signed);
+  }
 }
 
 
@@ -473,6 +505,12 @@ void MipsAsmPrinter::emitLoadImmediateNM(MCStreamer &OutStreamer,
   else if (ImmVal < 0 && ImmVal >= -4095) {
     Inst.setOpcode(Mips::ADDIUNEG_NM);
     Inst.addOperand(MCOperand::createReg(Mips::ZERO_NM));
+  }
+  else if (ImmVal % 0x1000 == 0) {
+    Inst.setOpcode(Mips::LUI_NM);
+    Imm = MCOperand::createExpr(MipsMCExpr::create(MipsMCExpr::MEK_HI,
+						   MCConstantExpr::create(ImmVal, OutContext),
+						   OutContext, true));
   }
   else
     Inst.setOpcode(Mips::LI48_NM);
@@ -643,7 +681,14 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
 
     MCInst TmpInst0;
     MCInstLowering.Lower(&*I, TmpInst0);
-    EmitToStreamer(*OutStreamer, TmpInst0);
+
+    // This condition preserves the original code-path for nanoMIPS to be used
+    // in case of -via-file-asm or -save-temps. It can be removed eventually,
+    // but nanoMIPS codegen unit tests will need to be re-worked first.
+    if (Subtarget->hasNanoMips() && !OutStreamer->hasRawTextSupport())
+      emitMCInst(*OutStreamer, TmpInst0);
+    else
+      EmitToStreamer(*OutStreamer, TmpInst0);
   } while ((++I != E) && I->isInsideBundle()); // Delay slot check
 }
 

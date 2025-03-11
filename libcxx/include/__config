@@ -657,11 +657,6 @@ typedef __char32_t char32_t;
 #    define _LIBCPP_HAS_LIBRARY_ALIGNED_ALLOCATION 1
 #  endif
 
-#  if defined(nanomips)
-#    define _LIBCPP_HAS_LIBRARY_ALIGNED_ALLOCATION 0
-#    define _LIBCPP_HAS_ALIGNED_ALLOCATION 0
-#  endif
-
 #  if !_LIBCPP_HAS_LIBRARY_ALIGNED_ALLOCATION || (!defined(__cpp_aligned_new) || __cpp_aligned_new < 201606)
 #    define _LIBCPP_HAS_ALIGNED_ALLOCATION 0
 #  else

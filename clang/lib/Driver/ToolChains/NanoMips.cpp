@@ -161,7 +161,18 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
     StringRef ABIName;
     mips::getMipsCPUAndABI(Args, getToolChain().getTriple(), CPUName, ABIName);
 
-    if (ToolChain.useIntegratedAs()) {
+    if (!ToolChain.useIntegratedAs()) {
+      CmdArgs.push_back(Args.MakeArgString("--plugin-opt=-lto-external-asm="
+					   + (getToolChain()
+					      .GetProgramPath("as"))));
+      CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-march");
+      std::string Arg = "-plugin-opt=-lto-external-asm-arg=";
+      Arg += CPUName.data();
+      CmdArgs.push_back(Args.MakeArgString(Arg));
+      CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-EL");
+      CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-mlegacyregs");
+    } else if (Args.hasArgNoClaim(options::OPT_via_file_asm)) {
+      CmdArgs.push_back(Args.MakeArgString("--plugin-opt=save-temps"));
       CmdArgs.push_back(Args.MakeArgString("--plugin-opt=-lto-external-asm="
 					   + D.ClangExecutable));
       CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-cc1as");
@@ -177,28 +188,17 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
       Arg += CPUName.data();
       CmdArgs.push_back(Args.MakeArgString(Arg));
       if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true)) {
-        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
-        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+relax");
+	CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
+	CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+relax");
       }
       if (Args.hasFlag(options::OPT_mpcrel, options::OPT_mno_pcrel, true)) {
-        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
-        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+pcrel");
+	CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
+	CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+pcrel");
       }
       if (Args.hasFlag(options::OPT_msoft_float, options::OPT_mno_soft_float, true)) {
-        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
-        CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+soft-float");
+	CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=-target-feature");
+	CmdArgs.push_back("--plugin-opt=-lto-external-asm-arg=+soft-float");
       }
-    }
-    else {
-      CmdArgs.push_back(Args.MakeArgString("--plugin-opt=-lto-external-asm="
-					   + (getToolChain()
-					      .GetProgramPath("as"))));
-      CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-march");
-      std::string Arg = "-plugin-opt=-lto-external-asm-arg=";
-      Arg += CPUName.data();
-      CmdArgs.push_back(Args.MakeArgString(Arg));
-      CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-EL");
-      CmdArgs.push_back("-plugin-opt=-lto-external-asm-arg=-mlegacyregs");
     }
   }
 

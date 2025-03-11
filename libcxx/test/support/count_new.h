@@ -413,6 +413,17 @@ void* operator new(std::size_t s, std::align_val_t av) TEST_THROW_SPEC(std::bad_
   void *ret;
 #ifdef USE_ALIGNED_ALLOC
   ret = _aligned_malloc(s, a);
+#elif _LIBCPP_STD_VER > 14 && !defined(_LIBCPP_HAS_NO_C11_ALIGNED_ALLOC)
+  // aligned_alloc() requires that size is a multiple of alignment,
+  // but for C++ [new.delete.general], only states "if the value of an
+  // alignment argument passed to any of these functions is not a valid
+  // alignment value, the behavior is undefined".
+  // To handle calls such as ::operator new(1, std::align_val_t(128)), we
+  // round size up to the next multiple of alignment.
+  size_t rounded_size = (s + a - 1) & ~(a - 1);
+  // Rounding up could have wrapped around to zero, so we have to add another
+  // max() ternary to the actual call site to avoid succeeded in that case.
+  return ::aligned_alloc(a, s > rounded_size ? s : rounded_size);
 #else
   posix_memalign(&ret, a, s);
 #endif

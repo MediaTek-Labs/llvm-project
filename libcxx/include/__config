@@ -750,10 +750,6 @@ _LIBCPP_BEGIN_NAMESPACE_STD _LIBCPP_END_NAMESPACE_STD
 #    define _LIBCPP_HAS_NO_LIBRARY_ALIGNED_ALLOCATION
 #  endif
 
-#  if defined(nanomips)
-#    define _LIBCPP_HAS_NO_LIBRARY_ALIGNED_ALLOCATION
-#    define _LIBCPP_HAS_NO_ALIGNED_ALLOCATION
-#  endif
 #  if defined(_LIBCPP_HAS_NO_LIBRARY_ALIGNED_ALLOCATION) || (!defined(__cpp_aligned_new) || __cpp_aligned_new < 201606)
 #    define _LIBCPP_HAS_NO_ALIGNED_ALLOCATION
 #  endif

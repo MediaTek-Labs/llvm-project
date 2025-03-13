@@ -8093,8 +8093,9 @@ MipsAsmParser::parseNMRegisterList(OperandVector &Operands) {
       }
       RegRange = false;
     }
-    else if (PrevReg == Mips::RA_NM && RegNo != Mips::S0_NM) {
-        Error(E, "register sequence must continue at $s0 after $ra");
+    else if (PrevReg == Mips::RA_NM && RegNo != Mips::S0_NM &&
+	     RegNo != Mips::GP_NM) {
+        Error(E, "register sequence must continue at $s0 or $gp after $ra");
         return ParseStatus::Failure;
     }
     else if (Regs.size() == Regs.capacity()) {

@@ -718,6 +718,9 @@
 	save	40, $ra		# CHECK: save 40, $ra	# encoding: [0xe1,0x83,0x28,0x30]
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE_NM
 				# DISAS: {{.*}}  e1 83 28 30  	save	40, $ra
+	save	48, $ra, $gp	# CHECK: save 48, $ra, $gp  # encoding: [0xe2,0x83,0x34,0x30]
+				# CHECK-NEXT: # <MCInst #{{.*}} SAVE_NM
+				# DISAS: {{.*}}  e2 83 34 30  	save	48, $ra, $gp
 	save	256, $fp, $ra	# CHECK: save 256, $fp, $ra # encoding: [0xc2,0x83,0x00,0x31]
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE_NM
 				# DISAS: {{.*}}  c2 83 00 31  	save	256, $fp, $ra
@@ -742,6 +745,9 @@
 	restore	48, $ra		# CHECK: restore 48, $ra	# encoding: [0xe1,0x83,0x32,0x30]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTORE_NM
 				# DISAS: {{.*}}  e1 83 32 30  	restore	48, $ra
+	restore	56, $ra, $gp	# CHECK: restore 56, $ra, $gp	# encoding: [0xe2,0x83,0x3e,0x30]
+				# CHECK-NEXT: # <MCInst #{{.*}} RESTORE_NM
+				# DISAS: {{.*}}  e2 83 3e 30  	restore	56, $ra, $gp
 	restore	256, $fp, $ra	# CHECK: restore 256, $fp, $ra	# encoding: [0xc2,0x83,0x02,0x31]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTORE_NM
 				# DISAS: {{.*}}  c2 83 02 31  	restore	256, $fp, $ra

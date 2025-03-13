@@ -4,930 +4,942 @@
 # RUN: llvm-mc -show-encoding -triple=nanomips-elf -mattr=dsp %s | FileCheck %s
 #
   .set noat
-  absq_s.ph       $k1, $s7         # CHECK: absq_s.ph       $k1, $s7        # encoding: [0x77,0x23,0x3f,0x11]
-                                                                            # 0b00100011011101110001000100111111
-  absq_s.ph       $a6, $a7         # CHECK: absq_s.ph       $a6, $a7        # encoding: [0x4b,0x21,0x3f,0x11]
-                                                                            # 0b00100001010010110001000100111111
-  absq_s.ph       $s2, $t1         # CHECK: absq_s.ph       $s2, $t1        # encoding: [0x4d,0x22,0x3f,0x11]
-                                                                            # 0b00100010010011010001000100111111
-  absq_s.qb       $s6, $t2         # CHECK: absq_s.qb       $s6, $t2        # encoding: [0xce,0x22,0x3f,0x01]
-                                                                            # 0b00100010110011100000000100111111
-  absq_s.qb       $t1, $s5         # CHECK: absq_s.qb       $t1, $s5        # encoding: [0xb5,0x21,0x3f,0x01]
-                                                                            # 0b00100001101101010000000100111111
-  absq_s.qb       $a6, $a1         # CHECK: absq_s.qb       $a6, $a1        # encoding: [0x45,0x21,0x3f,0x01]
-                                                                            # 0b00100001010001010000000100111111
-  absq_s.w        $ra, $a6         # CHECK: absq_s.w        $ra, $a6        # encoding: [0xea,0x23,0x3f,0x21]
-                                                                            # 0b00100011111010100010000100111111
-  absq_s.w        $a6, $ra         # CHECK: absq_s.w        $a6, $ra        # encoding: [0x5f,0x21,0x3f,0x21]
-                                                                            # 0b00100001010111110010000100111111
-  absq_s.w        $t1, $t3         # CHECK: absq_s.w        $t1, $t3        # encoding: [0xaf,0x21,0x3f,0x21]
-                                                                            # 0b00100001101011110010000100111111
-  preceq.w.phl    $t8, $s2         # CHECK: preceq.w.phl    $t8, $s2        # encoding: [0x12,0x23,0x3f,0x51]
-                                                                            # 0b00100011000100100101000100111111
-  preceq.w.phl    $k1, $a6         # CHECK: preceq.w.phl    $k1, $a6        # encoding: [0x6a,0x23,0x3f,0x51]
-                                                                            # 0b00100011011010100101000100111111
-  preceq.w.phl    $a7, $ra         # CHECK: preceq.w.phl    $a7, $ra        # encoding: [0x7f,0x21,0x3f,0x51]
-                                                                            # 0b00100001011111110101000100111111
-  preceq.w.phr    $a6, $a1         # CHECK: preceq.w.phr    $a6, $a1        # encoding: [0x45,0x21,0x3f,0x61]
-                                                                            # 0b00100001010001010110000100111111
-  preceq.w.phr    $s0, $sp         # CHECK: preceq.w.phr    $s0, $sp        # encoding: [0x1d,0x22,0x3f,0x61]
-                                                                            # 0b00100010000111010110000100111111
-  preceq.w.phr    $a5, $s3         # CHECK: preceq.w.phr    $a5, $s3        # encoding: [0x33,0x21,0x3f,0x61]
-                                                                            # 0b00100001001100110110000100111111
-  precequ.ph.qbl  $at, $gp         # CHECK: precequ.ph.qbl  $at, $gp        # encoding: [0x3c,0x20,0x3f,0x71]
-                                                                            # 0b00100000001111000111000100111111
-  precequ.ph.qbl  $t1, $zero         # CHECK: precequ.ph.qbl  $t1, $zero        # encoding: [0xa0,0x21,0x3f,0x71]
-                                                                                # 0b00100001101000000111000100111111
-  precequ.ph.qbl  $a6, $s4         # CHECK: precequ.ph.qbl  $a6, $s4        # encoding: [0x54,0x21,0x3f,0x71]
-                                                                            # 0b00100001010101000111000100111111
-  precequ.ph.qbla $ra, $at         # CHECK: precequ.ph.qbla $ra, $at        # encoding: [0xe1,0x23,0x3f,0x73]
-                                                                            # 0b00100011111000010111001100111111
+  absq_s.ph       $a4, $k0         # CHECK: absq_s.ph       $a4, $k0        # encoding: [0x1a,0x21,0x3f,0x11]
+                                                                            # 0b00100001000110100001000100111111
+  absq_s.ph       $ra, $a5         # CHECK: absq_s.ph       $ra, $a5        # encoding: [0xe9,0x23,0x3f,0x11]
+                                                                            # 0b00100011111010010001000100111111
+  absq_s.ph       $s4, $a7         # CHECK: absq_s.ph       $s4, $a7        # encoding: [0x8b,0x22,0x3f,0x11]
+                                                                            # 0b00100010100010110001000100111111
+  absq_s.qb       $t5, $s2         # CHECK: absq_s.qb       $t5, $s2        # encoding: [0x72,0x20,0x3f,0x01]
+                                                                            # 0b00100000011100100000000100111111
+  absq_s.qb       $sp, $s0         # CHECK: absq_s.qb       $sp, $s0        # encoding: [0xb0,0x23,0x3f,0x01]
+                                                                            # 0b00100011101100000000000100111111
+  absq_s.qb       $t4, $a1         # CHECK: absq_s.qb       $t4, $a1        # encoding: [0x45,0x20,0x3f,0x01]
+                                                                            # 0b00100000010001010000000100111111
+  absq_s.w        $t5, $gp         # CHECK: absq_s.w        $t5, $gp        # encoding: [0x7c,0x20,0x3f,0x21]
+                                                                            # 0b00100000011111000010000100111111
+  absq_s.w        $zero, $t0         # CHECK: absq_s.w        $zero, $t0        # encoding: [0x0c,0x20,0x3f,0x21]
+                                                                                # 0b00100000000011000010000100111111
+  absq_s.w        $t4, $a4         # CHECK: absq_s.w        $t4, $a4        # encoding: [0x48,0x20,0x3f,0x21]
+                                                                            # 0b00100000010010000010000100111111
+  preceq.w.phl    $k1, $t4         # CHECK: preceq.w.phl    $k1, $t4        # encoding: [0x62,0x23,0x3f,0x51]
+                                                                            # 0b00100011011000100101000100111111
+  preceq.w.phl    $t2, $t8         # CHECK: preceq.w.phl    $t2, $t8        # encoding: [0xd8,0x21,0x3f,0x51]
+                                                                            # 0b00100001110110000101000100111111
+  preceq.w.phl    $a7, $s7         # CHECK: preceq.w.phl    $a7, $s7        # encoding: [0x77,0x21,0x3f,0x51]
+                                                                            # 0b00100001011101110101000100111111
+  preceq.w.phr    $a5, $t8         # CHECK: preceq.w.phr    $a5, $t8        # encoding: [0x38,0x21,0x3f,0x61]
+                                                                            # 0b00100001001110000110000100111111
+  preceq.w.phr    $t3, $gp         # CHECK: preceq.w.phr    $t3, $gp        # encoding: [0xfc,0x21,0x3f,0x61]
+                                                                            # 0b00100001111111000110000100111111
+  preceq.w.phr    $t1, $a2         # CHECK: preceq.w.phr    $t1, $a2        # encoding: [0xa6,0x21,0x3f,0x61]
+                                                                            # 0b00100001101001100110000100111111
+  precequ.ph.qbl  $t1, $a7         # CHECK: precequ.ph.qbl  $t1, $a7        # encoding: [0xab,0x21,0x3f,0x71]
+                                                                            # 0b00100001101010110111000100111111
+  precequ.ph.qbl  $k0, $s7         # CHECK: precequ.ph.qbl  $k0, $s7        # encoding: [0x57,0x23,0x3f,0x71]
+                                                                            # 0b00100011010101110111000100111111
+  precequ.ph.qbl  $at, $t1         # CHECK: precequ.ph.qbl  $at, $t1        # encoding: [0x2d,0x20,0x3f,0x71]
+                                                                            # 0b00100000001011010111000100111111
   precequ.ph.qbla $sp, $a1         # CHECK: precequ.ph.qbla $sp, $a1        # encoding: [0xa5,0x23,0x3f,0x73]
                                                                             # 0b00100011101001010111001100111111
-  precequ.ph.qbla $gp, $a5         # CHECK: precequ.ph.qbla $gp, $a5        # encoding: [0x89,0x23,0x3f,0x73]
-                                                                            # 0b00100011100010010111001100111111
-  precequ.ph.qbr  $ra, $s7         # CHECK: precequ.ph.qbr  $ra, $s7        # encoding: [0xf7,0x23,0x3f,0x91]
-                                                                            # 0b00100011111101111001000100111111
-  precequ.ph.qbr  $a2, $t4         # CHECK: precequ.ph.qbr  $a2, $t4        # encoding: [0xc2,0x20,0x3f,0x91]
-                                                                            # 0b00100000110000101001000100111111
-  precequ.ph.qbr  $sp, $at         # CHECK: precequ.ph.qbr  $sp, $at        # encoding: [0xa1,0x23,0x3f,0x91]
-                                                                            # 0b00100011101000011001000100111111
-  precequ.ph.qbra $a1, $zero         # CHECK: precequ.ph.qbra $a1, $zero        # encoding: [0xa0,0x20,0x3f,0x93]
-                                                                                # 0b00100000101000001001001100111111
-  precequ.ph.qbra $t0, $fp         # CHECK: precequ.ph.qbra $t0, $fp        # encoding: [0x9e,0x21,0x3f,0x93]
-                                                                            # 0b00100001100111101001001100111111
-  precequ.ph.qbra $s6, $k0         # CHECK: precequ.ph.qbra $s6, $k0        # encoding: [0xda,0x22,0x3f,0x93]
-                                                                            # 0b00100010110110101001001100111111
-  preceu.ph.qbl   $s0, $a6         # CHECK: preceu.ph.qbl   $s0, $a6        # encoding: [0x0a,0x22,0x3f,0xb1]
-                                                                            # 0b00100010000010101011000100111111
-  preceu.ph.qbl   $t2, $k1         # CHECK: preceu.ph.qbl   $t2, $k1        # encoding: [0xdb,0x21,0x3f,0xb1]
-                                                                            # 0b00100001110110111011000100111111
-  preceu.ph.qbl   $k0, $s4         # CHECK: preceu.ph.qbl   $k0, $s4        # encoding: [0x54,0x23,0x3f,0xb1]
-                                                                            # 0b00100011010101001011000100111111
-  preceu.ph.qbla  $s7, $t1         # CHECK: preceu.ph.qbla  $s7, $t1        # encoding: [0xed,0x22,0x3f,0xb3]
-                                                                            # 0b00100010111011011011001100111111
-  preceu.ph.qbla  $a4, $a2         # CHECK: preceu.ph.qbla  $a4, $a2        # encoding: [0x06,0x21,0x3f,0xb3]
-                                                                            # 0b00100001000001101011001100111111
-  preceu.ph.qbla  $t4, $t8         # CHECK: preceu.ph.qbla  $t4, $t8        # encoding: [0x58,0x20,0x3f,0xb3]
-                                                                            # 0b00100000010110001011001100111111
-  preceu.ph.qbr   $t9, $zero         # CHECK: preceu.ph.qbr   $t9, $zero        # encoding: [0x20,0x23,0x3f,0xd1]
-                                                                                # 0b00100011001000001101000100111111
-  preceu.ph.qbr   $a5, $s1         # CHECK: preceu.ph.qbr   $a5, $s1        # encoding: [0x31,0x21,0x3f,0xd1]
-                                                                            # 0b00100001001100011101000100111111
-  preceu.ph.qbr   $s5, $k0         # CHECK: preceu.ph.qbr   $s5, $k0        # encoding: [0xba,0x22,0x3f,0xd1]
-                                                                            # 0b00100010101110101101000100111111
-  preceu.ph.qbra  $s5, $s5         # CHECK: preceu.ph.qbra  $s5, $s5        # encoding: [0xb5,0x22,0x3f,0xd3]
-                                                                            # 0b00100010101101011101001100111111
-  preceu.ph.qbra  $at, $s1         # CHECK: preceu.ph.qbra  $at, $s1        # encoding: [0x31,0x20,0x3f,0xd3]
-                                                                            # 0b00100000001100011101001100111111
-  preceu.ph.qbra  $t2, $s7         # CHECK: preceu.ph.qbra  $t2, $s7        # encoding: [0xd7,0x21,0x3f,0xd3]
-                                                                            # 0b00100001110101111101001100111111
-  raddu.w.qb      $sp, $s6         # CHECK: raddu.w.qb      $sp, $s6        # encoding: [0xb6,0x23,0x3f,0xf1]
-                                                                            # 0b00100011101101101111000100111111
-  raddu.w.qb      $s1, $s6         # CHECK: raddu.w.qb      $s1, $s6        # encoding: [0x36,0x22,0x3f,0xf1]
-                                                                            # 0b00100010001101101111000100111111
-  raddu.w.qb      $zero, $s2         # CHECK: raddu.w.qb      $zero, $s2        # encoding: [0x12,0x20,0x3f,0xf1]
-                                                                                # 0b00100000000100101111000100111111
-  replv.ph        $s1, $t0         # CHECK: replv.ph        $s1, $t0        # encoding: [0x2c,0x22,0x3f,0x03]
-                                                                            # 0b00100010001011000000001100111111
-  replv.ph        $a6, $a6         # CHECK: replv.ph        $a6, $a6        # encoding: [0x4a,0x21,0x3f,0x03]
-                                                                            # 0b00100001010010100000001100111111
-  replv.ph        $t3, $ra         # CHECK: replv.ph        $t3, $ra        # encoding: [0xff,0x21,0x3f,0x03]
-                                                                            # 0b00100001111111110000001100111111
-  replv.qb        $t4, $a1         # CHECK: replv.qb        $t4, $a1        # encoding: [0x45,0x20,0x3f,0x13]
-                                                                            # 0b00100000010001010001001100111111
-  replv.qb        $s1, $a4         # CHECK: replv.qb        $s1, $a4        # encoding: [0x28,0x22,0x3f,0x13]
-                                                                            # 0b00100010001010000001001100111111
-  replv.qb        $a4, $ra         # CHECK: replv.qb        $a4, $ra        # encoding: [0x1f,0x21,0x3f,0x13]
-                                                                            # 0b00100001000111110001001100111111
-  append          $t4, $a1, 2      # CHECK: append          $t4, $a1, 2     # encoding: [0x45,0x20,0x15,0x12]
-                                                                            # 0b00100000010001010001001000010101
-  append          $fp, $a4, 18     # CHECK: append          $fp, $a4, 18    # encoding: [0xc8,0x23,0x15,0x92]
-                                                                            # 0b00100011110010001001001000010101
-  append          $s6, $ra, 1      # CHECK: append          $s6, $ra, 1     # encoding: [0xdf,0x22,0x15,0x0a]
-                                                                            # 0b00100010110111110000101000010101
-  shll_s.w        $zero, $s5, 19    # CHECK: shll_s.w        $zero, $s5, 19   # encoding: [0x15,0x20,0xf5,0x9b]
-                                                                              # 0b00100000000101011001101111110101
-  shll_s.w        $t8, $s7, 23     # CHECK: shll_s.w        $t8, $s7, 23    # encoding: [0x17,0x23,0xf5,0xbb]
-                                                                            # 0b00100011000101111011101111110101
-  shll_s.w        $a3, $t1, 29     # CHECK: shll_s.w        $a3, $t1, 29    # encoding: [0xed,0x20,0xf5,0xeb]
-                                                                            # 0b00100000111011011110101111110101
-  shra_r.w        $a6, $t0, 7      # CHECK: shra_r.w        $a6, $t0, 7     # encoding: [0x4c,0x21,0xf5,0x3a]
-                                                                            # 0b00100001010011000011101011110101
-  shra_r.w        $a1, $ra, 17     # CHECK: shra_r.w        $a1, $ra, 17    # encoding: [0xbf,0x20,0xf5,0x8a]
-                                                                            # 0b00100000101111111000101011110101
-  shra_r.w        $s1, $s6, 25     # CHECK: shra_r.w        $s1, $s6, 25    # encoding: [0x36,0x22,0xf5,0xca]
-                                                                            # 0b00100010001101101100101011110101
-  bitrev          $a3, $a2         # CHECK: bitrev          $a3, $a2        # encoding: [0xe6,0x20,0x3f,0x31]
-                                                                            # 0b00100000111001100011000100111111
-  bitrev          $t1, $ra         # CHECK: bitrev          $t1, $ra        # encoding: [0xbf,0x21,0x3f,0x31]
-                                                                            # 0b00100001101111110011000100111111
-  bitrev          $k1, $a0         # CHECK: bitrev          $k1, $a0        # encoding: [0x64,0x23,0x3f,0x31]
-                                                                            # 0b00100011011001000011000100111111
-  insv            $ra, $t2         # CHECK: insv            $ra, $t2        # encoding: [0xee,0x23,0x3f,0x41]
-                                                                            # 0b00100011111011100100000100111111
-  insv            $s0, $a3         # CHECK: insv            $s0, $a3        # encoding: [0x07,0x22,0x3f,0x41]
-                                                                            # 0b00100010000001110100000100111111
-  insv            $fp, $s3         # CHECK: insv            $fp, $s3        # encoding: [0xd3,0x23,0x3f,0x41]
-                                                                            # 0b00100011110100110100000100111111
-  madd            $ac2, $s7, $s3    # CHECK: madd            $ac2, $s7, $s3   # encoding: [0x77,0x22,0xbf,0x8a]
-                                                                              # 0b00100010011101111000101010111111
-  madd            $ac1, $t5, $k1    # CHECK: madd            $ac1, $t5, $k1   # encoding: [0x63,0x23,0xbf,0x4a]
-                                                                              # 0b00100011011000110100101010111111
-  madd            $ac1, $k0, $s0    # CHECK: madd            $ac1, $k0, $s0   # encoding: [0x1a,0x22,0xbf,0x4a]
-                                                                              # 0b00100010000110100100101010111111
-  maddu           $ac3, $at, $t0    # CHECK: maddu           $ac3, $at, $t0   # encoding: [0x81,0x21,0xbf,0xda]
-                                                                              # 0b00100001100000011101101010111111
-  maddu           $ac3, $a4, $gp    # CHECK: maddu           $ac3, $a4, $gp   # encoding: [0x88,0x23,0xbf,0xda]
-                                                                              # 0b00100011100010001101101010111111
-  maddu           $ac3, $gp, $a2    # CHECK: maddu           $ac3, $gp, $a2   # encoding: [0xdc,0x20,0xbf,0xda]
-                                                                              # 0b00100000110111001101101010111111
-  msub            $ac1, $s4, $t5    # CHECK: msub            $ac1, $s4, $t5   # encoding: [0x74,0x20,0xbf,0x6a]
-                                                                              # 0b00100000011101000110101010111111
-  msub            $ac1, $k1, $a0    # CHECK: msub            $ac1, $k1, $a0   # encoding: [0x9b,0x20,0xbf,0x6a]
-                                                                              # 0b00100000100110110110101010111111
-  msub            $ac0, $s7, $zero    # CHECK: msub            $ac0, $s7, $zero   # encoding: [0x17,0x20,0xbf,0x2a]
-                                                                                  # 0b00100000000101110010101010111111
-  msubu           $ac0, $a3, $t9    # CHECK: msubu           $ac0, $a3, $t9   # encoding: [0x27,0x23,0xbf,0x3a]
-                                                                              # 0b00100011001001110011101010111111
-  msubu           $ac1, $s6, $a1    # CHECK: msubu           $ac1, $s6, $a1   # encoding: [0xb6,0x20,0xbf,0x7a]
-                                                                              # 0b00100000101101100111101010111111
-  msubu           $ac3, $ra, $k0    # CHECK: msubu           $ac3, $ra, $k0   # encoding: [0x5f,0x23,0xbf,0xfa]
-                                                                              # 0b00100011010111111111101010111111
-  mult            $ac1, $t0, $a4    # CHECK: mult            $ac1, $t0, $a4   # encoding: [0x0c,0x21,0xbf,0x4c]
-                                                                              # 0b00100001000011000100110010111111
-  mult            $ac1, $t0, $s5    # CHECK: mult            $ac1, $t0, $s5   # encoding: [0xac,0x22,0xbf,0x4c]
-                                                                              # 0b00100010101011000100110010111111
-  mult            $ac3, $a0, $a1    # CHECK: mult            $ac3, $a0, $a1   # encoding: [0xa4,0x20,0xbf,0xcc]
-                                                                              # 0b00100000101001001100110010111111
-  multu           $ac0, $a7, $a4    # CHECK: multu           $ac0, $a7, $a4   # encoding: [0x0b,0x21,0xbf,0x1c]
-                                                                              # 0b00100001000010110001110010111111
-  multu           $ac3, $a3, $k0    # CHECK: multu           $ac3, $a3, $k0   # encoding: [0x47,0x23,0xbf,0xdc]
-                                                                              # 0b00100011010001111101110010111111
-  multu           $ac3, $s0, $a7    # CHECK: multu           $ac3, $s0, $a7   # encoding: [0x70,0x21,0xbf,0xdc]
-                                                                              # 0b00100001011100001101110010111111
-  extrv_r.w       $a5, $ac0, $a6    # CHECK: extrv_r.w       $a5, $ac0, $a6   # encoding: [0x2a,0x21,0xbf,0x1e]
-                                                                              # 0b00100001001010100001111010111111
-  extrv_r.w       $a4, $ac0, $s2    # CHECK: extrv_r.w       $a4, $ac0, $s2   # encoding: [0x12,0x21,0xbf,0x1e]
-                                                                              # 0b00100001000100100001111010111111
-  extrv_r.w       $s1, $ac2, $t8    # CHECK: extrv_r.w       $s1, $ac2, $t8   # encoding: [0x38,0x22,0xbf,0x9e]
-                                                                              # 0b00100010001110001001111010111111
-  extrv_rs.w      $s6, $ac0, $s3    # CHECK: extrv_rs.w      $s6, $ac0, $s3   # encoding: [0xd3,0x22,0xbf,0x2e]
-                                                                              # 0b00100010110100110010111010111111
-  extrv_rs.w      $t0, $ac3, $s3    # CHECK: extrv_rs.w      $t0, $ac3, $s3   # encoding: [0x93,0x21,0xbf,0xee]
-                                                                              # 0b00100001100100111110111010111111
-  extrv_rs.w      $t4, $ac1, $a4    # CHECK: extrv_rs.w      $t4, $ac1, $a4   # encoding: [0x48,0x20,0xbf,0x6e]
-                                                                              # 0b00100000010010000110111010111111
-  extrv.w         $a5, $ac2, $t5    # CHECK: extrv.w         $a5, $ac2, $t5   # encoding: [0x23,0x21,0xbf,0x8e]
-                                                                              # 0b00100001001000111000111010111111
-  extrv.w         $t2, $ac0, $a1    # CHECK: extrv.w         $t2, $ac0, $a1   # encoding: [0xc5,0x21,0xbf,0x0e]
-                                                                              # 0b00100001110001010000111010111111
-  extrv.w         $a6, $ac3, $t2    # CHECK: extrv.w         $a6, $ac3, $t2   # encoding: [0x4e,0x21,0xbf,0xce]
-                                                                              # 0b00100001010011101100111010111111
-  extrv_s.h       $k1, $ac3, $gp    # CHECK: extrv_s.h       $k1, $ac3, $gp   # encoding: [0x7c,0x23,0xbf,0xfe]
-                                                                              # 0b00100011011111001111111010111111
-  extrv_s.h       $a1, $ac1, $sp    # CHECK: extrv_s.h       $a1, $ac1, $sp   # encoding: [0xbd,0x20,0xbf,0x7e]
-                                                                              # 0b00100000101111010111111010111111
-  extrv_s.h       $at, $ac3, $s6    # CHECK: extrv_s.h       $at, $ac3, $s6   # encoding: [0x36,0x20,0xbf,0xfe]
-                                                                              # 0b00100000001101101111111010111111
-  extpv           $zero, $ac1, $sp    # CHECK: extpv           $zero, $ac1, $sp   # encoding: [0x1d,0x20,0xbf,0x68]
-                                                                                  # 0b00100000000111010110100010111111
-  extpv           $zero, $ac2, $a0    # CHECK: extpv           $zero, $ac2, $a0   # encoding: [0x04,0x20,0xbf,0xa8]
-                                                                                  # 0b00100000000001001010100010111111
-  extpv           $a1, $ac1, $s2    # CHECK: extpv           $a1, $ac1, $s2   # encoding: [0xb2,0x20,0xbf,0x68]
-                                                                              # 0b00100000101100100110100010111111
-  extpdpv         $s5, $ac2, $sp    # CHECK: extpdpv         $s5, $ac2, $sp   # encoding: [0xbd,0x22,0xbf,0xb8]
-                                                                              # 0b00100010101111011011100010111111
-  extpdpv         $t3, $ac1, $at    # CHECK: extpdpv         $t3, $ac1, $at   # encoding: [0xe1,0x21,0xbf,0x78]
-                                                                              # 0b00100001111000010111100010111111
-  extpdpv         $a3, $ac1, $k1    # CHECK: extpdpv         $a3, $ac1, $k1   # encoding: [0xfb,0x20,0xbf,0x78]
-                                                                              # 0b00100000111110110111100010111111
-  dpa.w.ph        $ac1, $t9, $ra    # CHECK: dpa.w.ph        $ac1, $t9, $ra   # encoding: [0xf9,0x23,0xbf,0x40]
-                                                                              # 0b00100011111110010100000010111111
-  dpa.w.ph        $ac1, $a4, $zero    # CHECK: dpa.w.ph        $ac1, $a4, $zero   # encoding: [0x08,0x20,0xbf,0x40]
-                                                                                  # 0b00100000000010000100000010111111
-  dpa.w.ph        $ac1, $a7, $t0    # CHECK: dpa.w.ph        $ac1, $a7, $t0   # encoding: [0x8b,0x21,0xbf,0x40]
-                                                                              # 0b00100001100010110100000010111111
-  dpaq_s.w.ph     $ac2, $t8, $s7    # CHECK: dpaq_s.w.ph     $ac2, $t8, $s7   # encoding: [0xf8,0x22,0xbf,0x82]
-                                                                              # 0b00100010111110001000001010111111
-  dpaq_s.w.ph     $ac1, $t1, $a2    # CHECK: dpaq_s.w.ph     $ac1, $t1, $a2   # encoding: [0xcd,0x20,0xbf,0x42]
-                                                                              # 0b00100000110011010100001010111111
-  dpaq_s.w.ph     $ac1, $s0, $s2    # CHECK: dpaq_s.w.ph     $ac1, $s0, $s2   # encoding: [0x50,0x22,0xbf,0x42]
-                                                                              # 0b00100010010100000100001010111111
-  dpaq_sa.l.w     $ac3, $s2, $zero    # CHECK: dpaq_sa.l.w     $ac3, $s2, $zero   # encoding: [0x12,0x20,0xbf,0xd2]
-                                                                                  # 0b00100000000100101101001010111111
-  dpaq_sa.l.w     $ac1, $s3, $s7    # CHECK: dpaq_sa.l.w     $ac1, $s3, $s7   # encoding: [0xf3,0x22,0xbf,0x52]
-                                                                              # 0b00100010111100110101001010111111
-  dpaq_sa.l.w     $ac0, $s4, $ra    # CHECK: dpaq_sa.l.w     $ac0, $s4, $ra   # encoding: [0xf4,0x23,0xbf,0x12]
-                                                                              # 0b00100011111101000001001010111111
-  dpaqx_s.w.ph    $ac2, $t9, $s7    # CHECK: dpaqx_s.w.ph    $ac2, $t9, $s7   # encoding: [0xf9,0x22,0xbf,0xa2]
-                                                                              # 0b00100010111110011010001010111111
-  dpaqx_s.w.ph    $ac2, $gp, $s5    # CHECK: dpaqx_s.w.ph    $ac2, $gp, $s5   # encoding: [0xbc,0x22,0xbf,0xa2]
-                                                                              # 0b00100010101111001010001010111111
-  dpaqx_s.w.ph    $ac1, $a2, $zero    # CHECK: dpaqx_s.w.ph    $ac1, $a2, $zero   # encoding: [0x06,0x20,0xbf,0x62]
-                                                                                  # 0b00100000000001100110001010111111
-  dpaqx_sa.w.ph   $ac3, $t1, $t3    # CHECK: dpaqx_sa.w.ph   $ac3, $t1, $t3   # encoding: [0xed,0x21,0xbf,0xf2]
-                                                                              # 0b00100001111011011111001010111111
-  dpaqx_sa.w.ph   $ac1, $a7, $a2    # CHECK: dpaqx_sa.w.ph   $ac1, $a7, $a2   # encoding: [0xcb,0x20,0xbf,0x72]
-                                                                              # 0b00100000110010110111001010111111
-  dpaqx_sa.w.ph   $ac0, $fp, $a5    # CHECK: dpaqx_sa.w.ph   $ac0, $fp, $a5   # encoding: [0x3e,0x21,0xbf,0x32]
-                                                                              # 0b00100001001111100011001010111111
-  dpau.h.qbl      $ac2, $s5, $s5    # CHECK: dpau.h.qbl      $ac2, $s5, $s5   # encoding: [0xb5,0x22,0xbf,0xa0]
-                                                                              # 0b00100010101101011010000010111111
-  dpau.h.qbl      $ac3, $a0, $fp    # CHECK: dpau.h.qbl      $ac3, $a0, $fp   # encoding: [0xc4,0x23,0xbf,0xe0]
-                                                                              # 0b00100011110001001110000010111111
-  dpau.h.qbl      $ac3, $t4, $s5    # CHECK: dpau.h.qbl      $ac3, $t4, $s5   # encoding: [0xa2,0x22,0xbf,0xe0]
-                                                                              # 0b00100010101000101110000010111111
-  dpau.h.qbr      $ac1, $s3, $zero    # CHECK: dpau.h.qbr      $ac1, $s3, $zero   # encoding: [0x13,0x20,0xbf,0x70]
-                                                                                  # 0b00100000000100110111000010111111
-  dpau.h.qbr      $ac1, $a1, $s7    # CHECK: dpau.h.qbr      $ac1, $a1, $s7   # encoding: [0xe5,0x22,0xbf,0x70]
-                                                                              # 0b00100010111001010111000010111111
-  dpau.h.qbr      $ac2, $k0, $t2    # CHECK: dpau.h.qbr      $ac2, $k0, $t2   # encoding: [0xda,0x21,0xbf,0xb0]
-                                                                              # 0b00100001110110101011000010111111
-  dpax.w.ph       $ac2, $k0, $a6    # CHECK: dpax.w.ph       $ac2, $k0, $a6   # encoding: [0x5a,0x21,0xbf,0x90]
-                                                                              # 0b00100001010110101001000010111111
-  dpax.w.ph       $ac2, $fp, $t1    # CHECK: dpax.w.ph       $ac2, $fp, $t1   # encoding: [0xbe,0x21,0xbf,0x90]
-                                                                              # 0b00100001101111101001000010111111
-  dpax.w.ph       $ac2, $a7, $at    # CHECK: dpax.w.ph       $ac2, $a7, $at   # encoding: [0x2b,0x20,0xbf,0x90]
-                                                                              # 0b00100000001010111001000010111111
-  dps.w.ph        $ac0, $k0, $sp    # CHECK: dps.w.ph        $ac0, $k0, $sp   # encoding: [0xba,0x23,0xbf,0x04]
-                                                                              # 0b00100011101110100000010010111111
-  dps.w.ph        $ac0, $s2, $s4    # CHECK: dps.w.ph        $ac0, $s2, $s4   # encoding: [0x92,0x22,0xbf,0x04]
-                                                                              # 0b00100010100100100000010010111111
-  dps.w.ph        $ac2, $fp, $s1    # CHECK: dps.w.ph        $ac2, $fp, $s1   # encoding: [0x3e,0x22,0xbf,0x84]
-                                                                              # 0b00100010001111101000010010111111
-  dpsq_s.w.ph     $ac0, $t5, $at    # CHECK: dpsq_s.w.ph     $ac0, $t5, $at   # encoding: [0x23,0x20,0xbf,0x06]
-                                                                              # 0b00100000001000110000011010111111
-  dpsq_s.w.ph     $ac0, $t4, $s3    # CHECK: dpsq_s.w.ph     $ac0, $t4, $s3   # encoding: [0x62,0x22,0xbf,0x06]
-                                                                              # 0b00100010011000100000011010111111
-  dpsq_s.w.ph     $ac3, $a4, $a2    # CHECK: dpsq_s.w.ph     $ac3, $a4, $a2   # encoding: [0xc8,0x20,0xbf,0xc6]
-                                                                              # 0b00100000110010001100011010111111
-  dpsq_sa.l.w     $ac1, $k0, $a2    # CHECK: dpsq_sa.l.w     $ac1, $k0, $a2   # encoding: [0xda,0x20,0xbf,0x56]
-                                                                              # 0b00100000110110100101011010111111
-  dpsq_sa.l.w     $ac0, $a1, $a5    # CHECK: dpsq_sa.l.w     $ac0, $a1, $a5   # encoding: [0x25,0x21,0xbf,0x16]
-                                                                              # 0b00100001001001010001011010111111
-  dpsq_sa.l.w     $ac3, $a1, $t4    # CHECK: dpsq_sa.l.w     $ac3, $a1, $t4   # encoding: [0x45,0x20,0xbf,0xd6]
-                                                                              # 0b00100000010001011101011010111111
-  dpsqx_s.w.ph    $ac3, $a4, $t4    # CHECK: dpsqx_s.w.ph    $ac3, $a4, $t4   # encoding: [0x48,0x20,0xbf,0xe6]
-                                                                              # 0b00100000010010001110011010111111
-  dpsqx_s.w.ph    $ac0, $a2, $a4    # CHECK: dpsqx_s.w.ph    $ac0, $a2, $a4   # encoding: [0x06,0x21,0xbf,0x26]
-                                                                              # 0b00100001000001100010011010111111
-  dpsqx_s.w.ph    $ac0, $t9, $ra    # CHECK: dpsqx_s.w.ph    $ac0, $t9, $ra   # encoding: [0xf9,0x23,0xbf,0x26]
-                                                                              # 0b00100011111110010010011010111111
-  dpsqx_sa.w.ph   $ac2, $sp, $a2    # CHECK: dpsqx_sa.w.ph   $ac2, $sp, $a2   # encoding: [0xdd,0x20,0xbf,0xb6]
-                                                                              # 0b00100000110111011011011010111111
-  dpsqx_sa.w.ph   $ac1, $a1, $s4    # CHECK: dpsqx_sa.w.ph   $ac1, $a1, $s4   # encoding: [0x85,0x22,0xbf,0x76]
-                                                                              # 0b00100010100001010111011010111111
-  dpsqx_sa.w.ph   $ac0, $s0, $ra    # CHECK: dpsqx_sa.w.ph   $ac0, $s0, $ra   # encoding: [0xf0,0x23,0xbf,0x36]
-                                                                              # 0b00100011111100000011011010111111
-  dpsu.h.qbl      $ac2, $a2, $a5    # CHECK: dpsu.h.qbl      $ac2, $a2, $a5   # encoding: [0x26,0x21,0xbf,0xa4]
-                                                                              # 0b00100001001001101010010010111111
-  dpsu.h.qbl      $ac0, $t8, $zero    # CHECK: dpsu.h.qbl      $ac0, $t8, $zero   # encoding: [0x18,0x20,0xbf,0x24]
-                                                                                  # 0b00100000000110000010010010111111
-  dpsu.h.qbl      $ac3, $t5, $s1    # CHECK: dpsu.h.qbl      $ac3, $t5, $s1   # encoding: [0x23,0x22,0xbf,0xe4]
-                                                                              # 0b00100010001000111110010010111111
-  dpsu.h.qbr      $ac3, $a7, $sp    # CHECK: dpsu.h.qbr      $ac3, $a7, $sp   # encoding: [0xab,0x23,0xbf,0xf4]
-                                                                              # 0b00100011101010111111010010111111
-  dpsu.h.qbr      $ac3, $s6, $sp    # CHECK: dpsu.h.qbr      $ac3, $s6, $sp   # encoding: [0xb6,0x23,0xbf,0xf4]
-                                                                              # 0b00100011101101101111010010111111
-  dpsu.h.qbr      $ac2, $a6, $s5    # CHECK: dpsu.h.qbr      $ac2, $a6, $s5   # encoding: [0xaa,0x22,0xbf,0xb4]
-                                                                              # 0b00100010101010101011010010111111
-  dpsx.w.ph       $ac0, $t1, $a6    # CHECK: dpsx.w.ph       $ac0, $t1, $a6   # encoding: [0x4d,0x21,0xbf,0x14]
-                                                                              # 0b00100001010011010001010010111111
-  dpsx.w.ph       $ac3, $t4, $zero    # CHECK: dpsx.w.ph       $ac3, $t4, $zero   # encoding: [0x02,0x20,0xbf,0xd4]
-                                                                                  # 0b00100000000000101101010010111111
-  dpsx.w.ph       $ac3, $t2, $s5    # CHECK: dpsx.w.ph       $ac3, $t2, $s5   # encoding: [0xae,0x22,0xbf,0xd4]
-                                                                              # 0b00100010101011101101010010111111
-  maq_s.w.phl     $ac0, $s3, $zero    # CHECK: maq_s.w.phl     $ac0, $s3, $zero   # encoding: [0x13,0x20,0x7f,0x1a]
-                                                                                  # 0b00100000000100110001101001111111
-  maq_s.w.phl     $ac2, $s5, $a3    # CHECK: maq_s.w.phl     $ac2, $s5, $a3   # encoding: [0xf5,0x20,0x7f,0x9a]
-                                                                              # 0b00100000111101011001101001111111
-  maq_s.w.phl     $ac1, $k0, $a5    # CHECK: maq_s.w.phl     $ac1, $k0, $a5   # encoding: [0x3a,0x21,0x7f,0x5a]
-                                                                              # 0b00100001001110100101101001111111
-  maq_sa.w.phl    $ac2, $s7, $s2    # CHECK: maq_sa.w.phl    $ac2, $s7, $s2   # encoding: [0x57,0x22,0x7f,0xba]
-                                                                              # 0b00100010010101111011101001111111
-  maq_sa.w.phl    $ac3, $a2, $t0    # CHECK: maq_sa.w.phl    $ac3, $a2, $t0   # encoding: [0x86,0x21,0x7f,0xfa]
-                                                                              # 0b00100001100001101111101001111111
-  maq_sa.w.phl    $ac0, $s6, $t0    # CHECK: maq_sa.w.phl    $ac0, $s6, $t0   # encoding: [0x96,0x21,0x7f,0x3a]
-                                                                              # 0b00100001100101100011101001111111
-  maq_s.w.phr     $ac1, $a7, $s1    # CHECK: maq_s.w.phr     $ac1, $a7, $s1   # encoding: [0x2b,0x22,0x7f,0x4a]
-                                                                              # 0b00100010001010110100101001111111
-  maq_s.w.phr     $ac0, $s4, $s0    # CHECK: maq_s.w.phr     $ac0, $s4, $s0   # encoding: [0x14,0x22,0x7f,0x0a]
-                                                                              # 0b00100010000101000000101001111111
-  maq_s.w.phr     $ac2, $s5, $fp    # CHECK: maq_s.w.phr     $ac2, $s5, $fp   # encoding: [0xd5,0x23,0x7f,0x8a]
-                                                                              # 0b00100011110101011000101001111111
-  maq_sa.w.phr    $ac3, $s7, $a5    # CHECK: maq_sa.w.phr    $ac3, $s7, $a5   # encoding: [0x37,0x21,0x7f,0xea]
-                                                                              # 0b00100001001101111110101001111111
-  maq_sa.w.phr    $ac3, $s7, $sp    # CHECK: maq_sa.w.phr    $ac3, $s7, $sp   # encoding: [0xb7,0x23,0x7f,0xea]
-                                                                              # 0b00100011101101111110101001111111
-  maq_sa.w.phr    $ac2, $s1, $s6    # CHECK: maq_sa.w.phr    $ac2, $s1, $s6   # encoding: [0xd1,0x22,0x7f,0xaa]
-                                                                              # 0b00100010110100011010101001111111
-  mulsa.w.ph      $ac1, $k1, $t5    # CHECK: mulsa.w.ph      $ac1, $k1, $t5   # encoding: [0x7b,0x20,0xbf,0x6c]
-                                                                              # 0b00100000011110110110110010111111
-  mulsa.w.ph      $ac3, $a6, $s1    # CHECK: mulsa.w.ph      $ac3, $a6, $s1   # encoding: [0x2a,0x22,0xbf,0xec]
-                                                                              # 0b00100010001010101110110010111111
-  mulsa.w.ph      $ac1, $a6, $a5    # CHECK: mulsa.w.ph      $ac1, $a6, $a5   # encoding: [0x2a,0x21,0xbf,0x6c]
-                                                                              # 0b00100001001010100110110010111111
-  mulsaq_s.w.ph   $ac3, $k1, $a2    # CHECK: mulsaq_s.w.ph   $ac3, $k1, $a2   # encoding: [0xdb,0x20,0xbf,0xfc]
-                                                                              # 0b00100000110110111111110010111111
-  mulsaq_s.w.ph   $ac0, $t4, $gp    # CHECK: mulsaq_s.w.ph   $ac0, $t4, $gp   # encoding: [0x82,0x23,0xbf,0x3c]
-                                                                              # 0b00100011100000100011110010111111
-  mulsaq_s.w.ph   $ac1, $s6, $a2    # CHECK: mulsaq_s.w.ph   $ac1, $s6, $a2   # encoding: [0xd6,0x20,0xbf,0x7c]
-                                                                              # 0b00100000110101100111110010111111
-  extp            $s0, $ac2, 2     # CHECK: extp            $s0, $ac2, 2    # encoding: [0x02,0x22,0x7f,0xa6]
-                                                                            # 0b00100010000000101010011001111111
-  extp            $a5, $ac1, 16    # CHECK: extp            $a5, $ac1, 16   # encoding: [0x30,0x21,0x7f,0x66]
-                                                                            # 0b00100001001100000110011001111111
-  extp            $a3, $ac0, 17    # CHECK: extp            $a3, $ac0, 17   # encoding: [0xf1,0x20,0x7f,0x26]
-                                                                            # 0b00100000111100010010011001111111
-  extr.w          $a5, $ac1, 14    # CHECK: extr.w          $a5, $ac1, 14   # encoding: [0x2e,0x21,0x7f,0x4e]
-                                                                            # 0b00100001001011100100111001111111
-  extr.w          $fp, $ac2, 3     # CHECK: extr.w          $fp, $ac2, 3    # encoding: [0xc3,0x23,0x7f,0x8e]
-                                                                            # 0b00100011110000111000111001111111
-  extr.w          $at, $ac3, 15    # CHECK: extr.w          $at, $ac3, 15   # encoding: [0x2f,0x20,0x7f,0xce]
-                                                                            # 0b00100000001011111100111001111111
-  extr_r.w        $t3, $ac1, 5     # CHECK: extr_r.w        $t3, $ac1, 5    # encoding: [0xe5,0x21,0x7f,0x5e]
-                                                                            # 0b00100001111001010101111001111111
-  extr_r.w        $t0, $ac0, 6     # CHECK: extr_r.w        $t0, $ac0, 6    # encoding: [0x86,0x21,0x7f,0x1e]
-                                                                            # 0b00100001100001100001111001111111
-  extr_r.w        $a1, $ac2, 23    # CHECK: extr_r.w        $a1, $ac2, 23   # encoding: [0xb7,0x20,0x7f,0x9e]
-                                                                            # 0b00100000101101111001111001111111
-  extr_rs.w       $gp, $ac1, 17    # CHECK: extr_rs.w       $gp, $ac1, 17   # encoding: [0x91,0x23,0x7f,0x6e]
-                                                                            # 0b00100011100100010110111001111111
-  extr_rs.w       $a1, $ac2, 0     # CHECK: extr_rs.w       $a1, $ac2, 0    # encoding: [0xa0,0x20,0x7f,0xae]
-                                                                            # 0b00100000101000001010111001111111
-  extr_rs.w       $zero, $ac0, 0   # CHECK: extr_rs.w       $zero, $ac0, 0  # encoding: [0x00,0x20,0x7f,0x2e]
-                                                                            # 0b00100000000000000010111001111111
-  extr_s.h        $s7, $ac0, 29    # CHECK: extr_s.h        $s7, $ac0, 29   # encoding: [0xfd,0x22,0x7f,0x3e]
-                                                                            # 0b00100010111111010011111001111111
-  extr_s.h        $t4, $ac3, 8     # CHECK: extr_s.h        $t4, $ac3, 8    # encoding: [0x48,0x20,0x7f,0xfe]
-                                                                            # 0b00100000010010001111111001111111
-  extr_s.h        $s4, $ac0, 14    # CHECK: extr_s.h        $s4, $ac0, 14   # encoding: [0x8e,0x22,0x7f,0x3e]
-                                                                            # 0b00100010100011100011111001111111
-  extpdp          $t1, $ac1, 28    # CHECK: extpdp          $t1, $ac1, 28   # encoding: [0xbc,0x21,0x7f,0x76]
-                                                                            # 0b00100001101111000111011001111111
-  extpdp          $t8, $ac2, 23    # CHECK: extpdp          $t8, $ac2, 23   # encoding: [0x17,0x23,0x7f,0xb6]
-                                                                            # 0b00100011000101111011011001111111
-  extpdp          $t4, $ac1, 5     # CHECK: extpdp          $t4, $ac1, 5    # encoding: [0x45,0x20,0x7f,0x76]
-                                                                            # 0b00100000010001010111011001111111
-  addq.ph         $gp, $a4, $t9    # CHECK: addq.ph         $gp, $a4, $t9   # encoding: [0x28,0x23,0x0d,0xe0]
-                                                                            # 0b00100011001010001110000000001101
-  addq.ph         $k1, $a4, $s2    # CHECK: addq.ph         $k1, $a4, $s2   # encoding: [0x48,0x22,0x0d,0xd8]
-                                                                            # 0b00100010010010001101100000001101
-  addq.ph         $t8, $a4, $s1    # CHECK: addq.ph         $t8, $a4, $s1   # encoding: [0x28,0x22,0x0d,0xc0]
-                                                                            # 0b00100010001010001100000000001101
-  mul.ph          $s4, $a4, $a0    # CHECK: mul.ph          $s4, $a4, $a0   # encoding: [0x88,0x20,0x2d,0xa0]
-                                                                            # 0b00100000100010001010000000101101
-  mul.ph          $at, $a2, $a7    # CHECK: mul.ph          $at, $a2, $a7   # encoding: [0x66,0x21,0x2d,0x08]
-                                                                            # 0b00100001011001100000100000101101
-  mul.ph          $s7, $s1, $t8    # CHECK: mul.ph          $s7, $s1, $t8   # encoding: [0x11,0x23,0x2d,0xb8]
-                                                                            # 0b00100011000100011011100000101101
-  addu.qb         $t0, $s4, $t0    # CHECK: addu.qb         $t0, $s4, $t0   # encoding: [0x94,0x21,0xcd,0x60]
-                                                                            # 0b00100001100101000110000011001101
-  addu.qb         $s4, $t8, $s2    # CHECK: addu.qb         $s4, $t8, $s2   # encoding: [0x58,0x22,0xcd,0xa0]
-                                                                            # 0b00100010010110001010000011001101
-  addu.qb         $t3, $s3, $t5    # CHECK: addu.qb         $t3, $s3, $t5   # encoding: [0x73,0x20,0xcd,0x78]
-                                                                            # 0b00100000011100110111100011001101
-  addu.ph         $t8, $s5, $sp    # CHECK: addu.ph         $t8, $s5, $sp   # encoding: [0xb5,0x23,0x0d,0xc1]
-                                                                            # 0b00100011101101011100000100001101
-  addu.ph         $a1, $s1, $s5    # CHECK: addu.ph         $a1, $s1, $s5   # encoding: [0xb1,0x22,0x0d,0x29]
-                                                                            # 0b00100010101100010010100100001101
-  addu.ph         $sp, $s7, $s4    # CHECK: addu.ph         $sp, $s7, $s4   # encoding: [0x97,0x22,0x0d,0xe9]
-                                                                            # 0b00100010100101111110100100001101
-  addu_s.ph       $a2, $k1, $t0    # CHECK: addu_s.ph       $a2, $k1, $t0   # encoding: [0x9b,0x21,0x0d,0x35]
-                                                                            # 0b00100001100110110011010100001101
-  addu_s.ph       $k1, $zero, $a2    # CHECK: addu_s.ph       $k1, $zero, $a2   # encoding: [0xc0,0x20,0x0d,0xdd]
-                                                                                # 0b00100000110000001101110100001101
-  addu_s.ph       $t8, $a4, $ra    # CHECK: addu_s.ph       $t8, $a4, $ra   # encoding: [0xe8,0x23,0x0d,0xc5]
-                                                                            # 0b00100011111010001100010100001101
-  adduh.qb        $s4, $s0, $s2    # CHECK: adduh.qb        $s4, $s0, $s2   # encoding: [0x50,0x22,0x4d,0xa1]
-                                                                            # 0b00100010010100001010000101001101
-  adduh.qb        $a6, $a4, $a6    # CHECK: adduh.qb        $a6, $a4, $a6   # encoding: [0x48,0x21,0x4d,0x51]
-                                                                            # 0b00100001010010000101000101001101
-  adduh.qb        $s6, $a2, $s2    # CHECK: adduh.qb        $s6, $a2, $s2   # encoding: [0x46,0x22,0x4d,0xb1]
-                                                                            # 0b00100010010001101011000101001101
-  adduh_r.qb      $a6, $gp, $a2    # CHECK: adduh_r.qb      $a6, $gp, $a2   # encoding: [0xdc,0x20,0x4d,0x55]
-                                                                            # 0b00100000110111000101010101001101
-  adduh_r.qb      $k1, $t5, $k0    # CHECK: adduh_r.qb      $k1, $t5, $k0   # encoding: [0x43,0x23,0x4d,0xdd]
-                                                                            # 0b00100011010000111101110101001101
-  adduh_r.qb      $t0, $s3, $gp    # CHECK: adduh_r.qb      $t0, $s3, $gp   # encoding: [0x93,0x23,0x4d,0x65]
-                                                                            # 0b00100011100100110110010101001101
-  subu.ph         $t5, $t1, $t2    # CHECK: subu.ph         $t5, $t1, $t2   # encoding: [0xcd,0x21,0x0d,0x1b]
-                                                                            # 0b00100001110011010001101100001101
-  subu.ph         $s6, $a5, $zero    # CHECK: subu.ph         $s6, $a5, $zero   # encoding: [0x09,0x20,0x0d,0xb3]
-                                                                                # 0b00100000000010011011001100001101
-  subu.ph         $s2, $s3, $s0    # CHECK: subu.ph         $s2, $s3, $s0   # encoding: [0x13,0x22,0x0d,0x93]
-                                                                            # 0b00100010000100111001001100001101
-  subu_s.ph       $a2, $t8, $s1    # CHECK: subu_s.ph       $a2, $t8, $s1   # encoding: [0x38,0x22,0x0d,0x37]
-                                                                            # 0b00100010001110000011011100001101
-  subu_s.ph       $a5, $t4, $s2    # CHECK: subu_s.ph       $a5, $t4, $s2   # encoding: [0x42,0x22,0x0d,0x4f]
-                                                                            # 0b00100010010000100100111100001101
-  subu_s.ph       $a3, $a5, $t1    # CHECK: subu_s.ph       $a3, $a5, $t1   # encoding: [0xa9,0x21,0x0d,0x3f]
-                                                                            # 0b00100001101010010011111100001101
-  subq.ph         $a3, $t2, $t4    # CHECK: subq.ph         $a3, $t2, $t4   # encoding: [0x4e,0x20,0x0d,0x3a]
-                                                                            # 0b00100000010011100011101000001101
-  subq.ph         $a0, $s4, $zero    # CHECK: subq.ph         $a0, $s4, $zero   # encoding: [0x14,0x20,0x0d,0x22]
-                                                                                # 0b00100000000101000010001000001101
-  subq.ph         $s4, $a4, $a5    # CHECK: subq.ph         $s4, $a4, $a5   # encoding: [0x28,0x21,0x0d,0xa2]
-                                                                            # 0b00100001001010001010001000001101
-  subu.qb         $t2, $t8, $t1    # CHECK: subu.qb         $t2, $t8, $t1   # encoding: [0xb8,0x21,0xcd,0x72]
-                                                                            # 0b00100001101110000111001011001101
-  subu.qb         $a3, $s6, $s1    # CHECK: subu.qb         $a3, $s6, $s1   # encoding: [0x36,0x22,0xcd,0x3a]
-                                                                            # 0b00100010001101100011101011001101
-  subu.qb         $k0, $s1, $k1    # CHECK: subu.qb         $k0, $s1, $k1   # encoding: [0x71,0x23,0xcd,0xd2]
-                                                                            # 0b00100011011100011101001011001101
-  subuh.qb        $a2, $t4, $s2    # CHECK: subuh.qb        $a2, $t4, $s2   # encoding: [0x42,0x22,0x4d,0x33]
-                                                                            # 0b00100010010000100011001101001101
-  subuh.qb        $t2, $s7, $ra    # CHECK: subuh.qb        $t2, $s7, $ra   # encoding: [0xf7,0x23,0x4d,0x73]
-                                                                            # 0b00100011111101110111001101001101
-  subuh.qb        $s2, $a4, $t1    # CHECK: subuh.qb        $s2, $a4, $t1   # encoding: [0xa8,0x21,0x4d,0x93]
-                                                                            # 0b00100001101010001001001101001101
-  subuh_r.qb      $zero, $t1, $s2    # CHECK: subuh_r.qb      $zero, $t1, $s2   # encoding: [0x4d,0x22,0x4d,0x07]
-                                                                                # 0b00100010010011010000011101001101
-  subuh_r.qb      $s4, $s6, $a6    # CHECK: subuh_r.qb      $s4, $s6, $a6   # encoding: [0x56,0x21,0x4d,0xa7]
-                                                                            # 0b00100001010101101010011101001101
-  subuh_r.qb      $s3, $s2, $at    # CHECK: subuh_r.qb      $s3, $s2, $at   # encoding: [0x32,0x20,0x4d,0x9f]
-                                                                            # 0b00100000001100101001111101001101
-  addq_s.ph       $gp, $s6, $a7    # CHECK: addq_s.ph       $gp, $s6, $a7   # encoding: [0x76,0x21,0x0d,0xe4]
-                                                                            # 0b00100001011101101110010000001101
-  addq_s.ph       $t9, $zero, $t4    # CHECK: addq_s.ph       $t9, $zero, $t4   # encoding: [0x40,0x20,0x0d,0xcc]
-                                                                                # 0b00100000010000001100110000001101
-  addq_s.ph       $a1, $a6, $t0    # CHECK: addq_s.ph       $a1, $a6, $t0   # encoding: [0x8a,0x21,0x0d,0x2c]
-                                                                            # 0b00100001100010100010110000001101
-  mul_s.ph        $a7, $a6, $s5    # CHECK: mul_s.ph        $a7, $a6, $s5   # encoding: [0xaa,0x22,0x2d,0x5c]
-                                                                            # 0b00100010101010100101110000101101
-  mul_s.ph        $t9, $a2, $s0    # CHECK: mul_s.ph        $t9, $a2, $s0   # encoding: [0x06,0x22,0x2d,0xcc]
-                                                                            # 0b00100010000001101100110000101101
-  mul_s.ph        $a3, $t1, $a4    # CHECK: mul_s.ph        $a3, $t1, $a4   # encoding: [0x0d,0x21,0x2d,0x3c]
-                                                                            # 0b00100001000011010011110000101101
-  addu_s.qb       $a5, $a3, $s0    # CHECK: addu_s.qb       $a5, $a3, $s0   # encoding: [0x07,0x22,0xcd,0x4c]
-                                                                            # 0b00100010000001110100110011001101
-  addu_s.qb       $s6, $t4, $a5    # CHECK: addu_s.qb       $s6, $t4, $a5   # encoding: [0x22,0x21,0xcd,0xb4]
-                                                                            # 0b00100001001000101011010011001101
-  addu_s.qb       $s2, $s1, $a3    # CHECK: addu_s.qb       $s2, $s1, $a3   # encoding: [0xf1,0x20,0xcd,0x94]
-                                                                            # 0b00100000111100011001010011001101
-  subq_s.ph       $t5, $s1, $s2    # CHECK: subq_s.ph       $t5, $s1, $s2   # encoding: [0x51,0x22,0x0d,0x1e]
-                                                                            # 0b00100010010100010001111000001101
-  subq_s.ph       $ra, $k1, $s4    # CHECK: subq_s.ph       $ra, $k1, $s4   # encoding: [0x9b,0x22,0x0d,0xfe]
-                                                                            # 0b00100010100110111111111000001101
-  subq_s.ph       $t4, $t8, $at    # CHECK: subq_s.ph       $t4, $t8, $at   # encoding: [0x38,0x20,0x0d,0x16]
-                                                                            # 0b00100000001110000001011000001101
-  subu_s.qb       $a2, $sp, $s0    # CHECK: subu_s.qb       $a2, $sp, $s0   # encoding: [0x1d,0x22,0xcd,0x36]
-                                                                            # 0b00100010000111010011011011001101
-  subu_s.qb       $a6, $t0, $s7    # CHECK: subu_s.qb       $a6, $t0, $s7   # encoding: [0xec,0x22,0xcd,0x56]
-                                                                            # 0b00100010111011000101011011001101
-  subu_s.qb       $gp, $a3, $fp    # CHECK: subu_s.qb       $gp, $a3, $fp   # encoding: [0xc7,0x23,0xcd,0xe6]
-                                                                            # 0b00100011110001111110011011001101
-  addqh.ph        $s7, $t8, $fp    # CHECK: addqh.ph        $s7, $t8, $fp   # encoding: [0xd8,0x23,0x4d,0xb8]
-                                                                            # 0b00100011110110001011100001001101
-  addqh.ph        $sp, $gp, $t1    # CHECK: addqh.ph        $sp, $gp, $t1   # encoding: [0xbc,0x21,0x4d,0xe8]
-                                                                            # 0b00100001101111001110100001001101
-  addqh.ph        $a4, $a0, $gp    # CHECK: addqh.ph        $a4, $a0, $gp   # encoding: [0x84,0x23,0x4d,0x40]
-                                                                            # 0b00100011100001000100000001001101
-  addqh_r.ph      $s6, $t5, $zero    # CHECK: addqh_r.ph      $s6, $t5, $zero   # encoding: [0x03,0x20,0x4d,0xb4]
-                                                                                # 0b00100000000000111011010001001101
-  addqh_r.ph      $gp, $s6, $s2    # CHECK: addqh_r.ph      $gp, $s6, $s2   # encoding: [0x56,0x22,0x4d,0xe4]
-                                                                            # 0b00100010010101101110010001001101
-  addqh_r.ph      $a7, $t3, $s7    # CHECK: addqh_r.ph      $a7, $t3, $s7   # encoding: [0xef,0x22,0x4d,0x5c]
-                                                                            # 0b00100010111011110101110001001101
-  subqh.ph        $s6, $a0, $t9    # CHECK: subqh.ph        $s6, $a0, $t9   # encoding: [0x24,0x23,0x4d,0xb2]
-                                                                            # 0b00100011001001001011001001001101
-  subqh.ph        $s2, $a4, $a2    # CHECK: subqh.ph        $s2, $a4, $a2   # encoding: [0xc8,0x20,0x4d,0x92]
-                                                                            # 0b00100000110010001001001001001101
-  subqh.ph        $a4, $t1, $a7    # CHECK: subqh.ph        $a4, $t1, $a7   # encoding: [0x6d,0x21,0x4d,0x42]
-                                                                            # 0b00100001011011010100001001001101
-  subqh_r.ph      $a1, $s4, $s7    # CHECK: subqh_r.ph      $a1, $s4, $s7   # encoding: [0xf4,0x22,0x4d,0x2e]
-                                                                            # 0b00100010111101000010111001001101
-  subqh_r.ph      $k1, $t1, $a5    # CHECK: subqh_r.ph      $k1, $t1, $a5   # encoding: [0x2d,0x21,0x4d,0xde]
-                                                                            # 0b00100001001011011101111001001101
-  subqh_r.ph      $s7, $k0, $s3    # CHECK: subqh_r.ph      $s7, $k0, $s3   # encoding: [0x7a,0x22,0x4d,0xbe]
-                                                                            # 0b00100010011110101011111001001101
-  addqh.w         $t5, $t1, $t0    # CHECK: addqh.w         $t5, $t1, $t0   # encoding: [0x8d,0x21,0x8d,0x18]
-                                                                            # 0b00100001100011010001100010001101
-  addqh.w         $s4, $k0, $a3    # CHECK: addqh.w         $s4, $k0, $a3   # encoding: [0xfa,0x20,0x8d,0xa0]
-                                                                            # 0b00100000111110101010000010001101
-  addqh.w         $k1, $fp, $a4    # CHECK: addqh.w         $k1, $fp, $a4   # encoding: [0x1e,0x21,0x8d,0xd8]
-                                                                            # 0b00100001000111101101100010001101
-  addqh_r.w       $sp, $s2, $t0    # CHECK: addqh_r.w       $sp, $s2, $t0   # encoding: [0x92,0x21,0x8d,0xec]
-                                                                            # 0b00100001100100101110110010001101
-  addqh_r.w       $fp, $k1, $fp    # CHECK: addqh_r.w       $fp, $k1, $fp   # encoding: [0xdb,0x23,0x8d,0xf4]
-                                                                            # 0b00100011110110111111010010001101
-  addqh_r.w       $t9, $a3, $sp    # CHECK: addqh_r.w       $t9, $a3, $sp   # encoding: [0xa7,0x23,0x8d,0xcc]
-                                                                            # 0b00100011101001111100110010001101
-  subqh.w         $a2, $t3, $k0    # CHECK: subqh.w         $a2, $t3, $k0   # encoding: [0x4f,0x23,0x8d,0x32]
-                                                                            # 0b00100011010011110011001010001101
-  subqh.w         $s1, $sp, $s1    # CHECK: subqh.w         $s1, $sp, $s1   # encoding: [0x3d,0x22,0x8d,0x8a]
-                                                                            # 0b00100010001111011000101010001101
-  subqh.w         $a3, $ra, $s0    # CHECK: subqh.w         $a3, $ra, $s0   # encoding: [0x1f,0x22,0x8d,0x3a]
-                                                                            # 0b00100010000111110011101010001101
-  subqh_r.w       $t5, $t3, $t3    # CHECK: subqh_r.w       $t5, $t3, $t3   # encoding: [0xef,0x21,0x8d,0x1e]
-                                                                            # 0b00100001111011110001111010001101
-  subqh_r.w       $a3, $a0, $a1    # CHECK: subqh_r.w       $a3, $a0, $a1   # encoding: [0xa4,0x20,0x8d,0x3e]
-                                                                            # 0b00100000101001000011111010001101
-  subqh_r.w       $a1, $s3, $k0    # CHECK: subqh_r.w       $a1, $s3, $k0   # encoding: [0x53,0x23,0x8d,0x2e]
-                                                                            # 0b00100011010100110010111010001101
-  shllv.ph        $ra, $s3, $s3    # CHECK: shllv.ph        $ra, $s3, $s3   # encoding: [0x73,0x22,0x8d,0xfb]
-                                                                            # 0b00100010011100111111101110001101
-  shllv.ph        $t2, $s3, $a3    # CHECK: shllv.ph        $t2, $s3, $a3   # encoding: [0x67,0x22,0x8d,0x73]
-                                                                            # 0b00100010011001110111001110001101
-  shllv.ph        $s0, $t8, $t2    # CHECK: shllv.ph        $s0, $t8, $t2   # encoding: [0x0e,0x23,0x8d,0x83]
-                                                                            # 0b00100011000011101000001110001101
-  shllv_s.ph      $t1, $a6, $s4    # CHECK: shllv_s.ph      $t1, $a6, $s4   # encoding: [0x54,0x21,0x8d,0x6f]
-                                                                            # 0b00100001010101000110111110001101
-  shllv_s.ph      $ra, $a4, $a1    # CHECK: shllv_s.ph      $ra, $a4, $a1   # encoding: [0x05,0x21,0x8d,0xff]
-                                                                            # 0b00100001000001011111111110001101
-  shllv_s.ph      $s5, $s7, $s3    # CHECK: shllv_s.ph      $s5, $s7, $s3   # encoding: [0xf3,0x22,0x8d,0xaf]
-                                                                            # 0b00100010111100111010111110001101
-  shrav.ph        $t2, $s4, $s4    # CHECK: shrav.ph        $t2, $s4, $s4   # encoding: [0x94,0x22,0x8d,0x71]
-                                                                            # 0b00100010100101000111000110001101
-  shrav.ph        $k1, $s2, $a7    # CHECK: shrav.ph        $k1, $s2, $a7   # encoding: [0x4b,0x22,0x8d,0xd9]
-                                                                            # 0b00100010010010111101100110001101
-  shrav.ph        $t2, $s4, $t4    # CHECK: shrav.ph        $t2, $s4, $t4   # encoding: [0x82,0x22,0x8d,0x71]
-                                                                            # 0b00100010100000100111000110001101
-  shrav_r.ph      $t8, $t1, $t1    # CHECK: shrav_r.ph      $t8, $t1, $t1   # encoding: [0xad,0x21,0x8d,0xc5]
-                                                                            # 0b00100001101011011100010110001101
-  shrav_r.ph      $k0, $a7, $t2    # CHECK: shrav_r.ph      $k0, $a7, $t2   # encoding: [0x6e,0x21,0x8d,0xd5]
-                                                                            # 0b00100001011011101101010110001101
-  shrav_r.ph      $t3, $k0, $t5    # CHECK: shrav_r.ph      $t3, $k0, $t5   # encoding: [0x43,0x23,0x8d,0x7d]
-                                                                            # 0b00100011010000110111110110001101
-  shrav.qb        $sp, $a5, $a7    # CHECK: shrav.qb        $sp, $a5, $a7   # encoding: [0x2b,0x21,0xcd,0xe9]
-                                                                            # 0b00100001001010111110100111001101
-  shrav.qb        $gp, $s5, $gp    # CHECK: shrav.qb        $gp, $s5, $gp   # encoding: [0xbc,0x22,0xcd,0xe1]
-                                                                            # 0b00100010101111001110000111001101
-  shrav.qb        $k1, $s6, $s6    # CHECK: shrav.qb        $k1, $s6, $s6   # encoding: [0xd6,0x22,0xcd,0xd9]
-                                                                            # 0b00100010110101101101100111001101
-  shrav_r.qb      $a1, $t5, $a3    # CHECK: shrav_r.qb      $a1, $t5, $a3   # encoding: [0x67,0x20,0xcd,0x2d]
-                                                                            # 0b00100000011001110010110111001101
-  shrav_r.qb      $a7, $a5, $a0    # CHECK: shrav_r.qb      $a7, $a5, $a0   # encoding: [0x24,0x21,0xcd,0x5d]
-                                                                            # 0b00100001001001000101110111001101
-  shrav_r.qb      $s2, $s5, $a0    # CHECK: shrav_r.qb      $s2, $s5, $a0   # encoding: [0xa4,0x22,0xcd,0x95]
-                                                                            # 0b00100010101001001001010111001101
-  shrav_r.w       $ra, $t1, $t0    # CHECK: shrav_r.w       $ra, $t1, $t0   # encoding: [0xac,0x21,0xd5,0xfa]
-                                                                            # 0b00100001101011001111101011010101
-  shrav_r.w       $s1, $s2, $t2    # CHECK: shrav_r.w       $s1, $s2, $t2   # encoding: [0x4e,0x22,0xd5,0x8a]
-                                                                            # 0b00100010010011101000101011010101
-  shrav_r.w       $t0, $k0, $s5    # CHECK: shrav_r.w       $t0, $k0, $s5   # encoding: [0x55,0x23,0xd5,0x62]
-                                                                            # 0b00100011010101010110001011010101
-  cmpgdu.eq.qb    $fp, $k1, $a7    # CHECK: cmpgdu.eq.qb    $fp, $k1, $a7   # encoding: [0x7b,0x21,0x85,0xf1]
-                                                                            # 0b00100001011110111111000110000101
-  cmpgdu.eq.qb    $a6, $t4, $a2    # CHECK: cmpgdu.eq.qb    $a6, $t4, $a2   # encoding: [0xc2,0x20,0x85,0x51]
-                                                                            # 0b00100000110000100101000110000101
-  cmpgdu.eq.qb    $t0, $s4, $a4    # CHECK: cmpgdu.eq.qb    $t0, $s4, $a4   # encoding: [0x14,0x21,0x85,0x61]
-                                                                            # 0b00100001000101000110000110000101
-  cmpgdu.le.qb    $s1, $s6, $t5    # CHECK: cmpgdu.le.qb    $s1, $s6, $t5   # encoding: [0x76,0x20,0x05,0x8a]
-                                                                            # 0b00100000011101101000101000000101
-  cmpgdu.le.qb    $s1, $s2, $a4    # CHECK: cmpgdu.le.qb    $s1, $s2, $a4   # encoding: [0x12,0x21,0x05,0x8a]
-                                                                            # 0b00100001000100101000101000000101
-  cmpgdu.le.qb    $zero, $s5, $a1    # CHECK: cmpgdu.le.qb    $zero, $s5, $a1   # encoding: [0xb5,0x20,0x05,0x02]
-                                                                                # 0b00100000101101010000001000000101
-  cmpgdu.lt.qb    $zero, $t1, $s3    # CHECK: cmpgdu.lt.qb    $zero, $t1, $s3   # encoding: [0x6d,0x22,0xc5,0x01]
-                                                                                # 0b00100010011011010000000111000101
-  cmpgdu.lt.qb    $s6, $a4, $t5    # CHECK: cmpgdu.lt.qb    $s6, $a4, $t5   # encoding: [0x68,0x20,0xc5,0xb1]
-                                                                            # 0b00100000011010001011000111000101
-  cmpgdu.lt.qb    $t4, $ra, $gp    # CHECK: cmpgdu.lt.qb    $t4, $ra, $gp   # encoding: [0x9f,0x23,0xc5,0x11]
-                                                                            # 0b00100011100111110001000111000101
-  cmpgu.eq.qb     $s2, $s4, $s1    # CHECK: cmpgu.eq.qb     $s2, $s4, $s1   # encoding: [0x34,0x22,0xc5,0x90]
-                                                                            # 0b00100010001101001001000011000101
-  cmpgu.eq.qb     $a0, $t2, $s7    # CHECK: cmpgu.eq.qb     $a0, $t2, $s7   # encoding: [0xee,0x22,0xc5,0x20]
-                                                                            # 0b00100010111011100010000011000101
-  cmpgu.eq.qb     $s5, $s4, $k1    # CHECK: cmpgu.eq.qb     $s5, $s4, $k1   # encoding: [0x74,0x23,0xc5,0xa8]
-                                                                            # 0b00100011011101001010100011000101
-  cmpgu.le.qb     $s4, $a3, $s1    # CHECK: cmpgu.le.qb     $s4, $a3, $s1   # encoding: [0x27,0x22,0x45,0xa1]
-                                                                            # 0b00100010001001111010000101000101
-  cmpgu.le.qb     $gp, $t4, $s2    # CHECK: cmpgu.le.qb     $gp, $t4, $s2   # encoding: [0x42,0x22,0x45,0xe1]
-                                                                            # 0b00100010010000101110000101000101
-  cmpgu.le.qb     $t1, $t5, $t9    # CHECK: cmpgu.le.qb     $t1, $t5, $t9   # encoding: [0x23,0x23,0x45,0x69]
-                                                                            # 0b00100011001000110110100101000101
-  cmpgu.lt.qb     $sp, $t4, $a5    # CHECK: cmpgu.lt.qb     $sp, $t4, $a5   # encoding: [0x22,0x21,0x05,0xe9]
-                                                                            # 0b00100001001000101110100100000101
-  cmpgu.lt.qb     $s0, $a4, $a2    # CHECK: cmpgu.lt.qb     $s0, $a4, $a2   # encoding: [0xc8,0x20,0x05,0x81]
-                                                                            # 0b00100000110010001000000100000101
-  cmpgu.lt.qb     $s2, $fp, $s4    # CHECK: cmpgu.lt.qb     $s2, $fp, $s4   # encoding: [0x9e,0x22,0x05,0x91]
-                                                                            # 0b00100010100111101001000100000101
-  precrq.ph.w     $s4, $k1, $s7    # CHECK: precrq.ph.w     $s4, $k1, $s7   # encoding: [0xfb,0x22,0xed,0xa0]
-                                                                            # 0b00100010111110111010000011101101
-  precrq.ph.w     $a4, $s2, $s2    # CHECK: precrq.ph.w     $a4, $s2, $s2   # encoding: [0x52,0x22,0xed,0x40]
-                                                                            # 0b00100010010100100100000011101101
-  precrq.ph.w     $ra, $fp, $t3    # CHECK: precrq.ph.w     $ra, $fp, $t3   # encoding: [0xfe,0x21,0xed,0xf8]
-                                                                            # 0b00100001111111101111100011101101
-  precr.qb.ph     $a2, $s3, $t3    # CHECK: precr.qb.ph     $a2, $s3, $t3   # encoding: [0xf3,0x21,0x6d,0x30]
-                                                                            # 0b00100001111100110011000001101101
-  precr.qb.ph     $s5, $s4, $fp    # CHECK: precr.qb.ph     $s5, $s4, $fp   # encoding: [0xd4,0x23,0x6d,0xa8]
-                                                                            # 0b00100011110101001010100001101101
-  precr.qb.ph     $t5, $t5, $t3    # CHECK: precr.qb.ph     $t5, $t5, $t3   # encoding: [0xe3,0x21,0x6d,0x18]
-                                                                            # 0b00100001111000110001100001101101
-  precrq.qb.ph    $t2, $t0, $a1    # CHECK: precrq.qb.ph    $t2, $t0, $a1   # encoding: [0xac,0x20,0xad,0x70]
-                                                                            # 0b00100000101011000111000010101101
-  precrq.qb.ph    $sp, $s1, $at    # CHECK: precrq.qb.ph    $sp, $s1, $at   # encoding: [0x31,0x20,0xad,0xe8]
-                                                                            # 0b00100000001100011110100010101101
-  precrq.qb.ph    $s6, $s2, $a0    # CHECK: precrq.qb.ph    $s6, $s2, $a0   # encoding: [0x92,0x20,0xad,0xb0]
-                                                                            # 0b00100000100100101011000010101101
-  precrqu_s.qb.ph $a6, $a2, $s4    # CHECK: precrqu_s.qb.ph $a6, $a2, $s4   # encoding: [0x86,0x22,0x6d,0x51]
-                                                                            # 0b00100010100001100101000101101101
-  precrqu_s.qb.ph $s3, $a6, $a6    # CHECK: precrqu_s.qb.ph $s3, $a6, $a6   # encoding: [0x4a,0x21,0x6d,0x99]
-                                                                            # 0b00100001010010101001100101101101
-  precrqu_s.qb.ph $sp, $t8, $t1    # CHECK: precrqu_s.qb.ph $sp, $t8, $t1   # encoding: [0xb8,0x21,0x6d,0xe9]
-                                                                            # 0b00100001101110001110100101101101
-  precrq_rs.ph.w  $s2, $s4, $s6    # CHECK: precrq_rs.ph.w  $s2, $s4, $s6   # encoding: [0xd4,0x22,0x2d,0x91]
-                                                                            # 0b00100010110101001001000100101101
-  precrq_rs.ph.w  $t1, $s3, $s7    # CHECK: precrq_rs.ph.w  $t1, $s3, $s7   # encoding: [0xf3,0x22,0x2d,0x69]
-                                                                            # 0b00100010111100110110100100101101
-  precrq_rs.ph.w  $sp, $a3, $t5    # CHECK: precrq_rs.ph.w  $sp, $a3, $t5   # encoding: [0x67,0x20,0x2d,0xe9]
-                                                                            # 0b00100000011001111110100100101101
-  packrl.ph       $s2, $k0, $a7    # CHECK: packrl.ph       $s2, $k0, $a7   # encoding: [0x7a,0x21,0xad,0x91]
-                                                                            # 0b00100001011110101001000110101101
-  packrl.ph       $t2, $s5, $s6    # CHECK: packrl.ph       $t2, $s5, $s6   # encoding: [0xd5,0x22,0xad,0x71]
-                                                                            # 0b00100010110101010111000110101101
-  packrl.ph       $a2, $zero, $s3    # CHECK: packrl.ph       $a2, $zero, $s3   # encoding: [0x60,0x22,0xad,0x31]
-                                                                                # 0b00100010011000000011000110101101
-  pick.qb         $s5, $a7, $s2    # CHECK: pick.qb         $s5, $a7, $s2   # encoding: [0x4b,0x22,0xed,0xa9]
-                                                                            # 0b00100010010010111010100111101101
-  pick.qb         $a3, $t9, $t1    # CHECK: pick.qb         $a3, $t9, $t1   # encoding: [0xb9,0x21,0xed,0x39]
-                                                                            # 0b00100001101110010011100111101101
-  pick.qb         $gp, $ra, $k1    # CHECK: pick.qb         $gp, $ra, $k1   # encoding: [0x7f,0x23,0xed,0xe1]
-                                                                            # 0b00100011011111111110000111101101
-  pick.ph         $t8, $s1, $ra    # CHECK: pick.ph         $t8, $s1, $ra   # encoding: [0xf1,0x23,0x2d,0xc2]
-                                                                            # 0b00100011111100011100001000101101
-  pick.ph         $a2, $a6, $s3    # CHECK: pick.ph         $a2, $a6, $s3   # encoding: [0x6a,0x22,0x2d,0x32]
-                                                                            # 0b00100010011010100011001000101101
-  pick.ph         $s6, $zero, $t2    # CHECK: pick.ph         $s6, $zero, $t2   # encoding: [0xc0,0x21,0x2d,0xb2]
-                                                                                # 0b00100001110000001011001000101101
-  shllv_s.w       $s1, $t4, $s0    # CHECK: shllv_s.w       $s1, $t4, $s0   # encoding: [0x50,0x20,0xd5,0x8b]
-                                                                            # 0b00100000010100001000101111010101
-  shllv_s.w       $k1, $s3, $fp    # CHECK: shllv_s.w       $k1, $s3, $fp   # encoding: [0x7e,0x22,0xd5,0xdb]
-                                                                            # 0b00100010011111101101101111010101
-  shllv_s.w       $t0, $s1, $s7    # CHECK: shllv_s.w       $t0, $s1, $s7   # encoding: [0x37,0x22,0xd5,0x63]
-                                                                            # 0b00100010001101110110001111010101
-  shllv.qb        $s0, $a6, $t8    # CHECK: shllv.qb        $s0, $a6, $t8   # encoding: [0x58,0x21,0x95,0x83]
-                                                                            # 0b00100001010110001000001110010101
-  shllv.qb        $s1, $t5, $s6    # CHECK: shllv.qb        $s1, $t5, $s6   # encoding: [0x76,0x20,0x95,0x8b]
-                                                                            # 0b00100000011101101000101110010101
-  shllv.qb        $s0, $t9, $t2    # CHECK: shllv.qb        $s0, $t9, $t2   # encoding: [0x2e,0x23,0x95,0x83]
-                                                                            # 0b00100011001011101000001110010101
-  shrlv.ph        $k1, $a4, $s5    # CHECK: shrlv.ph        $k1, $a4, $s5   # encoding: [0x15,0x21,0x15,0xdb]
-                                                                            # 0b00100001000101011101101100010101
-  shrlv.ph        $a7, $s5, $a2    # CHECK: shrlv.ph        $a7, $s5, $a2   # encoding: [0xa6,0x22,0x15,0x5b]
-                                                                            # 0b00100010101001100101101100010101
-  shrlv.ph        $s5, $t4, $s4    # CHECK: shrlv.ph        $s5, $t4, $s4   # encoding: [0x54,0x20,0x15,0xab]
-                                                                            # 0b00100000010101001010101100010101
-  shrlv.qb        $t1, $s0, $t2    # CHECK: shrlv.qb        $t1, $s0, $t2   # encoding: [0x0e,0x22,0x55,0x6b]
-                                                                            # 0b00100010000011100110101101010101
-  shrlv.qb        $t4, $at, $t2    # CHECK: shrlv.qb        $t4, $at, $t2   # encoding: [0x2e,0x20,0x55,0x13]
-                                                                            # 0b00100000001011100001001101010101
-  shrlv.qb        $fp, $s3, $a5    # CHECK: shrlv.qb        $fp, $s3, $a5   # encoding: [0x69,0x22,0x55,0xf3]
-                                                                            # 0b00100010011010011111001101010101
-  subq_s.w        $s5, $s0, $s2    # CHECK: subq_s.w        $s5, $s0, $s2   # encoding: [0x50,0x22,0x45,0xab]
-                                                                            # 0b00100010010100001010101101000101
-  subq_s.w        $t3, $t2, $s0    # CHECK: subq_s.w        $t3, $t2, $s0   # encoding: [0x0e,0x22,0x45,0x7b]
-                                                                            # 0b00100010000011100111101101000101
-  subq_s.w        $a1, $sp, $gp    # CHECK: subq_s.w        $a1, $sp, $gp   # encoding: [0x9d,0x23,0x45,0x2b]
-                                                                            # 0b00100011100111010010101101000101
-  modsub          $s1, $s2, $ra    # CHECK: modsub          $s1, $s2, $ra   # encoding: [0xf2,0x23,0x95,0x8a]
-                                                                            # 0b00100011111100101000101010010101
-  modsub          $a4, $t2, $t4    # CHECK: modsub          $a4, $t2, $t4   # encoding: [0x4e,0x20,0x95,0x42]
-                                                                            # 0b00100000010011100100001010010101
-  modsub          $s4, $a2, $t3    # CHECK: modsub          $s4, $a2, $t3   # encoding: [0xe6,0x21,0x95,0xa2]
-                                                                            # 0b00100001111001101010001010010101
-  muleq_s.w.phl   $t4, $a0, $s6    # CHECK: muleq_s.w.phl   $t4, $a0, $s6   # encoding: [0xc4,0x22,0x25,0x10]
-                                                                            # 0b00100010110001000001000000100101
-  muleq_s.w.phl   $t9, $t8, $s3    # CHECK: muleq_s.w.phl   $t9, $t8, $s3   # encoding: [0x78,0x22,0x25,0xc8]
-                                                                            # 0b00100010011110001100100000100101
-  muleq_s.w.phl   $t5, $ra, $k0    # CHECK: muleq_s.w.phl   $t5, $ra, $k0   # encoding: [0x5f,0x23,0x25,0x18]
-                                                                            # 0b00100011010111110001100000100101
-  muleq_s.w.phr   $t1, $ra, $a2    # CHECK: muleq_s.w.phr   $t1, $ra, $a2   # encoding: [0xdf,0x20,0x65,0x68]
-                                                                            # 0b00100000110111110110100001100101
-  muleq_s.w.phr   $s7, $fp, $t4    # CHECK: muleq_s.w.phr   $s7, $fp, $t4   # encoding: [0x5e,0x20,0x65,0xb8]
-                                                                            # 0b00100000010111101011100001100101
-  muleq_s.w.phr   $a5, $s2, $t4    # CHECK: muleq_s.w.phr   $a5, $s2, $t4   # encoding: [0x52,0x20,0x65,0x48]
-                                                                            # 0b00100000010100100100100001100101
-  muleu_s.ph.qbl  $s5, $t5, $s1    # CHECK: muleu_s.ph.qbl  $s5, $t5, $s1   # encoding: [0x23,0x22,0x95,0xa8]
-                                                                            # 0b00100010001000111010100010010101
-  muleu_s.ph.qbl  $t8, $gp, $t3    # CHECK: muleu_s.ph.qbl  $t8, $gp, $t3   # encoding: [0xfc,0x21,0x95,0xc0]
-                                                                            # 0b00100001111111001100000010010101
-  muleu_s.ph.qbl  $s3, $t3, $t3    # CHECK: muleu_s.ph.qbl  $s3, $t3, $t3   # encoding: [0xef,0x21,0x95,0x98]
-                                                                            # 0b00100001111011111001100010010101
-  muleu_s.ph.qbr  $s5, $s4, $t1    # CHECK: muleu_s.ph.qbr  $s5, $s4, $t1   # encoding: [0xb4,0x21,0xd5,0xa8]
-                                                                            # 0b00100001101101001010100011010101
-  muleu_s.ph.qbr  $a3, $s1, $s3    # CHECK: muleu_s.ph.qbr  $a3, $s1, $s3   # encoding: [0x71,0x22,0xd5,0x38]
-                                                                            # 0b00100010011100010011100011010101
-  muleu_s.ph.qbr  $t0, $t8, $a4    # CHECK: muleu_s.ph.qbr  $t0, $t8, $a4   # encoding: [0x18,0x21,0xd5,0x60]
-                                                                            # 0b00100001000110000110000011010101
-  mulq_rs.ph      $s7, $a5, $t3    # CHECK: mulq_rs.ph      $s7, $a5, $t3   # encoding: [0xe9,0x21,0x15,0xb9]
-                                                                            # 0b00100001111010011011100100010101
-  mulq_rs.ph      $s5, $t0, $a6    # CHECK: mulq_rs.ph      $s5, $t0, $a6   # encoding: [0x4c,0x21,0x15,0xa9]
-                                                                            # 0b00100001010011001010100100010101
-  mulq_rs.ph      $s3, $s6, $a7    # CHECK: mulq_rs.ph      $s3, $s6, $a7   # encoding: [0x76,0x21,0x15,0x99]
-                                                                            # 0b00100001011101101001100100010101
-  mulq_rs.w       $zero, $at, $a2    # CHECK: mulq_rs.w       $zero, $at, $a2   # encoding: [0xc1,0x20,0x95,0x01]
-                                                                                # 0b00100000110000010000000110010101
-  mulq_rs.w       $t3, $t0, $t4    # CHECK: mulq_rs.w       $t3, $t0, $t4   # encoding: [0x4c,0x20,0x95,0x79]
-                                                                            # 0b00100000010011000111100110010101
-  mulq_rs.w       $t8, $a3, $a7    # CHECK: mulq_rs.w       $t8, $a3, $a7   # encoding: [0x67,0x21,0x95,0xc1]
-                                                                            # 0b00100001011001111100000110010101
-  mulq_s.ph       $fp, $s5, $s2    # CHECK: mulq_s.ph       $fp, $s5, $s2   # encoding: [0x55,0x22,0x55,0xf1]
-                                                                            # 0b00100010010101011111000101010101
-  mulq_s.ph       $s5, $t3, $t8    # CHECK: mulq_s.ph       $s5, $t3, $t8   # encoding: [0x0f,0x23,0x55,0xa9]
-                                                                            # 0b00100011000011111010100101010101
-  mulq_s.ph       $t9, $gp, $s4    # CHECK: mulq_s.ph       $t9, $gp, $s4   # encoding: [0x9c,0x22,0x55,0xc9]
-                                                                            # 0b00100010100111001100100101010101
-  mulq_s.w        $a2, $a5, $k1    # CHECK: mulq_s.w        $a2, $a5, $k1   # encoding: [0x69,0x23,0xd5,0x31]
-                                                                            # 0b00100011011010010011000111010101
-  mulq_s.w        $k1, $k1, $s5    # CHECK: mulq_s.w        $k1, $k1, $s5   # encoding: [0xbb,0x22,0xd5,0xd9]
-                                                                            # 0b00100010101110111101100111010101
-  mulq_s.w        $a4, $s4, $at    # CHECK: mulq_s.w        $a4, $s4, $at   # encoding: [0x34,0x20,0xd5,0x41]
-                                                                            # 0b00100000001101000100000111010101
-  addq_s.w        $s0, $t3, $t1    # CHECK: addq_s.w        $s0, $t3, $t1   # encoding: [0xaf,0x21,0x05,0x83]
-                                                                            # 0b00100001101011111000001100000101
-  addq_s.w        $gp, $t0, $s6    # CHECK: addq_s.w        $gp, $t0, $s6   # encoding: [0xcc,0x22,0x05,0xe3]
-                                                                            # 0b00100010110011001110001100000101
-  addq_s.w        $t8, $s7, $k1    # CHECK: addq_s.w        $t8, $s7, $k1   # encoding: [0x77,0x23,0x05,0xc3]
-                                                                            # 0b00100011011101111100001100000101
-  addsc           $a7, $a6, $a0    # CHECK: addsc           $a7, $a6, $a0   # encoding: [0x8a,0x20,0x85,0x5b]
-                                                                            # 0b00100000100010100101101110000101
-  addsc           $t5, $t9, $t0    # CHECK: addsc           $t5, $t9, $t0   # encoding: [0x99,0x21,0x85,0x1b]
-                                                                            # 0b00100001100110010001101110000101
-  addsc           $a6, $at, $t8    # CHECK: addsc           $a6, $at, $t8   # encoding: [0x01,0x23,0x85,0x53]
-                                                                            # 0b00100011000000010101001110000101
-  addwc           $a5, $t0, $gp    # CHECK: addwc           $a5, $t0, $gp   # encoding: [0x8c,0x23,0xc5,0x4b]
-                                                                            # 0b00100011100011000100101111000101
-  addwc           $a2, $sp, $k1    # CHECK: addwc           $a2, $sp, $k1   # encoding: [0x7d,0x23,0xc5,0x33]
-                                                                            # 0b00100011011111010011001111000101
-  addwc           $a5, $s4, $s1    # CHECK: addwc           $a5, $s4, $s1   # encoding: [0x34,0x22,0xc5,0x4b]
-                                                                            # 0b00100010001101000100101111000101
-  shll.qb         $a4, $t0, 7      # CHECK: shll.qb         $a4, $t0, 7     # encoding: [0x0c,0x21,0x7f,0xe8]
-                                                                            # 0b00100001000011001110100001111111
-  shll.qb         $k0, $s6, 6      # CHECK: shll.qb         $k0, $s6, 6     # encoding: [0x56,0x23,0x7f,0xc8]
-                                                                            # 0b00100011010101101100100001111111
-  shll.qb         $a0, $ra, 0      # CHECK: shll.qb         $a0, $ra, 0     # encoding: [0x9f,0x20,0x7f,0x08]
-                                                                            # 0b00100000100111110000100001111111
-  shrl.qb         $k0, $s3, 2      # CHECK: shrl.qb         $k0, $s3, 2     # encoding: [0x53,0x23,0x7f,0x58]
-                                                                            # 0b00100011010100110101100001111111
-  shrl.qb         $a3, $t2, 2      # CHECK: shrl.qb         $a3, $t2, 2     # encoding: [0xee,0x20,0x7f,0x58]
-                                                                            # 0b00100000111011100101100001111111
-  shrl.qb         $s3, $s7, 6      # CHECK: shrl.qb         $s3, $s7, 6     # encoding: [0x77,0x22,0x7f,0xd8]
-                                                                            # 0b00100010011101111101100001111111
-  shra.qb         $s7, $t9, 6      # CHECK: shra.qb         $s7, $t9, 6     # encoding: [0xf9,0x22,0xff,0xc1]
-                                                                            # 0b00100010111110011100000111111111
-  shra.qb         $ra, $a4, 5      # CHECK: shra.qb         $ra, $a4, 5     # encoding: [0xe8,0x23,0xff,0xa1]
-                                                                            # 0b00100011111010001010000111111111
-  shra.qb         $s2, $t1, 6      # CHECK: shra.qb         $s2, $t1, 6     # encoding: [0x4d,0x22,0xff,0xc1]
-                                                                            # 0b00100010010011011100000111111111
-  shra_r.qb       $t8, $a4, 6      # CHECK: shra_r.qb       $t8, $a4, 6     # encoding: [0x08,0x23,0xff,0xd1]
-                                                                            # 0b00100011000010001101000111111111
-  shra_r.qb       $s2, $s1, 6      # CHECK: shra_r.qb       $s2, $s1, 6     # encoding: [0x51,0x22,0xff,0xd1]
-                                                                            # 0b00100010010100011101000111111111
-  shra_r.qb       $fp, $a2, 5      # CHECK: shra_r.qb       $fp, $a2, 5     # encoding: [0xc6,0x23,0xff,0xb1]
-                                                                            # 0b00100011110001101011000111111111
-  shll.ph         $sp, $a3, 4      # CHECK: shll.ph         $sp, $a3, 4     # encoding: [0xa7,0x23,0xb5,0x43]
-                                                                            # 0b00100011101001110100001110110101
-  shll.ph         $s0, $a6, 14     # CHECK: shll.ph         $s0, $a6, 14    # encoding: [0x0a,0x22,0xb5,0xe3]
-                                                                            # 0b00100010000010101110001110110101
-  shll.ph         $t9, $a0, 15     # CHECK: shll.ph         $t9, $a0, 15    # encoding: [0x24,0x23,0xb5,0xf3]
-                                                                            # 0b00100011001001001111001110110101
-  shll_s.ph       $t8, $k0, 11     # CHECK: shll_s.ph       $t8, $k0, 11    # encoding: [0x1a,0x23,0xb5,0xbb]
-                                                                            # 0b00100011000110101011101110110101
-  shll_s.ph       $a0, $s6, 8      # CHECK: shll_s.ph       $a0, $s6, 8     # encoding: [0x96,0x20,0xb5,0x8b]
-                                                                            # 0b00100000100101101000101110110101
-  shll_s.ph       $s4, $a5, 13     # CHECK: shll_s.ph       $s4, $a5, 13    # encoding: [0x89,0x22,0xb5,0xdb]
-                                                                            # 0b00100010100010011101101110110101
-  shra.ph         $s6, $ra, 10     # CHECK: shra.ph         $s6, $ra, 10    # encoding: [0xdf,0x22,0x35,0xa3]
-                                                                            # 0b00100010110111111010001100110101
-  shra.ph         $a4, $s4, 4      # CHECK: shra.ph         $a4, $s4, 4     # encoding: [0x14,0x21,0x35,0x43]
-                                                                            # 0b00100001000101000100001100110101
-  shra.ph         $k1, $sp, 14     # CHECK: shra.ph         $k1, $sp, 14    # encoding: [0x7d,0x23,0x35,0xe3]
-                                                                            # 0b00100011011111011110001100110101
-  shra_r.ph       $a1, $t5, 13     # CHECK: shra_r.ph       $a1, $t5, 13    # encoding: [0xa3,0x20,0x35,0xd7]
-                                                                            # 0b00100000101000111101011100110101
-  shra_r.ph       $k1, $a2, 8      # CHECK: shra_r.ph       $k1, $a2, 8     # encoding: [0x66,0x23,0x35,0x87]
-                                                                            # 0b00100011011001101000011100110101
-  shra_r.ph       $sp, $sp, 0      # CHECK: shra_r.ph       $sp, $sp, 0     # encoding: [0xbd,0x23,0x35,0x07]
-                                                                            # 0b00100011101111010000011100110101
-  precr_sra.ph.w  $t0, $s4, 0      # CHECK: precr_sra.ph.w  $t0, $s4, 0     # encoding: [0x94,0x21,0xcd,0x03]
-                                                                            # 0b00100001100101000000001111001101
-  precr_sra.ph.w  $t8, $a2, 9      # CHECK: precr_sra.ph.w  $t8, $a2, 9     # encoding: [0x06,0x23,0xcd,0x4b]
-                                                                            # 0b00100011000001100100101111001101
-  precr_sra.ph.w  $a0, $t8, 24     # CHECK: precr_sra.ph.w  $a0, $t8, 24    # encoding: [0x98,0x20,0xcd,0xc3]
-                                                                            # 0b00100000100110001100001111001101
-  precr_sra_r.ph.w $t9, $t4, 25    # CHECK: precr_sra_r.ph.w $t9, $t4, 25   # encoding: [0x22,0x23,0xcd,0xcf]
-                                                                            # 0b00100011001000101100111111001101
-  precr_sra_r.ph.w $k0, $a1, 13    # CHECK: precr_sra_r.ph.w $k0, $a1, 13   # encoding: [0x45,0x23,0xcd,0x6f]
-                                                                            # 0b00100011010001010110111111001101
-  precr_sra_r.ph.w $a7, $s6, 22    # CHECK: precr_sra_r.ph.w $a7, $s6, 22   # encoding: [0x76,0x21,0xcd,0xb7]
-                                                                            # 0b00100001011101101011011111001101
-  cmp.eq.ph       $s5, $ra         # CHECK: cmp.eq.ph       $s5, $ra        # encoding: [0xf5,0x23,0x05,0x00]
-                                                                            # 0b00100011111101010000000000000101
-  cmp.eq.ph       $s4, $s5         # CHECK: cmp.eq.ph       $s4, $s5        # encoding: [0xb4,0x22,0x05,0x00]
-                                                                            # 0b00100010101101000000000000000101
-  cmp.eq.ph       $at, $t0         # CHECK: cmp.eq.ph       $at, $t0        # encoding: [0x81,0x21,0x05,0x00]
-                                                                            # 0b00100001100000010000000000000101
-  cmp.le.ph       $s2, $a6         # CHECK: cmp.le.ph       $s2, $a6        # encoding: [0x52,0x21,0x85,0x00]
-                                                                            # 0b00100001010100100000000010000101
-  cmp.le.ph       $a5, $zero         # CHECK: cmp.le.ph       $a5, $zero        # encoding: [0x09,0x20,0x85,0x00]
-                                                                                # 0b00100000000010010000000010000101
-  cmp.le.ph       $s0, $s4         # CHECK: cmp.le.ph       $s0, $s4        # encoding: [0x90,0x22,0x85,0x00]
-                                                                            # 0b00100010100100000000000010000101
-  cmp.lt.ph       $a0, $t0         # CHECK: cmp.lt.ph       $a0, $t0        # encoding: [0x84,0x21,0x45,0x00]
-                                                                            # 0b00100001100001000000000001000101
-  cmp.lt.ph       $ra, $s2         # CHECK: cmp.lt.ph       $ra, $s2        # encoding: [0x5f,0x22,0x45,0x00]
-                                                                            # 0b00100010010111110000000001000101
-  cmp.lt.ph       $t8, $t9         # CHECK: cmp.lt.ph       $t8, $t9        # encoding: [0x38,0x23,0x45,0x00]
-                                                                            # 0b00100011001110000000000001000101
-  cmpu.eq.qb      $a2, $k1         # CHECK: cmpu.eq.qb      $a2, $k1        # encoding: [0x66,0x23,0x45,0x02]
-                                                                            # 0b00100011011001100000001001000101
-  cmpu.eq.qb      $zero, $a3         # CHECK: cmpu.eq.qb      $zero, $a3        # encoding: [0xe0,0x20,0x45,0x02]
-                                                                                # 0b00100000111000000000001001000101
-  cmpu.eq.qb      $a4, $t5         # CHECK: cmpu.eq.qb      $a4, $t5        # encoding: [0x68,0x20,0x45,0x02]
-                                                                            # 0b00100000011010000000001001000101
-  cmpu.le.qb      $t8, $s6         # CHECK: cmpu.le.qb      $t8, $s6        # encoding: [0xd8,0x22,0xc5,0x02]
-                                                                            # 0b00100010110110000000001011000101
-  cmpu.le.qb      $k1, $s1         # CHECK: cmpu.le.qb      $k1, $s1        # encoding: [0x3b,0x22,0xc5,0x02]
-                                                                            # 0b00100010001110110000001011000101
-  cmpu.le.qb      $s4, $s6         # CHECK: cmpu.le.qb      $s4, $s6        # encoding: [0xd4,0x22,0xc5,0x02]
-                                                                            # 0b00100010110101000000001011000101
-  cmpu.lt.qb      $a3, $zero         # CHECK: cmpu.lt.qb      $a3, $zero        # encoding: [0x07,0x20,0x85,0x02]
-                                                                                # 0b00100000000001110000001010000101
-  cmpu.lt.qb      $t3, $s0         # CHECK: cmpu.lt.qb      $t3, $s0        # encoding: [0x0f,0x22,0x85,0x02]
-                                                                            # 0b00100010000011110000001010000101
-  cmpu.lt.qb      $k0, $a6         # CHECK: cmpu.lt.qb      $k0, $a6        # encoding: [0x5a,0x21,0x85,0x02]
-                                                                            # 0b00100001010110100000001010000101
-  rddsp           $t3, 123         # CHECK: rddsp           $t3, 123        # encoding: [0xfe,0x21,0x7f,0xc6]
-                                                                            # 0b00100001111111101100011001111111
-  rddsp           $t4, 33          # CHECK: rddsp           $t4, 33         # encoding: [0x48,0x20,0x7f,0x46]
-                                                                            # 0b00100000010010000100011001111111
-  rddsp           $k1, 66          # CHECK: rddsp           $k1, 66         # encoding: [0x70,0x23,0x7f,0x86]
-                                                                            # 0b00100011011100001000011001111111
-  wrdsp           $s4, 35          # CHECK: wrdsp           $s4, 35         # encoding: [0x88,0x22,0x7f,0xd6]
-                                                                            # 0b00100010100010001101011001111111
-  wrdsp           $fp, 36          # CHECK: wrdsp           $fp, 36         # encoding: [0xc9,0x23,0x7f,0x16]
-                                                                            # 0b00100011110010010001011001111111
-  wrdsp           $t0, 101         # CHECK: wrdsp           $t0, 101        # encoding: [0x99,0x21,0x7f,0x56]
-                                                                            # 0b00100001100110010101011001111111
-  repl.ph         $zero, 300          # CHECK: repl.ph         $zero, 300         # encoding: [0x09,0x20,0x3d,0x60]
-                                                                                  # 0b00100000000010010110000000111101
-  repl.ph         $a3, -280          # CHECK: repl.ph         $a3, -280         # encoding: [0xf7,0x20,0x3d,0x40]
-                                                                                # 0b00100000111101110100000000111101
-  repl.ph         $t4, 48          # CHECK: repl.ph         $t4, 48         # encoding: [0x41,0x20,0x3d,0x80]
-                                                                            # 0b00100000010000011000000000111101
-  repl.qb         $a2, 89          # CHECK: repl.qb         $a2, 89         # encoding: [0xcb,0x20,0xff,0x25]
-                                                                            # 0b00100000110010110010010111111111
-  repl.qb         $k1, 231          # CHECK: repl.qb         $k1, 231         # encoding: [0x7c,0x23,0xff,0xe5]
-                                                                              # 0b00100011011111001110010111111111
-  repl.qb         $k0, 209          # CHECK: repl.qb         $k0, 209         # encoding: [0x5a,0x23,0xff,0x25]
-                                                                              # 0b00100011010110100010010111111111
-  mfhi            $a2, $ac0         # CHECK: mfhi            $a2, $ac0        # encoding: [0xc0,0x20,0x7f,0x00]
-                                                                              # 0b00100000110000000000000001111111
-  mfhi            $zero, $ac2         # CHECK: mfhi            $zero, $ac2        # encoding: [0x00,0x20,0x7f,0x80]
-                                                                                  # 0b00100000000000001000000001111111
-  mfhi            $s0, $ac3         # CHECK: mfhi            $s0, $ac3        # encoding: [0x00,0x22,0x7f,0xc0]
-                                                                              # 0b00100010000000001100000001111111
-  mflo            $t8, $ac0         # CHECK: mflo            $t8, $ac0        # encoding: [0x00,0x23,0x7f,0x10]
-                                                                              # 0b00100011000000000001000001111111
-  mflo            $s6, $ac0         # CHECK: mflo            $s6, $ac0        # encoding: [0xc0,0x22,0x7f,0x10]
-                                                                              # 0b00100010110000000001000001111111
-  mflo            $s1, $ac3         # CHECK: mflo            $s1, $ac3        # encoding: [0x20,0x22,0x7f,0xd0]
-                                                                              # 0b00100010001000001101000001111111
-  shilo           $ac3, 8          # CHECK: shilo           $ac3, 8         # encoding: [0x08,0x20,0x1d,0xc0]
-                                                                            # 0b00100000000010001100000000011101
+  precequ.ph.qbla $s7, $fp         # CHECK: precequ.ph.qbla $s7, $fp        # encoding: [0xfe,0x22,0x3f,0x73]
+                                                                            # 0b00100010111111100111001100111111
+  precequ.ph.qbla $k0, $zero         # CHECK: precequ.ph.qbla $k0, $zero        # encoding: [0x40,0x23,0x3f,0x73]
+                                                                                # 0b00100011010000000111001100111111
+  precequ.ph.qbr  $a6, $t9         # CHECK: precequ.ph.qbr  $a6, $t9        # encoding: [0x59,0x21,0x3f,0x91]
+                                                                            # 0b00100001010110011001000100111111
+  precequ.ph.qbr  $a0, $t1         # CHECK: precequ.ph.qbr  $a0, $t1        # encoding: [0x8d,0x20,0x3f,0x91]
+                                                                            # 0b00100000100011011001000100111111
+  precequ.ph.qbr  $s1, $s4         # CHECK: precequ.ph.qbr  $s1, $s4        # encoding: [0x34,0x22,0x3f,0x91]
+                                                                            # 0b00100010001101001001000100111111
+  precequ.ph.qbra $t2, $s3         # CHECK: precequ.ph.qbra $t2, $s3        # encoding: [0xd3,0x21,0x3f,0x93]
+                                                                            # 0b00100001110100111001001100111111
+  precequ.ph.qbra $k1, $s1         # CHECK: precequ.ph.qbra $k1, $s1        # encoding: [0x71,0x23,0x3f,0x93]
+                                                                            # 0b00100011011100011001001100111111
+  precequ.ph.qbra $s5, $k0         # CHECK: precequ.ph.qbra $s5, $k0        # encoding: [0xba,0x22,0x3f,0x93]
+                                                                            # 0b00100010101110101001001100111111
+  preceu.ph.qbl   $zero, $s1         # CHECK: preceu.ph.qbl   $zero, $s1        # encoding: [0x11,0x20,0x3f,0xb1]
+                                                                                # 0b00100000000100011011000100111111
+  preceu.ph.qbl   $zero, $a3         # CHECK: preceu.ph.qbl   $zero, $a3        # encoding: [0x07,0x20,0x3f,0xb1]
+                                                                                # 0b00100000000001111011000100111111
+  preceu.ph.qbl   $a6, $a4         # CHECK: preceu.ph.qbl   $a6, $a4        # encoding: [0x48,0x21,0x3f,0xb1]
+                                                                            # 0b00100001010010001011000100111111
+  preceu.ph.qbla  $s0, $a3         # CHECK: preceu.ph.qbla  $s0, $a3        # encoding: [0x07,0x22,0x3f,0xb3]
+                                                                            # 0b00100010000001111011001100111111
+  preceu.ph.qbla  $a7, $t5         # CHECK: preceu.ph.qbla  $a7, $t5        # encoding: [0x63,0x21,0x3f,0xb3]
+                                                                            # 0b00100001011000111011001100111111
+  preceu.ph.qbla  $t0, $a6         # CHECK: preceu.ph.qbla  $t0, $a6        # encoding: [0x8a,0x21,0x3f,0xb3]
+                                                                            # 0b00100001100010101011001100111111
+  preceu.ph.qbr   $s7, $a6         # CHECK: preceu.ph.qbr   $s7, $a6        # encoding: [0xea,0x22,0x3f,0xd1]
+                                                                            # 0b00100010111010101101000100111111
+  preceu.ph.qbr   $s2, $s6         # CHECK: preceu.ph.qbr   $s2, $s6        # encoding: [0x56,0x22,0x3f,0xd1]
+                                                                            # 0b00100010010101101101000100111111
+  preceu.ph.qbr   $s2, $a6         # CHECK: preceu.ph.qbr   $s2, $a6        # encoding: [0x4a,0x22,0x3f,0xd1]
+                                                                            # 0b00100010010010101101000100111111
+  preceu.ph.qbra  $t1, $t8         # CHECK: preceu.ph.qbra  $t1, $t8        # encoding: [0xb8,0x21,0x3f,0xd3]
+                                                                            # 0b00100001101110001101001100111111
+  preceu.ph.qbra  $zero, $a1         # CHECK: preceu.ph.qbra  $zero, $a1        # encoding: [0x05,0x20,0x3f,0xd3]
+                                                                                # 0b00100000000001011101001100111111
+  preceu.ph.qbra  $k0, $a7         # CHECK: preceu.ph.qbra  $k0, $a7        # encoding: [0x4b,0x23,0x3f,0xd3]
+                                                                            # 0b00100011010010111101001100111111
+  raddu.w.qb      $s5, $t5         # CHECK: raddu.w.qb      $s5, $t5        # encoding: [0xa3,0x22,0x3f,0xf1]
+                                                                            # 0b00100010101000111111000100111111
+  raddu.w.qb      $s6, $s6         # CHECK: raddu.w.qb      $s6, $s6        # encoding: [0xd6,0x22,0x3f,0xf1]
+                                                                            # 0b00100010110101101111000100111111
+  raddu.w.qb      $a5, $a4         # CHECK: raddu.w.qb      $a5, $a4        # encoding: [0x28,0x21,0x3f,0xf1]
+                                                                            # 0b00100001001010001111000100111111
+  replv.ph        $a1, $s6         # CHECK: replv.ph        $a1, $s6        # encoding: [0xb6,0x20,0x3f,0x03]
+                                                                            # 0b00100000101101100000001100111111
+  replv.ph        $a2, $k0         # CHECK: replv.ph        $a2, $k0        # encoding: [0xda,0x20,0x3f,0x03]
+                                                                            # 0b00100000110110100000001100111111
+  replv.ph        $t9, $ra         # CHECK: replv.ph        $t9, $ra        # encoding: [0x3f,0x23,0x3f,0x03]
+                                                                            # 0b00100011001111110000001100111111
+  replv.qb        $ra, $t2         # CHECK: replv.qb        $ra, $t2        # encoding: [0xee,0x23,0x3f,0x13]
+                                                                            # 0b00100011111011100001001100111111
+  replv.qb        $s3, $t0         # CHECK: replv.qb        $s3, $t0        # encoding: [0x6c,0x22,0x3f,0x13]
+                                                                            # 0b00100010011011000001001100111111
+  replv.qb        $s2, $at         # CHECK: replv.qb        $s2, $at        # encoding: [0x41,0x22,0x3f,0x13]
+                                                                            # 0b00100010010000010001001100111111
+  append          $t8, $gp, 17     # CHECK: append          $t8, $gp, 17    # encoding: [0x1c,0x23,0x15,0x8a]
+                                                                            # 0b00100011000111001000101000010101
+  append          $t2, $t5, 16     # CHECK: append          $t2, $t5, 16    # encoding: [0xc3,0x21,0x15,0x82]
+                                                                            # 0b00100001110000111000001000010101
+  append          $t8, $a0, 25     # CHECK: append          $t8, $a0, 25    # encoding: [0x04,0x23,0x15,0xca]
+                                                                            # 0b00100011000001001100101000010101
+  shll_s.w        $s4, $a0, 10     # CHECK: shll_s.w        $s4, $a0, 10    # encoding: [0x84,0x22,0xf5,0x53]
+                                                                            # 0b00100010100001000101001111110101
+  shll_s.w        $t3, $gp, 31     # CHECK: shll_s.w        $t3, $gp, 31    # encoding: [0xfc,0x21,0xf5,0xfb]
+                                                                            # 0b00100001111111001111101111110101
+  shll_s.w        $a7, $a2, 27     # CHECK: shll_s.w        $a7, $a2, 27    # encoding: [0x66,0x21,0xf5,0xdb]
+                                                                            # 0b00100001011001101101101111110101
+  shra_r.w        $s6, $s1, 26     # CHECK: shra_r.w        $s6, $s1, 26    # encoding: [0xd1,0x22,0xf5,0xd2]
+                                                                            # 0b00100010110100011101001011110101
+  shra_r.w        $sp, $s6, 9      # CHECK: shra_r.w        $sp, $s6, 9     # encoding: [0xb6,0x23,0xf5,0x4a]
+                                                                            # 0b00100011101101100100101011110101
+  shra_r.w        $s6, $s1, 28     # CHECK: shra_r.w        $s6, $s1, 28    # encoding: [0xd1,0x22,0xf5,0xe2]
+                                                                            # 0b00100010110100011110001011110101
+  bitrev          $t0, $s5         # CHECK: bitrev          $t0, $s5        # encoding: [0x95,0x21,0x3f,0x31]
+                                                                            # 0b00100001100101010011000100111111
+  bitrev          $a0, $s4         # CHECK: bitrev          $a0, $s4        # encoding: [0x94,0x20,0x3f,0x31]
+                                                                            # 0b00100000100101000011000100111111
+  bitrev          $s1, $s1         # CHECK: bitrev          $s1, $s1        # encoding: [0x31,0x22,0x3f,0x31]
+                                                                            # 0b00100010001100010011000100111111
+  insv            $t9, $a2         # CHECK: insv            $t9, $a2        # encoding: [0x26,0x23,0x3f,0x41]
+                                                                            # 0b00100011001001100100000100111111
+  insv            $s6, $a0         # CHECK: insv            $s6, $a0        # encoding: [0xc4,0x22,0x3f,0x41]
+                                                                            # 0b00100010110001000100000100111111
+  insv            $zero, $t5         # CHECK: insv            $zero, $t5        # encoding: [0x03,0x20,0x3f,0x41]
+                                                                                # 0b00100000000000110100000100111111
+  madd            $ac2, $k1, $at    # CHECK: madd            $ac2, $k1, $at   # encoding: [0x3b,0x20,0xbf,0x8a]
+                                                                              # 0b00100000001110111000101010111111
+  madd            $ac3, $zero, $t8    # CHECK: madd            $ac3, $zero, $t8   # encoding: [0x00,0x23,0xbf,0xca]
+                                                                                  # 0b00100011000000001100101010111111
+  madd            $ac2, $gp, $t2    # CHECK: madd            $ac2, $gp, $t2   # encoding: [0xdc,0x21,0xbf,0x8a]
+                                                                              # 0b00100001110111001000101010111111
+  maddu           $ac2, $s7, $t0    # CHECK: maddu           $ac2, $s7, $t0   # encoding: [0x97,0x21,0xbf,0x9a]
+                                                                              # 0b00100001100101111001101010111111
+  maddu           $ac2, $s6, $s3    # CHECK: maddu           $ac2, $s6, $s3   # encoding: [0x76,0x22,0xbf,0x9a]
+                                                                              # 0b00100010011101101001101010111111
+  maddu           $ac0, $s4, $s2    # CHECK: maddu           $ac0, $s4, $s2   # encoding: [0x54,0x22,0xbf,0x1a]
+                                                                              # 0b00100010010101000001101010111111
+  msub            $ac1, $s2, $a4    # CHECK: msub            $ac1, $s2, $a4   # encoding: [0x12,0x21,0xbf,0x6a]
+                                                                              # 0b00100001000100100110101010111111
+  msub            $ac0, $a2, $a4    # CHECK: msub            $ac0, $a2, $a4   # encoding: [0x06,0x21,0xbf,0x2a]
+                                                                              # 0b00100001000001100010101010111111
+  msub            $ac2, $at, $t2    # CHECK: msub            $ac2, $at, $t2   # encoding: [0xc1,0x21,0xbf,0xaa]
+                                                                              # 0b00100001110000011010101010111111
+  msubu           $ac0, $ra, $ra    # CHECK: msubu           $ac0, $ra, $ra   # encoding: [0xff,0x23,0xbf,0x3a]
+                                                                              # 0b00100011111111110011101010111111
+  msubu           $ac3, $s6, $k0    # CHECK: msubu           $ac3, $s6, $k0   # encoding: [0x56,0x23,0xbf,0xfa]
+                                                                              # 0b00100011010101101111101010111111
+  msubu           $ac1, $s7, $t5    # CHECK: msubu           $ac1, $s7, $t5   # encoding: [0x77,0x20,0xbf,0x7a]
+                                                                              # 0b00100000011101110111101010111111
+  mult            $ac3, $t1, $a6    # CHECK: mult            $ac3, $t1, $a6   # encoding: [0x4d,0x21,0xbf,0xcc]
+                                                                              # 0b00100001010011011100110010111111
+  mult            $ac3, $t2, $a3    # CHECK: mult            $ac3, $t2, $a3   # encoding: [0xee,0x20,0xbf,0xcc]
+                                                                              # 0b00100000111011101100110010111111
+  mult            $ac1, $a6, $sp    # CHECK: mult            $ac1, $a6, $sp   # encoding: [0xaa,0x23,0xbf,0x4c]
+                                                                              # 0b00100011101010100100110010111111
+  multu           $ac1, $t3, $sp    # CHECK: multu           $ac1, $t3, $sp   # encoding: [0xaf,0x23,0xbf,0x5c]
+                                                                              # 0b00100011101011110101110010111111
+  multu           $ac3, $t1, $k1    # CHECK: multu           $ac3, $t1, $k1   # encoding: [0x6d,0x23,0xbf,0xdc]
+                                                                              # 0b00100011011011011101110010111111
+  multu           $ac1, $a6, $fp    # CHECK: multu           $ac1, $a6, $fp   # encoding: [0xca,0x23,0xbf,0x5c]
+                                                                              # 0b00100011110010100101110010111111
+  extrv_r.w       $a2, $ac3, $t9    # CHECK: extrv_r.w       $a2, $ac3, $t9   # encoding: [0xd9,0x20,0xbf,0xde]
+                                                                              # 0b00100000110110011101111010111111
+  extrv_r.w       $gp, $ac1, $a4    # CHECK: extrv_r.w       $gp, $ac1, $a4   # encoding: [0x88,0x23,0xbf,0x5e]
+                                                                              # 0b00100011100010000101111010111111
+  extrv_r.w       $s7, $ac3, $a2    # CHECK: extrv_r.w       $s7, $ac3, $a2   # encoding: [0xe6,0x22,0xbf,0xde]
+                                                                              # 0b00100010111001101101111010111111
+  extrv_rs.w      $t4, $ac3, $s6    # CHECK: extrv_rs.w      $t4, $ac3, $s6   # encoding: [0x56,0x20,0xbf,0xee]
+                                                                              # 0b00100000010101101110111010111111
+  extrv_rs.w      $s0, $ac1, $s4    # CHECK: extrv_rs.w      $s0, $ac1, $s4   # encoding: [0x14,0x22,0xbf,0x6e]
+                                                                              # 0b00100010000101000110111010111111
+  extrv_rs.w      $t2, $ac0, $t9    # CHECK: extrv_rs.w      $t2, $ac0, $t9   # encoding: [0xd9,0x21,0xbf,0x2e]
+                                                                              # 0b00100001110110010010111010111111
+  extrv.w         $k1, $ac2, $t3    # CHECK: extrv.w         $k1, $ac2, $t3   # encoding: [0x6f,0x23,0xbf,0x8e]
+                                                                              # 0b00100011011011111000111010111111
+  extrv.w         $a1, $ac2, $a7    # CHECK: extrv.w         $a1, $ac2, $a7   # encoding: [0xab,0x20,0xbf,0x8e]
+                                                                              # 0b00100000101010111000111010111111
+  extrv.w         $sp, $ac0, $s3    # CHECK: extrv.w         $sp, $ac0, $s3   # encoding: [0xb3,0x23,0xbf,0x0e]
+                                                                              # 0b00100011101100110000111010111111
+  extrv_s.h       $k0, $ac2, $a5    # CHECK: extrv_s.h       $k0, $ac2, $a5   # encoding: [0x49,0x23,0xbf,0xbe]
+                                                                              # 0b00100011010010011011111010111111
+  extrv_s.h       $t0, $ac3, $s2    # CHECK: extrv_s.h       $t0, $ac3, $s2   # encoding: [0x92,0x21,0xbf,0xfe]
+                                                                              # 0b00100001100100101111111010111111
+  extrv_s.h       $s3, $ac3, $fp    # CHECK: extrv_s.h       $s3, $ac3, $fp   # encoding: [0x7e,0x22,0xbf,0xfe]
+                                                                              # 0b00100010011111101111111010111111
+  extpv           $s7, $ac1, $k1    # CHECK: extpv           $s7, $ac1, $k1   # encoding: [0xfb,0x22,0xbf,0x68]
+                                                                              # 0b00100010111110110110100010111111
+  extpv           $a3, $ac3, $a4    # CHECK: extpv           $a3, $ac3, $a4   # encoding: [0xe8,0x20,0xbf,0xe8]
+                                                                              # 0b00100000111010001110100010111111
+  extpv           $a5, $ac2, $t3    # CHECK: extpv           $a5, $ac2, $t3   # encoding: [0x2f,0x21,0xbf,0xa8]
+                                                                              # 0b00100001001011111010100010111111
+  extpdpv         $a3, $ac2, $t1    # CHECK: extpdpv         $a3, $ac2, $t1   # encoding: [0xed,0x20,0xbf,0xb8]
+                                                                              # 0b00100000111011011011100010111111
+  extpdpv         $a0, $ac0, $a0    # CHECK: extpdpv         $a0, $ac0, $a0   # encoding: [0x84,0x20,0xbf,0x38]
+                                                                              # 0b00100000100001000011100010111111
+  extpdpv         $s2, $ac0, $ra    # CHECK: extpdpv         $s2, $ac0, $ra   # encoding: [0x5f,0x22,0xbf,0x38]
+                                                                              # 0b00100010010111110011100010111111
+  dpa.w.ph        $ac1, $t1, $fp    # CHECK: dpa.w.ph        $ac1, $t1, $fp   # encoding: [0xcd,0x23,0xbf,0x40]
+                                                                              # 0b00100011110011010100000010111111
+  dpa.w.ph        $ac1, $at, $t9    # CHECK: dpa.w.ph        $ac1, $at, $t9   # encoding: [0x21,0x23,0xbf,0x40]
+                                                                              # 0b00100011001000010100000010111111
+  dpa.w.ph        $ac0, $t8, $t8    # CHECK: dpa.w.ph        $ac0, $t8, $t8   # encoding: [0x18,0x23,0xbf,0x00]
+                                                                              # 0b00100011000110000000000010111111
+  dpaq_s.w.ph     $ac0, $s1, $t1    # CHECK: dpaq_s.w.ph     $ac0, $s1, $t1   # encoding: [0xb1,0x21,0xbf,0x02]
+                                                                              # 0b00100001101100010000001010111111
+  dpaq_s.w.ph     $ac1, $a1, $s4    # CHECK: dpaq_s.w.ph     $ac1, $a1, $s4   # encoding: [0x85,0x22,0xbf,0x42]
+                                                                              # 0b00100010100001010100001010111111
+  dpaq_s.w.ph     $ac2, $s3, $ra    # CHECK: dpaq_s.w.ph     $ac2, $s3, $ra   # encoding: [0xf3,0x23,0xbf,0x82]
+                                                                              # 0b00100011111100111000001010111111
+  dpaq_sa.l.w     $ac3, $a0, $s5    # CHECK: dpaq_sa.l.w     $ac3, $a0, $s5   # encoding: [0xa4,0x22,0xbf,0xd2]
+                                                                              # 0b00100010101001001101001010111111
+  dpaq_sa.l.w     $ac3, $ra, $a4    # CHECK: dpaq_sa.l.w     $ac3, $ra, $a4   # encoding: [0x1f,0x21,0xbf,0xd2]
+                                                                              # 0b00100001000111111101001010111111
+  dpaq_sa.l.w     $ac1, $s0, $zero    # CHECK: dpaq_sa.l.w     $ac1, $s0, $zero   # encoding: [0x10,0x20,0xbf,0x52]
+                                                                                  # 0b00100000000100000101001010111111
+  dpaqx_s.w.ph    $ac2, $a0, $zero    # CHECK: dpaqx_s.w.ph    $ac2, $a0, $zero   # encoding: [0x04,0x20,0xbf,0xa2]
+                                                                                  # 0b00100000000001001010001010111111
+  dpaqx_s.w.ph    $ac2, $at, $s1    # CHECK: dpaqx_s.w.ph    $ac2, $at, $s1   # encoding: [0x21,0x22,0xbf,0xa2]
+                                                                              # 0b00100010001000011010001010111111
+  dpaqx_s.w.ph    $ac0, $t8, $s4    # CHECK: dpaqx_s.w.ph    $ac0, $t8, $s4   # encoding: [0x98,0x22,0xbf,0x22]
+                                                                              # 0b00100010100110000010001010111111
+  dpaqx_sa.w.ph   $ac1, $s6, $a5    # CHECK: dpaqx_sa.w.ph   $ac1, $s6, $a5   # encoding: [0x36,0x21,0xbf,0x72]
+                                                                              # 0b00100001001101100111001010111111
+  dpaqx_sa.w.ph   $ac3, $gp, $at    # CHECK: dpaqx_sa.w.ph   $ac3, $gp, $at   # encoding: [0x3c,0x20,0xbf,0xf2]
+                                                                              # 0b00100000001111001111001010111111
+  dpaqx_sa.w.ph   $ac1, $a1, $a7    # CHECK: dpaqx_sa.w.ph   $ac1, $a1, $a7   # encoding: [0x65,0x21,0xbf,0x72]
+                                                                              # 0b00100001011001010111001010111111
+  dpau.h.qbl      $ac2, $k0, $a3    # CHECK: dpau.h.qbl      $ac2, $k0, $a3   # encoding: [0xfa,0x20,0xbf,0xa0]
+                                                                              # 0b00100000111110101010000010111111
+  dpau.h.qbl      $ac3, $s6, $fp    # CHECK: dpau.h.qbl      $ac3, $s6, $fp   # encoding: [0xd6,0x23,0xbf,0xe0]
+                                                                              # 0b00100011110101101110000010111111
+  dpau.h.qbl      $ac3, $t1, $t2    # CHECK: dpau.h.qbl      $ac3, $t1, $t2   # encoding: [0xcd,0x21,0xbf,0xe0]
+                                                                              # 0b00100001110011011110000010111111
+  dpau.h.qbr      $ac3, $t0, $sp    # CHECK: dpau.h.qbr      $ac3, $t0, $sp   # encoding: [0xac,0x23,0xbf,0xf0]
+                                                                              # 0b00100011101011001111000010111111
+  dpau.h.qbr      $ac3, $t5, $t2    # CHECK: dpau.h.qbr      $ac3, $t5, $t2   # encoding: [0xc3,0x21,0xbf,0xf0]
+                                                                              # 0b00100001110000111111000010111111
+  dpau.h.qbr      $ac0, $a7, $sp    # CHECK: dpau.h.qbr      $ac0, $a7, $sp   # encoding: [0xab,0x23,0xbf,0x30]
+                                                                              # 0b00100011101010110011000010111111
+  dpax.w.ph       $ac2, $s1, $t2    # CHECK: dpax.w.ph       $ac2, $s1, $t2   # encoding: [0xd1,0x21,0xbf,0x90]
+                                                                              # 0b00100001110100011001000010111111
+  dpax.w.ph       $ac1, $s6, $k0    # CHECK: dpax.w.ph       $ac1, $s6, $k0   # encoding: [0x56,0x23,0xbf,0x50]
+                                                                              # 0b00100011010101100101000010111111
+  dpax.w.ph       $ac2, $at, $a4    # CHECK: dpax.w.ph       $ac2, $at, $a4   # encoding: [0x01,0x21,0xbf,0x90]
+                                                                              # 0b00100001000000011001000010111111
+  dps.w.ph        $ac3, $gp, $t4    # CHECK: dps.w.ph        $ac3, $gp, $t4   # encoding: [0x5c,0x20,0xbf,0xc4]
+                                                                              # 0b00100000010111001100010010111111
+  dps.w.ph        $ac2, $sp, $a1    # CHECK: dps.w.ph        $ac2, $sp, $a1   # encoding: [0xbd,0x20,0xbf,0x84]
+                                                                              # 0b00100000101111011000010010111111
+  dps.w.ph        $ac2, $a0, $a3    # CHECK: dps.w.ph        $ac2, $a0, $a3   # encoding: [0xe4,0x20,0xbf,0x84]
+                                                                              # 0b00100000111001001000010010111111
+  dpsq_s.w.ph     $ac0, $t8, $a0    # CHECK: dpsq_s.w.ph     $ac0, $t8, $a0   # encoding: [0x98,0x20,0xbf,0x06]
+                                                                              # 0b00100000100110000000011010111111
+  dpsq_s.w.ph     $ac3, $s7, $s6    # CHECK: dpsq_s.w.ph     $ac3, $s7, $s6   # encoding: [0xd7,0x22,0xbf,0xc6]
+                                                                              # 0b00100010110101111100011010111111
+  dpsq_s.w.ph     $ac3, $at, $s5    # CHECK: dpsq_s.w.ph     $ac3, $at, $s5   # encoding: [0xa1,0x22,0xbf,0xc6]
+                                                                              # 0b00100010101000011100011010111111
+  dpsq_sa.l.w     $ac2, $s2, $a3    # CHECK: dpsq_sa.l.w     $ac2, $s2, $a3   # encoding: [0xf2,0x20,0xbf,0x96]
+                                                                              # 0b00100000111100101001011010111111
+  dpsq_sa.l.w     $ac1, $t5, $t8    # CHECK: dpsq_sa.l.w     $ac1, $t5, $t8   # encoding: [0x03,0x23,0xbf,0x56]
+                                                                              # 0b00100011000000110101011010111111
+  dpsq_sa.l.w     $ac3, $zero, $s3    # CHECK: dpsq_sa.l.w     $ac3, $zero, $s3   # encoding: [0x60,0x22,0xbf,0xd6]
+                                                                                  # 0b00100010011000001101011010111111
+  dpsqx_s.w.ph    $ac0, $sp, $s1    # CHECK: dpsqx_s.w.ph    $ac0, $sp, $s1   # encoding: [0x3d,0x22,0xbf,0x26]
+                                                                              # 0b00100010001111010010011010111111
+  dpsqx_s.w.ph    $ac0, $t5, $s4    # CHECK: dpsqx_s.w.ph    $ac0, $t5, $s4   # encoding: [0x83,0x22,0xbf,0x26]
+                                                                              # 0b00100010100000110010011010111111
+  dpsqx_s.w.ph    $ac3, $t3, $s5    # CHECK: dpsqx_s.w.ph    $ac3, $t3, $s5   # encoding: [0xaf,0x22,0xbf,0xe6]
+                                                                              # 0b00100010101011111110011010111111
+  dpsqx_sa.w.ph   $ac0, $a4, $a2    # CHECK: dpsqx_sa.w.ph   $ac0, $a4, $a2   # encoding: [0xc8,0x20,0xbf,0x36]
+                                                                              # 0b00100000110010000011011010111111
+  dpsqx_sa.w.ph   $ac3, $s2, $s0    # CHECK: dpsqx_sa.w.ph   $ac3, $s2, $s0   # encoding: [0x12,0x22,0xbf,0xf6]
+                                                                              # 0b00100010000100101111011010111111
+  dpsqx_sa.w.ph   $ac1, $a0, $gp    # CHECK: dpsqx_sa.w.ph   $ac1, $a0, $gp   # encoding: [0x84,0x23,0xbf,0x76]
+                                                                              # 0b00100011100001000111011010111111
+  dpsu.h.qbl      $ac3, $a5, $s0    # CHECK: dpsu.h.qbl      $ac3, $a5, $s0   # encoding: [0x09,0x22,0xbf,0xe4]
+                                                                              # 0b00100010000010011110010010111111
+  dpsu.h.qbl      $ac0, $t0, $at    # CHECK: dpsu.h.qbl      $ac0, $t0, $at   # encoding: [0x2c,0x20,0xbf,0x24]
+                                                                              # 0b00100000001011000010010010111111
+  dpsu.h.qbl      $ac1, $s7, $a2    # CHECK: dpsu.h.qbl      $ac1, $s7, $a2   # encoding: [0xd7,0x20,0xbf,0x64]
+                                                                              # 0b00100000110101110110010010111111
+  dpsu.h.qbr      $ac2, $fp, $s2    # CHECK: dpsu.h.qbr      $ac2, $fp, $s2   # encoding: [0x5e,0x22,0xbf,0xb4]
+                                                                              # 0b00100010010111101011010010111111
+  dpsu.h.qbr      $ac2, $a3, $ra    # CHECK: dpsu.h.qbr      $ac2, $a3, $ra   # encoding: [0xe7,0x23,0xbf,0xb4]
+                                                                              # 0b00100011111001111011010010111111
+  dpsu.h.qbr      $ac1, $t8, $s6    # CHECK: dpsu.h.qbr      $ac1, $t8, $s6   # encoding: [0xd8,0x22,0xbf,0x74]
+                                                                              # 0b00100010110110000111010010111111
+  dpsx.w.ph       $ac0, $k1, $t1    # CHECK: dpsx.w.ph       $ac0, $k1, $t1   # encoding: [0xbb,0x21,0xbf,0x14]
+                                                                              # 0b00100001101110110001010010111111
+  dpsx.w.ph       $ac3, $a6, $t5    # CHECK: dpsx.w.ph       $ac3, $a6, $t5   # encoding: [0x6a,0x20,0xbf,0xd4]
+                                                                              # 0b00100000011010101101010010111111
+  dpsx.w.ph       $ac3, $at, $a6    # CHECK: dpsx.w.ph       $ac3, $at, $a6   # encoding: [0x41,0x21,0xbf,0xd4]
+                                                                              # 0b00100001010000011101010010111111
+  maq_s.w.phl     $ac2, $a6, $t8    # CHECK: maq_s.w.phl     $ac2, $a6, $t8   # encoding: [0x0a,0x23,0x7f,0x9a]
+                                                                              # 0b00100011000010101001101001111111
+  maq_s.w.phl     $ac0, $s4, $s6    # CHECK: maq_s.w.phl     $ac0, $s4, $s6   # encoding: [0xd4,0x22,0x7f,0x1a]
+                                                                              # 0b00100010110101000001101001111111
+  maq_s.w.phl     $ac3, $sp, $ra    # CHECK: maq_s.w.phl     $ac3, $sp, $ra   # encoding: [0xfd,0x23,0x7f,0xda]
+                                                                              # 0b00100011111111011101101001111111
+  maq_sa.w.phl    $ac2, $s6, $t1    # CHECK: maq_sa.w.phl    $ac2, $s6, $t1   # encoding: [0xb6,0x21,0x7f,0xba]
+                                                                              # 0b00100001101101101011101001111111
+  maq_sa.w.phl    $ac0, $sp, $s7    # CHECK: maq_sa.w.phl    $ac0, $sp, $s7   # encoding: [0xfd,0x22,0x7f,0x3a]
+                                                                              # 0b00100010111111010011101001111111
+  maq_sa.w.phl    $ac2, $t3, $t8    # CHECK: maq_sa.w.phl    $ac2, $t3, $t8   # encoding: [0x0f,0x23,0x7f,0xba]
+                                                                              # 0b00100011000011111011101001111111
+  maq_s.w.phr     $ac3, $t4, $s1    # CHECK: maq_s.w.phr     $ac3, $t4, $s1   # encoding: [0x22,0x22,0x7f,0xca]
+                                                                              # 0b00100010001000101100101001111111
+  maq_s.w.phr     $ac0, $gp, $a4    # CHECK: maq_s.w.phr     $ac0, $gp, $a4   # encoding: [0x1c,0x21,0x7f,0x0a]
+                                                                              # 0b00100001000111000000101001111111
+  maq_s.w.phr     $ac1, $s1, $t9    # CHECK: maq_s.w.phr     $ac1, $s1, $t9   # encoding: [0x31,0x23,0x7f,0x4a]
+                                                                              # 0b00100011001100010100101001111111
+  maq_sa.w.phr    $ac2, $s1, $a1    # CHECK: maq_sa.w.phr    $ac2, $s1, $a1   # encoding: [0xb1,0x20,0x7f,0xaa]
+                                                                              # 0b00100000101100011010101001111111
+  maq_sa.w.phr    $ac2, $t3, $at    # CHECK: maq_sa.w.phr    $ac2, $t3, $at   # encoding: [0x2f,0x20,0x7f,0xaa]
+                                                                              # 0b00100000001011111010101001111111
+  maq_sa.w.phr    $ac0, $sp, $s1    # CHECK: maq_sa.w.phr    $ac0, $sp, $s1   # encoding: [0x3d,0x22,0x7f,0x2a]
+                                                                              # 0b00100010001111010010101001111111
+  mulsa.w.ph      $ac2, $s5, $at    # CHECK: mulsa.w.ph      $ac2, $s5, $at   # encoding: [0x35,0x20,0xbf,0xac]
+                                                                              # 0b00100000001101011010110010111111
+  mulsa.w.ph      $ac1, $t0, $s5    # CHECK: mulsa.w.ph      $ac1, $t0, $s5   # encoding: [0xac,0x22,0xbf,0x6c]
+                                                                              # 0b00100010101011000110110010111111
+  mulsa.w.ph      $ac3, $a7, $at    # CHECK: mulsa.w.ph      $ac3, $a7, $at   # encoding: [0x2b,0x20,0xbf,0xec]
+                                                                              # 0b00100000001010111110110010111111
+  mulsaq_s.w.ph   $ac3, $sp, $t1    # CHECK: mulsaq_s.w.ph   $ac3, $sp, $t1   # encoding: [0xbd,0x21,0xbf,0xfc]
+                                                                              # 0b00100001101111011111110010111111
+  mulsaq_s.w.ph   $ac3, $t8, $s1    # CHECK: mulsaq_s.w.ph   $ac3, $t8, $s1   # encoding: [0x38,0x22,0xbf,0xfc]
+                                                                              # 0b00100010001110001111110010111111
+  mulsaq_s.w.ph   $ac3, $a0, $a5    # CHECK: mulsaq_s.w.ph   $ac3, $a0, $a5   # encoding: [0x24,0x21,0xbf,0xfc]
+                                                                              # 0b00100001001001001111110010111111
+  extp            $k1, $ac1, 16    # CHECK: extp            $k1, $ac1, 16   # encoding: [0x70,0x23,0x7f,0x66]
+                                                                            # 0b00100011011100000110011001111111
+  extp            $t9, $ac2, 3     # CHECK: extp            $t9, $ac2, 3    # encoding: [0x23,0x23,0x7f,0xa6]
+                                                                            # 0b00100011001000111010011001111111
+  extp            $zero, $ac2, 1   # CHECK: extp            $zero, $ac2, 1  # encoding: [0x01,0x20,0x7f,0xa6]
+                                                                            # 0b00100000000000011010011001111111
+  extr.w          $s2, $ac0, 15    # CHECK: extr.w          $s2, $ac0, 15   # encoding: [0x4f,0x22,0x7f,0x0e]
+                                                                            # 0b00100010010011110000111001111111
+  extr.w          $a0, $ac2, 29    # CHECK: extr.w          $a0, $ac2, 29   # encoding: [0x9d,0x20,0x7f,0x8e]
+                                                                            # 0b00100000100111011000111001111111
+  extr.w          $at, $ac0, 15    # CHECK: extr.w          $at, $ac0, 15   # encoding: [0x2f,0x20,0x7f,0x0e]
+                                                                            # 0b00100000001011110000111001111111
+  extr_r.w        $t5, $ac0, 9     # CHECK: extr_r.w        $t5, $ac0, 9    # encoding: [0x69,0x20,0x7f,0x1e]
+                                                                            # 0b00100000011010010001111001111111
+  extr_r.w        $a1, $ac1, 31    # CHECK: extr_r.w        $a1, $ac1, 31   # encoding: [0xbf,0x20,0x7f,0x5e]
+                                                                            # 0b00100000101111110101111001111111
+  extr_r.w        $t3, $ac1, 1     # CHECK: extr_r.w        $t3, $ac1, 1    # encoding: [0xe1,0x21,0x7f,0x5e]
+                                                                            # 0b00100001111000010101111001111111
+  extr_rs.w       $sp, $ac0, 11    # CHECK: extr_rs.w       $sp, $ac0, 11   # encoding: [0xab,0x23,0x7f,0x2e]
+                                                                            # 0b00100011101010110010111001111111
+  extr_rs.w       $t1, $ac3, 25    # CHECK: extr_rs.w       $t1, $ac3, 25   # encoding: [0xb9,0x21,0x7f,0xee]
+                                                                            # 0b00100001101110011110111001111111
+  extr_rs.w       $fp, $ac2, 16    # CHECK: extr_rs.w       $fp, $ac2, 16   # encoding: [0xd0,0x23,0x7f,0xae]
+                                                                            # 0b00100011110100001010111001111111
+  extr_s.h        $s0, $ac3, 22    # CHECK: extr_s.h        $s0, $ac3, 22   # encoding: [0x16,0x22,0x7f,0xfe]
+                                                                            # 0b00100010000101101111111001111111
+  extr_s.h        $gp, $ac1, 23    # CHECK: extr_s.h        $gp, $ac1, 23   # encoding: [0x97,0x23,0x7f,0x7e]
+                                                                            # 0b00100011100101110111111001111111
+  extr_s.h        $at, $ac1, 25    # CHECK: extr_s.h        $at, $ac1, 25   # encoding: [0x39,0x20,0x7f,0x7e]
+                                                                            # 0b00100000001110010111111001111111
+  extpdp          $s3, $ac0, 19    # CHECK: extpdp          $s3, $ac0, 19   # encoding: [0x73,0x22,0x7f,0x36]
+                                                                            # 0b00100010011100110011011001111111
+  extpdp          $t3, $ac3, 26    # CHECK: extpdp          $t3, $ac3, 26   # encoding: [0xfa,0x21,0x7f,0xf6]
+                                                                            # 0b00100001111110101111011001111111
+  extpdp          $t3, $ac2, 26    # CHECK: extpdp          $t3, $ac2, 26   # encoding: [0xfa,0x21,0x7f,0xb6]
+                                                                            # 0b00100001111110101011011001111111
+  addq.ph         $s6, $a1, $a7    # CHECK: addq.ph         $s6, $a1, $a7   # encoding: [0x65,0x21,0x0d,0xb0]
+                                                                            # 0b00100001011001011011000000001101
+  addq.ph         $a0, $sp, $s2    # CHECK: addq.ph         $a0, $sp, $s2   # encoding: [0x5d,0x22,0x0d,0x20]
+                                                                            # 0b00100010010111010010000000001101
+  addq.ph         $s5, $s4, $s0    # CHECK: addq.ph         $s5, $s4, $s0   # encoding: [0x14,0x22,0x0d,0xa8]
+                                                                            # 0b00100010000101001010100000001101
+  mul.ph          $s5, $at, $a4    # CHECK: mul.ph          $s5, $at, $a4   # encoding: [0x01,0x21,0x2d,0xa8]
+                                                                            # 0b00100001000000011010100000101101
+  mul.ph          $s0, $t5, $a7    # CHECK: mul.ph          $s0, $t5, $a7   # encoding: [0x63,0x21,0x2d,0x80]
+                                                                            # 0b00100001011000111000000000101101
+  mul.ph          $s0, $at, $t9    # CHECK: mul.ph          $s0, $at, $t9   # encoding: [0x21,0x23,0x2d,0x80]
+                                                                            # 0b00100011001000011000000000101101
+  addu.qb         $a6, $k0, $a3    # CHECK: addu.qb         $a6, $k0, $a3   # encoding: [0xfa,0x20,0xcd,0x50]
+                                                                            # 0b00100000111110100101000011001101
+  addu.qb         $fp, $t8, $k1    # CHECK: addu.qb         $fp, $t8, $k1   # encoding: [0x78,0x23,0xcd,0xf0]
+                                                                            # 0b00100011011110001111000011001101
+  addu.qb         $a3, $at, $t4    # CHECK: addu.qb         $a3, $at, $t4   # encoding: [0x41,0x20,0xcd,0x38]
+                                                                            # 0b00100000010000010011100011001101
+  addu.ph         $zero, $s5, $s4    # CHECK: addu.ph         $zero, $s5, $s4   # encoding: [0x95,0x22,0x0d,0x01]
+                                                                                # 0b00100010100101010000000100001101
+  addu.ph         $s6, $t8, $zero    # CHECK: addu.ph         $s6, $t8, $zero   # encoding: [0x18,0x20,0x0d,0xb1]
+                                                                                # 0b00100000000110001011000100001101
+  addu.ph         $s3, $t8, $a3    # CHECK: addu.ph         $s3, $t8, $a3   # encoding: [0xf8,0x20,0x0d,0x99]
+                                                                            # 0b00100000111110001001100100001101
+  addu_s.ph       $t8, $a1, $t0    # CHECK: addu_s.ph       $t8, $a1, $t0   # encoding: [0x85,0x21,0x0d,0xc5]
+                                                                            # 0b00100001100001011100010100001101
+  addu_s.ph       $s6, $a6, $s1    # CHECK: addu_s.ph       $s6, $a6, $s1   # encoding: [0x2a,0x22,0x0d,0xb5]
+                                                                            # 0b00100010001010101011010100001101
+  addu_s.ph       $t8, $s0, $t2    # CHECK: addu_s.ph       $t8, $s0, $t2   # encoding: [0xd0,0x21,0x0d,0xc5]
+                                                                            # 0b00100001110100001100010100001101
+  adduh.qb        $a5, $t3, $a2    # CHECK: adduh.qb        $a5, $t3, $a2   # encoding: [0xcf,0x20,0x4d,0x49]
+                                                                            # 0b00100000110011110100100101001101
+  adduh.qb        $s2, $k1, $t3    # CHECK: adduh.qb        $s2, $k1, $t3   # encoding: [0xfb,0x21,0x4d,0x91]
+                                                                            # 0b00100001111110111001000101001101
+  adduh.qb        $gp, $s6, $a4    # CHECK: adduh.qb        $gp, $s6, $a4   # encoding: [0x16,0x21,0x4d,0xe1]
+                                                                            # 0b00100001000101101110000101001101
+  adduh_r.qb      $s7, $a0, $a3    # CHECK: adduh_r.qb      $s7, $a0, $a3   # encoding: [0xe4,0x20,0x4d,0xbd]
+                                                                            # 0b00100000111001001011110101001101
+  adduh_r.qb      $ra, $a0, $a5    # CHECK: adduh_r.qb      $ra, $a0, $a5   # encoding: [0x24,0x21,0x4d,0xfd]
+                                                                            # 0b00100001001001001111110101001101
+  adduh_r.qb      $a2, $a7, $a1    # CHECK: adduh_r.qb      $a2, $a7, $a1   # encoding: [0xab,0x20,0x4d,0x35]
+                                                                            # 0b00100000101010110011010101001101
+  subu.ph         $t0, $gp, $a4    # CHECK: subu.ph         $t0, $gp, $a4   # encoding: [0x1c,0x21,0x0d,0x63]
+                                                                            # 0b00100001000111000110001100001101
+  subu.ph         $a0, $s2, $s7    # CHECK: subu.ph         $a0, $s2, $s7   # encoding: [0xf2,0x22,0x0d,0x23]
+                                                                            # 0b00100010111100100010001100001101
+  subu.ph         $t0, $s2, $k1    # CHECK: subu.ph         $t0, $s2, $k1   # encoding: [0x72,0x23,0x0d,0x63]
+                                                                            # 0b00100011011100100110001100001101
+  subu_s.ph       $a4, $t0, $t4    # CHECK: subu_s.ph       $a4, $t0, $t4   # encoding: [0x4c,0x20,0x0d,0x47]
+                                                                            # 0b00100000010011000100011100001101
+  subu_s.ph       $s2, $k0, $t4    # CHECK: subu_s.ph       $s2, $k0, $t4   # encoding: [0x5a,0x20,0x0d,0x97]
+                                                                            # 0b00100000010110101001011100001101
+  subu_s.ph       $a0, $a6, $k0    # CHECK: subu_s.ph       $a0, $a6, $k0   # encoding: [0x4a,0x23,0x0d,0x27]
+                                                                            # 0b00100011010010100010011100001101
+  subq.ph         $s5, $s4, $a5    # CHECK: subq.ph         $s5, $s4, $a5   # encoding: [0x34,0x21,0x0d,0xaa]
+                                                                            # 0b00100001001101001010101000001101
+  subq.ph         $s6, $k0, $t0    # CHECK: subq.ph         $s6, $k0, $t0   # encoding: [0x9a,0x21,0x0d,0xb2]
+                                                                            # 0b00100001100110101011001000001101
+  subq.ph         $a6, $s0, $s4    # CHECK: subq.ph         $a6, $s0, $s4   # encoding: [0x90,0x22,0x0d,0x52]
+                                                                            # 0b00100010100100000101001000001101
+  subu.qb         $a4, $a5, $t9    # CHECK: subu.qb         $a4, $a5, $t9   # encoding: [0x29,0x23,0xcd,0x42]
+                                                                            # 0b00100011001010010100001011001101
+  subu.qb         $sp, $s6, $s2    # CHECK: subu.qb         $sp, $s6, $s2   # encoding: [0x56,0x22,0xcd,0xea]
+                                                                            # 0b00100010010101101110101011001101
+  subu.qb         $s7, $fp, $s1    # CHECK: subu.qb         $s7, $fp, $s1   # encoding: [0x3e,0x22,0xcd,0xba]
+                                                                            # 0b00100010001111101011101011001101
+  subuh.qb        $a7, $k1, $k0    # CHECK: subuh.qb        $a7, $k1, $k0   # encoding: [0x5b,0x23,0x4d,0x5b]
+                                                                            # 0b00100011010110110101101101001101
+  subuh.qb        $a5, $t8, $zero    # CHECK: subuh.qb        $a5, $t8, $zero   # encoding: [0x18,0x20,0x4d,0x4b]
+                                                                                # 0b00100000000110000100101101001101
+  subuh.qb        $s3, $k0, $a6    # CHECK: subuh.qb        $s3, $k0, $a6   # encoding: [0x5a,0x21,0x4d,0x9b]
+                                                                            # 0b00100001010110101001101101001101
+  subuh_r.qb      $k0, $sp, $a0    # CHECK: subuh_r.qb      $k0, $sp, $a0   # encoding: [0x9d,0x20,0x4d,0xd7]
+                                                                            # 0b00100000100111011101011101001101
+  subuh_r.qb      $t5, $s2, $a1    # CHECK: subuh_r.qb      $t5, $s2, $a1   # encoding: [0xb2,0x20,0x4d,0x1f]
+                                                                            # 0b00100000101100100001111101001101
+  subuh_r.qb      $s5, $t5, $s0    # CHECK: subuh_r.qb      $s5, $t5, $s0   # encoding: [0x03,0x22,0x4d,0xaf]
+                                                                            # 0b00100010000000111010111101001101
+  addq_s.ph       $t8, $zero, $t5    # CHECK: addq_s.ph       $t8, $zero, $t5   # encoding: [0x60,0x20,0x0d,0xc4]
+                                                                                # 0b00100000011000001100010000001101
+  addq_s.ph       $a2, $a1, $at    # CHECK: addq_s.ph       $a2, $a1, $at   # encoding: [0x25,0x20,0x0d,0x34]
+                                                                            # 0b00100000001001010011010000001101
+  addq_s.ph       $gp, $fp, $s3    # CHECK: addq_s.ph       $gp, $fp, $s3   # encoding: [0x7e,0x22,0x0d,0xe4]
+                                                                            # 0b00100010011111101110010000001101
+  mul_s.ph        $s5, $s5, $k0    # CHECK: mul_s.ph        $s5, $s5, $k0   # encoding: [0x55,0x23,0x2d,0xac]
+                                                                            # 0b00100011010101011010110000101101
+  mul_s.ph        $t5, $a5, $t5    # CHECK: mul_s.ph        $t5, $a5, $t5   # encoding: [0x69,0x20,0x2d,0x1c]
+                                                                            # 0b00100000011010010001110000101101
+  mul_s.ph        $fp, $a6, $s3    # CHECK: mul_s.ph        $fp, $a6, $s3   # encoding: [0x6a,0x22,0x2d,0xf4]
+                                                                            # 0b00100010011010101111010000101101
+  addu_s.qb       $t2, $t3, $s0    # CHECK: addu_s.qb       $t2, $t3, $s0   # encoding: [0x0f,0x22,0xcd,0x74]
+                                                                            # 0b00100010000011110111010011001101
+  addu_s.qb       $t1, $gp, $t2    # CHECK: addu_s.qb       $t1, $gp, $t2   # encoding: [0xdc,0x21,0xcd,0x6c]
+                                                                            # 0b00100001110111000110110011001101
+  addu_s.qb       $k0, $t5, $a6    # CHECK: addu_s.qb       $k0, $t5, $a6   # encoding: [0x43,0x21,0xcd,0xd4]
+                                                                            # 0b00100001010000111101010011001101
+  subq_s.ph       $gp, $a2, $a5    # CHECK: subq_s.ph       $gp, $a2, $a5   # encoding: [0x26,0x21,0x0d,0xe6]
+                                                                            # 0b00100001001001101110011000001101
+  subq_s.ph       $t3, $k1, $s6    # CHECK: subq_s.ph       $t3, $k1, $s6   # encoding: [0xdb,0x22,0x0d,0x7e]
+                                                                            # 0b00100010110110110111111000001101
+  subq_s.ph       $t1, $s4, $t2    # CHECK: subq_s.ph       $t1, $s4, $t2   # encoding: [0xd4,0x21,0x0d,0x6e]
+                                                                            # 0b00100001110101000110111000001101
+  subu_s.qb       $t9, $t8, $a2    # CHECK: subu_s.qb       $t9, $t8, $a2   # encoding: [0xd8,0x20,0xcd,0xce]
+                                                                            # 0b00100000110110001100111011001101
+  subu_s.qb       $at, $a5, $gp    # CHECK: subu_s.qb       $at, $a5, $gp   # encoding: [0x89,0x23,0xcd,0x0e]
+                                                                            # 0b00100011100010010000111011001101
+  subu_s.qb       $a1, $a2, $s1    # CHECK: subu_s.qb       $a1, $a2, $s1   # encoding: [0x26,0x22,0xcd,0x2e]
+                                                                            # 0b00100010001001100010111011001101
+  addqh.ph        $fp, $s7, $s0    # CHECK: addqh.ph        $fp, $s7, $s0   # encoding: [0x17,0x22,0x4d,0xf0]
+                                                                            # 0b00100010000101111111000001001101
+  addqh.ph        $ra, $t4, $a7    # CHECK: addqh.ph        $ra, $t4, $a7   # encoding: [0x62,0x21,0x4d,0xf8]
+                                                                            # 0b00100001011000101111100001001101
+  addqh.ph        $t5, $k1, $gp    # CHECK: addqh.ph        $t5, $k1, $gp   # encoding: [0x9b,0x23,0x4d,0x18]
+                                                                            # 0b00100011100110110001100001001101
+  addqh_r.ph      $gp, $t0, $s7    # CHECK: addqh_r.ph      $gp, $t0, $s7   # encoding: [0xec,0x22,0x4d,0xe4]
+                                                                            # 0b00100010111011001110010001001101
+  addqh_r.ph      $s7, $k1, $a5    # CHECK: addqh_r.ph      $s7, $k1, $a5   # encoding: [0x3b,0x21,0x4d,0xbc]
+                                                                            # 0b00100001001110111011110001001101
+  addqh_r.ph      $a7, $s1, $t4    # CHECK: addqh_r.ph      $a7, $s1, $t4   # encoding: [0x51,0x20,0x4d,0x5c]
+                                                                            # 0b00100000010100010101110001001101
+  subqh.ph        $zero, $a1, $a4    # CHECK: subqh.ph        $zero, $a1, $a4   # encoding: [0x05,0x21,0x4d,0x02]
+                                                                                # 0b00100001000001010000001001001101
+  subqh.ph        $a5, $a6, $a5    # CHECK: subqh.ph        $a5, $a6, $a5   # encoding: [0x2a,0x21,0x4d,0x4a]
+                                                                            # 0b00100001001010100100101001001101
+  subqh.ph        $a5, $t0, $k1    # CHECK: subqh.ph        $a5, $t0, $k1   # encoding: [0x6c,0x23,0x4d,0x4a]
+                                                                            # 0b00100011011011000100101001001101
+  subqh_r.ph      $a7, $fp, $gp    # CHECK: subqh_r.ph      $a7, $fp, $gp   # encoding: [0x9e,0x23,0x4d,0x5e]
+                                                                            # 0b00100011100111100101111001001101
+  subqh_r.ph      $sp, $t0, $a2    # CHECK: subqh_r.ph      $sp, $t0, $a2   # encoding: [0xcc,0x20,0x4d,0xee]
+                                                                            # 0b00100000110011001110111001001101
+  subqh_r.ph      $s7, $s1, $s2    # CHECK: subqh_r.ph      $s7, $s1, $s2   # encoding: [0x51,0x22,0x4d,0xbe]
+                                                                            # 0b00100010010100011011111001001101
+  addqh.w         $t1, $t5, $a6    # CHECK: addqh.w         $t1, $t5, $a6   # encoding: [0x43,0x21,0x8d,0x68]
+                                                                            # 0b00100001010000110110100010001101
+  addqh.w         $a1, $k1, $k1    # CHECK: addqh.w         $a1, $k1, $k1   # encoding: [0x7b,0x23,0x8d,0x28]
+                                                                            # 0b00100011011110110010100010001101
+  addqh.w         $s3, $a3, $a1    # CHECK: addqh.w         $s3, $a3, $a1   # encoding: [0xa7,0x20,0x8d,0x98]
+                                                                            # 0b00100000101001111001100010001101
+  addqh_r.w       $gp, $ra, $s4    # CHECK: addqh_r.w       $gp, $ra, $s4   # encoding: [0x9f,0x22,0x8d,0xe4]
+                                                                            # 0b00100010100111111110010010001101
+  addqh_r.w       $a7, $t0, $k0    # CHECK: addqh_r.w       $a7, $t0, $k0   # encoding: [0x4c,0x23,0x8d,0x5c]
+                                                                            # 0b00100011010011000101110010001101
+  addqh_r.w       $s1, $ra, $t5    # CHECK: addqh_r.w       $s1, $ra, $t5   # encoding: [0x7f,0x20,0x8d,0x8c]
+                                                                            # 0b00100000011111111000110010001101
+  subqh.w         $t0, $at, $t2    # CHECK: subqh.w         $t0, $at, $t2   # encoding: [0xc1,0x21,0x8d,0x62]
+                                                                            # 0b00100001110000010110001010001101
+  subqh.w         $gp, $t2, $k1    # CHECK: subqh.w         $gp, $t2, $k1   # encoding: [0x6e,0x23,0x8d,0xe2]
+                                                                            # 0b00100011011011101110001010001101
+  subqh.w         $k1, $s7, $ra    # CHECK: subqh.w         $k1, $s7, $ra   # encoding: [0xf7,0x23,0x8d,0xda]
+                                                                            # 0b00100011111101111101101010001101
+  subqh_r.w       $s3, $t8, $t8    # CHECK: subqh_r.w       $s3, $t8, $t8   # encoding: [0x18,0x23,0x8d,0x9e]
+                                                                            # 0b00100011000110001001111010001101
+  subqh_r.w       $zero, $t0, $t9    # CHECK: subqh_r.w       $zero, $t0, $t9   # encoding: [0x2c,0x23,0x8d,0x06]
+                                                                                # 0b00100011001011000000011010001101
+  subqh_r.w       $ra, $s5, $t8    # CHECK: subqh_r.w       $ra, $s5, $t8   # encoding: [0x15,0x23,0x8d,0xfe]
+                                                                            # 0b00100011000101011111111010001101
+  shllv.ph        $a0, $s1, $t0    # CHECK: shllv.ph        $a0, $s1, $t0   # encoding: [0x2c,0x22,0x8d,0x23]
+                                                                            # 0b00100010001011000010001110001101
+  shllv.ph        $s7, $s2, $a7    # CHECK: shllv.ph        $s7, $s2, $a7   # encoding: [0x4b,0x22,0x8d,0xbb]
+                                                                            # 0b00100010010010111011101110001101
+  shllv.ph        $ra, $a2, $k0    # CHECK: shllv.ph        $ra, $a2, $k0   # encoding: [0xda,0x20,0x8d,0xfb]
+                                                                            # 0b00100000110110101111101110001101
+  shllv_s.ph      $s0, $ra, $t1    # CHECK: shllv_s.ph      $s0, $ra, $t1   # encoding: [0xed,0x23,0x8d,0x87]
+                                                                            # 0b00100011111011011000011110001101
+  shllv_s.ph      $a7, $s4, $at    # CHECK: shllv_s.ph      $a7, $s4, $at   # encoding: [0x81,0x22,0x8d,0x5f]
+                                                                            # 0b00100010100000010101111110001101
+  shllv_s.ph      $fp, $a2, $a5    # CHECK: shllv_s.ph      $fp, $a2, $a5   # encoding: [0xc9,0x20,0x8d,0xf7]
+                                                                            # 0b00100000110010011111011110001101
+  shrav.ph        $ra, $k1, $s5    # CHECK: shrav.ph        $ra, $k1, $s5   # encoding: [0x75,0x23,0x8d,0xf9]
+                                                                            # 0b00100011011101011111100110001101
+  shrav.ph        $t8, $t1, $t2    # CHECK: shrav.ph        $t8, $t1, $t2   # encoding: [0xae,0x21,0x8d,0xc1]
+                                                                            # 0b00100001101011101100000110001101
+  shrav.ph        $a2, $a0, $k1    # CHECK: shrav.ph        $a2, $a0, $k1   # encoding: [0x9b,0x20,0x8d,0x31]
+                                                                            # 0b00100000100110110011000110001101
+  shrav_r.ph      $t5, $s1, $a7    # CHECK: shrav_r.ph      $t5, $s1, $a7   # encoding: [0x2b,0x22,0x8d,0x1d]
+                                                                            # 0b00100010001010110001110110001101
+  shrav_r.ph      $s6, $k1, $zero    # CHECK: shrav_r.ph      $s6, $k1, $zero   # encoding: [0x60,0x23,0x8d,0xb5]
+                                                                                # 0b00100011011000001011010110001101
+  shrav_r.ph      $t5, $t9, $gp    # CHECK: shrav_r.ph      $t5, $t9, $gp   # encoding: [0x3c,0x23,0x8d,0x1d]
+                                                                            # 0b00100011001111000001110110001101
+  shrav.qb        $s6, $s4, $fp    # CHECK: shrav.qb        $s6, $s4, $fp   # encoding: [0x9e,0x22,0xcd,0xb1]
+                                                                            # 0b00100010100111101011000111001101
+  shrav.qb        $a6, $k1, $sp    # CHECK: shrav.qb        $a6, $k1, $sp   # encoding: [0x7d,0x23,0xcd,0x51]
+                                                                            # 0b00100011011111010101000111001101
+  shrav.qb        $s3, $t2, $k1    # CHECK: shrav.qb        $s3, $t2, $k1   # encoding: [0xdb,0x21,0xcd,0x99]
+                                                                            # 0b00100001110110111001100111001101
+  shrav_r.qb      $s1, $s3, $a1    # CHECK: shrav_r.qb      $s1, $s3, $a1   # encoding: [0x65,0x22,0xcd,0x8d]
+                                                                            # 0b00100010011001011000110111001101
+  shrav_r.qb      $s3, $zero, $a5    # CHECK: shrav_r.qb      $s3, $zero, $a5   # encoding: [0x09,0x20,0xcd,0x9d]
+                                                                                # 0b00100000000010011001110111001101
+  shrav_r.qb      $gp, $a6, $a5    # CHECK: shrav_r.qb      $gp, $a6, $a5   # encoding: [0x49,0x21,0xcd,0xe5]
+                                                                            # 0b00100001010010011110010111001101
+  shrav_r.w       $s6, $t0, $t5    # CHECK: shrav_r.w       $s6, $t0, $t5   # encoding: [0x83,0x21,0xd5,0xb2]
+                                                                            # 0b00100001100000111011001011010101
+  shrav_r.w       $a4, $t3, $t3    # CHECK: shrav_r.w       $a4, $t3, $t3   # encoding: [0xef,0x21,0xd5,0x42]
+                                                                            # 0b00100001111011110100001011010101
+  shrav_r.w       $s5, $a2, $k1    # CHECK: shrav_r.w       $s5, $a2, $k1   # encoding: [0xdb,0x20,0xd5,0xaa]
+                                                                            # 0b00100000110110111010101011010101
+  cmpgdu.eq.qb    $ra, $s7, $s0    # CHECK: cmpgdu.eq.qb    $ra, $s7, $s0   # encoding: [0x17,0x22,0x85,0xf9]
+                                                                            # 0b00100010000101111111100110000101
+  cmpgdu.eq.qb    $s5, $s7, $at    # CHECK: cmpgdu.eq.qb    $s5, $s7, $at   # encoding: [0x37,0x20,0x85,0xa9]
+                                                                            # 0b00100000001101111010100110000101
+  cmpgdu.eq.qb    $a0, $t4, $s1    # CHECK: cmpgdu.eq.qb    $a0, $t4, $s1   # encoding: [0x22,0x22,0x85,0x21]
+                                                                            # 0b00100010001000100010000110000101
+  cmpgdu.le.qb    $at, $sp, $fp    # CHECK: cmpgdu.le.qb    $at, $sp, $fp   # encoding: [0xdd,0x23,0x05,0x0a]
+                                                                            # 0b00100011110111010000101000000101
+  cmpgdu.le.qb    $s6, $sp, $a2    # CHECK: cmpgdu.le.qb    $s6, $sp, $a2   # encoding: [0xdd,0x20,0x05,0xb2]
+                                                                            # 0b00100000110111011011001000000101
+  cmpgdu.le.qb    $k0, $zero, $k1    # CHECK: cmpgdu.le.qb    $k0, $zero, $k1   # encoding: [0x60,0x23,0x05,0xd2]
+                                                                                # 0b00100011011000001101001000000101
+  cmpgdu.lt.qb    $a5, $a5, $s5    # CHECK: cmpgdu.lt.qb    $a5, $a5, $s5   # encoding: [0xa9,0x22,0xc5,0x49]
+                                                                            # 0b00100010101010010100100111000101
+  cmpgdu.lt.qb    $s2, $a6, $a2    # CHECK: cmpgdu.lt.qb    $s2, $a6, $a2   # encoding: [0xca,0x20,0xc5,0x91]
+                                                                            # 0b00100000110010101001000111000101
+  cmpgdu.lt.qb    $a1, $s3, $a2    # CHECK: cmpgdu.lt.qb    $a1, $s3, $a2   # encoding: [0xd3,0x20,0xc5,0x29]
+                                                                            # 0b00100000110100110010100111000101
+  cmpgu.eq.qb     $at, $sp, $t2    # CHECK: cmpgu.eq.qb     $at, $sp, $t2   # encoding: [0xdd,0x21,0xc5,0x08]
+                                                                            # 0b00100001110111010000100011000101
+  cmpgu.eq.qb     $s3, $a4, $s5    # CHECK: cmpgu.eq.qb     $s3, $a4, $s5   # encoding: [0xa8,0x22,0xc5,0x98]
+                                                                            # 0b00100010101010001001100011000101
+  cmpgu.eq.qb     $gp, $a1, $s7    # CHECK: cmpgu.eq.qb     $gp, $a1, $s7   # encoding: [0xe5,0x22,0xc5,0xe0]
+                                                                            # 0b00100010111001011110000011000101
+  cmpgu.le.qb     $a3, $t8, $sp    # CHECK: cmpgu.le.qb     $a3, $t8, $sp   # encoding: [0xb8,0x23,0x45,0x39]
+                                                                            # 0b00100011101110000011100101000101
+  cmpgu.le.qb     $s4, $k0, $gp    # CHECK: cmpgu.le.qb     $s4, $k0, $gp   # encoding: [0x9a,0x23,0x45,0xa1]
+                                                                            # 0b00100011100110101010000101000101
+  cmpgu.le.qb     $a1, $a5, $sp    # CHECK: cmpgu.le.qb     $a1, $a5, $sp   # encoding: [0xa9,0x23,0x45,0x29]
+                                                                            # 0b00100011101010010010100101000101
+  cmpgu.lt.qb     $t9, $t4, $a2    # CHECK: cmpgu.lt.qb     $t9, $t4, $a2   # encoding: [0xc2,0x20,0x05,0xc9]
+                                                                            # 0b00100000110000101100100100000101
+  cmpgu.lt.qb     $sp, $t0, $k1    # CHECK: cmpgu.lt.qb     $sp, $t0, $k1   # encoding: [0x6c,0x23,0x05,0xe9]
+                                                                            # 0b00100011011011001110100100000101
+  cmpgu.lt.qb     $t1, $t5, $t8    # CHECK: cmpgu.lt.qb     $t1, $t5, $t8   # encoding: [0x03,0x23,0x05,0x69]
+                                                                            # 0b00100011000000110110100100000101
+  precrq.ph.w     $s4, $ra, $t0    # CHECK: precrq.ph.w     $s4, $ra, $t0   # encoding: [0x9f,0x21,0xed,0xa0]
+                                                                            # 0b00100001100111111010000011101101
+  precrq.ph.w     $t3, $t0, $s7    # CHECK: precrq.ph.w     $t3, $t0, $s7   # encoding: [0xec,0x22,0xed,0x78]
+                                                                            # 0b00100010111011000111100011101101
+  precrq.ph.w     $s4, $fp, $a1    # CHECK: precrq.ph.w     $s4, $fp, $a1   # encoding: [0xbe,0x20,0xed,0xa0]
+                                                                            # 0b00100000101111101010000011101101
+  precr.qb.ph     $gp, $t5, $t1    # CHECK: precr.qb.ph     $gp, $t5, $t1   # encoding: [0xa3,0x21,0x6d,0xe0]
+                                                                            # 0b00100001101000111110000001101101
+  precr.qb.ph     $a3, $t3, $t8    # CHECK: precr.qb.ph     $a3, $t3, $t8   # encoding: [0x0f,0x23,0x6d,0x38]
+                                                                            # 0b00100011000011110011100001101101
+  precr.qb.ph     $a0, $t1, $s1    # CHECK: precr.qb.ph     $a0, $t1, $s1   # encoding: [0x2d,0x22,0x6d,0x20]
+                                                                            # 0b00100010001011010010000001101101
+  precrq.qb.ph    $s6, $zero, $a6    # CHECK: precrq.qb.ph    $s6, $zero, $a6   # encoding: [0x40,0x21,0xad,0xb0]
+                                                                                # 0b00100001010000001011000010101101
+  precrq.qb.ph    $a5, $ra, $s5    # CHECK: precrq.qb.ph    $a5, $ra, $s5   # encoding: [0xbf,0x22,0xad,0x48]
+                                                                            # 0b00100010101111110100100010101101
+  precrq.qb.ph    $a6, $t4, $a6    # CHECK: precrq.qb.ph    $a6, $t4, $a6   # encoding: [0x42,0x21,0xad,0x50]
+                                                                            # 0b00100001010000100101000010101101
+  precrqu_s.qb.ph $t3, $t3, $s3    # CHECK: precrqu_s.qb.ph $t3, $t3, $s3   # encoding: [0x6f,0x22,0x6d,0x79]
+                                                                            # 0b00100010011011110111100101101101
+  precrqu_s.qb.ph $t4, $sp, $t5    # CHECK: precrqu_s.qb.ph $t4, $sp, $t5   # encoding: [0x7d,0x20,0x6d,0x11]
+                                                                            # 0b00100000011111010001000101101101
+  precrqu_s.qb.ph $a4, $s4, $t4    # CHECK: precrqu_s.qb.ph $a4, $s4, $t4   # encoding: [0x54,0x20,0x6d,0x41]
+                                                                            # 0b00100000010101000100000101101101
+  precrq_rs.ph.w  $s5, $t3, $s1    # CHECK: precrq_rs.ph.w  $s5, $t3, $s1   # encoding: [0x2f,0x22,0x2d,0xa9]
+                                                                            # 0b00100010001011111010100100101101
+  precrq_rs.ph.w  $s2, $a4, $s1    # CHECK: precrq_rs.ph.w  $s2, $a4, $s1   # encoding: [0x28,0x22,0x2d,0x91]
+                                                                            # 0b00100010001010001001000100101101
+  precrq_rs.ph.w  $s6, $a1, $t0    # CHECK: precrq_rs.ph.w  $s6, $a1, $t0   # encoding: [0x85,0x21,0x2d,0xb1]
+                                                                            # 0b00100001100001011011000100101101
+  packrl.ph       $s1, $a1, $gp    # CHECK: packrl.ph       $s1, $a1, $gp   # encoding: [0x85,0x23,0xad,0x89]
+                                                                            # 0b00100011100001011000100110101101
+  packrl.ph       $gp, $a1, $a0    # CHECK: packrl.ph       $gp, $a1, $a0   # encoding: [0x85,0x20,0xad,0xe1]
+                                                                            # 0b00100000100001011110000110101101
+  packrl.ph       $a5, $t3, $s4    # CHECK: packrl.ph       $a5, $t3, $s4   # encoding: [0x8f,0x22,0xad,0x49]
+                                                                            # 0b00100010100011110100100110101101
+  pick.qb         $zero, $k0, $at    # CHECK: pick.qb         $zero, $k0, $at   # encoding: [0x3a,0x20,0xed,0x01]
+                                                                                # 0b00100000001110100000000111101101
+  pick.qb         $sp, $t5, $a2    # CHECK: pick.qb         $sp, $t5, $a2   # encoding: [0xc3,0x20,0xed,0xe9]
+                                                                            # 0b00100000110000111110100111101101
+  pick.qb         $sp, $k0, $a7    # CHECK: pick.qb         $sp, $k0, $a7   # encoding: [0x7a,0x21,0xed,0xe9]
+                                                                            # 0b00100001011110101110100111101101
+  pick.ph         $t5, $a2, $t0    # CHECK: pick.ph         $t5, $a2, $t0   # encoding: [0x86,0x21,0x2d,0x1a]
+                                                                            # 0b00100001100001100001101000101101
+  pick.ph         $a6, $t9, $t3    # CHECK: pick.ph         $a6, $t9, $t3   # encoding: [0xf9,0x21,0x2d,0x52]
+                                                                            # 0b00100001111110010101001000101101
+  pick.ph         $t3, $a5, $s2    # CHECK: pick.ph         $t3, $a5, $s2   # encoding: [0x49,0x22,0x2d,0x7a]
+                                                                            # 0b00100010010010010111101000101101
+  shllv_s.w       $s5, $a3, $a3    # CHECK: shllv_s.w       $s5, $a3, $a3   # encoding: [0xe7,0x20,0xd5,0xab]
+                                                                            # 0b00100000111001111010101111010101
+  shllv_s.w       $zero, $t0, $at    # CHECK: shllv_s.w       $zero, $t0, $at   # encoding: [0x81,0x21,0xd5,0x03]
+                                                                                # 0b00100001100000010000001111010101
+  shllv_s.w       $s5, $ra, $t5    # CHECK: shllv_s.w       $s5, $ra, $t5   # encoding: [0xe3,0x23,0xd5,0xab]
+                                                                            # 0b00100011111000111010101111010101
+  shllv.qb        $t0, $s4, $a7    # CHECK: shllv.qb        $t0, $s4, $a7   # encoding: [0x8b,0x22,0x95,0x63]
+                                                                            # 0b00100010100010110110001110010101
+  shllv.qb        $s4, $t4, $s1    # CHECK: shllv.qb        $s4, $t4, $s1   # encoding: [0x51,0x20,0x95,0xa3]
+                                                                            # 0b00100000010100011010001110010101
+  shllv.qb        $a2, $s1, $t1    # CHECK: shllv.qb        $a2, $s1, $t1   # encoding: [0x2d,0x22,0x95,0x33]
+                                                                            # 0b00100010001011010011001110010101
+  shrlv.ph        $s2, $a5, $a6    # CHECK: shrlv.ph        $s2, $a5, $a6   # encoding: [0x2a,0x21,0x15,0x93]
+                                                                            # 0b00100001001010101001001100010101
+  shrlv.ph        $fp, $s0, $t4    # CHECK: shrlv.ph        $fp, $s0, $t4   # encoding: [0x02,0x22,0x15,0xf3]
+                                                                            # 0b00100010000000101111001100010101
+  shrlv.ph        $gp, $sp, $a5    # CHECK: shrlv.ph        $gp, $sp, $a5   # encoding: [0xa9,0x23,0x15,0xe3]
+                                                                            # 0b00100011101010011110001100010101
+  shrlv.qb        $k0, $a5, $a0    # CHECK: shrlv.qb        $k0, $a5, $a0   # encoding: [0x24,0x21,0x55,0xd3]
+                                                                            # 0b00100001001001001101001101010101
+  shrlv.qb        $t5, $a1, $t4    # CHECK: shrlv.qb        $t5, $a1, $t4   # encoding: [0xa2,0x20,0x55,0x1b]
+                                                                            # 0b00100000101000100001101101010101
+  shrlv.qb        $t9, $k1, $t1    # CHECK: shrlv.qb        $t9, $k1, $t1   # encoding: [0x6d,0x23,0x55,0xcb]
+                                                                            # 0b00100011011011011100101101010101
+  subq_s.w        $s6, $at, $s2    # CHECK: subq_s.w        $s6, $at, $s2   # encoding: [0x41,0x22,0x45,0xb3]
+                                                                            # 0b00100010010000011011001101000101
+  subq_s.w        $s3, $zero, $s0    # CHECK: subq_s.w        $s3, $zero, $s0   # encoding: [0x00,0x22,0x45,0x9b]
+                                                                                # 0b00100010000000001001101101000101
+  subq_s.w        $gp, $k1, $zero    # CHECK: subq_s.w        $gp, $k1, $zero   # encoding: [0x1b,0x20,0x45,0xe3]
+                                                                                # 0b00100000000110111110001101000101
+  modsub          $a5, $fp, $s4    # CHECK: modsub          $a5, $fp, $s4   # encoding: [0x9e,0x22,0x95,0x4a]
+                                                                            # 0b00100010100111100100101010010101
+  modsub          $a3, $s3, $k1    # CHECK: modsub          $a3, $s3, $k1   # encoding: [0x73,0x23,0x95,0x3a]
+                                                                            # 0b00100011011100110011101010010101
+  modsub          $fp, $a7, $t0    # CHECK: modsub          $fp, $a7, $t0   # encoding: [0x8b,0x21,0x95,0xf2]
+                                                                            # 0b00100001100010111111001010010101
+  muleq_s.w.phl   $k0, $t4, $k0    # CHECK: muleq_s.w.phl   $k0, $t4, $k0   # encoding: [0x42,0x23,0x25,0xd0]
+                                                                            # 0b00100011010000101101000000100101
+  muleq_s.w.phl   $gp, $t8, $k0    # CHECK: muleq_s.w.phl   $gp, $t8, $k0   # encoding: [0x58,0x23,0x25,0xe0]
+                                                                            # 0b00100011010110001110000000100101
+  muleq_s.w.phl   $a5, $s3, $t8    # CHECK: muleq_s.w.phl   $a5, $s3, $t8   # encoding: [0x13,0x23,0x25,0x48]
+                                                                            # 0b00100011000100110100100000100101
+  muleq_s.w.phr   $a5, $a0, $s1    # CHECK: muleq_s.w.phr   $a5, $a0, $s1   # encoding: [0x24,0x22,0x65,0x48]
+                                                                            # 0b00100010001001000100100001100101
+  muleq_s.w.phr   $sp, $k0, $k1    # CHECK: muleq_s.w.phr   $sp, $k0, $k1   # encoding: [0x7a,0x23,0x65,0xe8]
+                                                                            # 0b00100011011110101110100001100101
+  muleq_s.w.phr   $a1, $k0, $gp    # CHECK: muleq_s.w.phr   $a1, $k0, $gp   # encoding: [0x9a,0x23,0x65,0x28]
+                                                                            # 0b00100011100110100010100001100101
+  muleu_s.ph.qbl  $a4, $a4, $sp    # CHECK: muleu_s.ph.qbl  $a4, $a4, $sp   # encoding: [0xa8,0x23,0x95,0x40]
+                                                                            # 0b00100011101010000100000010010101
+  muleu_s.ph.qbl  $s5, $s1, $t3    # CHECK: muleu_s.ph.qbl  $s5, $s1, $t3   # encoding: [0xf1,0x21,0x95,0xa8]
+                                                                            # 0b00100001111100011010100010010101
+  muleu_s.ph.qbl  $t5, $t3, $a5    # CHECK: muleu_s.ph.qbl  $t5, $t3, $a5   # encoding: [0x2f,0x21,0x95,0x18]
+                                                                            # 0b00100001001011110001100010010101
+  muleu_s.ph.qbr  $s2, $a5, $s2    # CHECK: muleu_s.ph.qbr  $s2, $a5, $s2   # encoding: [0x49,0x22,0xd5,0x90]
+                                                                            # 0b00100010010010011001000011010101
+  muleu_s.ph.qbr  $t4, $s5, $a2    # CHECK: muleu_s.ph.qbr  $t4, $s5, $a2   # encoding: [0xd5,0x20,0xd5,0x10]
+                                                                            # 0b00100000110101010001000011010101
+  muleu_s.ph.qbr  $sp, $s1, $fp    # CHECK: muleu_s.ph.qbr  $sp, $s1, $fp   # encoding: [0xd1,0x23,0xd5,0xe8]
+                                                                            # 0b00100011110100011110100011010101
+  mulq_rs.ph      $zero, $s0, $k1    # CHECK: mulq_rs.ph      $zero, $s0, $k1   # encoding: [0x70,0x23,0x15,0x01]
+                                                                                # 0b00100011011100000000000100010101
+  mulq_rs.ph      $a7, $fp, $a4    # CHECK: mulq_rs.ph      $a7, $fp, $a4   # encoding: [0x1e,0x21,0x15,0x59]
+                                                                            # 0b00100001000111100101100100010101
+  mulq_rs.ph      $t2, $s4, $a6    # CHECK: mulq_rs.ph      $t2, $s4, $a6   # encoding: [0x54,0x21,0x15,0x71]
+                                                                            # 0b00100001010101000111000100010101
+  mulq_rs.w       $zero, $at, $k1    # CHECK: mulq_rs.w       $zero, $at, $k1   # encoding: [0x61,0x23,0x95,0x01]
+                                                                                # 0b00100011011000010000000110010101
+  mulq_rs.w       $gp, $s6, $k1    # CHECK: mulq_rs.w       $gp, $s6, $k1   # encoding: [0x76,0x23,0x95,0xe1]
+                                                                            # 0b00100011011101101110000110010101
+  mulq_rs.w       $t5, $k1, $a6    # CHECK: mulq_rs.w       $t5, $k1, $a6   # encoding: [0x5b,0x21,0x95,0x19]
+                                                                            # 0b00100001010110110001100110010101
+  mulq_s.ph       $s1, $s2, $sp    # CHECK: mulq_s.ph       $s1, $s2, $sp   # encoding: [0xb2,0x23,0x55,0x89]
+                                                                            # 0b00100011101100101000100101010101
+  mulq_s.ph       $k1, $t3, $k0    # CHECK: mulq_s.ph       $k1, $t3, $k0   # encoding: [0x4f,0x23,0x55,0xd9]
+                                                                            # 0b00100011010011111101100101010101
+  mulq_s.ph       $t4, $a6, $k0    # CHECK: mulq_s.ph       $t4, $a6, $k0   # encoding: [0x4a,0x23,0x55,0x11]
+                                                                            # 0b00100011010010100001000101010101
+  mulq_s.w        $s5, $k1, $s1    # CHECK: mulq_s.w        $s5, $k1, $s1   # encoding: [0x3b,0x22,0xd5,0xa9]
+                                                                            # 0b00100010001110111010100111010101
+  mulq_s.w        $at, $t9, $s1    # CHECK: mulq_s.w        $at, $t9, $s1   # encoding: [0x39,0x22,0xd5,0x09]
+                                                                            # 0b00100010001110010000100111010101
+  mulq_s.w        $gp, $k1, $zero    # CHECK: mulq_s.w        $gp, $k1, $zero   # encoding: [0x1b,0x20,0xd5,0xe1]
+                                                                                # 0b00100000000110111110000111010101
+  addq_s.w        $t3, $t9, $a3    # CHECK: addq_s.w        $t3, $t9, $a3   # encoding: [0xf9,0x20,0x05,0x7b]
+                                                                            # 0b00100000111110010111101100000101
+  addq_s.w        $k0, $s3, $a2    # CHECK: addq_s.w        $k0, $s3, $a2   # encoding: [0xd3,0x20,0x05,0xd3]
+                                                                            # 0b00100000110100111101001100000101
+  addq_s.w        $s5, $s7, $t5    # CHECK: addq_s.w        $s5, $s7, $t5   # encoding: [0x77,0x20,0x05,0xab]
+                                                                            # 0b00100000011101111010101100000101
+  addsc           $s4, $ra, $t5    # CHECK: addsc           $s4, $ra, $t5   # encoding: [0x7f,0x20,0x85,0xa3]
+                                                                            # 0b00100000011111111010001110000101
+  addsc           $t2, $s1, $t9    # CHECK: addsc           $t2, $s1, $t9   # encoding: [0x31,0x23,0x85,0x73]
+                                                                            # 0b00100011001100010111001110000101
+  addsc           $a4, $sp, $gp    # CHECK: addsc           $a4, $sp, $gp   # encoding: [0x9d,0x23,0x85,0x43]
+                                                                            # 0b00100011100111010100001110000101
+  addwc           $s1, $k1, $t2    # CHECK: addwc           $s1, $k1, $t2   # encoding: [0xdb,0x21,0xc5,0x8b]
+                                                                            # 0b00100001110110111000101111000101
+  addwc           $s1, $at, $sp    # CHECK: addwc           $s1, $at, $sp   # encoding: [0xa1,0x23,0xc5,0x8b]
+                                                                            # 0b00100011101000011000101111000101
+  addwc           $a3, $fp, $s2    # CHECK: addwc           $a3, $fp, $s2   # encoding: [0x5e,0x22,0xc5,0x3b]
+                                                                            # 0b00100010010111100011101111000101
+  shll.qb         $t4, $s0, 3      # CHECK: shll.qb         $t4, $s0, 3     # encoding: [0x50,0x20,0x7f,0x68]
+                                                                            # 0b00100000010100000110100001111111
+  shll.qb         $t8, $a0, 3      # CHECK: shll.qb         $t8, $a0, 3     # encoding: [0x04,0x23,0x7f,0x68]
+                                                                            # 0b00100011000001000110100001111111
+  shll.qb         $sp, $s5, 0      # CHECK: shll.qb         $sp, $s5, 0     # encoding: [0xb5,0x23,0x7f,0x08]
+                                                                            # 0b00100011101101010000100001111111
+  shrl.qb         $ra, $k1, 3      # CHECK: shrl.qb         $ra, $k1, 3     # encoding: [0xfb,0x23,0x7f,0x78]
+                                                                            # 0b00100011111110110111100001111111
+  shrl.qb         $a7, $a7, 5      # CHECK: shrl.qb         $a7, $a7, 5     # encoding: [0x6b,0x21,0x7f,0xb8]
+                                                                            # 0b00100001011010111011100001111111
+  shrl.qb         $a3, $a6, 1      # CHECK: shrl.qb         $a3, $a6, 1     # encoding: [0xea,0x20,0x7f,0x38]
+                                                                            # 0b00100000111010100011100001111111
+  shra.qb         $k0, $at, 3      # CHECK: shra.qb         $k0, $at, 3     # encoding: [0x41,0x23,0xff,0x61]
+                                                                            # 0b00100011010000010110000111111111
+  shra.qb         $fp, $k1, 5      # CHECK: shra.qb         $fp, $k1, 5     # encoding: [0xdb,0x23,0xff,0xa1]
+                                                                            # 0b00100011110110111010000111111111
+  shra.qb         $a3, $s7, 4      # CHECK: shra.qb         $a3, $s7, 4     # encoding: [0xf7,0x20,0xff,0x81]
+                                                                            # 0b00100000111101111000000111111111
+  shra_r.qb       $s6, $t8, 1      # CHECK: shra_r.qb       $s6, $t8, 1     # encoding: [0xd8,0x22,0xff,0x31]
+                                                                            # 0b00100010110110000011000111111111
+  shra_r.qb       $at, $zero, 7    # CHECK: shra_r.qb       $at, $zero, 7   # encoding: [0x20,0x20,0xff,0xf1]
+                                                                            # 0b00100000001000001111000111111111
+  shra_r.qb       $fp, $s7, 3      # CHECK: shra_r.qb       $fp, $s7, 3     # encoding: [0xd7,0x23,0xff,0x71]
+                                                                            # 0b00100011110101110111000111111111
+  shll.ph         $a6, $ra, 0      # CHECK: shll.ph         $a6, $ra, 0     # encoding: [0x5f,0x21,0xb5,0x03]
+                                                                            # 0b00100001010111110000001110110101
+  shll.ph         $s6, $t0, 13     # CHECK: shll.ph         $s6, $t0, 13    # encoding: [0xcc,0x22,0xb5,0xd3]
+                                                                            # 0b00100010110011001101001110110101
+  shll.ph         $t4, $s5, 7      # CHECK: shll.ph         $t4, $s5, 7     # encoding: [0x55,0x20,0xb5,0x73]
+                                                                            # 0b00100000010101010111001110110101
+  shll_s.ph       $s7, $a3, 13     # CHECK: shll_s.ph       $s7, $a3, 13    # encoding: [0xe7,0x22,0xb5,0xdb]
+                                                                            # 0b00100010111001111101101110110101
+  shll_s.ph       $t9, $s0, 11     # CHECK: shll_s.ph       $t9, $s0, 11    # encoding: [0x30,0x23,0xb5,0xbb]
+                                                                            # 0b00100011001100001011101110110101
+  shll_s.ph       $zero, $t2, 1    # CHECK: shll_s.ph       $zero, $t2, 1   # encoding: [0x0e,0x20,0xb5,0x1b]
+                                                                            # 0b00100000000011100001101110110101
+  shra.ph         $ra, $ra, 0      # CHECK: shra.ph         $ra, $ra, 0     # encoding: [0xff,0x23,0x35,0x03]
+                                                                            # 0b00100011111111110000001100110101
+  shra.ph         $t0, $t0, 2      # CHECK: shra.ph         $t0, $t0, 2     # encoding: [0x8c,0x21,0x35,0x23]
+                                                                            # 0b00100001100011000010001100110101
+  shra.ph         $a7, $t1, 0      # CHECK: shra.ph         $a7, $t1, 0     # encoding: [0x6d,0x21,0x35,0x03]
+                                                                            # 0b00100001011011010000001100110101
+  shra_r.ph       $a7, $at, 13     # CHECK: shra_r.ph       $a7, $at, 13    # encoding: [0x61,0x21,0x35,0xd7]
+                                                                            # 0b00100001011000011101011100110101
+  shra_r.ph       $t9, $a7, 10     # CHECK: shra_r.ph       $t9, $a7, 10    # encoding: [0x2b,0x23,0x35,0xa7]
+                                                                            # 0b00100011001010111010011100110101
+  shra_r.ph       $s1, $ra, 2      # CHECK: shra_r.ph       $s1, $ra, 2     # encoding: [0x3f,0x22,0x35,0x27]
+                                                                            # 0b00100010001111110010011100110101
+  precr_sra.ph.w  $t8, $k1, 20     # CHECK: precr_sra.ph.w  $t8, $k1, 20    # encoding: [0x1b,0x23,0xcd,0xa3]
+                                                                            # 0b00100011000110111010001111001101
+  precr_sra.ph.w  $a4, $ra, 16     # CHECK: precr_sra.ph.w  $a4, $ra, 16    # encoding: [0x1f,0x21,0xcd,0x83]
+                                                                            # 0b00100001000111111000001111001101
+  precr_sra.ph.w  $t3, $s6, 6      # CHECK: precr_sra.ph.w  $t3, $s6, 6     # encoding: [0xf6,0x21,0xcd,0x33]
+                                                                            # 0b00100001111101100011001111001101
+  precr_sra_r.ph.w $t1, $s2, 2     # CHECK: precr_sra_r.ph.w $t1, $s2, 2    # encoding: [0xb2,0x21,0xcd,0x17]
+                                                                            # 0b00100001101100100001011111001101
+  precr_sra_r.ph.w $k1, $t0, 5     # CHECK: precr_sra_r.ph.w $k1, $t0, 5    # encoding: [0x6c,0x23,0xcd,0x2f]
+                                                                            # 0b00100011011011000010111111001101
+  precr_sra_r.ph.w $s1, $t0, 0     # CHECK: precr_sra_r.ph.w $s1, $t0, 0    # encoding: [0x2c,0x22,0xcd,0x07]
+                                                                            # 0b00100010001011000000011111001101
+  cmp.eq.ph       $fp, $t2         # CHECK: cmp.eq.ph       $fp, $t2        # encoding: [0xde,0x21,0x05,0x00]
+                                                                            # 0b00100001110111100000000000000101
+  cmp.eq.ph       $a6, $gp         # CHECK: cmp.eq.ph       $a6, $gp        # encoding: [0x8a,0x23,0x05,0x00]
+                                                                            # 0b00100011100010100000000000000101
+  cmp.eq.ph       $t9, $a4         # CHECK: cmp.eq.ph       $t9, $a4        # encoding: [0x19,0x21,0x05,0x00]
+                                                                            # 0b00100001000110010000000000000101
+  cmp.le.ph       $a6, $t2         # CHECK: cmp.le.ph       $a6, $t2        # encoding: [0xca,0x21,0x85,0x00]
+                                                                            # 0b00100001110010100000000010000101
+  cmp.le.ph       $t2, $zero         # CHECK: cmp.le.ph       $t2, $zero        # encoding: [0x0e,0x20,0x85,0x00]
+                                                                                # 0b00100000000011100000000010000101
+  cmp.le.ph       $t3, $a3         # CHECK: cmp.le.ph       $t3, $a3        # encoding: [0xef,0x20,0x85,0x00]
+                                                                            # 0b00100000111011110000000010000101
+  cmp.lt.ph       $fp, $s4         # CHECK: cmp.lt.ph       $fp, $s4        # encoding: [0x9e,0x22,0x45,0x00]
+                                                                            # 0b00100010100111100000000001000101
+  cmp.lt.ph       $s5, $a0         # CHECK: cmp.lt.ph       $s5, $a0        # encoding: [0x95,0x20,0x45,0x00]
+                                                                            # 0b00100000100101010000000001000101
+  cmp.lt.ph       $at, $t5         # CHECK: cmp.lt.ph       $at, $t5        # encoding: [0x61,0x20,0x45,0x00]
+                                                                            # 0b00100000011000010000000001000101
+  cmpu.eq.qb      $gp, $s5         # CHECK: cmpu.eq.qb      $gp, $s5        # encoding: [0xbc,0x22,0x45,0x02]
+                                                                            # 0b00100010101111000000001001000101
+  cmpu.eq.qb      $k1, $a5         # CHECK: cmpu.eq.qb      $k1, $a5        # encoding: [0x3b,0x21,0x45,0x02]
+                                                                            # 0b00100001001110110000001001000101
+  cmpu.eq.qb      $zero, $gp         # CHECK: cmpu.eq.qb      $zero, $gp        # encoding: [0x80,0x23,0x45,0x02]
+                                                                                # 0b00100011100000000000001001000101
+  cmpu.le.qb      $k0, $s7         # CHECK: cmpu.le.qb      $k0, $s7        # encoding: [0xfa,0x22,0xc5,0x02]
+                                                                            # 0b00100010111110100000001011000101
+  cmpu.le.qb      $t4, $s1         # CHECK: cmpu.le.qb      $t4, $s1        # encoding: [0x22,0x22,0xc5,0x02]
+                                                                            # 0b00100010001000100000001011000101
+  cmpu.le.qb      $zero, $a6         # CHECK: cmpu.le.qb      $zero, $a6        # encoding: [0x40,0x21,0xc5,0x02]
+                                                                                # 0b00100001010000000000001011000101
+  cmpu.lt.qb      $s4, $t4         # CHECK: cmpu.lt.qb      $s4, $t4        # encoding: [0x54,0x20,0x85,0x02]
+                                                                            # 0b00100000010101000000001010000101
+  cmpu.lt.qb      $k0, $t1         # CHECK: cmpu.lt.qb      $k0, $t1        # encoding: [0xba,0x21,0x85,0x02]
+                                                                            # 0b00100001101110100000001010000101
+  cmpu.lt.qb      $k0, $s0         # CHECK: cmpu.lt.qb      $k0, $s0        # encoding: [0x1a,0x22,0x85,0x02]
+                                                                            # 0b00100010000110100000001010000101
+  rddsp           $s6, 103         # CHECK: rddsp           $s6, 103        # encoding: [0xd9,0x22,0x7f,0xc6]
+                                                                            # 0b00100010110110011100011001111111
+  rddsp           $a4, 69          # CHECK: rddsp           $a4, 69         # encoding: [0x11,0x21,0x7f,0x46]
+                                                                            # 0b00100001000100010100011001111111
+  rddsp           $k1, 61          # CHECK: rddsp           $k1, 61         # encoding: [0x6f,0x23,0x7f,0x46]
+                                                                            # 0b00100011011011110100011001111111
+  rddsp           $a3              # CHECK: rddsp           $a3             # encoding: [0xff,0x20,0x7f,0xc6]
+                                                                            # 0b00100000111111111100011001111111
+  rddsp           $t0              # CHECK: rddsp           $t0             # encoding: [0x9f,0x21,0x7f,0xc6]
+                                                                            # 0b00100001100111111100011001111111
+  rddsp           $t9              # CHECK: rddsp           $t9             # encoding: [0x3f,0x23,0x7f,0xc6]
+                                                                            # 0b00100011001111111100011001111111
+  wrdsp           $a5, 67          # CHECK: wrdsp           $a5, 67         # encoding: [0x30,0x21,0x7f,0xd6]
+                                                                            # 0b00100001001100001101011001111111
+  wrdsp           $t2, 77          # CHECK: wrdsp           $t2, 77         # encoding: [0xd3,0x21,0x7f,0x56]
+                                                                            # 0b00100001110100110101011001111111
+  wrdsp           $s4, 34          # CHECK: wrdsp           $s4, 34         # encoding: [0x88,0x22,0x7f,0x96]
+                                                                            # 0b00100010100010001001011001111111
+  wrdsp           $t5              # CHECK: wrdsp           $t5             # encoding: [0x7f,0x20,0x7f,0xd6]
+                                                                            # 0b00100000011111111101011001111111
+  wrdsp           $s2              # CHECK: wrdsp           $s2             # encoding: [0x5f,0x22,0x7f,0xd6]
+                                                                            # 0b00100010010111111101011001111111
+  wrdsp           $t5              # CHECK: wrdsp           $t5             # encoding: [0x7f,0x20,0x7f,0xd6]
+                                                                            # 0b00100000011111111101011001111111
+  repl.ph         $s2, 490          # CHECK: repl.ph         $s2, 490         # encoding: [0x4f,0x22,0x3d,0x50]
+                                                                              # 0b00100010010011110101000000111101
+  repl.ph         $t4, -387          # CHECK: repl.ph         $t4, -387         # encoding: [0x53,0x20,0x3d,0xe8]
+                                                                                # 0b00100000010100111110100000111101
+  repl.ph         $s4, 117          # CHECK: repl.ph         $s4, 117         # encoding: [0x83,0x22,0x3d,0xa8]
+                                                                              # 0b00100010100000111010100000111101
+  repl.qb         $s0, 39          # CHECK: repl.qb         $s0, 39         # encoding: [0x04,0x22,0xff,0xe5]
+                                                                            # 0b00100010000001001110010111111111
+  repl.qb         $fp, 133          # CHECK: repl.qb         $fp, 133         # encoding: [0xd0,0x23,0xff,0xa5]
+                                                                              # 0b00100011110100001010010111111111
+  repl.qb         $t5, 3           # CHECK: repl.qb         $t5, 3          # encoding: [0x60,0x20,0xff,0x65]
+                                                                            # 0b00100000011000000110010111111111
+  mfhi            $a1, $ac0         # CHECK: mfhi            $a1, $ac0        # encoding: [0xa0,0x20,0x7f,0x00]
+                                                                              # 0b00100000101000000000000001111111
+  mfhi            $at, $ac2         # CHECK: mfhi            $at, $ac2        # encoding: [0x20,0x20,0x7f,0x80]
+                                                                              # 0b00100000001000001000000001111111
+  mfhi            $a4, $ac0         # CHECK: mfhi            $a4, $ac0        # encoding: [0x00,0x21,0x7f,0x00]
+                                                                              # 0b00100001000000000000000001111111
+  mflo            $t8, $ac2         # CHECK: mflo            $t8, $ac2        # encoding: [0x00,0x23,0x7f,0x90]
+                                                                              # 0b00100011000000001001000001111111
+  mflo            $t5, $ac2         # CHECK: mflo            $t5, $ac2        # encoding: [0x60,0x20,0x7f,0x90]
+                                                                              # 0b00100000011000001001000001111111
+  mflo            $t1, $ac2         # CHECK: mflo            $t1, $ac2        # encoding: [0xa0,0x21,0x7f,0x90]
+                                                                              # 0b00100001101000001001000001111111
+  shilo           $ac0, 5          # CHECK: shilo           $ac0, 5         # encoding: [0x05,0x20,0x1d,0x00]
+                                                                            # 0b00100000000001010000000000011101
+  shilo           $ac0, 18         # CHECK: shilo           $ac0, 18        # encoding: [0x12,0x20,0x1d,0x00]
+                                                                            # 0b00100000000100100000000000011101
   shilo           $ac2, 19         # CHECK: shilo           $ac2, 19        # encoding: [0x13,0x20,0x1d,0x80]
                                                                             # 0b00100000000100111000000000011101
-  shilo           $ac3, 13         # CHECK: shilo           $ac3, 13        # encoding: [0x0d,0x20,0x1d,0xc0]
-                                                                            # 0b00100000000011011100000000011101
-  mthlip          $t3, $ac1         # CHECK: mthlip          $t3, $ac1        # encoding: [0x0f,0x20,0x7f,0x42]
-                                                                              # 0b00100000000011110100001001111111
-  mthlip          $t8, $ac1         # CHECK: mthlip          $t8, $ac1        # encoding: [0x18,0x20,0x7f,0x42]
-                                                                              # 0b00100000000110000100001001111111
-  mthlip          $a2, $ac2         # CHECK: mthlip          $a2, $ac2        # encoding: [0x06,0x20,0x7f,0x82]
-                                                                              # 0b00100000000001101000001001111111
+  mthlip          $a2, $ac1         # CHECK: mthlip          $a2, $ac1        # encoding: [0x06,0x20,0x7f,0x42]
+                                                                              # 0b00100000000001100100001001111111
+  mthlip          $s2, $ac2         # CHECK: mthlip          $s2, $ac2        # encoding: [0x12,0x20,0x7f,0x82]
+                                                                              # 0b00100000000100101000001001111111
+  mthlip          $a6, $ac2         # CHECK: mthlip          $a6, $ac2        # encoding: [0x0a,0x20,0x7f,0x82]
+                                                                              # 0b00100000000010101000001001111111
   shilov          $ac3, $s7         # CHECK: shilov          $ac3, $s7        # encoding: [0x17,0x20,0x7f,0xd2]
                                                                               # 0b00100000000101111101001001111111
-  shilov          $ac2, $fp         # CHECK: shilov          $ac2, $fp        # encoding: [0x1e,0x20,0x7f,0x92]
-                                                                              # 0b00100000000111101001001001111111
-  shilov          $ac2, $k1         # CHECK: shilov          $ac2, $k1        # encoding: [0x1b,0x20,0x7f,0x92]
-                                                                              # 0b00100000000110111001001001111111
-  mthi            $ra, $ac0         # CHECK: mthi            $ra, $ac0        # encoding: [0x1f,0x20,0x7f,0x20]
-                                                                              # 0b00100000000111110010000001111111
-  mthi            $k0, $ac0         # CHECK: mthi            $k0, $ac0        # encoding: [0x1a,0x20,0x7f,0x20]
-                                                                              # 0b00100000000110100010000001111111
-  mthi            $k1, $ac2         # CHECK: mthi            $k1, $ac2        # encoding: [0x1b,0x20,0x7f,0xa0]
-                                                                              # 0b00100000000110111010000001111111
-  mtlo            $a2, $ac0         # CHECK: mtlo            $a2, $ac0        # encoding: [0x06,0x20,0x7f,0x30]
-                                                                              # 0b00100000000001100011000001111111
-  mtlo            $zero, $ac1         # CHECK: mtlo            $zero, $ac1        # encoding: [0x00,0x20,0x7f,0x70]
-                                                                                  # 0b00100000000000000111000001111111
-  mtlo            $s7, $ac0         # CHECK: mtlo            $s7, $ac0        # encoding: [0x17,0x20,0x7f,0x30]
-                                                                              # 0b00100000000101110011000001111111
-  shrl.ph         $a7, $gp, 11     # CHECK: shrl.ph         $a7, $gp, 11    # encoding: [0x7c,0x21,0xff,0xb3]
-                                                                            # 0b00100001011111001011001111111111
-  shrl.ph         $s5, $a4, 3      # CHECK: shrl.ph         $s5, $a4, 3     # encoding: [0xa8,0x22,0xff,0x33]
-                                                                            # 0b00100010101010000011001111111111
-  shrl.ph         $s4, $sp, 9      # CHECK: shrl.ph         $s4, $sp, 9     # encoding: [0x9d,0x22,0xff,0x93]
-                                                                            # 0b00100010100111011001001111111111
-  bposge32c       11219               # CHECK: bposge32c       11219              # encoding: [0x04,0x88,A,0b01AAAAAA]
-                                                                                  # 0b10001000000001000110101111010011
-  bposge32c       12698               # CHECK: bposge32c       12698              # encoding: [0x04,0x88,A,0b01AAAAAA]
-                                                                                  # 0b10001000000001000111000110011010
-  bposge32c       9919               # CHECK: bposge32c       9919              # encoding: [0x04,0x88,A,0b01AAAAAA]
-                                                                                # 0b10001000000001000110011010111111
+  shilov          $ac1, $s2         # CHECK: shilov          $ac1, $s2        # encoding: [0x12,0x20,0x7f,0x52]
+                                                                              # 0b00100000000100100101001001111111
+  shilov          $ac3, $zero         # CHECK: shilov          $ac3, $zero        # encoding: [0x00,0x20,0x7f,0xd2]
+                                                                                  # 0b00100000000000001101001001111111
+  mthi            $t3, $ac0         # CHECK: mthi            $t3, $ac0        # encoding: [0x0f,0x20,0x7f,0x20]
+                                                                              # 0b00100000000011110010000001111111
+  mthi            $s2, $ac0         # CHECK: mthi            $s2, $ac0        # encoding: [0x12,0x20,0x7f,0x20]
+                                                                              # 0b00100000000100100010000001111111
+  mthi            $t3, $ac0         # CHECK: mthi            $t3, $ac0        # encoding: [0x0f,0x20,0x7f,0x20]
+                                                                              # 0b00100000000011110010000001111111
+  mtlo            $s0, $ac0         # CHECK: mtlo            $s0, $ac0        # encoding: [0x10,0x20,0x7f,0x30]
+                                                                              # 0b00100000000100000011000001111111
+  mtlo            $t9, $ac0         # CHECK: mtlo            $t9, $ac0        # encoding: [0x19,0x20,0x7f,0x30]
+                                                                              # 0b00100000000110010011000001111111
+  mtlo            $k0, $ac0         # CHECK: mtlo            $k0, $ac0        # encoding: [0x1a,0x20,0x7f,0x30]
+                                                                              # 0b00100000000110100011000001111111
+  shrl.ph         $s7, $a4, 8      # CHECK: shrl.ph         $s7, $a4, 8     # encoding: [0xe8,0x22,0xff,0x83]
+                                                                            # 0b00100010111010001000001111111111
+  shrl.ph         $zero, $s4, 3    # CHECK: shrl.ph         $zero, $s4, 3   # encoding: [0x14,0x20,0xff,0x33]
+                                                                            # 0b00100000000101000011001111111111
+  shrl.ph         $k0, $s0, 2      # CHECK: shrl.ph         $k0, $s0, 2     # encoding: [0x50,0x23,0xff,0x23]
+                                                                            # 0b00100011010100000010001111111111
+  bposge32c       14945               # CHECK: bposge32c       14945              # encoding: [0x04,0x88,A,0b01AAAAAA]
+                                                                                  # 0b10001000000001000111101001100001
+  bposge32c       12605               # CHECK: bposge32c       12605              # encoding: [0x04,0x88,A,0b01AAAAAA]
+                                                                                  # 0b10001000000001000111000100111101
+  bposge32c       4053               # CHECK: bposge32c       4053              # encoding: [0x04,0x88,A,0b01AAAAAA]
+                                                                                # 0b10001000000001000100111111010101
   #example                         # yet to be implemened
   #example                         # yet to be implemened
   #example                         # yet to be implemened

@@ -141,7 +141,9 @@ cmpu.eq.qb     ,"@ %rs, %rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx        
 cmpu.le.qb     ,"@ %rs, %rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx           |1011000|101
 cmpu.lt.qb     ,"@ %rs, %rt"        ,001000|GPR[rt](5)|GPR[rs](5)|xxxxxx           |1010000|101
 rddsp          ,"@ %rt, %mask"      ,001000|GPR[rt](5)|mask(7u)             |00|011|001|111|111
+rddsp          ,"@ %rt"             ,001000|GPR[rt](5)|              1111111|00|011|001|111|111
 wrdsp          ,"@ %rt, %mask"      ,001000|GPR[rt](5)|mask(7u)             |01|011|001|111|111
+wrdsp          ,"@ %rt"             ,001000|GPR[rt](5)|              1111111|01|011|001|111|111
 repl.ph        ,"@ %rt, %s"         ,001000|GPR[rt](5)|s(10l)                    |x|0000111|101
 repl.qb        ,"@ %rt, %u"         ,001000|GPR[rt](5)|u(8u)                 |x|010|111|111|111
 mfhi           ,"@ %rt, %ac"        ,001000|GPR[rt](5)|xxxxx     |ACC[ac](2)|00|000|001|111|111

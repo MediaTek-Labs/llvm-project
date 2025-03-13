@@ -851,3 +851,8 @@ def : DSPSelectCCPat<PseudoCMPU_LE_QB_NM,    PseudoPICK_QB_NM, v4i8,  SETULE, Ha
 def : DSPSelectCCPatInv<PseudoCMPU_EQ_QB_NM, PseudoPICK_QB_NM, v4i8,  SETNE , HasDSPNanoMips>;
 def : DSPSelectCCPatInv<PseudoCMPU_LT_QB_NM, PseudoPICK_QB_NM, v4i8,  SETUGE, HasDSPNanoMips>;
 def : DSPSelectCCPatInv<PseudoCMPU_LE_QB_NM, PseudoPICK_QB_NM, v4i8,  SETUGT, HasDSPNanoMips>;
+
+let AdditionalPredicates = [HasDSPNanoMips] in {
+  def : NanoMipsInstAlias<"rddsp $rt", (RDDSP_NM GPRNM32Opnd:$rt, 0b1111111)>;
+  def : NanoMipsInstAlias<"wrdsp $rt", (WRDSP_NM GPRNM32Opnd:$rt, 0b1111111)>;
+}

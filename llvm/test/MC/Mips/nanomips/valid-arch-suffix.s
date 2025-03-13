@@ -197,6 +197,9 @@
 	break[16] 7	# CHECK: break	0x7 # encoding: [0x17,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK16_NM
 			# DISAS: {{.*}}  17 10        	break	0x7
+	break[32]	# CHECK: break	0x0 # encoding: [0x10,0x00,0x00,0x00]
+			# CHECK-NEXT: # <MCInst #{{.*}} BREAK_NM
+			# DISAS: {{.*}}  10 00 00 00  	break	0x0
 	break[32] 8	# CHECK: break	0x8 # encoding: [0x10,0x00,0x08,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK_NM
 			# DISAS: {{.*}}  10 00 08 00  	break	0x8
@@ -209,6 +212,9 @@
 	syscall[16] 3	# CHECK: syscall 0x3 # encoding: [0x0b,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL16_NM
 			# DISAS: {{.*}}  0b 10        	syscall	0x3
+	syscall[32]	# CHECK: syscall 0x0 # encoding: [0x08,0x00,0x00,0x00]
+			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL_NM
+			# DISAS: {{.*}}  08 00 00 00  	syscall	0x0
 	syscall[32] 4	# CHECK: syscall 0x4 # encoding: [0x08,0x00,0x04,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL_NM
 			# DISAS: {{.*}}  08 00 04 00  	syscall	0x4

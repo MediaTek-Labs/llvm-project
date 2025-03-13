@@ -2934,6 +2934,7 @@ def SIGRIE_NM : InstNM<(outs), (ins uimm19_nm:$imm),
 def BREAK_NM : InstNM<(outs), (ins uimm19_nm:$imm),
                       "break\t$imm", []>, IntExcpFlow_Enc<0b10>,
 	       AltMnemonics<["break[32]"]>;
+def : NanoMipsInstAlias<"break[32]", (BREAK_NM 0), 0>;
 
 def SDBBP_NM : InstNM<(outs), (ins uimm19_nm:$imm),
                       "sdbbp\t$imm", []>, IntExcpFlow_Enc<0b11>,
@@ -2945,6 +2946,7 @@ def SYSCALL_NM : InstNM<(outs), (ins uimm18_nm:$imm),
 		 AltMnemonics<["syscall[32]"]> {
   let Inst{18} = 0b0;
 }
+def : NanoMipsInstAlias<"syscall[32]", (SYSCALL_NM 0), 0>;
 
 def BREAK16_NM : InstNM<(outs), (ins uimm3_nm:$imm),
                       "break\t$imm", []>, IntExcpFlow16_Enc<0b10>,

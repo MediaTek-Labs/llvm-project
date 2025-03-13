@@ -3050,6 +3050,7 @@ def BITREVH_NM : NanoMipsInstAlias<"bitrevh $rt, $rs",
 def BYTEREVH_NM : NanoMipsInstAlias<"byterevh $rt, $rs",
 				(ROTX_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rs, 8, 24, 0)>;
 def : MnemonicAlias<"wsbh", "byterevh">, Requires<[HasNanoMips]>;
+def : MnemonicAlias<"bitswap", "bitrevb">, Requires<[HasNanoMips]>;
 
 class CacheOpNM<string opstr, Operand Od, DAGOperand MO,
 		    InstrItinClass itin = NoItinerary> :

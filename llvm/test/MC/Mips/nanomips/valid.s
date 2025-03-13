@@ -313,6 +313,9 @@
 	byterevw $t0, $k0	# CHECK: byterevw $t0, $k0 # encoding: [0x9a,0x81,0x18,0xd2]
 				# CHECK-NEXT: # <MCInst #{{.*}} BYTEREVW_NM
 				# DISAS: {{.*}}  9a 81 18 d2  	byterevw	$t0, $k0
+	wsbh     $a3, $s3	# CHECK: byterevh $a3, $s3 # encoding: [0xf3,0x80,0x08,0xd6]
+				# CHECK-NEXT: # <MCInst #{{.*}} ROTX_NM
+				# DISAS: {{.*}}  f3 80 08 d6  	byterevh	$a3, $s3
 	
 	# compare and trap, 32-bit
 	teq	$s2, $a3, 0	# CHECK: teq $s2, $a3, 0	# encoding: [0xf2,0x20,0x00,0x00]

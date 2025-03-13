@@ -59,6 +59,7 @@ class PseudoDSP<dag outs, dag ins, list<dag> pattern,
 class DSPInstAlias<string Asm, dag Result, bit Emit = 0b1>
     : InstAlias<Asm, Result, Emit>, PredicateControl {
   let ASEPredicate = [HasDSP];
+  let AsmVariantName = "mips";
 }
 
 // ADDU.QB sub-class format.

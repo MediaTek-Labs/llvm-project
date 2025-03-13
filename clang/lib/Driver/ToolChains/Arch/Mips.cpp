@@ -442,12 +442,12 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       D.Diag(diag::err_drv_unknown_indirect_jump_opt) << Val;
   }
 
-  if (Triple.isNanoMips() && !ForAS) {
-    if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
-      Features.push_back("+relax");
-    else
-      Features.push_back("-relax");
-      if (Args.hasFlag(options::OPT_mpcrel, options::OPT_mno_pcrel, true))
+  if (Triple.isNanoMips()) {
+      if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, !ForAS))
+	Features.push_back("+relax");
+      else
+	Features.push_back("-relax");
+      if (Args.hasFlag(options::OPT_mpcrel, options::OPT_mno_pcrel, !ForAS))
 	Features.push_back("+pcrel");
       else
 	Features.push_back("-pcrel");

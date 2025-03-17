@@ -251,11 +251,9 @@ def SymAsmOperand : SymAsmOperandClass;
 
 def SymAsmOperandGPRel18 : SymAsmOperandClass<"GPRel", "18"> {
   let PredicateMethod = "isSymGPRel<18>";
-  let RenderMethod = "addSymGPRelOperands<18>";
 }
 def SymAsmOperandGPRel19s2 : SymAsmOperandClass<"GPRel", "19s2"> {
   let PredicateMethod = "isSymGPRel<19, 2>";
-  let RenderMethod = "addSymGPRelOperands<21,0>";
 }
 def SymAsmOperandGPRel : SymAsmOperandClass<"GPRel">;
 

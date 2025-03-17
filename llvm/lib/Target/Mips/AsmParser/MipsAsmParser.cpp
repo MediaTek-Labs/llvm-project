@@ -1756,7 +1756,8 @@ public:
     if (Success && Res.getRefKind() == MipsMCExpr::MEK_GPREL)
       return Success;
     else
-      return isScaledUImm<Bits, Shift>();
+      return (isScaledUImm<Bits, Shift>() ||
+	      (Bits == 32 && isScaledSImm<32, 0>()));
   }
 
   bool isHi20Offset() const {
@@ -7179,6 +7180,8 @@ bool MipsAsmParser::matchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
     return Error(ErrorStart, "size plus position are not in the range 33 .. 64",
                  SMRange(ErrorStart, ErrorEnd));
     }
+  case Match_SymGPRel:
+    return Error(IDLoc, "expected 32-bit signed/unsigned GP-relative offset");
   case Match_RequiresBaseSP:
     return Error(IDLoc, "expected $sp as base register");
   case Match_RequiresBaseGP:

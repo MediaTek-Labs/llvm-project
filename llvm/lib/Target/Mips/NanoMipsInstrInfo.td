@@ -244,7 +244,7 @@ class SymAsmOperandClass<string Type = "", string Suffix = "",
   let DiagnosticType = "Sym" # Type;
   let PredicateMethod = "isSym" # Type;
   let SuperClasses = Supers;
-  let RenderMethod = "addSym" # Type # "Operands";
+  let RenderMethod = "addSImmOperands<32>";
 }
 
 def SymAsmOperand : SymAsmOperandClass;

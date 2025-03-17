@@ -876,6 +876,12 @@
 	addiu	$s4,$gp,262146	# CHECK: addiu.b32 $s4, $gp, 262146 # encoding: [0x82,0x62,0x02,0x00,0x04,0x00]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGP48_NM
 				# DISAS: {{.*}}  82 62 02 00 04 00    	addiu.b32	$s4, $gp, 262146
+	addiu.b32 $a4,$gp,-2097152	# CHECK: addiu.b32 $a4, $gp, -2097152 # encoding: [0x02,0x61,0x00,0x00,0xe0,0xff]
+				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGP48_NM
+				# DISAS: {{.*}}  02 61 00 00 e0 ff    	addiu.b32	$a4, $gp, -2097152
+	addiu.b32 $a4,$gp,-1	# CHECK: addiu.b32 $a4, $gp, -1 # encoding: [0x02,0x61,0xff,0xff,0xff,0xff]
+				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGP48_NM
+				# DISAS: {{.*}}  02 61 ff ff ff ff    	addiu.b32	$a4, $gp, -1
 
 	move.balc $a0, $a3, test	# CHECK: move.balc $a0, $a3, test # encoding: [0b111AAAAA,0x08,A,A]
 					# CHECK-NEXT: fixup A - offset: 0, value: test+0, kind: fixup_NANOMIPS_PC21_S1

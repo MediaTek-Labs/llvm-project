@@ -7182,6 +7182,10 @@ bool MipsAsmParser::matchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
     }
   case Match_SymGPRel:
     return Error(IDLoc, "expected 32-bit signed/unsigned GP-relative offset");
+  case Match_SymGPRel18:
+    return Error(IDLoc, "expected 18-bit unsigned GP-relative offset");
+  case Match_SymGPRel19s2:
+    return Error(IDLoc, "expected word-aligned 21-bit unsigned GP-relative offset");
   case Match_RequiresBaseSP:
     return Error(IDLoc, "expected $sp as base register");
   case Match_RequiresBaseGP:

@@ -241,7 +241,7 @@ class SymAsmOperandClass<string Type = "", string Suffix = "",
 			list<AsmOperandClass> Supers = []>
     : AsmOperandClass{
   let Name = "Sym" # Type # Suffix;
-  let DiagnosticType = "Sym" # Type;
+  let DiagnosticType = "Sym" # Type # Suffix;
   let PredicateMethod = "isSym" # Type;
   let SuperClasses = Supers;
   let RenderMethod = "addSImmOperands<32>";
@@ -1827,9 +1827,9 @@ class Op32_Addr_Enc<bits<5> isel> : _Pool_P32<isel> {
 }
 
 def : NanoMipsInstAlias<"addiu.b $rt, $rs, $offset",
-			(ADDIUGPB_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp_nm:$offset)>;
+			(ADDIUGPB_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp18_nm:$offset)>;
 def : NanoMipsInstAlias<"addiu.w $rt, $rs, $offset",
-			(ADDIUGPW_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp_nm:$offset)>;
+			(ADDIUGPW_NM GPRNM32Opnd:$rt, GPRNMGPOpnd:$rs, sym32_gp19s2_nm:$offset)>;
 
 let isReMaterializable = 1 in {
   def LAPC32_NM : LoadAddressPCRelNM<"lapc.h", GPRNM32Opnd, sym32_pc22_nm,

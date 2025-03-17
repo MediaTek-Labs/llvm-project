@@ -1411,23 +1411,6 @@ public:
     addConstantSImmOperands<Bits, 0, 0>(Inst, N);
   }
 
-  void addSymOperands(MCInst &Inst, unsigned N) const {
-    if (isImm() && !isConstantImm()) {
-      addExpr(Inst, getImm());
-      return;
-    }
-    addConstantSImmOperands<32, 0, 0>(Inst, N);
-  }
-
-  template <unsigned Bits = 32, unsigned Offset = 0>
-  void addSymGPRelOperands(MCInst &Inst, unsigned N) const {
-    if (isImm() && !isConstantImm()) {
-      addExpr(Inst, getImm());
-      return;
-    }
-    addConstantUImmOperands<Bits, Offset, 0>(Inst, N);
-  }
-
   template <unsigned Bits>
   void addUImmOperands(MCInst &Inst, unsigned N) const {
     if (isImm() && !isConstantImm()) {

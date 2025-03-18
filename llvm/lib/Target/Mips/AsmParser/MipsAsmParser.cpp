@@ -1794,7 +1794,7 @@ public:
     if (Success && Res.getRefKind() == MipsMCExpr::MEK_PCREL_HI)
       return Success;
     else
-      return isConstantUImm<20>();
+      return isConstantUImm<20>() || isConstantSImm<20>();
   }
 
   template <unsigned Bits, unsigned ShiftLeftAmount, unsigned Offset = 0>

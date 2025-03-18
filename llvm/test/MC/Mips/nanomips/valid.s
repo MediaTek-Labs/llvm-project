@@ -1443,6 +1443,13 @@
 	aluipc $a3, 0xfffff	# CHECK: aluipc $a3, 0xfffff # encoding: [0xff,0xe0,0xff,0xff]
 				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
 				# DISAS: {{.*}}  ff e0 ff ff  	aluipc	$a3, %pcrel_hi({{.*}})
+	aluipc $a4, %pcrel_hi(-1048576)	# CHECK: aluipc $a4, %pcrel_hi(0xfff00000) # encoding: [0b0000AAAA,0xe1,0x02'A',A]
+				# CHECK-NEXT: fixup A - offset: 0, value: %pcrel_hi(0xfff00000), kind: fixup_NANOMIPS_PCHI20
+				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
+				# DISAS: {{.*}} 00 e1 02 00   	aluipc	$a4, %pcrel_hi({{.*}})
+	aluipc $a4, -524288	# CHECK: aluipc $a4, -0x80000 # encoding: [0x00,0xe1,0x03,0x00]
+				# CHECK-NEXT: <MCInst #{{.*}} ALUIPC_NM
+				# DISAS: {{.*}} 00 e1 03 00   	aluipc	$a4, %pcrel_hi({{.*}})
 	lui $s0, %hi(test)	# CHECK: lui $s0, %hi(test) # encoding: [0b0000AAAA,0xe2,A,A]
 				# CHECK-NEXT: fixup A - offset: 0, value: %hi(test), kind: fixup_NANOMIPS_HI20
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM

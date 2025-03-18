@@ -126,7 +126,7 @@ void MipsMCExpr::printImpl(raw_ostream &OS, const MCAsmInfo *MAI) const {
   OS << '(';
   if (Expr->evaluateAsAbsolute(AbsVal)) {
     if (IsNanoMips)
-      OS << format("0x%" PRIx64, AbsVal);
+      OS << format("0x%" PRIx32, AbsVal);
     else
       OS << AbsVal;
   }

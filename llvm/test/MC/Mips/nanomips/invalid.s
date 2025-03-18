@@ -21,3 +21,4 @@ foo:
 	# CHECK: [[@LINE-1]]:{{[0-9]+}}: error: expected word-aligned 21-bit unsigned GP-relative offset
 	aluipc $a0, 0x100000 # CHECK: [[@LINE]]:{{[0-9]+}}: error: invalid operand for instruction
 	aluipc $a0, -524289 # CHECK: [[@LINE]]:{{[0-9]+}}: error: invalid operand for instruction
+	lui   $a0, -1 # CHECK: [[@LINE]]:{{[0-9]+}}: error: invalid operand for instruction

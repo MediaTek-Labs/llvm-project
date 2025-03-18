@@ -1464,6 +1464,12 @@
 	lui $s3, %hi(0xfffff000)	# CHECK: lui $s3, %hi(0xfffff000) # encoding: [0x7f,0xe2,0xfd,0xff]
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  7f e2 fd ff  	lui	$s3, %hi(0xfffff000)
+	lui $s4, %hi(-1)	# CHECK: lui $s4, %hi(-0x1000) # encoding: [0x9f,0xe2,0xfd,0xff]
+				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
+				# DISAS: {{.*}}  9f e2 fd ff  	lui	$s4, %hi(0xfffff000)
+	lui $s5, %hi(-1234567)	# CHECK: lui $s5, %hi(-0x12e000) # encoding: [0xad,0xe2,0xfd,0x2f]
+				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
+				# DISAS: {{.*}}  ad e2 fd 2f  	lui	$s5, %hi(0xffed2000)
 
 	addiu $a0, $a0, %pcrel_lo(test)	# CHECK: addiu $a0, $a0, %lo(test) # encoding: [0x84,0x00,A,0b0000AAAA]
 				# CHECK-NEXT: fixup A - offset: 0, value: %lo(test), kind: fixup_NANOMIPS_LO12

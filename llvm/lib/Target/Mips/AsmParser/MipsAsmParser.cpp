@@ -1764,8 +1764,10 @@ public:
     MCValue Res;
     bool Success;
 
-    if (Kind == k_Hi20Part)
-      return isUInt<20>(getConstantHi20());
+    if (Kind == k_Hi20Part) {
+      int64_t Hi20 = getConstantHi20();
+      return isUInt<20>(Hi20) || isInt<20>(Hi20);
+    }
     Success = getImm()->evaluateAsRelocatable(Res, nullptr, nullptr);
     if (Success && Res.getRefKind() == MipsMCExpr::MEK_HI)
       return Success;

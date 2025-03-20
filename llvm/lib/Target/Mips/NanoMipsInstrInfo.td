@@ -2752,7 +2752,7 @@ def : NMPat<(atomic_store_8  GPR32:$v, addruimm12:$a), (SB_NM GPR32:$v, mem_nmu1
 def : NMPat<(atomic_store_16 GPR32:$v, addruimm12:$a), (SH_NM GPR32:$v, mem_nmu12:$a)>;
 def : NMPat<(atomic_store_32 GPR32:$v, addruimm12:$a), (SW_NM GPR32:$v, mem_nmu12:$a)>;
 
-class LLSC_Enc<bits<4> psel, bits<2> isel> : _Pool_P_LS_S1<psel> {
+class LLSC_Enc<bits<3> psel, bits<4>isel> : _Pool_P_LS_S9<psel> {
   bits<5> rt;
   bits<14> addr;
   bits<5> base = addr{13...9};
@@ -2760,8 +2760,9 @@ class LLSC_Enc<bits<4> psel, bits<2> isel> : _Pool_P_LS_S1<psel> {
   let Inst{25...21} = rt;
   let Inst{20...16} = base;
   let Inst{15} = offset{8};
+  let Inst{14...11} = isel;
   let Inst{7...2} = offset{7...2};
-  let Inst{1...0} = isel;
+  let Inst{1...0} = 0b00;
 }
 
 class LLSCWP_Enc<bits<4> psel, bits<2> isel> : _Pool_P_LS_S1<psel> {
@@ -2775,13 +2776,13 @@ class LLSCWP_Enc<bits<4> psel, bits<2> isel> : _Pool_P_LS_S1<psel> {
 }
 
 def LL_NM : LoadMemoryNM<"ll", GPRNM32Opnd, mem_nm7s2, load, addrsimm9, II_LL>,
-		LLSC_Enc<0b1010, 0b00> {
+		LLSC_Enc<0b001, 0b1010> {
   let hasNoSchedulingInfo = 1;
 }
 
 def SC_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, mem_nm7s2:$addr),
 		"sc\t$rt, $addr", []>, RegConstraint<"$rt = $dst">,
-		LLSC_Enc<0b1011, 0b00> {
+		LLSC_Enc<0b001, 0b1011> {
   let mayStore = 1;
   let hasNoSchedulingInfo = 1;
 }
@@ -3058,8 +3059,8 @@ class CacheOpNM<string opstr, Operand Od, DAGOperand MO,
 		    InstrItinClass itin = NoItinerary> :
     InstNM<(outs), (ins Od:$op, MO:$addr), !strconcat(opstr, "\t$op, $addr"),
 	   [], itin>;
-def CACHE_NM : CacheOpNM<"cache", uimm5, mem_nms9, II_CACHE>,
-	       _Pool_P_LS_S1<0b0111> {
+
+class Cache_S9_Enc<bits<3> psel, bits<4> isel> : _Pool_P_LS_S9<psel> {
   bits<5> op;
   bits<14> addr;
   bits<5> base = addr{13...9};
@@ -3067,21 +3068,16 @@ def CACHE_NM : CacheOpNM<"cache", uimm5, mem_nms9, II_CACHE>,
   let Inst{25...21} = op;
   let Inst{20...16} = base;
   let Inst{15} = offset{8};
+  let Inst{14...11} = isel;
   let Inst{7...0} = offset{7...0};
 }
 
+def CACHE_NM : CacheOpNM<"cache", uimm5, mem_nms9, II_CACHE>,
+	       Cache_S9_Enc<0b001, 0b0111>;
+
 def PREFs9_NM : CacheOpNM<"pref", uimm5, mem_nms9, II_PREF>,
-	       _Pool_P_LS_S0<0b0011>,
-		AltMnemonics<["pref[s9]"]> {
-  bits<5> op;
-  bits<14> addr;
-  bits<5> base = addr{13...9};
-  bits<9> offset = addr{8...0};
-  let Inst{25...21} = op;
-  let Inst{20...16} = base;
-  let Inst{15} = offset{8};
-  let Inst{7...0} = offset{7...0};
-}
+	       Cache_S9_Enc<0b000, 0b0011>,
+		AltMnemonics<["pref[s9]"]>;
 
 def PREF_NM : CacheOpNM<"pref", uimm5, mem_nmu12, II_PREF>,
 	       _Pool_P_LS_U12<0b0011>,
@@ -3100,18 +3096,20 @@ class SyncOpNM<string opstr, DAGOperand MO,
     InstNM<(outs), (ins MO:$addr), !strconcat(opstr, "\t$addr"),
 	   [], itin>;
 
-
-def SYNCIs9_NM : SyncOpNM<"synci", mem_nms9, II_SYNCI>,
-	         _Pool_P_LS_S0<0b0011>,
-		 AltMnemonics<["synci[s9]"]> {
+class SyncI_Enc<bits<3> psel, bits<4> isel> : _Pool_P_LS_S9<psel> {
   bits<14> addr;
   bits<5> base = addr{13...9};
   bits<9> offset = addr{8...0};
   let Inst{25...21} = 0b11111;
   let Inst{20...16} = base;
   let Inst{15} = offset{8};
+  let Inst{14...11} = isel;
   let Inst{7...0} = offset{7...0};
 }
+
+def SYNCIs9_NM : SyncOpNM<"synci", mem_nms9, II_SYNCI>,
+	         SyncI_Enc<0b000, 0b0011>,
+		 AltMnemonics<["synci[s9]"]>;
 
 def SYNCI_NM : SyncOpNM<"synci", mem_nmu12, II_SYNCI>,
 	       _Pool_P_LS_U12<0b0011>,

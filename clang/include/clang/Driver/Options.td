@@ -4040,6 +4040,8 @@ def mginv : Flag<["-"], "mginv">, Group<m_mips_Features_Group>;
 def mno_ginv : Flag<["-"], "mno-ginv">, Group<m_mips_Features_Group>;
 def mtlb : Flag<["-"], "mtlb">, Group<m_mips_Features_Group>;
 def mno_tlb : Flag<["-"], "mno-tlb">, Group<m_mips_Features_Group>;
+def meva : Flag<["-"], "meva">, Group<m_mips_Features_Group>;
+def mno_eva : Flag<["-"], "mno-eva">, Group<m_mips_Features_Group>;
 def mips1 : Flag<["-"], "mips1">,
   Alias<march_EQ>, AliasArgs<["mips1"]>, Group<m_mips_Features_Group>,
   HelpText<"Equivalent to -march=mips1">, Flags<[HelpHidden]>;

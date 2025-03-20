@@ -811,7 +811,8 @@ def : InstRW<[GenericWriteLoad], (instrs LW_NM, LWGP_NM, LWs9_NM,
                                   LWPC_NM, LW16_NM, LH16_NM, LHU16_NM,
 				  LB16_NM, LBU16_NM, LBGP_NM, LBUGP_NM,
 				  LHGP_NM, LHUGP_NM, LW4x4_NM,
-				  LL_NM, LLWP_NM)>;
+				  LL_NM, LLWP_NM, LBE_NM, LBUE_NM,
+                                  LHE_NM, LHUE_NM, LWE_NM, LLE_NM)>;
 
 def: InstRW<[GenericWriteStore], (instrs SW_NM, SWs9_NM, SW16_NM, SH16_NM,
                                   SH_NM, SHs9_NM, SWGP_NM, SBGP_NM, SHGP_NM,
@@ -819,16 +820,17 @@ def: InstRW<[GenericWriteStore], (instrs SW_NM, SWs9_NM, SW16_NM, SH16_NM,
 				  LWSP16_NM, SWSP16_NM, SW4x4_NM,
                                   SWX_NM, SWXS_NM, SHX_NM, SHXS_NM, SBX_NM,
                                   UASH_NM, SWM_NM, UASWM_NM, UASW_NM, SWPC_NM,
-				  SC_NM, SCWP_NM, SWDSP_NM, LWDSP_NM)>;
+				  SC_NM, SCWP_NM, SWDSP_NM, LWDSP_NM,
+                                  SBE_NM, SHE_NM, SWE_NM, SCE_NM)>;
 
 def : InstRW<[GenericWriteCOP0], (instrs EHB_NM, PAUSE_NM)>;
 
 // pref
-def : InstRW<[GenericWritePref], (instrs PREF_NM, PREFs9_NM)>;
+def : InstRW<[GenericWritePref], (instrs PREF_NM, PREFs9_NM, PREFE_NM)>;
 // cache
-def : InstRW<[GenericWriteCache], (instrs CACHE_NM)>;
+def : InstRW<[GenericWriteCache], (instrs CACHE_NM, CACHEE_NM)>;
 // sync
-def : InstRW<[GenericWriteSync], (instrs SYNC_NM, SYNCI_NM, SYNCIs9_NM)>;
+def : InstRW<[GenericWriteSync], (instrs SYNC_NM, SYNCI_NM, SYNCIs9_NM, SYNCIE_NM)>;
 // ginv*
 def : InstRW<[GenericWriteSync], (instrs GINVI_NM, GINVT_NM)>;
 // tlb*

@@ -2496,6 +2496,23 @@ def LBUs9_NM : LoadMemoryNM<"lbu", GPRNM32Opnd, mem_nms9, zextloadi8, addrsimm9,
 def LHUs9_NM : LoadMemoryNM<"lhu", GPRNM32Opnd, mem_nms9, zextloadi16, addrsimm9, II_LHU>,
 		LSMem_S9_Enc<0b000, 0b0110>, AltMnemonics<["lhu[s9]"]>;
 
+def LBE_NM : LoadMemoryNM<"lbe", GPRNM32Opnd, mem_nms9, sextloadi8, addrsimm9, II_LB>,
+	       LSMem_S9_Enc<0b010, 0b0000>, ASE_EVA;
+def SBE_NM : StoreMemoryNM<"sbe", GPRNM32Opnd, mem_nms9, truncstorei8, addrsimm9, II_SB>,
+	       LSMem_S9_Enc<0b010, 0b0001>, ASE_EVA;
+def LHE_NM : LoadMemoryNM<"lhe", GPRNM32Opnd, mem_nms9, sextloadi16, addrsimm9, II_LH>,
+	       LSMem_S9_Enc<0b010, 0b0100>, ASE_EVA;
+def SHE_NM : StoreMemoryNM<"she", GPRNM32Opnd, mem_nms9, truncstorei16, addrsimm9, II_SH>,
+	       LSMem_S9_Enc<0b010, 0b0101>, ASE_EVA;
+def LWE_NM : LoadMemoryNM<"lwe", GPRNM32Opnd, mem_nms9, load, addrsimm9, II_LW>,
+	       LSMem_S9_Enc<0b010, 0b1000>, ASE_EVA;
+def SWE_NM : StoreMemoryNM<"swe", GPRNM32Opnd, mem_nms9, store, addrsimm9, II_SW>,
+	       LSMem_S9_Enc<0b010, 0b1001>, ASE_EVA;
+def LBUE_NM : LoadMemoryNM<"lbue", GPRNM32Opnd, mem_nms9, zextloadi8, addrsimm9, II_LBU>,
+	        LSMem_S9_Enc<0b010, 0b0010>, ASE_EVA;
+def LHUE_NM : LoadMemoryNM<"lhue", GPRNM32Opnd, mem_nms9, zextloadi16, addrsimm9, II_LHU>,
+	        LSMem_S9_Enc<0b010, 0b0110>, ASE_EVA;
+
 def LBX_NM : LoadMemoryNM<"lbx", GPRNM32Opnd, mem_nmrx, sextloadi8, addrindexed, II_LB>,
 		LSMemX_Enc<0, 0b0000>;
 def SBX_NM : StoreMemoryNM<"sbx", GPRNM32Opnd, mem_nmrx, truncstorei8, addrindexed, II_SB>,
@@ -2725,14 +2742,15 @@ class LLSC_Enc<bits<3> psel, bits<4>isel> : _Pool_P_LS_S9<psel> {
   let Inst{1...0} = 0b00;
 }
 
-class LLSCWP_Enc<bits<4> psel, bits<2> isel> : _Pool_P_LS_S1<psel> {
+class LLSCWP_Enc<bits<3> psel, bits<4> isel> : _Pool_P_LS_S9<psel> {
   bits<5> rt;
   bits<5> ru;
   bits<5> addr;
   let Inst{25...21} = rt;
   let Inst{20...16} = addr;
+  let Inst{14...11} = isel;
   let Inst{7...3} = ru;
-  let Inst{1...0} = isel;
+  let Inst{1...0} = 0b01;
 }
 
 def LL_NM : LoadMemoryNM<"ll", GPRNM32Opnd, mem_nm7s2, load, addrsimm9, II_LL>,
@@ -2747,9 +2765,21 @@ def SC_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, mem_nm7s2:$add
   let hasNoSchedulingInfo = 1;
 }
 
+def LLE_NM : LoadMemoryNM<"lle", GPRNM32Opnd, mem_nm7s2, load, addrsimm9, II_LL>,
+		LLSC_Enc<0b010, 0b1010>, ASE_EVA {
+  let hasNoSchedulingInfo = 1;
+}
+
+def SCE_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, mem_nm7s2:$addr),
+		"sce\t$rt, $addr", []>, RegConstraint<"$rt = $dst">,
+		LLSC_Enc<0b010, 0b1011>, ASE_EVA {
+  let mayStore = 1;
+  let hasNoSchedulingInfo = 1;
+}
+
 def LLWP_NM : InstNM<(outs GPRNM32Opnd:$rt, GPRNM32Opnd:$ru), (ins mem_nm0:$addr),
 		     "llwp $rt, $ru, $addr", [], II_LL>,
-	      LLSCWP_Enc<0b1010, 0b01> {
+	      LLSCWP_Enc<0b001, 0b1010> {
   let canFoldAsLoad = 1;
   let mayLoad = 1;
   string BaseOpcode = "llwp";
@@ -2759,7 +2789,25 @@ def LLWP_NM : InstNM<(outs GPRNM32Opnd:$rt, GPRNM32Opnd:$ru), (ins mem_nm0:$addr
 def SCWP_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, GPRNM32Opnd:$ru, mem_nm0:$addr),
 		     "scwp $rt, $ru, $addr", [], II_SC>,
 	      RegConstraint<"$dst = $rt">,
-	      LLSCWP_Enc<0b1011, 0b01> {
+	      LLSCWP_Enc<0b001, 0b1011> {
+  let mayStore = 1;
+  string BaseOpcode = "scwp";
+  let hasNoSchedulingInfo = 1;
+}
+
+def LLWPE_NM : InstNM<(outs GPRNM32Opnd:$rt, GPRNM32Opnd:$ru), (ins mem_nm0:$addr),
+		     "llwpe $rt, $ru, $addr", [], II_LL>,
+	      LLSCWP_Enc<0b010, 0b1010> {
+  let canFoldAsLoad = 1;
+  let mayLoad = 1;
+  string BaseOpcode = "llwp";
+  let hasNoSchedulingInfo = 1;
+}
+
+def SCWPE_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, GPRNM32Opnd:$ru, mem_nm0:$addr),
+		     "scwpe $rt, $ru, $addr", [], II_SC>,
+	      RegConstraint<"$dst = $rt">,
+	      LLSCWP_Enc<0b010, 0b1011> {
   let mayStore = 1;
   string BaseOpcode = "scwp";
   let hasNoSchedulingInfo = 1;
@@ -3035,9 +3083,16 @@ class Cache_S9_Enc<bits<3> psel, bits<4> isel> : _Pool_P_LS_S9<psel> {
 def CACHE_NM : CacheOpNM<"cache", uimm5, mem_nms9, II_CACHE>,
 	       Cache_S9_Enc<0b001, 0b0111>;
 
+def CACHEE_NM : CacheOpNM<"cachee", uimm5, mem_nms9, II_CACHE>,
+	       Cache_S9_Enc<0b010, 0b0111>;
+
+
 def PREFs9_NM : CacheOpNM<"pref", uimm5, mem_nms9, II_PREF>,
 	       Cache_S9_Enc<0b000, 0b0011>,
 		AltMnemonics<["pref[s9]"]>;
+
+def PREFE_NM : CacheOpNM<"prefe", uimm5, mem_nms9, II_PREF>,
+	       Cache_S9_Enc<0b010, 0b0011>;
 
 def PREF_NM : CacheOpNM<"pref", uimm5, mem_nmu12, II_PREF>,
 	       _Pool_P_LS_U12<0b0011>,
@@ -3070,6 +3125,9 @@ class SyncI_Enc<bits<3> psel, bits<4> isel> : _Pool_P_LS_S9<psel> {
 def SYNCIs9_NM : SyncOpNM<"synci", mem_nms9, II_SYNCI>,
 	         SyncI_Enc<0b000, 0b0011>,
 		 AltMnemonics<["synci[s9]"]>;
+
+def SYNCIE_NM : SyncOpNM<"syncie", mem_nms9, II_SYNCI>,
+	         SyncI_Enc<0b010, 0b0011>, ASE_EVA;
 
 def SYNCI_NM : SyncOpNM<"synci", mem_nmu12, II_SYNCI>,
 	       _Pool_P_LS_U12<0b0011>,

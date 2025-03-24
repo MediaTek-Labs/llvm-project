@@ -472,6 +472,10 @@ protected:
   /// absolute difference.
   bool DwarfFDESymbolsUseAbsDiff = false;
 
+  /// True if DWARF FDE PC range relocations should be replaced by an
+  /// absolute difference.
+  bool DwarfFDEPCRangeUseAbsDiff = true;
+
   /// True if the target supports generating the DWARF line table through using
   /// the .loc/.file directives. Defaults to true.
   bool UsesDwarfFileAndLocDirectives = true;
@@ -814,6 +818,7 @@ public:
   }
 
   bool doDwarfFDESymbolsUseAbsDiff() const { return DwarfFDESymbolsUseAbsDiff; }
+  bool doDwarfFDEPCRangeUseAbsDiff() const { return DwarfFDEPCRangeUseAbsDiff; }
   bool useDwarfRegNumForCFI() const { return DwarfRegNumForCFI; }
   bool useParensForSymbolVariant() const { return UseParensForSymbolVariant; }
   bool useParensForDollarSignNames() const {

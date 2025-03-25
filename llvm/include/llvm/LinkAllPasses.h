@@ -119,6 +119,7 @@ struct ForcePassLinking {
     (void)llvm::createCodeGenPrepareLegacyPass();
     (void)llvm::createPostInlineEntryExitInstrumenterPass();
     (void)llvm::createEarlyCSEPass();
+    (void)llvm::createGVNHoistPass();
     (void)llvm::createGVNPass();
     (void)llvm::createPostDomTree();
     (void)llvm::createMergeICmpsLegacyPass();

@@ -123,6 +123,7 @@ void initializeFuncletLayoutPass(PassRegistry &);
 void initializeGCEmptyBasicBlocksPass(PassRegistry &);
 void initializeGCMachineCodeAnalysisPass(PassRegistry &);
 void initializeGCModuleInfoPass(PassRegistry &);
+void initializeGVNHoistLegacyPassPass(PassRegistry &);
 void initializeGVNLegacyPassPass(PassRegistry &);
 void initializeGlobalMergeFuncPassWrapperPass(PassRegistry &);
 void initializeGlobalMergePass(PassRegistry &);

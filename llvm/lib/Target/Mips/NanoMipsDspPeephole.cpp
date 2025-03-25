@@ -28,6 +28,11 @@ static cl::opt<bool>
     DisableDspPeeps("disable-nm-dsp-peep",
                     cl::desc("Disable Nanomips DSP peephole pass"),
                     cl::init(false));
+static cl::opt<bool> DisableDspSinkExtract(
+    "disable-nm-dsp-sink-extract",
+    cl::desc("Disable Nanomips DSP peephole: sink ACC extract"),
+    cl::init(false));
+
 namespace {
 
 typedef enum { partLow, partHigh } Part;
@@ -67,6 +72,12 @@ struct NMDspPeephole : public MachineFunctionPass {
   bool isUsedElsewhere(MachineInstr *, VecMI &, unsigned);
   void accConversionBeneficial(MachineInstr *, VecMI &, Part, uint64_t &,
                                uint64_t &);
+  uint64_t BBFrequency(const MachineBasicBlock *);
+  bool deadPHI(const MachineInstr &);
+  void cloneForUse(MachineInstr &, MachineInstr *,
+                               MachineFunction *, MachineInstr *);
+  bool sinkExtract(MachineInstr &);
+  bool sinkExtracts(MachineBasicBlock &);
   StringRef getPassName() const override { return PASS_NAME; }
   Register getAccRegOrNone(MachineOperand &MO);
   MachineBasicBlock::iterator afterLastPhi(MachineBasicBlock::iterator);
@@ -99,6 +110,11 @@ INITIALIZE_PASS_BEGIN(NMDspPeephole, DEBUG_TYPE, PASS_NAME, false, false)
 INITIALIZE_PASS_DEPENDENCY(MachineBlockFrequencyInfoWrapperPass)
 INITIALIZE_PASS_END(NMDspPeephole, DEBUG_TYPE, PASS_NAME, false, false)
  
+
+uint64_t NMDspPeephole::BBFrequency(const MachineBasicBlock *BB) {
+  BlockFrequency Freq = MBFI->getBlockFreq(BB);
+  return Freq.getFrequency();
+}
 
 // Adapted version of [PowerPC] Fix for excessive ACC copies due to PHI nodes
 // (PPCMIPeephole.cpp)
@@ -286,11 +302,6 @@ bool NMDspPeephole::isUsedElsewhere(MachineInstr *Def, VecMI &CandidatePHIs,
 void NMDspPeephole::accConversionBeneficial(MachineInstr *PHI, VecMI &PHIs,
                                             Part P, uint64_t &CostBaseline,
                                             uint64_t &CostChange) {
-
-  auto BBFrequency = [this](const MachineBasicBlock *BB) {
-    BlockFrequency Freq = MBFI->getBlockFreq(BB);
-    return Freq.getFrequency();
-  };
 
   // Iterate over the operands of the PHI node
   // to calculate cost of moving ACC extract
@@ -538,6 +549,99 @@ bool NMDspPeephole::convertPHIsGPRToAcc(MachineBasicBlock &MBB) {
   return Modified;
 }
 
+bool NMDspPeephole::deadPHI(const MachineInstr &MI) {
+  // was not converted
+  if (find(ConvertedPHIs, &MI) == ConvertedPHIs.end())
+    return false;
+  // was converted to ACC PHI, now look for non-compose usages
+  for (const MachineOperand &MO : MI.defs()) {
+    if (!MO.isReg() || !Register::isVirtualRegister(MO.getReg()))
+      continue;
+
+    for (auto &Use : MRI->use_nodbg_operands(MO.getReg())) {
+      const MachineInstr *UseMI = Use.getParent();
+      if (UseMI->getOpcode() != acc::Compose) {
+        return false;
+      }
+    }
+  }
+  // could not find non-ACC compose usages
+  return true;
+}
+
+void NMDspPeephole::cloneForUse(MachineInstr &MI, MachineInstr *U,
+                                            MachineFunction *MF,
+                                            MachineInstr *DbgU) {
+  MachineInstr *CloneMI = MF->CloneMachineInstr(&MI);
+  unsigned OldReg = MI.getOperand(0).getReg();
+  unsigned NewReg = MRI->createVirtualRegister(MRI->getRegClass(OldReg));
+
+  auto ReplaceRegsAndInsert = [U, OldReg, NewReg](MachineInstr *MI) {
+    for (MachineOperand &MO : MI->operands())
+      if (MO.isReg() && MO.getReg() == OldReg)
+        MO.setReg(NewReg);
+    U->getParent()->insert(MachineBasicBlock::iterator(U), MI);
+  };
+
+  ReplaceRegsAndInsert(CloneMI);
+  for (MachineOperand &MO : U->operands())
+    if (MO.isReg() && MO.getReg() == OldReg)
+      MO.setReg(NewReg);
+  if (DbgU)
+    ReplaceRegsAndInsert(MF->CloneMachineInstr(DbgU));
+}
+
+bool NMDspPeephole::sinkExtract(MachineInstr &MI) {
+  MachineBasicBlock *BB = MI.getParent();
+  uint64_t CostBaseline = BBFrequency(BB);
+  uint64_t CostChange = 0;
+  unsigned Reg = MI.getOperand(0).getReg();
+  SmallVector<MachineInstr *, 4> U;
+  MachineInstr *DbgU = nullptr;
+  for (MachineInstr &UseMI : MRI->use_instructions(Reg)) {
+    if (UseMI.getOpcode() == Mips::PHI) {
+      if (!deadPHI(UseMI))
+        return false;
+    } else if (UseMI.getParent() != BB) {
+      // simple usage of the extracted value in a different block
+      // TODO: extract just once per block
+      CostChange += BBFrequency(UseMI.getParent());
+      U.push_back(&UseMI);
+    } else if (UseMI.isDebugValue()) {
+      assert(!DbgU);
+      DbgU = &UseMI;
+    } else
+      // other usages within the same block
+      return false;
+  }
+  MachineFunction *MF = BB->getParent();
+  if (CostChange < CostBaseline && !U.empty()
+      && (!MF->getFunction().hasOptSize() || U.size() < 2)) {
+    for (auto *UI : U)
+      cloneForUse(MI, UI, MF, DbgU);
+    MI.eraseFromParent();
+    if (DbgU)
+      DbgU->eraseFromParent();
+    return true;
+  }
+  return false;
+}
+
+bool NMDspPeephole::sinkExtracts(MachineBasicBlock &MBB) {
+  bool Modified = false;
+  for (MachineBasicBlock::reverse_iterator I = MBB.rbegin(), E = MBB.rend();
+       I != E;) {
+    MachineInstr &MI = *I;
+    ++I;
+    switch (MI.getOpcode()) {
+    case acc::ExtractHi:
+    case acc::ExtractLo:
+      Modified |= sinkExtract(MI);
+    }
+  }
+  return Modified;
+}
+
 // remove redundant copies in straight line code
 bool NMDspPeephole::removeRedundantMoveFromAcc(MachineBasicBlock &MBB) {
   bool Modified = false;
@@ -594,6 +698,8 @@ bool NMDspPeephole::runOnMachineFunction(MachineFunction &Fn) {
     MachineBasicBlock &MBB = *MFI;
     Modified |= convertPHIsGPRToAcc(MBB);
     Modified |= removeRedundantMoveFromAcc(MBB);
+    if (!DisableDspSinkExtract)
+      Modified |= sinkExtracts(MBB);
   }
   return Modified;
 }

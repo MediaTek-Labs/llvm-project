@@ -355,7 +355,14 @@
 	movep	$a3, $a4, $a6, $s0	# CHECK: movep $a3, $a4, $a6, $s0	# encoding: [0x0a,0xbf]
 				# CHECK-NEXT: # <MCInst #{{.*}} MOVEP_NM
 				# DISAS: {{.*}}  0a bf        	movep	$a3, $a4, $a6, $s0
-	
+
+	movep	$s1, $s0, $a1, $a0	# CHECK: movep $s0, $s1, $a0, $a1	# encoding: [0x30,0xfe]
+				# CHECK-NEXT: # <MCInst #{{.*}} MOVEPREV_NM
+				# DISAS: {{.*}}  30 fe        	movep	$s0, $s1, $a0, $a1
+	movep	$a1, $a0, $s1, $s0	# CHECK: movep $a0, $a1, $s0, $s1	# encoding: [0x30,0xbe]
+				# CHECK-NEXT: # <MCInst #{{.*}} MOVEP_NM
+				# DISAS: {{.*}}  30 be        	movep	$a0, $a1, $s0, $s1
+
 	li	$a0, 1		# CHECK: li $a0, 1	# encoding: [0x01,0xd2]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI16_NM
 				# DISAS: {{.*}}  01 d2        	li	$a0, 1

@@ -2608,6 +2608,14 @@ def MOVEPREV_NM : InstNM<(outs GPRNM4Opnd:$dst1, GPRNM4Opnd:$dst2),
 			 AltMnemonics<["movep[rev]"]>;
 }
 
+def MOVEPSWAP_NM : NanoMipsInstAlias<"movep\t$dst2,$dst1,$src2,$src1",
+			(MOVEP_NM GPRNM2R1Opnd:$dst1, GPRNM2R2Opnd:$dst2,
+			GPRNM4ZOpnd:$src1, GPRNM4ZOpnd:$src2), 0>;
+
+def MOVEPREVSWAP_NM : NanoMipsInstAlias<"movep\t$dst2,$dst1,$src2,$src1",
+			(MOVEPREV_NM GPRNM4Opnd:$dst1, GPRNM4Opnd:$dst2,
+			GPRNM2R1Opnd:$src1, GPRNM2R2Opnd:$src2), 0>;
+
 class LoadExtend <SDPatternOperator OpNode, InstNM InstLoad,
 		       SDPatternOperator ImmType, InstNM InstAdd> :
 	NMPat<(i32 (OpNode (add GPRNM32:$rs, ImmType:$imm))),

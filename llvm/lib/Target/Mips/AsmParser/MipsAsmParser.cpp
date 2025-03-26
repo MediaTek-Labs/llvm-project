@@ -6566,11 +6566,14 @@ bool MipsAsmParser::expandLaNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
 	 Inst.getOperand(1).getExpr()->getKind() == MCExpr::SymbolRef &&
 	 "expected symbol reference operand");
 
-  MipsTargetStreamer &TOut = getTargetStreamer();
-  unsigned rt = Inst.getOperand(0).getReg();
-  unsigned Op = STI->getFeatureBits()[Mips::FeaturePCRel] ? Mips::LAPC48_NM : Mips::LI48_NM;
-  TOut.emitRX(Op, rt, Inst.getOperand(1), IDLoc, STI);
-  return false;
+  if (Inst.getOperand(1).isImm() || !STI->getFeatureBits()[Mips::FeaturePCRel])
+    return expandLiNM(Inst, IDLoc, Out, STI);
+  else {
+    MipsTargetStreamer &TOut = getTargetStreamer();
+    unsigned rt = Inst.getOperand(0).getReg();
+    TOut.emitRX(Mips::LAPC48_NM, rt, Inst.getOperand(1), IDLoc, STI);
+    return false;
+  }
 }
 
 // Expand to appropriate ADDIU instruction for negative immediates

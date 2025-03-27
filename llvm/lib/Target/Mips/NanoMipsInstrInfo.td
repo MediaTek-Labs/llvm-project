@@ -2782,14 +2782,15 @@ class LLSC_Enc<bits<3> psel, bits<4>isel> : _Pool_P_LS_S9<psel> {
   let Inst{1...0} = 0b00;
 }
 
-class LLSCWP_Enc<bits<4> psel, bits<2> isel> : _Pool_P_LS_S1<psel> {
+class LLSCWP_Enc<bits<3> psel, bits<4> isel> : _Pool_P_LS_S9<psel> {
   bits<5> rt;
   bits<5> ru;
   bits<5> addr;
   let Inst{25...21} = rt;
   let Inst{20...16} = addr;
+  let Inst{14...11} = isel;
   let Inst{7...3} = ru;
-  let Inst{1...0} = isel;
+  let Inst{1...0} = 0b01;
 }
 
 def LL_NM : LoadMemoryNM<"ll", GPRNM32Opnd, mem_nm7s2, load, addrsimm9, II_LL>,
@@ -2818,7 +2819,7 @@ def SCE_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, mem_nm7s2:$ad
 
 def LLWP_NM : InstNM<(outs GPRNM32Opnd:$rt, GPRNM32Opnd:$ru), (ins mem_nm0_no_offset:$addr),
 		     "llwp $rt, $ru, $addr", [], II_LL>,
-	      LLSCWP_Enc<0b1010, 0b01> {
+	      LLSCWP_Enc<0b001, 0b1010> {
   let canFoldAsLoad = 1;
   let mayLoad = 1;
   string BaseOpcode = "llwp";
@@ -2828,7 +2829,25 @@ def LLWP_NM : InstNM<(outs GPRNM32Opnd:$rt, GPRNM32Opnd:$ru), (ins mem_nm0_no_of
 def SCWP_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, GPRNM32Opnd:$ru, mem_nm0:$addr),
 		     "scwp $rt, $ru, $addr", [], II_SC>,
 	      RegConstraint<"$dst = $rt">,
-	      LLSCWP_Enc<0b1011, 0b01> {
+	      LLSCWP_Enc<0b001, 0b1011> {
+  let mayStore = 1;
+  string BaseOpcode = "scwp";
+  let hasNoSchedulingInfo = 1;
+}
+
+def LLWPE_NM : InstNM<(outs GPRNM32Opnd:$rt, GPRNM32Opnd:$ru), (ins mem_nm0:$addr),
+		     "llwpe $rt, $ru, $addr", [], II_LL>,
+	      LLSCWP_Enc<0b010, 0b1010> {
+  let canFoldAsLoad = 1;
+  let mayLoad = 1;
+  string BaseOpcode = "llwp";
+  let hasNoSchedulingInfo = 1;
+}
+
+def SCWPE_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, GPRNM32Opnd:$ru, mem_nm0:$addr),
+		     "scwpe $rt, $ru, $addr", [], II_SC>,
+	      RegConstraint<"$dst = $rt">,
+	      LLSCWP_Enc<0b010, 0b1011> {
   let mayStore = 1;
   string BaseOpcode = "scwp";
   let hasNoSchedulingInfo = 1;

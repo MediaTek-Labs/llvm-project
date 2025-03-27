@@ -812,7 +812,8 @@ def : InstRW<[GenericWriteLoad], (instrs LW_NM, LWGP_NM, LWs9_NM,
 				  LB16_NM, LBU16_NM, LBGP_NM, LBUGP_NM,
 				  LHGP_NM, LHUGP_NM, LW4x4_NM,
 				  LL_NM, LLWP_NM, LBE_NM, LBUE_NM,
-                                  LHE_NM, LHUE_NM, LWE_NM, LLE_NM)>;
+                                  LHE_NM, LHUE_NM, LWE_NM, LLE_NM,
+                                  LLWPE_NM)>;
 
 def: InstRW<[GenericWriteStore], (instrs SW_NM, SWs9_NM, SW16_NM, SH16_NM,
                                   SH_NM, SHs9_NM, SWGP_NM, SBGP_NM, SHGP_NM,
@@ -821,7 +822,7 @@ def: InstRW<[GenericWriteStore], (instrs SW_NM, SWs9_NM, SW16_NM, SH16_NM,
                                   SWX_NM, SWXS_NM, SHX_NM, SHXS_NM, SBX_NM,
                                   UASH_NM, SWM_NM, UASWM_NM, UASW_NM, SWPC_NM,
 				  SC_NM, SCWP_NM, SWDSP_NM, LWDSP_NM,
-                                  SBE_NM, SHE_NM, SWE_NM, SCE_NM)>;
+                                  SBE_NM, SHE_NM, SWE_NM, SCE_NM, SCWPE_NM)>;
 
 def : InstRW<[GenericWriteCOP0], (instrs EHB_NM, PAUSE_NM)>;
 

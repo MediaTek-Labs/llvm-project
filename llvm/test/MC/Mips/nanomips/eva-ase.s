@@ -103,3 +103,9 @@ test:
 	sce	$a1, 252($s2)	# CHECK: sce $a1, 252($s2) # encoding: [0xb2,0xa4,0xfc,0x5a]
 				# CHECK-NEXT: <MCInst  #{{.*}} SCE_NM
 				# DISAS: {{.*}}  b2 a4 fc 5a  	sce	$a1, 252($s2)
+	llwpe	$a0, $a1, ($s2)	# CHECK: llwpe $a0, $a1, ($s2) # encoding: [0x92,0xa4,0x29,0x52]
+				# CHECK-NEXT: <MCInst  #{{.*}} LLWPE_NM
+				# DISAS: {{.*}}  92 a4 29 52  	llwpe $a0, $a1, ($s2)
+	scwpe	$t0, $t1, ($s6)	# CHECK: scwpe $t0, $t1, ($s6) # encoding: [0x96,0xa5,0x69,0x5a]
+				# CHECK-NEXT: <MCInst  #{{.*}} SCWPE_NM
+				# DISAS: {{.*}}  96 a5 69 5a  	scwpe $t0, $t1, ($s6)

@@ -282,6 +282,8 @@ void MipsInstPrinter::printMemOperand(const MCInst *MI, int opNum,
     // No offset needed for paired LL/SC
     case Mips::LLWP_NM:
     case Mips::SCWP_NM:
+    case Mips::LLWPE_NM:
+    case Mips::SCWPE_NM:
       break;
     case Mips::LWX_NM:
     case Mips::LWXS_NM:

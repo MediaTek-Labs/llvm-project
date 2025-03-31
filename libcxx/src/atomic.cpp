@@ -10,7 +10,11 @@
 #include <atomic>
 #include <climits>
 #include <functional>
+#ifndef _LIBCPP_DISABLE_DYNAMIC_THREADING
+
 #include <thread>
+
+#endif
 
 #include "include/apple_availability.h"
 

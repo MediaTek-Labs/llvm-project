@@ -308,6 +308,10 @@ endif()
 option(LIBCXX_SHARED_PTR_NOT_ATOMIC
     "Build libc++ without support for atomic operations of shared ptr" OFF)
 
+option(LIBCXX_DISABLE_DYNAMIC_THREADING
+    "Build libc++ with disabled dynamic threading for synchronization primitives.
+    This change undefines some thread_at_exit functions." OFF)
+
 # Misc options ----------------------------------------------------------------
 # FIXME: Turn -pedantic back ON. It is currently off because it warns
 # about #include_next which is used everywhere.
@@ -767,6 +771,7 @@ config_define(${LIBCXX_ENABLE_UNICODE} _LIBCPP_HAS_UNICODE)
 config_define(${LIBCXX_ENABLE_WIDE_CHARACTERS} _LIBCPP_HAS_WIDE_CHARACTERS)
 config_define(${LIBCXX_ENABLE_TIME_ZONE_DATABASE} _LIBCPP_HAS_TIME_ZONE_DATABASE)
 config_define(${LIBCXX_ENABLE_VENDOR_AVAILABILITY_ANNOTATIONS} _LIBCPP_HAS_VENDOR_AVAILABILITY_ANNOTATIONS)
+config_define_if(LIBCXX_DISABLE_DYNAMIC_THREADING _LIBCPP_DISABLE_DYNAMIC_THREADING)
 
 # TODO: Remove in LLVM 21. We're leaving an error to make this fail explicitly.
 if (LIBCXX_ENABLE_ASSERTIONS)

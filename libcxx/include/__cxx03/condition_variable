@@ -343,7 +343,11 @@ bool condition_variable_any::wait_for(
 
 #  endif // _LIBCPP_STD_VER >= 20 && !defined(_LIBCPP_HAS_NO_EXPERIMENTAL_STOP_TOKEN)
 
+#  ifndef _LIBCPP_DISABLE_DYNAMIC_THREADING
+
 _LIBCPP_EXPORTED_FROM_ABI void notify_all_at_thread_exit(condition_variable&, unique_lock<mutex>);
+
+#  endif
 
 _LIBCPP_END_NAMESPACE_STD
 

@@ -15,7 +15,9 @@ export namespace std {
   using std::condition_variable_any;
 
   // [thread.condition.nonmember], non-member functions
+#ifndef _LIBCPP_DISABLE_DYNAMIC_THREADING
   using std::notify_all_at_thread_exit;
+#endif
 
   using std::cv_status;
 #endif // _LIBCPP_HAS_THREADS

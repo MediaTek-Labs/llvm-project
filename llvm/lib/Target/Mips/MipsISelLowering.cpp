@@ -1641,6 +1641,14 @@ SDValue  MipsTargetLowering::PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI)
   return SDValue();
 }
 
+// in Mips/DSP mode we implement extract element by stack store and load.
+// if extracting first element, it's better to use zero extend and truncate.
+// in non-DSP mode vectors are legalized by breaking them down to native types
+// conservatively support requested type only
+bool MipsTargetLowering::isCheapToTruncateVectorByExtract(EVT Ty) const {
+  return Subtarget.hasDSP() && Ty == MVT::v2i16;
+}
+
 bool MipsTargetLowering::isCheapToSpeculateCttz(Type *Ty) const {
   return Subtarget.hasMips32() || Subtarget.hasNanoMips();
 }

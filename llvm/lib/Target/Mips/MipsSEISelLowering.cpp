@@ -146,8 +146,8 @@ MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
       setOperationAction(ISD::BITCAST, VecTy, Legal);
     }
 
-    setTargetDAGCombine(
-        {ISD::SHL, ISD::SRA, ISD::SRL, ISD::SETCC, ISD::VSELECT});
+    setTargetDAGCombine({ISD::SHL, ISD::SRA, ISD::SRL, ISD::SETCC, ISD::VSELECT,
+                         ISD::BUILD_VECTOR, ISD::EXTRACT_VECTOR_ELT});
 
     if (Subtarget.hasMips32r2() || Subtarget.hasNanoMips()) {
       setOperationAction(ISD::ADDC, MVT::i32, Legal);
@@ -984,6 +984,60 @@ static SDValue performSHLCombine(SDNode *N, SelectionDAG &DAG,
   return performDSPShiftCombine(MipsISD::SHLL_DSP, N, Ty, DAG, Subtarget);
 }
 
+// replace:
+//   t18: v2i16 = ....
+// t19: i16 = extract_vector_elt t18, Constant:i32<0>
+// with:
+//   t99: i32  = bitcast t18, ValueType:ch:i32
+// t19: i16 = truncate t99, ValueType:ch:i16
+static SDValue
+performExtractVectorEltCombine(SDNode *N, SelectionDAG &DAG,
+                               TargetLowering::DAGCombinerInfo &DCI,
+                               const MipsSubtarget &Subtarget) {
+  if (!Subtarget.hasDSP())
+    return SDValue();
+  EVT Ty = N->getValueType(0);
+  if (Ty != MVT::i16)
+    return SDValue();
+  SDValue EVOp1 = N->getOperand(0);
+  SDValue EVOp2 = N->getOperand(1);
+  EVT TyOp = EVOp1->getValueType(0);
+  if (TyOp != MVT::v2i16)
+    return SDValue();
+  ConstantSDNode *ConstNode = cast<ConstantSDNode>(EVOp2);
+  // we are looking for offset zero
+  if (!ConstNode || !(ConstNode->isZero()))
+    return SDValue();
+  auto Casted = DAG.getNode(ISD::BITCAST, SDLoc(N), MVT::i32, EVOp1);
+  return DAG.getNode(ISD::TRUNCATE, SDLoc(N), MVT::i16, Casted);
+}
+
+// replace:
+//      t8: i32 = AssertZext t4,...
+//   t24: v2i16 = BUILD_VECTOR t8, Constant:i32<0>
+// with
+//   v2i16 = bitcast t8: ValueType:ch:v2i16
+static SDValue performBuildVectorCombine(SDNode *N, SelectionDAG &DAG,
+                                         TargetLowering::DAGCombinerInfo &DCI,
+                                         const MipsSubtarget &Subtarget) {
+  if (!Subtarget.hasDSP())
+    return SDValue();
+  EVT Ty = N->getValueType(0);
+  if (Ty != MVT::v2i16)
+    return SDValue();
+  SDValue BVOp1 = N->getOperand(0);
+  SDValue BVOp2 = N->getOperand(1);
+  if (BVOp1.getOpcode() != ISD::AssertZext ||
+      BVOp2.getOpcode() != ISD::Constant) {
+    return SDValue();
+  }
+  ConstantSDNode *ConstNode = cast<ConstantSDNode>(BVOp2);
+  // we are looking for high part that is equal to zero
+  if (!ConstNode || !(ConstNode->isZero()))
+    return SDValue();
+  return DAG.getNode(ISD::BITCAST, SDLoc(N), Ty, BVOp1);
+}
+
 // Fold sign-extensions into MipsISD::VEXTRACT_[SZ]EXT_ELT for MSA and fold
 // constant splats into MipsISD::SHRA_DSP for DSPr2.
 //
@@ -1163,6 +1217,12 @@ MipsSETargetLowering::PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI) const {
     break;
   case ISD::SETCC:
     Val = performSETCCCombine(N, DAG, Subtarget);
+    break;
+  case ISD::BUILD_VECTOR:
+    Val = performBuildVectorCombine(N, DAG, DCI, Subtarget);
+    break;
+  case ISD::EXTRACT_VECTOR_ELT:
+    Val = performExtractVectorEltCombine(N, DAG, DCI, Subtarget);
     break;
   }
 

@@ -662,6 +662,11 @@ public:
     return false;
   }
 
+  // Return true if extracting first element of a vector
+  // by combination of zero-extend and truncate is cheaper than
+  // the default implementation
+  virtual bool isCheapToTruncateVectorByExtract(EVT Ty) const { return false; }
+
   /// Return true if the following transform is beneficial:
   /// fold (conv (load x)) -> (load (conv*)x)
   /// On architectures that don't natively support some vector loads

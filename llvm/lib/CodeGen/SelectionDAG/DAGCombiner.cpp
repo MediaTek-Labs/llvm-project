@@ -15596,6 +15596,7 @@ SDValue DAGCombiner::visitTRUNCATE(SDNode *N) {
     SDValue VecSrc = N0.getOperand(0);
     EVT VecSrcVT = VecSrc.getValueType();
     if (VecSrcVT.isVector() && VecSrcVT.getScalarType() == VT &&
+        !TLI.isCheapToTruncateVectorByExtract(VecSrcVT) &&
         (!LegalOperations ||
          TLI.isOperationLegal(ISD::EXTRACT_VECTOR_ELT, VecSrcVT))) {
       unsigned Idx = isLE ? 0 : VecSrcVT.getVectorNumElements() - 1;

@@ -298,6 +298,8 @@ class TargetRegisterClass;
       return MVT::i32;
     }
 
+    bool isCheapToTruncateVectorByExtract(EVT Ty) const override;
+
     EVT getTypeForExtReturn(LLVMContext &Context, EVT VT,
                             ISD::NodeType) const override;
     bool mayBeEmittedAsTailCall(const CallInst *CI) const override;

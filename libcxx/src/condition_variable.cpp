@@ -7,7 +7,11 @@
 //===----------------------------------------------------------------------===//
 
 #include <condition_variable>
+#ifndef _LIBCPP_DISABLE_DYNAMIC_THREADING
+
 #include <thread>
+
+#endif
 
 #if defined(__ELF__) && defined(_LIBCPP_LINK_PTHREAD_LIB)
 #  pragma comment(lib, "pthread")
@@ -56,6 +60,8 @@ void condition_variable::__do_timed_wait(unique_lock<mutex>& lk,
     __throw_system_error(ec, "condition_variable timed_wait failed");
 }
 
+#ifndef _LIBCPP_DISABLE_DYNAMIC_THREADING
+
 void notify_all_at_thread_exit(condition_variable& cond, unique_lock<mutex> lk) {
   auto& tl_ptr = __thread_local_data();
   // If this thread was not created using std::thread then it will not have
@@ -65,6 +71,8 @@ void notify_all_at_thread_exit(condition_variable& cond, unique_lock<mutex> lk) 
   }
   __thread_local_data()->notify_all_at_thread_exit(&cond, lk.release());
 }
+
+#endif
 
 _LIBCPP_END_NAMESPACE_STD
 

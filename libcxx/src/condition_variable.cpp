@@ -11,7 +11,12 @@
 #ifndef _LIBCPP_HAS_NO_THREADS
 
 #include <condition_variable>
+#ifndef _LIBCPP_DISABLE_DYNAMIC_THREADING
+
 #include <thread>
+
+#endif
+
 #include <system_error>
 
 #if defined(__ELF__) && defined(_LIBCPP_LINK_PTHREAD_LIB)
@@ -78,6 +83,8 @@ condition_variable::__do_timed_wait(unique_lock<mutex>& lk,
         __throw_system_error(ec, "condition_variable timed_wait failed");
 }
 
+#ifndef _LIBCPP_DISABLE_DYNAMIC_THREADING
+
 void
 notify_all_at_thread_exit(condition_variable& cond, unique_lock<mutex> lk)
 {
@@ -89,6 +96,8 @@ notify_all_at_thread_exit(condition_variable& cond, unique_lock<mutex> lk)
     }
     __thread_local_data()->notify_all_at_thread_exit(&cond, lk.release());
 }
+
+#endif
 
 _LIBCPP_END_NAMESPACE_STD
 

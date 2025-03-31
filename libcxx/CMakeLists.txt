@@ -289,6 +289,10 @@ option(LIBCXX_BUILD_EXTERNAL_THREAD_LIBRARY
 option(LIBCXX_SHARED_PTR_NOT_ATOMIC
     "Build libc++ without the support for atomic operations of shared ptr" OFF)
 
+option(LIBCXX_DISABLE_DYNAMIC_THREADING
+    "Build libc++ with disabled dynamic threading for synchronization primitives.
+    This change undefines some thread_at_exit functions." OFF)
+
 # Misc options ----------------------------------------------------------------
 # FIXME: Turn -pedantic back ON. It is currently off because it warns
 # about #include_next which is used everywhere.
@@ -861,6 +865,7 @@ config_define_if_not(LIBCXX_ENABLE_UNICODE _LIBCPP_HAS_NO_UNICODE)
 config_define_if_not(LIBCXX_ENABLE_WIDE_CHARACTERS _LIBCPP_HAS_NO_WIDE_CHARACTERS)
 config_define_if_not(LIBCXX_ENABLE_VENDOR_AVAILABILITY_ANNOTATIONS _LIBCPP_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS)
 config_define_if(LIBCXX_ENABLE_DEBUG_MODE _LIBCPP_ENABLE_DEBUG_MODE)
+config_define_if(LIBCXX_DISABLE_DYNAMIC_THREADING _LIBCPP_DISABLE_DYNAMIC_THREADING)
 if (LIBCXX_ENABLE_ASSERTIONS)
   config_define(1 _LIBCPP_ENABLE_ASSERTIONS_DEFAULT)
 else()

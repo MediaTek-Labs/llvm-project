@@ -150,7 +150,7 @@ void MipsAsmPrinter::emitJumpTableInfo() {
       // Each entry is:
       //     .byte/.hword/...   (LBB - LBR) >> 1
       Value = MCBinaryExpr::createSub(Value, DiffExpr, OutContext);
-      Value = MCBinaryExpr::createLShr(
+      Value = MCBinaryExpr::createAShr(
           Value, MCConstantExpr::create(1, OutContext), OutContext);
       emitJumpTableEntry(*OutStreamer, EntrySize, Value, Signed);
     }

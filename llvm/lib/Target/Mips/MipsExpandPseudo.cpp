@@ -393,8 +393,7 @@ bool MipsExpandPseudo::expandAtomicCmpSwap64NM(
   //   bne dest_lo, oldval_lo, exitMBB
   BuildMI(loop1LoMBB, DL, TII->get(LL), DestLo)
       .addDef(DestHi)
-      .addReg(Ptr)
-      .addImm(0);
+      .addReg(Ptr);
   BuildMI(loop1LoMBB, DL, TII->get(BNE))
       .addReg(DestLo, RegState::Kill)
       .addReg(OldValLo)
@@ -1128,8 +1127,7 @@ bool MipsExpandPseudo::expandAtomicBinOp64NM(
 
   BuildMI(loopMBB, DL, TII->get(LL), OldValLo)
       .addDef(OldValHi)
-      .addReg(Ptr)
-      .addImm(0);
+      .addReg(Ptr);
   assert((OldValLo != Ptr) && "Clobbered the wrong ptr reg!");
   assert((OldValLo != IncrLo) && "Clobbered the wrong reg!");
   assert((OldValLo != IncrHi) && "Clobbered the wrong reg!");

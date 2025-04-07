@@ -1151,6 +1151,10 @@ class mem_generic : Operand<iPTR> {
   let OperandType = "OPERAND_MEMORY";
 }
 
+class mem_generic_no_offset : mem_generic {
+  let MIOperandInfo = (ops ptr_rc);
+}
+
 // Address operand
 def mem : mem_generic;
 

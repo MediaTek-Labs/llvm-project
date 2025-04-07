@@ -479,6 +479,11 @@ def mem_nm0 : mem_generic {
   let ParserMatchClass = MemNM0Parser;
 }
 
+def mem_nm0_no_offset : mem_generic_no_offset {
+  let EncoderMethod = "getMemEncodingNMImm<0,0>";
+  let DecoderMethod = "DecodeMemZeroNM";
+  let ParserMatchClass = MemNM0Parser;
+}
 let OperandType = "OPERAND_PCREL", PrintMethod = "printPCRel" in {
 
 foreach I = {7, 10, 11, 14, 25} in
@@ -2781,7 +2786,7 @@ def SC_NM : InstNM<(outs GPRNM32Opnd:$dst), (ins GPRNM32Opnd:$rt, mem_nm7s2:$add
   let hasNoSchedulingInfo = 1;
 }
 
-def LLWP_NM : InstNM<(outs GPRNM32Opnd:$rt, GPRNM32Opnd:$ru), (ins mem_nm0:$addr),
+def LLWP_NM : InstNM<(outs GPRNM32Opnd:$rt, GPRNM32Opnd:$ru), (ins mem_nm0_no_offset:$addr),
 		     "llwp $rt, $ru, $addr", [], II_LL>,
 	      LLSCWP_Enc<0b1010, 0b01> {
   let canFoldAsLoad = 1;

@@ -836,13 +836,6 @@ private:
   /// This method emits a comment next to header for the current function.
   virtual void emitFunctionHeaderComment();
 
-  /// Emit a blob of inline asm to the output streamer.
-  void
-  emitInlineAsm(StringRef Str, const MCSubtargetInfo &STI,
-                const MCTargetOptions &MCOptions,
-                const MDNode *LocMDNode = nullptr,
-                InlineAsm::AsmDialect AsmDialect = InlineAsm::AD_ATT) const;
-
   /// This method formats and emits the specified machine instruction that is an
   /// inline asm.
   void emitInlineAsm(const MachineInstr *MI) const;
@@ -875,6 +868,15 @@ protected:
   virtual bool shouldEmitWeakSwiftAsyncExtendedFramePointerFlags() const {
     return false;
   }
+
+  /// Emit a blob of inline asm to the output streamer.
+  void
+  emitInlineAsm(StringRef Str, const MCSubtargetInfo &STI,
+                const MCTargetOptions &MCOptions,
+                const MDNode *LocMDNode = nullptr,
+                InlineAsm::AsmDialect AsmDialect = InlineAsm::AD_ATT) const;
+
+
 };
 
 } // end namespace llvm

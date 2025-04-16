@@ -286,9 +286,6 @@ option(LIBCXX_BUILD_EXTERNAL_THREAD_LIBRARY
     "Build libc++ with an externalized threading library.
      This option may only be set to ON when LIBCXX_ENABLE_THREADS=ON" OFF)
 
-option(LIBCXX_SHARED_PTR_NOT_ATOMIC
-    "Build libc++ without the support for atomic operations of shared ptr" OFF)
-
 option(LIBCXX_DISABLE_DYNAMIC_THREADING
     "Build libc++ with disabled dynamic threading for synchronization primitives.
     This change undefines some thread_at_exit functions." OFF)
@@ -856,7 +853,6 @@ config_define_if(LIBCXX_BUILD_EXTERNAL_THREAD_LIBRARY _LIBCPP_HAS_THREAD_LIBRARY
 config_define_if(LIBCXX_HAS_MUSL_LIBC _LIBCPP_HAS_MUSL_LIBC)
 config_define_if(LIBCXX_NO_VCRUNTIME _LIBCPP_NO_VCRUNTIME)
 config_define_if(LIBCXX_ENABLE_PARALLEL_ALGORITHMS _LIBCPP_HAS_PARALLEL_ALGORITHMS)
-config_define_if(LIBCXX_SHARED_PTR_NOT_ATOMIC _LIBCPP_SHARED_PTR_NOT_ATOMIC)
 config_define_if_not(LIBCXX_ENABLE_FILESYSTEM _LIBCPP_HAS_NO_FILESYSTEM_LIBRARY)
 config_define_if_not(LIBCXX_ENABLE_RANDOM_DEVICE _LIBCPP_HAS_NO_RANDOM_DEVICE)
 config_define_if_not(LIBCXX_ENABLE_LOCALIZATION _LIBCPP_HAS_NO_LOCALIZATION)

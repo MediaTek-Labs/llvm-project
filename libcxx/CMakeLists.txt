@@ -305,9 +305,6 @@ else()
   set(LIBCXX_PSTL_BACKEND "serial" CACHE STRING "Which PSTL backend to use")
 endif()
 
-option(LIBCXX_SHARED_PTR_NOT_ATOMIC
-    "Build libc++ without support for atomic operations of shared ptr" OFF)
-
 option(LIBCXX_DISABLE_DYNAMIC_THREADING
     "Build libc++ with disabled dynamic threading for synchronization primitives.
     This change undefines some thread_at_exit functions." OFF)
@@ -763,7 +760,6 @@ config_define(${LIBCXX_HAS_EXTERNAL_THREAD_API} _LIBCPP_HAS_THREAD_API_EXTERNAL)
 config_define(${LIBCXX_HAS_WIN32_THREAD_API} _LIBCPP_HAS_THREAD_API_WIN32)
 config_define(${LIBCXX_HAS_MUSL_LIBC} _LIBCPP_HAS_MUSL_LIBC)
 config_define_if(LIBCXX_NO_VCRUNTIME _LIBCPP_NO_VCRUNTIME)
-config_define_if(LIBCXX_SHARED_PTR_NOT_ATOMIC _LIBCPP_SHARED_PTR_NOT_ATOMIC)
 config_define(${LIBCXX_ENABLE_FILESYSTEM} _LIBCPP_HAS_FILESYSTEM)
 config_define(${LIBCXX_ENABLE_RANDOM_DEVICE} _LIBCPP_HAS_RANDOM_DEVICE)
 config_define(${LIBCXX_ENABLE_LOCALIZATION} _LIBCPP_HAS_LOCALIZATION)

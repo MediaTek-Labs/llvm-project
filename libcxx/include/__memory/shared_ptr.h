@@ -1473,7 +1473,7 @@ template <class _CharT, class _Traits, class _Yp>
 inline _LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
 operator<<(basic_ostream<_CharT, _Traits>& __os, shared_ptr<_Yp> const& __p);
 
-#if _LIBCPP_HAS_THREADS && !defined(_LIBCPP_SHARED_PTR_NOT_ATOMIC)
+#if _LIBCPP_HAS_THREADS
 
 class _LIBCPP_EXPORTED_FROM_ABI __sp_mut {
   void* __lx_;

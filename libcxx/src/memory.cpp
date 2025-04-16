@@ -96,7 +96,7 @@ __shared_weak_count* __shared_weak_count::lock() noexcept {
 
 const void* __shared_weak_count::__get_deleter(const type_info&) const noexcept { return nullptr; }
 
-#if _LIBCPP_HAS_THREADS && !defined(_LIBCPP_SHARED_PTR_NOT_ATOMIC)
+#if _LIBCPP_HAS_THREADS
 
 static constexpr std::size_t __sp_mut_count                = 32;
 static constinit __libcpp_mutex_t mut_back[__sp_mut_count] = {

@@ -81,6 +81,11 @@ cl::opt<bool> NMipsGuardKCFIPrefetch("nmips-guard-kcfi-prefetch",
 				     cl::desc("On NanoMips, guard KCFI signatures against branch prefetch"),
 				     cl::init(true));
 
+static cl::opt<bool> DisableNanoMipsBalcStubs(
+    "disable-nanomips-balc-stubs", cl::Hidden,
+    cl::desc("NANOMIPS: Disable balc stubs optimization in the linker"),
+    cl::init(false));
+
 void MipsAsmPrinter::emitJumpTableInfo() {
   if (!Subtarget->hasNanoMips() || Subtarget->useAbsoluteJumpTables() ) {
     AsmPrinter::emitJumpTableInfo();
@@ -475,6 +480,18 @@ void MipsAsmPrinter::emitLoadAddressNM(MCStreamer &OutStreamer,
   LA.addOperand(Addr);
   EmitToStreamer(OutStreamer, LA);
 }
+// NOTE: This is being used to control optimization of BALC in the linker.
+static void emitDirectivesToDisableBalcStubs(const MachineInstr &MI,
+                                            MCContext &OutContext,
+                                            TargetMachine &TM,
+                                            MCStreamer &OutStreamer) {
+  assert(DisableNanoMipsBalcStubs || !MI.getMF()->getFunction().hasOptSize());
+  MCSymbol *OffsetLabel = OutContext.createTempSymbol();
+  const MCExpr *OffsetExpr = MCSymbolRefExpr::create(OffsetLabel, OutContext);
+  OutStreamer.emitRelocDirective(*OffsetExpr, "R_NANOMIPS_NOTRAMP", nullptr,
+                                 SMLoc(), *TM.getMCSubtargetInfo());
+  OutStreamer.emitLabel(OffsetLabel);
+}
 
 void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
   // FIXME: Enable feature predicate checks once all the test pass.
@@ -595,6 +612,11 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
     if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoLA_NM) {
       emitLoadAddressNM(*OutStreamer, &*I);
       continue;
+    }
+
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::BALC_NM &&
+        (!I->getMF()->getFunction().hasOptSize() || DisableNanoMipsBalcStubs)) {
+      emitDirectivesToDisableBalcStubs(*I, OutContext, TM, *OutStreamer);
     }
 
     // The inMips16Mode() test is not permanent.

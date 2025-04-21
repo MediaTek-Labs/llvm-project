@@ -51,3 +51,7 @@
   mttr $a0, $31, 1, 3, 0    # CHECK:  mttr  $a0, $31, 1, 3, 0    # encoding: [0x9f,0x20,0x70,0x1e]
   mttr $a0, $14, 1, 4, 0    # CHECK:  mttr  $a0, $14, 1, 4, 0    # encoding: [0x8e,0x20,0x70,0x26]
   mttr $a0, $15, 1, 5, 0    # CHECK:  mttr  $a0, $15, 1, 5, 0    # encoding: [0x8f,0x20,0x70,0x2e]
+  mftr $a0, $a1, 0, 2, 0    # CHECK:  mftr  $a0, $a1, 0, 2, 0     # encoding: [0x85,0x20,0x30,0x12]
+                            # DISAS: {{.*}}: 2085 1230    mftr $a0, $5, 0, 2, 0
+  mttr $a0, $a1, 0, 2, 0    # CHECK:  mttr  $a0, $a1, 0, 2, 0     # encoding: [0x85,0x20,0x70,0x12]
+                            # DISAS: {{.*}}: 2085 1270    mttr $a0, $5, 0, 2, 0

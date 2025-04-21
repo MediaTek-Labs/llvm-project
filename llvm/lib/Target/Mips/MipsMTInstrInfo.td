@@ -266,6 +266,15 @@ def MFTR_NM : COP0_MFTR_NM_MT<0b100011>, MFTR_DESC<GPRNM32Opnd, COP0Opnd>, ASE_M
 
 def MTTR_NM : COP0_MTTR_NM_MT<0b100111>, MTTR_DESC<GPRNM32Opnd, COP0Opnd>, ASE_MT;
 
+let isAsmParserOnly = 1, hasNoSchedulingInfo = 1 in {
+  // MTTR/MFTR accept COP0 registers as the second register operand, denoted in
+  // the numeric notation ($1,$2,..). GNU assembler for nanoMIPS also accepts the 
+  // use of GP register notations ($at, $a0, ...) for this operand. These 
+  // definitions are to maintain compatibility with GNU assembler.
+  def : COP0_MFTR_NM_MT<0b100011>, MFTR_DESC<GPRNM32Opnd, GPRNM32Opnd>, ASE_MT;
+  def : COP0_MTTR_NM_MT<0b100111>, MTTR_DESC<GPRNM32Opnd, GPRNM32Opnd>, ASE_MT;
+}
+
 def : NanoMipsInstAlias<"dmt", (DMT_NM ZERO_NM), 1>, ASE_MT;
 def : NanoMipsInstAlias<"emt", (EMT_NM ZERO_NM), 1>, ASE_MT;
 def : NanoMipsInstAlias<"dvpe", (DVPE_NM ZERO_NM), 1>, ASE_MT;

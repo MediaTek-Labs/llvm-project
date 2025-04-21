@@ -43,6 +43,7 @@ class LLVM_LIBRARY_VISIBILITY MipsAsmPrinter : public AsmPrinter {
   MipsTargetStreamer &getTargetStreamer() const;
 
   void EmitInstrWithMacroNoAT(const MachineInstr *MI);
+  bool isNanoMipsDspAlias(const MachineInstr *MI);
 
   //===------------------------------------------------------------------===//
   // XRay implementation

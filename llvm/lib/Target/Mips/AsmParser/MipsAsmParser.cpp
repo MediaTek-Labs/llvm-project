@@ -6533,10 +6533,13 @@ bool MipsAsmParser::expandAlignNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
 /// Expand BALIGN as EXTW / PACKRL / MOVE
 bool MipsAsmParser::expandBAlignPrependNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
 				  const MCSubtargetInfo *STI,  bool IsAlign) {
-  assert(Inst.getNumOperands() == 3 && "expected three operands");
+  assert(Inst.getNumOperands() == 4 && "expected three operands");
   assert(Inst.getOperand(0).isReg() && "expected register operand kind");
   assert(Inst.getOperand(1).isReg() && "expected register operand kind");
   assert(Inst.getOperand(2).isImm() && "expected immediate operand kind");
+  assert(Inst.getOperand(3).isReg() && "expected register operand kind");
+  assert(Inst.getOperand(0).getReg() == Inst.getOperand(3).getReg() &&
+         "expected identical input and output registers");
   if (IsAlign) {
     assert(isUInt<2>(Inst.getOperand(2).getImm()) &&
            "expected immediate operand [0..3]");

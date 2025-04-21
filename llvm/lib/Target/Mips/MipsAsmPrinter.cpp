@@ -498,6 +498,17 @@ void MipsAsmPrinter::emitLoadAddressNM(MCStreamer &OutStreamer,
   EmitToStreamer(OutStreamer, LA);
 }
 
+bool MipsAsmPrinter::isNanoMipsDspAlias(const MachineInstr *MI) {
+  if (Subtarget->hasNanoMips() && Subtarget->hasDSP()) {
+    switch(MI->getOpcode()) {
+    case Mips::BALIGN_NM:
+    case Mips::PREPEND_NM:
+      return true;
+    }
+  }
+  return false;
+}
+
 void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
   // FIXME: Enable feature predicate checks once all the test pass.
   // Mips_MC::verifyInstructionPredicates(MI->getOpcode(),
@@ -626,6 +637,7 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
     // callchain.
     //
     if (I->isPseudo() && !Subtarget->inMips16Mode()
+        && !isNanoMipsDspAlias(&*I)
         && !isLongBranchPseudo(I->getOpcode()))
       llvm_unreachable("Pseudo opcode found in emitInstruction()");
 

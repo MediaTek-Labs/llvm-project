@@ -49,3 +49,11 @@ entry:
 ; CHECK-ALL: LI48_NM
   ret i32 1375806708
 }
+
+define i32 @foo7() nounwind readnone {
+; CHECK-LABEL: foo7
+entry:
+; CHECK-ALL: lui $a0, %hi(0x87654000)
+; CHECK-ALL: LUI_NM
+  ret i32 -2023407616
+}

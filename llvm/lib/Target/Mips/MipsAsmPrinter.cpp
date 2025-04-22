@@ -509,6 +509,12 @@ void MipsAsmPrinter::emitLoadImmediateNM(MCStreamer &OutStreamer,
     Inst.setOpcode(Mips::ADDIUNEG_NM);
     Inst.addOperand(MCOperand::createReg(Mips::ZERO_NM));
   }
+  else if (ImmVal % 0x1000 == 0) {
+    Inst.setOpcode(Mips::LUI_NM);
+    Imm = MCOperand::createExpr(MipsMCExpr::create(MipsMCExpr::MEK_HI,
+						   MCConstantExpr::create(ImmVal, OutContext),
+						   OutContext, true));
+  }
   else
     Inst.setOpcode(Mips::LI48_NM);
 

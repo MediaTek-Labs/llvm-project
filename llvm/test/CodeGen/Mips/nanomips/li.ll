@@ -53,7 +53,7 @@ entry:
 define i32 @foo7() nounwind readnone {
 ; CHECK-LABEL: foo7
 entry:
-; CHECK-ALL: li $a0, 0x87654000
+; CHECK-ALL: lui $a0, %hi(0x87654000)
 ; CHECK-ALL: LUI_NM
   ret i32 -2023407616
 }

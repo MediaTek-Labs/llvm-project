@@ -1657,6 +1657,14 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
   ThunkCreator tc;
   AArch64Err843419Patcher a64p;
   ARMErr657417Patcher a32p;
+
+  // Put scatter nops here, everything is finished with input sections
+  // till this point, except some instruction transformations. Putting
+  // scatter nops may trigger those transformations, so we have to put
+  // it before these transformations.
+  if (config->scatterNopsDensity != 0)
+    target->scatterNops();
+
   script->assignAddresses();
   // .ARM.exidx and SHF_LINK_ORDER do not require precise addresses, but they
   // do require the relative addresses of OutputSections because linker scripts

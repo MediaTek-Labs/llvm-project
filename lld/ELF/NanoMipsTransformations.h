@@ -352,6 +352,8 @@ public:
   getTransformTemplate(const NanoMipsInsProperty *insProperty, uint32_t relNum,
                        uint64_t valueToRelocate, uint64_t insn,
                        const InputSection *isec) const = 0;
+  static bool updateSectionContentInner(InputSection *isec, uint64_t location,
+                                        int32_t delta, bool aligned);
   virtual void updateSectionContent(InputSection *isec, uint64_t location,
                                     int32_t delta, bool align = false);
   bool getChanged() { return changed; }
@@ -375,7 +377,7 @@ protected:
   static uint32_t newSkipBcSymCount;
 
 private:
-  void changeBytes(InputSection *isec, uint64_t location, int32_t count);
+  static void changeBytes(InputSection *isec, uint64_t location, int32_t count);
 };
 
 class NanoMipsTransformExpand : public NanoMipsTransform {
@@ -450,6 +452,7 @@ public:
 
   void initState();
   bool relaxOnce(int pass) const;
+  void scatterNops() const;
 
   // should be called before change state
   bool shouldRunAgain() const { return this->currentState->getChanged(); }
@@ -467,8 +470,8 @@ private:
   NanoMipsTransform::TransformKind getType() const {
     return this->currentState->getType();
   }
-  bool safeToModify(InputSection *sec) const;
-  void initTransformAuxInfo() const;
+  static bool safeToModify(InputSection *sec);
+  static void initTransformAuxInfo();
   void scanAndTransform(InputSection *sec) const;
   void align(InputSection *sec, Relocation &reloc, uint32_t relNum) const;
   void changeState(int pass);

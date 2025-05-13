@@ -178,6 +178,9 @@ public:
   bool relaxOnce(int pass) const override {
     return this->transformController.relaxOnce(pass);
   }
+
+  void scatterNops() const override { this->transformController.scatterNops(); }
+
   void relocateAlloc(InputSectionBase &sec, uint8_t *buf) const override;
 
   uint32_t calcEFlags() const override;

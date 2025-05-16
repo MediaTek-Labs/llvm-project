@@ -110,5 +110,5 @@ add_lit_testsuite(check-cxx
   DEPENDS cxx-test-depends)
 
 if (CMAKE_C_COMPILER_TARGET STREQUAL "nanomips-elf")
-  add_library(stubs STATIC libstubs.c)
+  add_library(stubs STATIC support/libstubs.c support/libcxx_stubs.cpp)
 endif()

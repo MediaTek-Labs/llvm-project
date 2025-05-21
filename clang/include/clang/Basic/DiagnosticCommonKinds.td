@@ -357,6 +357,9 @@ def note_file_sloc_usage : Note<
   "%plural{0:|: plus %2B for macro expansions}2">;
 def note_file_misc_sloc_usage : Note<
   "%0 additional files entered using a total of %1B of space">;
+def warn_sloc_space_large : Warning<
+  "the translation unit has exceeded 90%% of Clang's input limit">,
+       InGroup<DiagGroup<"sloc-space-large">>;
 
 // Modules
 def err_module_format_unhandled : Error<

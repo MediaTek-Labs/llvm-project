@@ -1,5 +1,6 @@
 // RUN: not %clang %s -S -o - 2>&1 | FileCheck %s
-// CHECK: In file included from {{.*}}SourceLocationsOverflow.c
+// CHECK: inc{{.*}}.h:{{.*}}:{{.*}}: warning: the translation unit has exceeded 90% of Clang's input limit
+// CHECK-NEXT: In file included from {{.*}}SourceLocationsOverflow.c
 // CHECK-NEXT: inc1.h{{.*}}: fatal error: translation unit is too large for Clang to process: ran out of source locations
 // CHECK-NEXT: #include "inc2.h"
 // CHECK-NEXT:          ^

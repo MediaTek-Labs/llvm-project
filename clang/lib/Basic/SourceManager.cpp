@@ -598,6 +598,14 @@ bool needConversion(StringRef Filename) {
 #endif
 }
 
+static void checkSLocUsage(unsigned Current, unsigned Additional,
+                           unsigned Limit, DiagnosticsEngine &Diag,
+                           SourceLocation SourceLoc) {
+  unsigned Threshold = Limit - (Limit/10);
+  if (Current < Threshold && Current + Additional >= Threshold)
+    Diag.Report(SourceLoc, diag::warn_sloc_space_large);
+}
+
 /// createFileID - Create a new FileID for the specified ContentCache and
 /// include position.  This works regardless of whether the ContentCache
 /// corresponds to a file or some other input source.
@@ -637,6 +645,8 @@ FileID SourceManager::createFileIDImpl(ContentCache &File, StringRef Filename,
     noteSLocAddressSpaceUsage(Diag);
     return FileID();
   }
+  checkSLocUsage(NextLocalOffset, FileSize + 1, CurrentLoadedOffset, Diag,
+                 SourceLocation::getFileLoc(NextLocalOffset-1));
   LocalSLocEntryTable.push_back(
       SLocEntry::get(NextLocalOffset,
                      FileInfo::get(IncludePos, File, FileCharacter, Filename)));
@@ -705,7 +715,10 @@ SourceManager::createExpansionLocImpl(const ExpansionInfo &Info,
   // See createFileID for that +1.
   NextLocalOffset += Length + 1;
   updateSlocUsageStats();
-  return SourceLocation::getMacroLoc(NextLocalOffset - (Length + 1));
+  SourceLocation SL =
+    SourceLocation::getMacroLoc(NextLocalOffset - (Length + 1));
+  checkSLocUsage(NextLocalOffset, Length + 1, CurrentLoadedOffset, Diag, SL);
+  return SL;
 }
 
 std::optional<llvm::MemoryBufferRef>

@@ -671,8 +671,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsDisassembler() {
 #include "MipsGenDisassemblerTables.inc"
 
 static unsigned getReg(const MCDisassembler *D, unsigned RC, unsigned RegNo) {
-  const MCRegisterInfo *RegInfo = D->getContext().getRegisterInfo();
-  return *(RegInfo->getRegClass(RC).begin() + RegNo);
+  return *(MipsMCRegisterClasses[RC].begin() + RegNo);
 }
 
 template <typename InsnType>

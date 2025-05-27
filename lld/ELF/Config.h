@@ -256,6 +256,8 @@ struct Config {
   bool relrGlibc = false;
   bool relrPackDynRelocs = false;
   llvm::DenseSet<llvm::StringRef> saveTempsArgs;
+  uint32_t scatterNopsDensity;
+  uint32_t scatterNopsSeed;
   llvm::SmallVector<std::pair<llvm::GlobPattern, uint32_t>, 0> shuffleSections;
   bool singleRoRx;
   bool shared;

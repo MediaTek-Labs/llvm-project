@@ -21,6 +21,7 @@
 #include "llvm/Object/ELFTypes.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/xxhash.h"
 
 #define DEBUG_TYPE "lld-nanomips"
 using namespace lld;
@@ -362,19 +363,16 @@ void NanoMipsTransform::changeBytes(InputSection *isec, uint64_t location,
   }
 }
 
-void NanoMipsTransform::updateSectionContent(InputSection *isec,
-                                             uint64_t location, int32_t delta,
-                                             bool align) {
-
+bool NanoMipsTransform::updateSectionContentInner(InputSection *isec,
+                                                  uint64_t location,
+                                                  int32_t delta, bool align) {
   // Other than increasing/decreasing byte size of isec, it also
   // allocates new section content if delta is 0 and section
   // hasn't yet been changed, as those content would be readonly
-  changeBytes(isec, location, delta);
+  NanoMipsTransform::changeBytes(isec, location, delta);
   if (delta == 0)
-    return;
+    return false;
 
-  this->changed = true;
-  this->changedThisIteration = true;
   LLVM_DEBUG(llvm::dbgs() << "Changed size of input section "
                           << (isec->file ? isec->file->getName() : "nofile")
                           << "(" << isec->name << ") by " << delta
@@ -395,7 +393,7 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec,
   // TODO: Check whether sections without a corresponding file
   // may have symbols that should be changed during transformations
   if (!isec->file)
-    return;
+    return true;
 
   for (auto &symAnchor : isec->nanoMipsRelaxAux->anchors) {
     Defined *dSym = symAnchor.d;
@@ -412,6 +410,19 @@ void NanoMipsTransform::updateSectionContent(InputSection *isec,
         dSym->size += delta;
       }
     }
+  }
+
+  return true;
+}
+
+void NanoMipsTransform::updateSectionContent(InputSection *isec,
+                                             uint64_t location, int32_t delta,
+                                             bool align) {
+  bool changed = NanoMipsTransform::updateSectionContentInner(isec, location,
+                                                              delta, align);
+  if (changed) {
+    this->changed = true;
+    this->changedThisIteration = true;
   }
 }
 
@@ -1140,6 +1151,37 @@ void NanoMipsTransformController<ELFT>::changeState(int pass) {
   LLVM_DEBUG(llvm::dbgs() << "Changed transform state to None\n";);
 }
 
+template <class ELFT>
+void NanoMipsTransformController<ELFT>::scatterNops() const {
+  if (!this->mayRelax())
+    return;
+
+  NanoMipsTransformController<ELFT>::initTransformAuxInfo();
+
+  for (OutputSection *osec : outputSections) {
+    if (!isOutputSecTransformable(osec))
+      continue;
+
+    SmallVector<InputSection *, 0> storage;
+    for (InputSection *sec : getInputSections(*osec, storage)) {
+      if (!NanoMipsTransformController<ELFT>::safeToModify(sec) ||
+          !sec->relocs().size() || !(sec->flags & SHF_EXECINSTR))
+        continue;
+
+      uint64_t hash = llvm::xxHash64(sec->name) + config->scatterNopsSeed;
+      if ((hash % 100) >= config->scatterNopsDensity)
+        continue;
+
+      const uint32_t nop16 = 0x9008;
+      const uint32_t nop16Size = 2;
+      NanoMipsTransform::updateSectionContentInner(sec, 0, 2, false);
+      writeInsn<ELFT::TargetEndianness>(nop16, sec->content(), 0, nop16Size);
+      LLVM_DEBUG(llvm::dbgs() << sec->name
+                              << " updated with a nop in the beginning!\n";);
+    }
+  }
+}
+
 // relaxOnce is used for both relaxations and expansions
 template <class ELFT>
 bool NanoMipsTransformController<ELFT>::relaxOnce(int pass) const {
@@ -1148,10 +1190,10 @@ bool NanoMipsTransformController<ELFT>::relaxOnce(int pass) const {
   LLVM_DEBUG(llvm::dbgs() << "Transformation Pass num: " << pass << "\n";);
   bool shouldRunAgain = false;
   if (this->mayRelax()) {
-    if (pass == 0) {
+    if (pass == 0 && config->scatterNopsDensity == 0) {
       // Initialization of additional info that are needed for
       // relaxations/expansions
-      initTransformAuxInfo();
+      NanoMipsTransformController<ELFT>::initTransformAuxInfo();
     }
     for (OutputSection *osec : outputSections) {
       if (!isOutputSecTransformable(osec))
@@ -1159,7 +1201,7 @@ bool NanoMipsTransformController<ELFT>::relaxOnce(int pass) const {
 
       SmallVector<InputSection *, 0> storage;
       for (InputSection *sec : getInputSections(*osec, storage)) {
-        if (!this->safeToModify(sec))
+        if (!NanoMipsTransformController<ELFT>::safeToModify(sec))
           continue;
         if (sec->relocs().size())
           this->scanAndTransform(sec);
@@ -1175,8 +1217,8 @@ bool NanoMipsTransformController<ELFT>::relaxOnce(int pass) const {
 }
 
 template <class ELFT>
-inline bool lld::elf::NanoMipsTransformController<ELFT>::safeToModify(
-    InputSection *sec) const {
+inline bool
+lld::elf::NanoMipsTransformController<ELFT>::safeToModify(InputSection *sec) {
   bool modifiable = false;
   if (auto *obj = sec->getFile<ELF32LE>()) {
     modifiable =
@@ -1186,14 +1228,15 @@ inline bool lld::elf::NanoMipsTransformController<ELFT>::safeToModify(
 }
 
 template <class ELFT>
-void NanoMipsTransformController<ELFT>::initTransformAuxInfo() const {
+void NanoMipsTransformController<ELFT>::initTransformAuxInfo() {
   SmallVector<InputSection *, 0> storage;
   for (OutputSection *osec : outputSections) {
     if (!isOutputSecTransformable(osec))
       continue;
 
     for (InputSection *sec : getInputSections(*osec, storage)) {
-      if (!this->safeToModify(sec) || sec->relocs().size() == 0)
+      if (!NanoMipsTransformController<ELFT>::safeToModify(sec) ||
+          sec->relocs().size() == 0)
         continue;
       sec->nanoMipsRelaxAux = make<NanoMipsRelaxAux>();
       sec->nanoMipsRelaxAux->isAlreadyTransformed = false;

@@ -371,6 +371,20 @@ defm retain_symbols_file:
   Eq<"retain-symbols-file", "Retain only the symbols listed in the file">,
   MetaVarName<"<file>">;
 
+defm scatter_nops_density: EEq<"scatter-nops-density",
+  "Approximate percentage of instruction sections that will have nops "
+  "inserted at their beginnings. If 0, scatter nops doesn't do anything. "
+  "Doesn't do anything for relocatable outputs (default=0)(nanoMIPS only)">,
+  Flags<[HelpHidden]>;
+
+
+defm scatter_nops_seed: EEq<"scatter-nops-seed",
+  "Use a different seed for the pseudo-random determination of "
+  "section that will be inserted with a nop. If scatter-nops-density is "
+  "0 or the requested output is relocatable, than this option doesn't have "
+  "effect (default=0)(nanoMIPS only)">,
+  Flags<[HelpHidden]>;
+
 defm script: Eq<"script", "Read linker script">;
 
 defm section_start: Eq<"section-start", "Set address of section">,

@@ -94,6 +94,10 @@ public:
   // Do a linker relaxation pass and return true if we changed something.
   virtual bool relaxOnce(int pass) const { return false; }
 
+  // Insert nops randomly on the beginning of every instruction section.
+  // Currently only implemented on nanoMIPS.
+  virtual void scatterNops() const {}
+
   virtual void applyJumpInstrMod(uint8_t *loc, JumpModType type,
                                  JumpModType val) const {}
 

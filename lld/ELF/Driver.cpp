@@ -1236,6 +1236,11 @@ static void readConfigs(opt::InputArgList &args) {
   }
 
   config->searchPaths = args::getStrings(args, OPT_library_path);
+  config->scatterNopsDensity =
+      args.hasArg(OPT_relocatable)
+          ? 0
+          : args::getInteger(args, OPT_scatter_nops_density, 0);
+  config->scatterNopsSeed = args::getInteger(args, OPT_scatter_nops_seed, 0);
   config->sectionStartMap = getSectionStartMap(args);
   config->shared = args.hasArg(OPT_shared);
   config->singleRoRx = !args.hasFlag(OPT_rosegment, OPT_no_rosegment, true);

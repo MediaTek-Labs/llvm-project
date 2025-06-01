@@ -88,7 +88,7 @@ def imm32ZExt8s2 : IntImmLeaf<i32, [{ return isInt<8>(Imm.getZExtValue()) &&
 
 // Immediate range for 16-bit AND immediate
 def imm4Mask : IntImmLeaf<i32, [{
-    return ((Imm.getZExtValue() < 11) ||
+    return ((Imm.getZExtValue() <= 11) ||
 	   (Imm.getZExtValue() == 0xff) || (Imm.getZExtValue() == 0xffff) ||
 	   (Imm.getZExtValue() == 0xe) ||  (Imm.getZExtValue() == 0xf));
 }]>;

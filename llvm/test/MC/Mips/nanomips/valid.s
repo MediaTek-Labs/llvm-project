@@ -172,6 +172,9 @@
 	andi	$s3, $a3, 0xe	# CHECK: andi $s3, $a3, 0xe	# encoding: [0xfe,0xf1]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
 				# DISAS: {{.*}}  fe f1        	andi	$s3, $a3, 0xe
+	andi[16] $s0, $a0, 0xb	# CHECK: andi $s0, $a0, 0xb	# encoding: [0x4b,0xf0]
+				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
+				# DISAS: {{.*}}  4b f0        	andi	$s0, $a0, 0xb
 	andi[16] $s2, $a1, 0xf	# CHECK: andi $s2, $a1, 0xf	# encoding: [0x5f,0xf1]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
 				# DISAS: {{.*}}  5f f1        	andi	$s2, $a1, 0xf

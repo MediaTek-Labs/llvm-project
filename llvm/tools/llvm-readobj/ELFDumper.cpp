@@ -308,6 +308,7 @@ protected:
                            bool ExtraSymInfo) const = 0;
 
   virtual void printMipsABIFlags() = 0;
+  virtual void printNanoMipsABIFlags() = 0;
   virtual void printMipsGOT(const MipsGOTParser<ELFT> &Parser) = 0;
   virtual void printMipsPLT(const MipsGOTParser<ELFT> &Parser) = 0;
 
@@ -692,6 +693,7 @@ private:
   void printMipsGOT(const MipsGOTParser<ELFT> &Parser) override;
   void printMipsPLT(const MipsGOTParser<ELFT> &Parser) override;
   void printMipsABIFlags() override;
+  void printNanoMipsABIFlags() override;
 };
 
 template <typename ELFT> class LLVMELFDumper : public ELFDumper<ELFT> {
@@ -748,6 +750,7 @@ private:
   void printMipsGOT(const MipsGOTParser<ELFT> &Parser) override;
   void printMipsPLT(const MipsGOTParser<ELFT> &Parser) override;
   void printMipsABIFlags() override;
+  void printNanoMipsABIFlags() override;
   virtual void printZeroSymbolOtherField(const Elf_Sym &Symbol) const;
 
 protected:
@@ -2902,6 +2905,8 @@ template <class ELFT> void ELFDumper<ELFT>::printArchSpecificInfo() {
       printMipsPLT(Parser);
     break;
   }
+  case EM_NANOMIPS:
+    printNanoMipsABIFlags();
   default:
     break;
   }
@@ -3270,6 +3275,10 @@ const EnumEntry<unsigned> ElfMipsISAExtType[] = {
   {"NEC VR5500",              Mips::AFL_EXT_5500},
   {"RMI Xlr",                 Mips::AFL_EXT_XLR},
   {"Toshiba R3900",           Mips::AFL_EXT_3900}
+};
+
+const EnumEntry<unsigned> ElfNanoMipsISAExtType[] = {
+  {"None",                    Mips::AFL_EXT_NONE},
 };
 
 const EnumEntry<unsigned> ElfMipsASEFlags[] = {
@@ -7008,6 +7017,25 @@ getMipsAbiFlagsSection(const ELFDumper<ELFT> &Dumper) {
   return reinterpret_cast<const Elf_Mips_ABIFlags<ELFT> *>(DataOrErr->data());
 }
 
+template <class ELFT>
+Expected<const Elf_NanoMips_ABIFlags<ELFT> *>
+getNanoMipsAbiFlagsSection(const ELFDumper<ELFT> &Dumper) {
+  const typename ELFT::Shdr *Sec = Dumper.findSectionByName(".nanoMIPS.abiflags");
+  if (Sec == nullptr)
+    return nullptr;
+
+  constexpr StringRef ErrPrefix = "unable to read the .nanoMIPS.abiflags section: ";
+  Expected<ArrayRef<uint8_t>> DataOrErr =
+      Dumper.getElfObject().getELFFile().getSectionContents(*Sec);
+  if (!DataOrErr)
+    return createError(ErrPrefix + toString(DataOrErr.takeError()));
+
+  if (DataOrErr->size() != sizeof(Elf_NanoMips_ABIFlags<ELFT>))
+    return createError(ErrPrefix + "it has a wrong size (" +
+        Twine(DataOrErr->size()) + ")");
+  return reinterpret_cast<const Elf_NanoMips_ABIFlags<ELFT> *>(DataOrErr->data());
+}
+
 template <class ELFT> void GNUELFDumper<ELFT>::printMipsABIFlags() {
   const Elf_Mips_ABIFlags<ELFT> *Flags = nullptr;
   if (Expected<const Elf_Mips_ABIFlags<ELFT> *> SecOrErr =
@@ -7030,6 +7058,39 @@ template <class ELFT> void GNUELFDumper<ELFT>::printMipsABIFlags() {
      << "\n";
   OS << "ISA Extension: "
      << enumToString(Flags->isa_ext, ArrayRef(ElfMipsISAExtType)) << "\n";
+  if (Flags->ases == 0)
+    OS << "ASEs: None\n";
+  else
+    // FIXME: Print each flag on a separate line.
+    OS << "ASEs: " << printFlags(Flags->ases, ArrayRef(ElfMipsASEFlags))
+       << "\n";
+  OS << "FLAGS 1: " << format_hex_no_prefix(Flags->flags1, 8, false) << "\n";
+  OS << "FLAGS 2: " << format_hex_no_prefix(Flags->flags2, 8, false) << "\n";
+  OS << "\n";
+}
+
+template <class ELFT> void GNUELFDumper<ELFT>::printNanoMipsABIFlags() {
+  const Elf_NanoMips_ABIFlags<ELFT> *Flags = nullptr;
+  if (Expected<const Elf_NanoMips_ABIFlags<ELFT> *> SecOrErr =
+          getNanoMipsAbiFlagsSection(*this))
+    Flags = *SecOrErr;
+  else
+    this->reportUniqueWarning(SecOrErr.takeError());
+  if (!Flags)
+    return;
+
+  OS << "nanoMIPS ABI Flags Version: " << Flags->version << "\n\n";
+  OS << "ISA: NanoMips" << int(Flags->isa_level);
+  if (Flags->isa_rev > 1)
+    OS << "r" << int(Flags->isa_rev);
+  OS << "\n";
+  OS << "GPR size: " << getMipsRegisterSize(Flags->gpr_size) << "\n";
+  OS << "CPR1 size: " << getMipsRegisterSize(Flags->cpr1_size) << "\n";
+  OS << "CPR2 size: " << getMipsRegisterSize(Flags->cpr2_size) << "\n";
+  OS << "FP ABI: " << enumToString(Flags->fp_abi, ArrayRef(ElfMipsFpABIType))
+     << "\n";
+  OS << "ISA Extension: "
+     << enumToString(Flags->isa_ext, ArrayRef(ElfNanoMipsISAExtType)) << "\n";
   if (Flags->ases == 0)
     OS << "ASEs: None\n";
   else
@@ -8315,6 +8376,37 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printMipsABIFlags() {
   W.printNumber("CPR1 size", getMipsRegisterSize(Flags->cpr1_size));
   W.printNumber("CPR2 size", getMipsRegisterSize(Flags->cpr2_size));
   W.printFlags("Flags 1", Flags->flags1, ArrayRef(ElfMipsFlags1));
+  W.printHex("Flags 2", Flags->flags2);
+}
+
+template <class ELFT> void LLVMELFDumper<ELFT>::printNanoMipsABIFlags() {
+  const Elf_NanoMips_ABIFlags<ELFT> *Flags;
+  if (Expected<const Elf_NanoMips_ABIFlags<ELFT> *> SecOrErr =
+          getNanoMipsAbiFlagsSection(*this)) {
+    Flags = *SecOrErr;
+    if (!Flags) {
+      W.startLine() << "There is no .nanoMIPS.abiflags section in the file.\n";
+      return;
+    }
+  } else {
+    this->reportUniqueWarning(SecOrErr.takeError());
+    return;
+  }
+
+  raw_ostream &OS = W.getOStream();
+  DictScope GS(W, "nanoMIPS ABI Flags");
+
+  W.printNumber("Version", Flags->version);
+  W.startLine() << "ISA: ";
+  OS << format("nanoMIPS%ur%u", Flags->isa_level, Flags->isa_rev);
+  OS << "\n";
+  W.printEnum("ISA Extension", Flags->isa_ext, ArrayRef(ElfNanoMipsISAExtType));
+  W.printFlags("ASEs", Flags->ases, ArrayRef(ElfMipsASEFlags));
+  W.printEnum("FP ABI", Flags->fp_abi, ArrayRef(ElfMipsFpABIType));
+  W.printNumber("GPR size", getMipsRegisterSize(Flags->gpr_size));
+  W.printNumber("CPR1 size", getMipsRegisterSize(Flags->cpr1_size));
+  W.printNumber("CPR2 size", getMipsRegisterSize(Flags->cpr2_size));
+  W.printFlags("Flags 1", Flags->flags1);
   W.printHex("Flags 2", Flags->flags2);
 }
 

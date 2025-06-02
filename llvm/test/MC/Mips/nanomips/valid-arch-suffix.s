@@ -383,6 +383,9 @@
 	addiu[32] $s3,$sp,256	# CHECK: addiu	$s3, $sp, 256 # encoding: [0x7d,0x02,0x00,0x01]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU_NM
 				# DISAS: {{.*}}  7d 02 00 01  	addiu	$s3, $sp, 256
+	addiu[neg] $a1,$a2,0	# CHECK: addiu	$a1, $a2, 0 # encoding: [0xa6,0x80,0x00,0x80]
+				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUNEG_NM
+				# DISAS: {{.*}}  a6 80 00 80  	addiu	$a1, $a2, 0
 	addiu[neg] $a1,$a2,-1	# CHECK: addiu	$a1, $a2, -1 # encoding: [0xa6,0x80,0x01,0x80]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUNEG_NM
 				# DISAS: {{.*}}  a6 80 01 80  	addiu	$a1, $a2, -1

@@ -1516,7 +1516,7 @@ public:
   }
 
   template <unsigned Bits> bool isNegImm() const {
-    return (isConstantImm() && getConstantImm() < 0 && isUInt<Bits>(-getConstantImm()));
+    return (isConstantImm() && getConstantImm() <= 0 && isUInt<Bits>(-getConstantImm()));
   }
 
   template <unsigned Bits> bool isUImm() const {

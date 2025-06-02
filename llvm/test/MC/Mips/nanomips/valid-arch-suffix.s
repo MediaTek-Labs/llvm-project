@@ -223,6 +223,9 @@
 			# DISAS: {{.*}}  0b 00 ff ff  	syscall	0x3ffff
 
 	# 16-bit SAVE/RESTORE[.JRC]
+	save[16] 16		# CHECK: save 16, 0 # encoding: [0x10,0x1c]
+				# CHECK-NEXT: # <MCInst #{{.*}} SAVE16_NM
+				# DISAS: {{.*}}  10 1c        	save	16, $fp
 	save[16] 32, $ra		# CHECK: save 32, $ra # encoding: [0x21,0x1e]
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE16_NM
 				# DISAS: {{.*}}  21 1e        	save	32, $ra
@@ -242,6 +245,9 @@
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE16_NM
 				# DISAS: {{.*}}  8f 1c        	save	128, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp
 
+	restore.jrc[16]	16	# CHECK: restore.jrc 16, 0	# encoding: [0x10,0x1d]
+				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
+				# DISAS: {{.*}}  10 1d        	restore.jrc	16, $fp
 	restore.jrc[16]	32, $ra	# CHECK: restore.jrc 32, $ra	# encoding: [0x21,0x1f]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
 				# DISAS: {{.*}}  21 1f        	restore.jrc	32, $ra
@@ -268,6 +274,9 @@
 						# DISAS: {{.*}}  8f 1d        	restore.jrc	128, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp
 
 	# 32-bit SAVE/RESTORE[.JRC]
+	save[32] 40		# CHECK: save 40, 0	# encoding: [0x00,0x80,0x28,0x30]
+				# CHECK-NEXT: # <MCInst #{{.*}} SAVE_NM
+				# DISAS: {{.*}}  00 80 28 30  	save	40
 	save[32] 40, $ra		# CHECK: save 40, $ra	# encoding: [0xe1,0x83,0x28,0x30]
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE_NM
 				# DISAS: {{.*}}  e1 83 28 30  	save	40, $ra
@@ -292,6 +301,9 @@
 	save[32] 128, $a4-$t3, $s0-$s3 # CHECK: save 128, $a4, $a5, $a6, $a7, $t0, $t1, $t2, $t3, $s0, $s1, $s2, $s3 # encoding: [0x0c,0x81,0x80,0x30]
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE_NM
 				# DISAS: {{.*}}  0c 81 80 30  	save	128, $a4, $a5, $a6, $a7, $t0, $t1, $t2, $t3, $s0, $s1, $s2, $s3
+	restore[32] 48		# CHECK: restore 48, 0	# encoding: [0x00,0x80,0x32,0x30]
+				# CHECK-NEXT: # <MCInst #{{.*}} RESTORE_NM
+				# DISAS: {{.*}}  00 80 32 30  	restore	48
 	restore[32] 48, $ra		# CHECK: restore 48, $ra	# encoding: [0xe1,0x83,0x32,0x30]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTORE_NM
 				# DISAS: {{.*}}  e1 83 32 30  	restore	48, $ra
@@ -317,6 +329,9 @@
 						# CHECK-NEXT: # <MCInst #{{.*}} RESTORE_NM
 						# DISAS: {{.*}}  cf 83 7e 30  	restore	120, $fp, $ra, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7, $t8, $t9, $k0, $k1, $gp
 
+	restore.jrc[32] 56	# CHECK: restore.jrc 56, 0	# encoding: [0x00,0x80,0x3b,0x30]
+				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
+				# DISAS: {{.*}}  00 80 3b 30  	restore.jrc	56
 	restore.jrc[32] 56, $ra	# CHECK: restore.jrc 56, $ra	# encoding: [0xe1,0x83,0x3b,0x30]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC_NM
 				# DISAS: {{.*}}  e1 83 3b 30  	restore.jrc	56, $ra

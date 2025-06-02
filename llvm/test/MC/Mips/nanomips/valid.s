@@ -254,6 +254,9 @@
 	ext	$a1, $s2, 0, 32	# CHECK: ext $a1, $s2, 0, 32	# encoding: [0xb2,0x80,0xc0,0xf7]
 				# CHECK-NEXT: # <MCInst #{{.*}} EXT_NM
 				# DISAS: {{.*}}  b2 80 c0 f7  	ext	$a1, $s2, 0, 32
+	ext	$a1, $s2, 18, 17 # CHECK: ext $a1, $s2, 18, 17	# encoding: [0xb2,0x80,0x12,0xf4]
+				# CHECK-NEXT: # <MCInst #{{.*}} EXT_NM
+				# DISAS: {{.*}}  b2 80 12 f4  	ext	$a1, $s2, 18, 17
 	ins	$a1, $s2, 31, 1	# CHECK: ins $a1, $s2, 31, 1	# encoding: [0xb2,0x80,0xdf,0xe7]
 				# CHECK-NEXT: # <MCInst #{{.*}} INS_NM
 				# DISAS: {{.*}}  b2 80 df e7  	ins 	$a1, $s2, 31, 1

@@ -1423,10 +1423,17 @@ def SAVE16_NM : SaveRestore<"save", uimm8s4_nm, nmreglist16>, SaveRestore16_Enc<
 				AltMnemonics<["save[16]"]>;
 def RESTOREJRC16_NM : SaveRestore<"restore.jrc", uimm8s4_nm, nmreglist16>, SaveRestore16_Enc<0b1>,
 				AltMnemonics<["restore.jrc[16]"]>;
-def SAVE16_NOREG_NM : NanoMipsInstAlias<"save $adj",
-				    (SAVE16_NM uimm8s4_nm:$adj, 0)>;
-def RESTOREJRC16_NOREG_NM : NanoMipsInstAlias<"restore.jrc $adj",
-					  (RESTOREJRC16_NM uimm8s4_nm:$adj, 0)>;
+
+multiclass SaveRestNoReg_Alias<list<string> mnemonics,
+                               InstNM inst, Operand Od> {
+  foreach M = mnemonics in
+    def : NanoMipsInstAlias<!strconcat(M, "\t$adj"),
+                                      (inst Od:$adj, 0)>;
+}
+
+defm : SaveRestNoReg_Alias<["save", "save[16]"], SAVE16_NM, uimm8s4_nm>;
+defm : SaveRestNoReg_Alias<["restore.jrc", "restore.jrc[16]"],
+                           RESTOREJRC16_NM, uimm8s4_nm>;
 
 def SAVE_NM : SaveRestore<"save", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b00>,
 				AltMnemonics<["save[32]"]>;
@@ -1435,12 +1442,11 @@ def RESTORE_NM : SaveRestore<"restore", uimm12s3_nm, nmreglist>, SaveRestore32_E
 def RESTOREJRC_NM : SaveRestore<"restore.jrc", uimm12s3_nm, nmreglist>, SaveRestore32_Enc<0b11>,
 				AltMnemonics<["restore.jrc[32]"]>;
 
-def SAVE_NOREG_NM : NanoMipsInstAlias<"save $adj",
-				  (SAVE_NM uimm12s3_nm:$adj, 0)>;
-def RESTORE_NOREG_NM : NanoMipsInstAlias<"restore $adj",
-				     (RESTORE_NM uimm12s3_nm:$adj, 0)>;
-def RESTOREJRC_NOREG_NM : NanoMipsInstAlias<"restore.jrc $adj",
-					(RESTOREJRC_NM uimm12s3_nm:$adj, 0)>;
+defm : SaveRestNoReg_Alias<["save", "save[32]"], SAVE_NM, uimm12s3_nm>;
+defm : SaveRestNoReg_Alias<["restore", "restore[32]"],
+                           RESTORE_NM, uimm12s3_nm>;
+defm : SaveRestNoReg_Alias<["restore.jrc", "restore.jrc[32]"],
+                           RESTOREJRC_NM, uimm12s3_nm>;
 
 class LoadMultipleNM<string opstr> :
     InstNM<(outs GPRNM32Opnd:$rt),

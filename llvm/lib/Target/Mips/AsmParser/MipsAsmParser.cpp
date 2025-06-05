@@ -723,7 +723,7 @@ public:
   }
 
   bool hasNanoMips() const {
-    return getSTI().getFeatureBits()[Mips::FeatureNanoMips];
+    return getSTI().hasFeature(Mips::FeatureNanoMips);
   }
 
   bool hasDSP() const {
@@ -6478,11 +6478,11 @@ bool MipsAsmParser::expandMXTRAliasNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out
       sel = 1;
       break;
   }
-  unsigned Op0 = IsMFTR ? Inst.getOperand(0).getReg().id() : rd;
-  unsigned Op1 =
-      IsMFTR ? rd
-             : (Inst.getOpcode() != Mips::MTTDSP_NM ? Inst.getOperand(1).getReg().id()
-                                                    : Inst.getOperand(0).getReg().id());
+  MCRegister Op0 = IsMFTR ? Inst.getOperand(0).getReg() : MCRegister(rd);
+  MCRegister Op1 =
+      IsMFTR ? MCRegister(rd)
+             : (Inst.getOpcode() != Mips::MTTDSP_NM ? Inst.getOperand(1).getReg()
+                                                    : Inst.getOperand(0).getReg());
 
   TOut.emitRRIII(IsMFTR ? Mips::MFTR_NM : Mips::MTTR_NM, Op0, Op1, u, sel, h, IDLoc,
                  STI);
@@ -7475,7 +7475,13 @@ bool MipsAsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) {
   // case, the instruction matcher will output a "instruction requires a CPU
   // feature not currently enabled" error. If this were false, the parser would
   // stop here and output a less useful "invalid operand" error.
-  ParseStatus Res = MatchOperandParserImpl(Operands, Mnemonic, true);
+  // Keep it false for NanoMips.
+  ParseStatus Res = ParseStatus::NoMatch;
+  if(hasNanoMips())
+    Res = MatchOperandParserImpl(Operands, Mnemonic, false);
+  else
+    Res = MatchOperandParserImpl(Operands, Mnemonic, true);
+
   if (Res.isSuccess())
     return false;
   // If there wasn't a custom match, try the generic matcher below. Otherwise,
@@ -7716,7 +7722,7 @@ MipsAsmParser::parseMemNMRX(OperandVector &Operands) {
     Parser.Lex();
   }
   SmallVector<std::unique_ptr<MCParsedAsmOperand>, 1> Reg;
-  if ((Res = parseAnyRegister(Reg)).isFailure())
+  if (!(Res = parseAnyRegister(Reg)).isSuccess())
     return Res;
   else {
     // Register encoded as immediate to fit struct MemOp
@@ -7865,14 +7871,6 @@ ParseStatus MipsAsmParser::matchAnyRegisterNameWithoutDollar(
   Index = matchMSA128CtrlRegisterName(Identifier);
   if (Index != -1) {
     Operands.push_back(MipsOperand::createMSACtrlReg(
-        Index, Identifier, getContext().getRegisterInfo(), S,
-        getLexer().getLoc(), *this));
-    return ParseStatus::Success;
-  }
-
-  Index = matchCOP0SelRegisterName(Identifier);
-  if (Index != -1) {
-    Operands.push_back(MipsOperand::createCOP0SelReg(
         Index, Identifier, getContext().getRegisterInfo(), S,
         getLexer().getLoc(), *this));
     return ParseStatus::Success;
@@ -8345,7 +8343,7 @@ static void applyMnemonicAliases(StringRef &Mnemonic,
 bool MipsAsmParser::parseInstruction(ParseInstructionInfo &Info, StringRef Name,
                                      SMLoc NameLoc, OperandVector &Operands) {
   MCAsmParser &Parser = getParser();
-  unsigned AssemblerDialect = Parser.getAssemblerDialect();
+  unsigned AssemblerDialect = getContext().getAsmInfo()->getAssemblerDialect();
   LLVM_DEBUG(dbgs() << "ParseInstruction\n");
 
   // We have reached first instruction, module directive are now forbidden.

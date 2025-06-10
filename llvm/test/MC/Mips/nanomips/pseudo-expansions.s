@@ -25,6 +25,17 @@
 				# DISAS-PCREL: {{.*}}  83 60 00 00 00 00    	lapc.b	$a0, 0x{{.*}}
 				# DISAS-PCREL-NEXT: {{.*}}  R_NANOMIPS_PC_I32	test
 
+	la	$a0, test+4	# NOPCREL: li $a0, test+4 # encoding: [0x80,0x60,A,A,A,A]
+				# NOPCREL-NEXT: fixup A - offset: 2, value: test+4, kind: fixup_NANOMIPS_I32
+				# NOPCREL-NEXT: # <MCInst #{{.*}} LI48_NM
+				# DISAS-NOPCREL: {{.*}}  80 60 00 00 00 00    	li	$a0, 0
+				# DISAS-NOPCREL-NEXT: {{.*}}  R_NANOMIPS_I32	test
+				# PCREL: lapc.b $a0, test+4 # encoding: [0x83,0x60,A,A,A,A]
+				# PCREL-NEXT: fixup A - offset: 2, value: test+4, kind: fixup_NANOMIPS_PC_I32
+				# PCREL-NEXT: <MCInst #{{.*}} LAPC48_NM
+				# DISAS-PCREL: {{.*}}  83 60 00 00 00 00    	lapc.b	$a0, 0x{{.*}}
+				# DISAS-PCREL-NEXT: {{.*}}  R_NANOMIPS_PC_I32	test
+
 	la	$t3, 65536	# CHECK: lui $t3, %hi(0x10000) # encoding: [0xe1,0xe1,0x00,0x00]
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
 				# DISAS: {{.*}}  e1 e1 00 00  	lui	$t3, %hi(0x10000)

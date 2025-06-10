@@ -6648,7 +6648,8 @@ bool MipsAsmParser::expandLaNM(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out,
   assert(Inst.getNumOperands() == 2 && "expected two operands");
   assert(Inst.getOperand(0).isReg() && "expected register operand kind");
   assert(((Inst.getOperand(1).isExpr() &&
-	  Inst.getOperand(1).getExpr()->getKind() == MCExpr::SymbolRef)
+	   (Inst.getOperand(1).getExpr()->getKind() == MCExpr::SymbolRef
+	    || Inst.getOperand(1).getExpr()->getKind() == MCExpr::Binary))
 	 || Inst.getOperand(1).isImm()) &&
 	 "expected immediate or symbol reference operand");
 

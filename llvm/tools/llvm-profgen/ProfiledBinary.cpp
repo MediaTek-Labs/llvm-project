@@ -743,6 +743,11 @@ void ProfiledBinary::disassemble(const ObjectFile *Obj) {
                          << " invalid instructions\n";
     AddrsWithInvalidInstruction.clear();
   }
+  
+  // CodeAddressVec must be sorted for lookups. In most cases it will
+  // be sorted naturally, so long as sections in the binary appear in
+  // ascending base address order.
+  std::sort(CodeAddressVec.begin(), CodeAddressVec.end());
 
   // Dissassemble rodata section to check if FS discriminator symbol exists.
   checkUseFSDiscriminator(Obj, AllSymbols);

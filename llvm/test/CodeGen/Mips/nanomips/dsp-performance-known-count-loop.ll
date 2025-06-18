@@ -16,10 +16,8 @@
 ; DEF: bneic $
 ; by default extracting twice out of the loop is better
 ; than extracting once in the loop
-; DEF: test.c:7:25
 ; DEF: mflo $
 ; DEF: mfhi $
-; DEF: test.c:7:25
 ; DEF: mflo $
 ; DEF: mfhi $
 

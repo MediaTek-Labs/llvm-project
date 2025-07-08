@@ -1382,10 +1382,10 @@ DecodeStatus MipsDisassembler::getInstruction(MCInst &Instr, uint64_t &Size,
       }
     }
 
-    // This is an invalid instruction. Claim that the Size is 2 bytes. Since
-    // nanoMIPS instructions have a minimum alignment of 2, the next 2 bytes
-    // could form a valid instruction.
-    Size = 2;
+    // This is an invalid instruction. Claim that the Size is 2 bytes, if
+    // two bytes are available. Since nanoMIPS instructions have a minimum
+    // alignment of 2, the next 2 bytes could form a valid instruction.
+    Size = std::min<uint64_t>(2, Bytes.size());
     return MCDisassembler::Fail;
   }
 

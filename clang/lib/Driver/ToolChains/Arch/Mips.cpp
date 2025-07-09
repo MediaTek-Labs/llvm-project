@@ -160,8 +160,13 @@ mips::FloatABI mips::getMipsFloatABI(const Driver &D, const ArgList &Args,
                           options::OPT_mfloat_abi_EQ)) {
     if (A->getOption().matches(options::OPT_msoft_float))
       ABI = mips::FloatABI::Soft;
-    else if (A->getOption().matches(options::OPT_mhard_float))
-      ABI = mips::FloatABI::Hard;
+    else if (A->getOption().matches(options::OPT_mhard_float)) {
+      // nanoMIPS currently only supports "soft" ABI.
+      if (Triple.isNanoMips())
+	D.Diag(clang::diag::err_drv_invalid_mfloat_abi) << A->getAsString(Args);
+      else
+	ABI = mips::FloatABI::Hard;
+    }
     else {
       ABI = llvm::StringSwitch<mips::FloatABI>(A->getValue())
                 .Case("soft", mips::FloatABI::Soft)
@@ -189,8 +194,6 @@ mips::FloatABI mips::getMipsFloatABI(const Driver &D, const ArgList &Args,
   }
 
   assert(ABI != mips::FloatABI::Invalid && "must select an ABI");
-  assert((!Triple.isNanoMips() || ABI != mips::FloatABI::Hard) &&
-         "nanoMIPS does not support hard-float ABI");
   return ABI;
 }
 

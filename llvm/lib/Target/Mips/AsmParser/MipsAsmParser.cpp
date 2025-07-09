@@ -9530,8 +9530,14 @@ bool MipsAsmParser::parseDirectiveSet() {
     return parseSetNoMtDirective();
   if (IdVal == "softfloat")
     return parseSetSoftFloatDirective();
-  if (IdVal == "hardfloat")
-    return parseSetHardFloatDirective();
+  if (IdVal == "hardfloat") {
+    if (hasNanoMips()) {
+	Error(Loc, "hardfloat is not supported with nanoMIPS");
+	return false;
+    }
+    else
+      return parseSetHardFloatDirective();
+  }
   if (IdVal == "crc")
     return parseSetFeature(Mips::FeatureCRC);
   if (IdVal == "nocrc")
@@ -9861,6 +9867,11 @@ bool MipsAsmParser::parseDirectiveModule() {
 
     return false; // parseDirectiveModule has finished successfully.
   } else if (Option == "hardfloat") {
+    if (hasNanoMips()) {
+      Error(L, "hardfloat is not supported with nanoMIPS");
+      return false;
+    }
+
     clearModuleFeatureBits(Mips::FeatureSoftFloat, "soft-float");
 
     // Synchronize the ABI Flags information with the FeatureBits information we

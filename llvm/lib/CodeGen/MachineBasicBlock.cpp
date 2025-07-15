@@ -86,7 +86,7 @@ MCSymbol *MachineBasicBlock::getSymbol() const {
       // needs an actual label name => set AlwaysEmit in these cases.
       CachedMCSymbol = Ctx.createBlockSymbol(
           "BB" + Twine(MF->getFunctionNumber()) + "_" + Twine(getNumber()),
-          /*AlwaysEmit=*/hasLabelMustBeEmitted());
+          /*AlwaysEmit=*/true);
     }
   }
   return CachedMCSymbol;

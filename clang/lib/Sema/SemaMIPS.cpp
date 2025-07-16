@@ -31,8 +31,8 @@ bool SemaMIPS::CheckMipsBuiltinFunctionCall(const TargetInfo &TI,
 
 bool SemaMIPS::CheckMipsBuiltinCpu(const TargetInfo &TI, unsigned BuiltinID,
                                    CallExpr *TheCall) {
-  if (Mips::BI__builtin_mips_addu_qb <= BuiltinID &&
-      BuiltinID <= Mips::BI__builtin_mips_subuh_r_qb &&
+  if (Mips::BI__builtin_mips_dummy_first_dsp < BuiltinID &&
+      BuiltinID < Mips::BI__builtin_mips_dummy_last_dsp &&
       TI.getTriple().getArch() == llvm::Triple::nanomips) {
     if (!TI.hasFeature("dsp"))
       return Diag(TheCall->getBeginLoc(), diag::err_mips_builtin_requires_dsp);

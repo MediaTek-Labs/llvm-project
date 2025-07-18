@@ -9,6 +9,7 @@
 ; RUN: opt < %s -mtriple=powerpc64-ibm-aix-xcoff -passes=instrprof -S | FileCheck %s --check-prefixes=XCOFF
 ; RUN: opt < %s -mtriple=x86_64-pc-freebsd13 -passes=instrprof -S | FileCheck %s --check-prefixes=ELF
 ; RUN: opt < %s -mtriple=wasm32-unknown-unknown -passes=instrprof -S | FileCheck %s --check-prefix=WASM
+; RUN: opt < %s -mtriple=nanomips-elf -passes=instrprof -S | FileCheck %s --check-prefixes=ELF
 
 ; MACHO: @__llvm_profile_runtime = external hidden global i32
 ; ELF-NOT: @__llvm_profile_runtime = external global i32

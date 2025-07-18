@@ -34,7 +34,9 @@
 #include "WindowsMMap.h"
 #else
 #include <sys/file.h>
+#ifndef COMPILER_RT_MISSING_MMAP
 #include <sys/mman.h>
+#endif
 #include <sys/types.h>
 #include <unistd.h>
 #endif

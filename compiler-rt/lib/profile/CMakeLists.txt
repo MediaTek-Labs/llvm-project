@@ -57,6 +57,16 @@ int main() {
 
 " COMPILER_RT_TARGET_HAS_UNAME)
 
+include(CheckCXXSymbolExists)
+
+check_symbol_exists(flock "sys/file.h" COMPILER_RT_TARGET_HAS_FLOCK)
+
+check_symbol_exists(mmap "sys/mman.h" COMPILER_RT_TARGET_HAS_MMAP)
+
+check_symbol_exists(ftruncate "unistd.h" COMPILER_RT_TARGET_HAS_FTRUNCATE)
+
+check_symbol_exists(mkdir "sys/stat.h" COMPILER_RT_TARGET_HAS_MKDIR)
+
 add_compiler_rt_component(profile)
 
 set(PROFILE_SOURCES
@@ -76,6 +86,7 @@ set(PROFILE_SOURCES
   InstrProfilingPlatformFuchsia.c
   InstrProfilingPlatformLinux.c
   InstrProfilingPlatformOther.c
+  InstrProfilingPlatformBare.c
   InstrProfilingPlatformWindows.c
   InstrProfilingRuntime.cpp
   InstrProfilingUtil.c
@@ -133,6 +144,30 @@ if(COMPILER_RT_TARGET_HAS_UNAME)
  set(EXTRA_FLAGS
      ${EXTRA_FLAGS}
      -DCOMPILER_RT_HAS_UNAME=1)
+endif()
+
+if(NOT COMPILER_RT_TARGET_HAS_MMAP)
+ set(EXTRA_FLAGS
+     ${EXTRA_FLAGS}
+     -DCOMPILER_RT_MISSING_MMAP=1)
+endif()
+
+if(NOT COMPILER_RT_TARGET_HAS_FLOCK)
+ set(EXTRA_FLAGS
+     ${EXTRA_FLAGS}
+     -DCOMPILER_RT_MISSING_FLOCK=1)
+endif()
+
+if(NOT COMPILER_RT_TARGET_HAS_FTRUNCATE)
+ set(EXTRA_FLAGS
+     ${EXTRA_FLAGS}
+     -DCOMPILER_RT_MISSING_FTRUNCATE=1)
+endif()
+
+if(NOT COMPILER_RT_TARGET_HAS_MKDIR)
+ set(EXTRA_FLAGS
+     ${EXTRA_FLAGS}
+     -DCOMPILER_RT_MISSING_MKDIR=1)
 endif()
 
 if(MSVC)

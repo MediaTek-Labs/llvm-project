@@ -24,7 +24,9 @@
 #include <process.h>
 #else
 #include <sys/file.h>
+#ifndef COMPILER_RT_MISSING_MMAP
 #include <sys/mman.h>
+#endif
 #include <unistd.h>
 #if defined(__linux__)
 #include <sys/types.h>

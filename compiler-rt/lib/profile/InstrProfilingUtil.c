@@ -15,7 +15,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/file.h>
+#ifndef COMPILER_RT_MISSING_MMAP
 #include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -359,7 +361,7 @@ COMPILER_RT_VISIBILITY void lprofRestoreSigKill(void) {
 
 COMPILER_RT_VISIBILITY int lprofReleaseMemoryPagesToOS(uintptr_t Begin,
                                                        uintptr_t End) {
-#if defined(__ve__) || defined(__wasi__)
+#if defined(__ve__) || defined(__wasi__)|| defined(COMPILER_RT_MISSING_MMAP)
   // VE and WASI doesn't support madvise.
   return 0;
 #else

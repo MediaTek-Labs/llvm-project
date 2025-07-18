@@ -30,7 +30,11 @@
 #define COMPILER_RT_VISIBILITY
 #define COMPILER_RT_WEAK __attribute__((selectany))
 #else
+#ifdef COMPILER_RT_MISSING_FTRUNCATE
+#define COMPILER_RT_FTRUNCATE(f, l) (-1)
+#else
 #define COMPILER_RT_FTRUNCATE(f, l) ftruncate(fileno(f), l)
+#endif
 #define COMPILER_RT_VISIBILITY __attribute__((visibility("hidden")))
 #define COMPILER_RT_WEAK __attribute__((weak))
 #endif
@@ -54,7 +58,7 @@
 #endif
 
 #define COMPILER_RT_MAX_HOSTLEN 128
-#if defined(__ORBIS__) || defined(__wasi__)
+#if defined(__ORBIS__) || defined(__wasi__)|| (!defined(COMPILER_RT_HAS_UNAME) && !defined(WIN32))
 #define COMPILER_RT_GETHOSTNAME(Name, Len) ((void)(Name), (void)(Len), (-1))
 #else
 #define COMPILER_RT_GETHOSTNAME(Name, Len) lprofGetHostName(Name, Len)
@@ -148,5 +152,21 @@ static inline size_t getpagesize(void) {
 #include <stdint.h>
 
 #endif /* defined(__FreeBSD__) && defined(__i386__) */
+
+#ifdef COMPILER_RT_MISSING_MMAP
+#define mmap(A,B,C,D,E,F) ((void*) -1)
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void*) -1)
+#endif
+#define munmap(A,B) (-1)
+#endif
+
+#ifdef COMPILER_RT_MISSING_FLOCK
+#define flock(A,B)  (-1)
+#endif
+
+#ifdef COMPILER_RT_MISSING_MKDIR
+#define mkdir(A,B) (-1)
+#endif
 
 #endif /* PROFILE_INSTRPROFILING_PORT_H_ */

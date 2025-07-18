@@ -9,6 +9,7 @@
 ; RUN: opt < %s -mtriple=x86_64-pc-windows -passes=instrprof -S | FileCheck %s -check-prefix=WINDOWS
 ; RUN: opt < %s -mtriple=powerpc64-ibm-aix-xcoff -passes=instrprof -S | FileCheck %s -check-prefix=AIX
 ; RUN: opt < %s -mtriple=arm-elf -passes=instrprof -S | FileCheck %s -check-prefix=BAREMETAL
+; RUN: opt < %s -mtriple=nanomips-elf -passes=instrprof -S | FileCheck %s -check-prefixes=LINUX,ELF
 
 @__profn_foo = private constant [3 x i8] c"foo"
 ; MACHO-NOT: __profn_foo

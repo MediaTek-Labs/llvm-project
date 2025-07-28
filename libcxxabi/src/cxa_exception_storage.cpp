@@ -24,6 +24,32 @@ extern "C" {
 } // extern "C"
 } // namespace __cxxabiv1
 
+#elif defined(_LIBCXXABI_EXTERNAL_CXA_GET_GLOBALS)
+
+#include "abort_message.h"
+
+extern "C" {
+
+    _LIBCXXABI_WEAK void *cxa_get_globals() {
+        __abort_message("cxa_get_globals() not implemented");
+    }
+}
+namespace __cxxabiv1 {
+extern "C" {
+    __cxa_eh_globals *__cxa_get_globals() {
+        void *globals = cxa_get_globals();
+        if (NULL == globals)
+            __abort_message("cxa_get_globals failed to return globals");
+        return (__cxa_eh_globals *) globals;
+    }
+
+    __cxa_eh_globals *__cxa_get_globals_fast() {
+        return __cxa_get_globals();
+    }
+
+}
+}
+
 #elif __has_feature(cxx_thread_local)
 
 namespace __cxxabiv1 {
@@ -39,32 +65,6 @@ extern "C" {
     __cxa_eh_globals *__cxa_get_globals_fast() { return __globals(); }
 } // extern "C"
 } // namespace __cxxabiv1
-
-#elif defined(_LIBCXXABI_EXTERNAL_CXA_GET_GLOBALS)
-
-#include "abort_message.h"
-
-extern "C" {
-
-    _LIBCXXABI_WEAK void *cxa_get_globals() {
-        abort_message("cxa_get_globals() not implemented");
-    }
-}
-namespace __cxxabiv1 {
-extern "C" {
-    __cxa_eh_globals *__cxa_get_globals() {
-        void *globals = cxa_get_globals();
-        if (NULL == globals)
-            abort_message("cxa_get_globals failed to return globals");
-        return (__cxa_eh_globals *) globals;
-    }
-
-    __cxa_eh_globals *__cxa_get_globals_fast() {
-        return __cxa_get_globals();
-    }
-
-}
-}
 
 #else
 

@@ -6567,7 +6567,7 @@ bool MipsAsmParser::expandBAlignPrependNM(MCInst &Inst, SMLoc IDLoc, MCStreamer 
         llvm_unreachable("unexpected balign shift amount");
       }
     } else
-    TOut.emitRRRI(Mips::EXTW_NM, rt, rs, rt, sa, IDLoc, STI);
+    TOut.emitRRRI(Mips::EXTW_NM, rt, rt, rs, sa, IDLoc, STI);
   } else
     TOut.emitRR(Mips::MOVE_NM, rt, rt, IDLoc, STI);
   return false;

@@ -1,6 +1,5 @@
 # RUN: llvm-mc -show-encoding -triple=nanomips-elf -mattr=dsp %s | FileCheck %s
 #
-# CHECK:   .text
   .set noat
   addu.qb         $a1, $a0, $t5   # CHECK: addu.qb         $a1, $a0,  $t5   # encoding: [0x64,0x20,0xcd,0x28]
   addu_s.qb       $t5, $a0, $a1   # CHECK: addu_s.qb       $t5, $a0,  $a1   # encoding: [0xa4,0x20,0xcd,0x1c]

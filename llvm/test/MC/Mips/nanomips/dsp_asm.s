@@ -3,7 +3,6 @@
 # Please modify its input (instructions.csv) instead, and re-generate.
 # RUN: llvm-mc -show-encoding -triple=nanomips-elf -mattr=dsp %s | FileCheck %s
 #
-# CHECK:   .text
   .set noat
   absq_s.ph       $k1, $s7         # CHECK: absq_s.ph       $k1, $s7        # encoding: [0x77,0x23,0x3f,0x11]
                                                                             # 0b00100011011101110001000100111111

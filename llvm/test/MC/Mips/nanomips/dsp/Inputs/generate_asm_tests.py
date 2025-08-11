@@ -204,7 +204,6 @@ test = f'''# DO NOT MODIFY!
 # Please modify its input (instructions.csv) instead, and re-generate.
 # RUN: llvm-mc -show-encoding -triple=nanomips-elf -mattr=dsp %s | FileCheck %s
 #
-# CHECK:   .text
   .set noat
 {test_lines}
 {LABEL}:

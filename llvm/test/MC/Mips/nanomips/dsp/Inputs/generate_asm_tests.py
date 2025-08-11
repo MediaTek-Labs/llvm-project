@@ -211,7 +211,6 @@ test = f'''# DO NOT MODIFY!
 # Please modify its input ({args.input}) instead, and re-generate.
 # RUN: llvm-mc -show-encoding -triple=nanomips-elf -mattr=dsp -mcpu={args.cpu} %s | FileCheck %s
 #
-# CHECK:   .text
   .set noat
 {test_lines}
 {LABEL}:

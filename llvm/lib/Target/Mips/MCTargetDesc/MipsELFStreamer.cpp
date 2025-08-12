@@ -166,7 +166,8 @@ static bool requiresFixups(MCContext &C, const MCExpr *Value,
   return (A.isInSection() ? A.getSection().hasInstructions()
 	  : !A.getName().empty()) ||
     (B.isInSection() ? B.getSection().hasInstructions()
-     : !B.getName().empty());
+     : !B.getName().empty()) ||
+    (A.isInSection() && B.isInSection() && &A.getSection() != &B.getSection());
 }
 
 void MipsELFStreamer::emitValueImpl(const MCExpr *Value, unsigned Size,

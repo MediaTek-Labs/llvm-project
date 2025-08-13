@@ -128,6 +128,15 @@ bool NMRedundantJumpTables::optimizeRedundantEntries(MachineInstr &MI) {
       }
     }
 
+  // Remove leftover successors of the original jump table
+  SmallVector<MachineBasicBlock*, 4> ToRemove;
+  for (auto *Succ : CurrBB->successors()) {
+    if (Succ != MBBToJumpTo && !Succ->isEHPad())
+      ToRemove.push_back(Succ);
+  }
+  for (auto *Succ : ToRemove)
+    CurrBB->removeSuccessor(Succ);
+  
   // Mark JT as dead.
   JTInfo.RemoveJumpTable(JTIdx);
   return true;

@@ -163,8 +163,8 @@ MipsAbiFlagsSection<ELFT>::create(Ctx &ctx) {
 template <class ELFT>
 NanoMipsAbiFlagsSection<ELFT>::NanoMipsAbiFlagsSection(
     Ctx &ctx, Elf_NanoMips_ABIFlags flags) 
-    : SyntheticSection(ctx, ".nanoMIPS.abiflags", SHF_ALLOC,
-      SHT_NANOMIPS_ABIFLAGS, 8),
+    : SyntheticSection(ctx, ".nanoMIPS.abiflags", SHT_NANOMIPS_ABIFLAGS,
+      SHF_ALLOC, 8),
       flags(flags) {
   this->entsize = sizeof(Elf_NanoMips_ABIFlags);
 }
@@ -265,8 +265,6 @@ void NanoMipsAbiFlagsSection<ELFT>::inferAbiFlags(
     inferredFlags->cpr1_size = llvm::NanoMips::AFL_REG_64;
 }
 
-// template <class ELFT>
-// std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>>
 template <class ELFT>
 std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>>
 NanoMipsAbiFlagsSection<ELFT>::create(Ctx &ctx) {
@@ -346,22 +344,12 @@ NanoMipsAbiFlagsSection<ELFT>::create(Ctx &ctx) {
   }
 
   if (create) {
-    auto abiFlagsSec = std::make_unique<NanoMipsAbiFlagsSection<ELFT>>(ctx, flags);
+    auto abiFlagsSec =
+        std::make_unique<NanoMipsAbiFlagsSection<ELFT>>(ctx, flags);
     abiFlagsSec->mapOfAbiFlags = std::move(tmpMap);
     return abiFlagsSec;
   }
   return nullptr;
-}
-
-template <class ELFT>
-std::unique_ptr<NanoMipsAbiFlagsSection<ELFT>> NanoMipsAbiFlagsSection<ELFT>::get(Ctx &ctx) {
-  if (abiFlagsUnique == nullptr) {
-    abiFlagsUnique = create(ctx);
-    if (abiFlagsUnique == nullptr)
-      warn("Couldn't create .nanoMIPS.abiflags section");
-  }
-
-  return std::move(abiFlagsUnique);
 }
 
 template <class ELFT>
@@ -4974,6 +4962,12 @@ template <class ELFT> void elf::createSyntheticSections(Ctx &ctx) {
       add(*ctx.in.mipsOptions);
     if ((ctx.in.mipsReginfo = MipsReginfoSection<ELFT>::create(ctx)))
       add(*ctx.in.mipsReginfo);
+  }
+
+  // Add nanoMIPS-specific sections
+  if (ctx.arg.emachine == EM_NANOMIPS) {
+    if ((ctx.in.nanoMipsAbiFlags = NanoMipsAbiFlagsSection<ELFT>::create(ctx)))
+      add(*ctx.in.nanoMipsAbiFlags);
   }
 
   StringRef relaDynName = ctx.arg.isRela ? ".rela.dyn" : ".rel.dyn";

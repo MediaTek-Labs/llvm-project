@@ -1200,18 +1200,17 @@ void NanoMipsTransformController<ELFT>::initTransformAuxInfo() const {
       sec->nanoMipsRelaxAux->isAlreadyTransformed = false;
       sec->nanoMipsRelaxAux->freeBytes = 0;
 
-      auto abiFlagsSec = NanoMipsAbiFlagsSection<ELFT>::get(ctx);
-
       auto *obj = sec->getFile<ELFT>();
       sec->nanoMipsRelaxAux->pcrel = obj ? isNanoMipsPcRel<ELFT>(obj) : true;
       sec->nanoMipsRelaxAux->fullNanoMipsISA = false;
       
-      if (!abiFlagsSec)
+      if (!ctx.in.nanoMipsAbiFlags)
         error("Abi flags section not created, it is needed to determine "
               "whether full nanoMIPS ISA is used!");
-      else
+      else {
         sec->nanoMipsRelaxAux->fullNanoMipsISA =
-            abiFlagsSec->isFullNanoMipsISA(sec);
+            dyn_cast<NanoMipsAbiFlagsSection<ELFT>>(ctx.in.nanoMipsAbiFlags.get())->isFullNanoMipsISA(sec);
+      }
     }
   }
 

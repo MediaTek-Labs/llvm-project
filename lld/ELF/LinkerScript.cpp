@@ -433,6 +433,12 @@ bool InputSectionDescription::matchesFileCacheless(
     const InputFile *file) const {
   if (filePat.isTrivialMatchAll())
     return true;
+  
+  if (matchType == MatchType::WholeArchive)
+    return filePat.match(file->archiveName);
+
+  if (matchType == MatchType::ArchivesExcluded && !file->archiveName.empty())
+    return false;
 
   return filePat.match(getFilenameAlreadyCached(file));
 }

@@ -524,6 +524,7 @@ MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
     setOperationAction(ISD::ATOMIC_LOAD_UMAX, MVT::i64, Custom);
     setOperationAction(ISD::ATOMIC_SWAP, MVT::i64, Custom);
     setOperationAction(ISD::ATOMIC_LOAD, MVT::i64, Custom);
+    MaxStoresPerMemsetOptSize = 5;
   }
 
   if (!Subtarget.hasMips32r2() && !Subtarget.hasNanoMips()) {

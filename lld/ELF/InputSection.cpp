@@ -1440,8 +1440,8 @@ void EhInputSection::split(ArrayRef<RelTy> rels) {
     }
     uint64_t size = endian::read32<ELFT::Endianness>(d.data());
 
-    SyntheticSection *s = getParent();
-    if (s->ctx.arg.emachine == EM_NANOMIPS) {
+    Ctx &ctx = this->getCtx();
+    if (ctx.arg.emachine == EM_NANOMIPS) {
       // nanoMIPS may have an unresolved relocation for size of CIE/FDE,
       // calculate the value here, so proper values can be used
       const uint64_t off = d.data() - content().data();
@@ -1463,16 +1463,17 @@ void EhInputSection::split(ArrayRef<RelTy> rels) {
           if (!calculatedVal)
             calculatedVal = getAddend<ELFT>(rel);
           Symbol &sym = getFile<ELFT>()->getRelocTargetSym(rel);
-          RelType type = rel.getType(s->ctx.arg.isMips64EL);
-          RelExpr expr = s->ctx.target->getRelExpr(type, sym, 0);
+          RelType type = rel.getType(ctx.arg.isMips64EL);
+          RelExpr expr = ctx.target->getRelExpr(type, sym, 0);
           assert(expr != R_PC && expr != R_NANOMIPS_PAGE_PC &&
                  "PC relocs not expected for determining size of .eh_frame "
                  "entries");
 
-          calculatedVal = SignExtend64<bits>(
-              getRelocTargetVA(s->ctx,
-              Relocation{expr, type, rel.r_offset, 
-                static_cast<int64_t>(calculatedVal.value_or(0)), &sym}, 0)); 
+          calculatedVal = SignExtend64<bits>(getRelocTargetVA(
+            ctx, 
+            Relocation{expr, type, rel.r_offset, 
+                        static_cast<int64_t>(calculatedVal.value_or(0)), &sym}, 
+                        0)); 
         }
       }
       // If the relocation exists, use its calculated value

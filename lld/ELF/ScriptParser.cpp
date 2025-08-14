@@ -586,11 +586,14 @@ SmallVector<SectionCommand *, 0> ScriptParser::readOverlay() {
     addrExpr = readExpr();
     expect(":");
   }
+  bool nanoMipsCustomLinkerScriptType = ctx.arg.nanoMipsCustomLinkerScriptType;
   // When AT is omitted, LMA should equal VMA. script->getDot() when evaluating
   // lmaExpr will ensure this, even if the start address is specified.
-  Expr lmaExpr = (!ctx.arg.nanoMipsCustomLinkerScriptType || consume("AT"))
-                               ? readParenExpr()
-                               : [s = ctx.script] { return s->getDot(); };
+  Expr lmaExpr = (consume("AT")
+                  ? readParenExpr()
+                  : (nanoMipsCustomLinkerScriptType
+                     ? Expr()
+                     : [s = ctx.script] { return s->getDot(); }));
   expect("{");
 
   SmallVector<SectionCommand *, 0> v;
@@ -615,13 +618,13 @@ SmallVector<SectionCommand *, 0> ScriptParser::readOverlay() {
     prev = &osd->osec;
   }
 
-  if (ctx.arg.nanoMipsCustomLinkerScriptType && consume(">")) {
+  if (nanoMipsCustomLinkerScriptType && consume(">")) {
     StringRef tok = next();
     for (SectionCommand *cmd : v)
       cast<OutputDesc>(cmd)->osec.memoryRegionName = std::string(tok);
   }
 
-  if (ctx.arg.nanoMipsCustomLinkerScriptType && consume("AT")) {
+  if (nanoMipsCustomLinkerScriptType && consume("AT")) {
     expect(">");
     StringRef tok = next();
     for (SectionCommand *cmd : v) {
@@ -648,7 +651,7 @@ SmallVector<SectionCommand *, 0> ScriptParser::readOverlay() {
     // FIXME: Side effect, nanoMIPS may have a memory region for
     // overlay section VA. It isn't updated during assigning of offsets
     // as OVERLAY osecs use the same starting VA, so it is updated here
-    if (ctx.arg.nanoMipsCustomLinkerScriptType && v.size()) {
+    if (nanoMipsCustomLinkerScriptType && v.size()) {
       auto *firstOsec = cast<OutputDesc>(v[0]);
       // Memory region will be initialized by then
       if (firstOsec->osec.memRegion) {

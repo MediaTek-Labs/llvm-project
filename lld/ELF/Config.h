@@ -544,7 +544,7 @@ struct InStruct {
   std::unique_ptr<MipsGotSection> mipsGot;
   std::unique_ptr<SyntheticSection> mipsOptions;
   std::unique_ptr<SyntheticSection> mipsReginfo;
-  std::unique_ptr<SyntheticSection> nanoMipsAbiFlags;s
+  std::unique_ptr<SyntheticSection> nanoMipsAbiFlags;
   std::unique_ptr<MipsRldMapSection> mipsRldMap;
   std::unique_ptr<SyntheticSection> partEnd;
   std::unique_ptr<SyntheticSection> partIndex;

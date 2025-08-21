@@ -2697,11 +2697,23 @@ def : NMPat<(i32 (extloadi16 GPRNM32:$rs)), (LHU_NM GPRNM32:$rs, 0)>;
 def : NMPat<(i32 (zextloadi16 GPRNM32:$rs)), (LHU_NM GPRNM32:$rs, 0)>;
 def : NMPat<(i32 (sextloadi16 GPRNM32:$rs)), (LH_NM GPRNM32:$rs, 0)>;
 def : NMPat<(i32 (load GPRNM32:$rs)), (LW_NM GPRNM32:$rs, 0)>;
+// same for atomic
+def : NMPat<(i32 (atomic_load_8 GPRNM32:$rs)), (LB_NM GPRNM32:$rs, 0)>;
+def : NMPat<(i32 (atomic_load_16 GPRNM32:$rs)), (LH_NM GPRNM32:$rs, 0)>;
+def : NMPat<(i32 (atomic_load_32 GPRNM32:$rs)), (LW_NM GPRNM32:$rs, 0)>;
+
 def : NMPat<(truncstorei8 GPRNM32:$rt, GPRNM32:$rs),
             (SB_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
 def : NMPat<(truncstorei16 GPRNM32:$rt, GPRNM32:$rs),
             (SH_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
 def : NMPat<(store GPRNM32:$rt, GPRNM32:$rs),
+            (SW_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
+// same for atomic, but swap operands
+def : NMPat<(atomic_store_8 GPRNM32:$rs, GPRNM32:$rt),
+            (SB_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
+def : NMPat<(atomic_store_16 GPRNM32:$rs, GPRNM32:$rt),
+            (SH_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
+def : NMPat<(atomic_store_32 GPRNM32:$rs, GPRNM32:$rt),
             (SW_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
 
 // Any-extending loads
@@ -2744,14 +2756,14 @@ def : NMPat<(add GP_NM, (MipsGPRel tglobaladdr:$in)),
             (ADDIU_NM GP_NM, tglobaladdr:$in)>;
 
 // Atomic load patterns.
-def : NMPat<(atomic_load_8 addr:$a), (LB_NM addr:$a)>;
-def : NMPat<(atomic_load_16 addr:$a), (LH_NM addr:$a)>;
-def : NMPat<(atomic_load_32 addr:$a), (LW_NM addr:$a)>;
+def : NMPat<(atomic_load_8  addruimm12:$a), (LB_NM mem_nmu12:$a)>;
+def : NMPat<(atomic_load_16 addruimm12:$a), (LH_NM mem_nmu12:$a)>;
+def : NMPat<(atomic_load_32 addruimm12:$a), (LW_NM mem_nmu12:$a)>;
 
 // Atomic store patterns.
-def : NMPat<(atomic_store_8  GPR32:$v, addr:$a), (SB_NM GPR32:$v, addr:$a)>;
-def : NMPat<(atomic_store_16 GPR32:$v, addr:$a), (SH_NM GPR32:$v, addr:$a)>;
-def : NMPat<(atomic_store_32 GPR32:$v, addr:$a), (SW_NM GPR32:$v, addr:$a)>;
+def : NMPat<(atomic_store_8  GPR32:$v, addruimm12:$a), (SB_NM GPR32:$v, mem_nmu12:$a)>;
+def : NMPat<(atomic_store_16 GPR32:$v, addruimm12:$a), (SH_NM GPR32:$v, mem_nmu12:$a)>;
+def : NMPat<(atomic_store_32 GPR32:$v, addruimm12:$a), (SW_NM GPR32:$v, mem_nmu12:$a)>;
 
 class LLSC_Enc<bits<3> psel, bits<4>isel> : _Pool_P_LS_S9<psel> {
   bits<5> rt;

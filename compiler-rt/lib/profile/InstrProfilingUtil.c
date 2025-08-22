@@ -247,7 +247,7 @@ COMPILER_RT_VISIBILITY FILE *lprofOpenFileEx(const char *ProfileName) {
     CloseHandle(h);
     return NULL;
   }
-#else
+#elif defined(COMPILER_RT_HAS_FILE_IO)
   /* Worst case no locking applied.  */
   PROF_WARN("Concurrent file access is not supported : %s\n",
             "lack file locking");
@@ -255,6 +255,8 @@ COMPILER_RT_VISIBILITY FILE *lprofOpenFileEx(const char *ProfileName) {
   if (fd < 0)
     return NULL;
   f = fdopen(fd, "r+b");
+#else
+  return NULL;
 #endif
 
   return f;

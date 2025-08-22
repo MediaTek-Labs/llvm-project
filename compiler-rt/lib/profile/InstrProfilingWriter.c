@@ -260,6 +260,11 @@ COMPILER_RT_VISIBILITY int lprofWriteData(ProfDataWriter *Writer,
                             VNamesBegin, VNamesEnd, SkipNameDataWrite);
 }
 
+#ifndef COMPILER_RT_HAS_FILE_IO
+/* Preserved in-memory profile header for when file I/O is not supported  */
+__attribute__((section("__llvm_prf_header"))) __llvm_profile_header __llvm_prf_header_inst;
+#endif
+
 COMPILER_RT_VISIBILITY int
 lprofWriteDataImpl(ProfDataWriter *Writer, const __llvm_profile_data *DataBegin,
                    const __llvm_profile_data *DataEnd,
@@ -324,6 +329,9 @@ lprofWriteDataImpl(ProfDataWriter *Writer, const __llvm_profile_data *DataBegin,
 
   /* Write the profile header. */
   ProfDataIOVec IOVec[] = {{&Header, sizeof(__llvm_profile_header), 1, 0}};
+#ifndef COMPILER_RT_HAS_FILE_IO
+  __llvm_prf_header_inst = Header;
+#else
   if (Writer->Write(Writer, IOVec, sizeof(IOVec) / sizeof(*IOVec)))
     return -1;
 
@@ -347,6 +355,7 @@ lprofWriteDataImpl(ProfDataWriter *Writer, const __llvm_profile_data *DataBegin,
       {NULL, sizeof(uint8_t), PaddingBytesAfterVNames, 1}};
   if (Writer->Write(Writer, IOVecData, sizeof(IOVecData) / sizeof(*IOVecData)))
     return -1;
+#endif
 
   /* Value profiling is not yet supported in continuous mode and profile
    * correlation mode. */

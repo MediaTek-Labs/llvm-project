@@ -67,6 +67,8 @@ check_symbol_exists(ftruncate "unistd.h" COMPILER_RT_TARGET_HAS_FTRUNCATE)
 
 check_symbol_exists(mkdir "sys/stat.h" COMPILER_RT_TARGET_HAS_MKDIR)
 
+check_cxx_symbol_exists(fopen "file.h" COMPILER_RT_TARGET_HAS_FILE_IO)
+
 add_compiler_rt_component(profile)
 
 set(PROFILE_SOURCES
@@ -174,6 +176,12 @@ if(MSVC)
   # profile historically has only been supported with the static runtime
   # on windows
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+endif()
+
+if(COMPILER_RT_TARGET_HAS_FILE_IO)
+ set(EXTRA_FLAGS
+     ${EXTRA_FLAGS}
+     -DCOMPILER_RT_HAS_FILE_IO=1)
 endif()
 
 # We don't use the C++ Standard Library here, so avoid including it by mistake.

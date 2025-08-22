@@ -331,6 +331,7 @@ static unsigned doMerging(void) {
 /* Return 1 if there is an error, otherwise return  0.  */
 static uint32_t fileWriter(ProfDataWriter *This, ProfDataIOVec *IOVecs,
                            uint32_t NumIOVecs) {
+#ifdef COMPILER_RT_HAS_FILE_IO
   uint32_t I;
   FILE *File = (FILE *)This->WriterCtx;
   char Zeroes[sizeof(uint64_t)] = {0};
@@ -355,15 +356,18 @@ static uint32_t fileWriter(ProfDataWriter *This, ProfDataIOVec *IOVecs,
         return 1;
     }
   }
+#endif
   return 0;
 }
 
 /* TODO: make buffer size controllable by an internal option, and compiler can pass the size
    to runtime via a variable. */
 static uint32_t orderFileWriter(FILE *File, const uint32_t *DataStart) {
+#ifdef COMPILER_RT_HAS_FILE_IO
   if (fwrite(DataStart, sizeof(uint32_t), INSTR_ORDER_FILE_BUFFER_SIZE, File) !=
       INSTR_ORDER_FILE_BUFFER_SIZE)
     return 1;
+#endif
   return 0;
 }
 
@@ -533,6 +537,7 @@ static FILE *openFileForMerging(const char *ProfileFileName, int *MergeDone) {
 }
 
 static FILE *getFileObject(const char *OutputName) {
+#ifdef COMPILER_RT_HAS_FILE_IO
   FILE *File;
   File = getProfileFile();
   if (File != NULL) {
@@ -540,6 +545,9 @@ static FILE *getFileObject(const char *OutputName) {
   }
 
   return fopen(OutputName, "ab");
+#else
+  return NULL;
+#endif
 }
 
 /* Write profile data to file \c OutputName.  */
@@ -554,8 +562,10 @@ static int writeFile(const char *OutputName) {
   else
     OutputFile = getFileObject(OutputName);
 
+#ifdef COMPILER_RT_HAS_FILE_IO
   if (!OutputFile)
     return -1;
+#endif
 
   FreeHook = &free;
   setupIOBuffer();
@@ -563,6 +573,7 @@ static int writeFile(const char *OutputName) {
   initFileWriter(&fileWriter, OutputFile);
   RetVal = lprofWriteData(&fileWriter, lprofGetVPDataReader(), MergeDone);
 
+#ifdef COMPILER_RT_HAS_FILE_IO
   if (OutputFile == getProfileFile()) {
     fflush(OutputFile);
     if (doMerging() && !__llvm_profile_is_continuous_mode_enabled()) {
@@ -571,12 +582,14 @@ static int writeFile(const char *OutputName) {
   } else {
     fclose(OutputFile);
   }
+#endif
 
   return RetVal;
 }
 
 /* Write order data to file \c OutputName.  */
 static int writeOrderFile(const char *OutputName) {
+#if COMPILER_RT_HAS_FILE_IO
   int RetVal;
   FILE *OutputFile;
 
@@ -594,6 +607,9 @@ static int writeOrderFile(const char *OutputName) {
 
   fclose(OutputFile);
   return RetVal;
+#else
+  return 0;
+#endif
 }
 
 #define LPROF_INIT_ONCE_ENV "__LLVM_PROFILE_RT_INIT_ONCE"
@@ -630,11 +646,13 @@ static void truncateCurrentFile(void) {
   if (lprofCurFilename.MergePoolSize)
     return;
 
+#ifdef COMPILER_RT_HAS_FILE_IO
   /* Truncate the file.  Later we'll reopen and append. */
   File = fopen(Filename, "w");
   if (!File)
     return;
   fclose(File);
+#endif
 }
 
 /* Write a partial profile to \p Filename, which is required to be backed by

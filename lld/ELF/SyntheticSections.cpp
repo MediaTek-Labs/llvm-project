@@ -816,7 +816,7 @@ static uint64_t readFdeAddr(Ctx &ctx, uint8_t *buf, int size) {
   case DW_EH_PE_udata4:
     return read32(ctx, buf);
   case DW_EH_PE_sdata4:
-    return (int32_t)read32(ctx, buf);
+    return (ctx.arg.is64 ? (int32_t)read32(ctx, buf) : read32(ctx, buf));
   case DW_EH_PE_udata8:
   case DW_EH_PE_sdata8:
     return read64(ctx, buf);

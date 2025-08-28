@@ -309,6 +309,11 @@ const char *MipsTargetLowering::getTargetNodeName(unsigned Opcode) const {
   return nullptr;
 }
 
+
+bool MipsTargetLowering::useFPRegsForHalfType() const {
+  return Subtarget.hasNanoMips() ? true : false;
+}
+
 MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
                                        const MipsSubtarget &STI)
     : TargetLowering(TM), Subtarget(STI), ABI(TM.getABI()) {

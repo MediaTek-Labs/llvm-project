@@ -413,6 +413,8 @@ class TargetRegisterClass;
    CCAssignFn *CCAssignFnForCall() const;
 
    CCAssignFn *CCAssignFnForReturn() const;
+   
+   bool useFPRegsForHalfType() const override;
 
   protected:
     SDValue getGlobalReg(SelectionDAG &DAG, EVT Ty) const;

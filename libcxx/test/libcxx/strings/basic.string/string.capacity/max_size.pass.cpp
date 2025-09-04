@@ -86,7 +86,7 @@ TEST_CONSTEXPR_CXX20 bool test() {
   half_size();
 #  elif defined(__riscv)
   full_size();
-#  elif defined(_WIN32)
+#  elif defined(_WIN32) || defined(__nanomips__)
   full_size();
 #  else
 #    error "Your target system seems to be unsupported."

@@ -111,4 +111,5 @@ add_lit_testsuite(check-cxx
 
 if (CMAKE_C_COMPILER_TARGET STREQUAL "nanomips-elf")
   add_library(stubs STATIC support/libstubs.c support/libcxx_stubs.cpp)
+  set_target_properties(stubs PROPERTIES COMPILE_FLAGS "-I${LIBCXX_GENERATED_INCLUDE_DIR}")
 endif()

@@ -2749,9 +2749,9 @@ def : NMPat<(atomic_load_16 addr:$a), (LH_NM addr:$a)>;
 def : NMPat<(atomic_load_32 addr:$a), (LW_NM addr:$a)>;
 
 // Atomic store patterns.
-def : NMPat<(atomic_store_8 addr:$a, GPR32:$v), (SB_NM GPR32:$v, addr:$a)>;
-def : NMPat<(atomic_store_16 addr:$a, GPR32:$v), (SH_NM GPR32:$v, addr:$a)>;
-def : NMPat<(atomic_store_32 addr:$a, GPR32:$v), (SW_NM GPR32:$v, addr:$a)>;
+def : NMPat<(atomic_store_8  GPR32:$v, addr:$a), (SB_NM GPR32:$v, addr:$a)>;
+def : NMPat<(atomic_store_16 GPR32:$v, addr:$a), (SH_NM GPR32:$v, addr:$a)>;
+def : NMPat<(atomic_store_32 GPR32:$v, addr:$a), (SW_NM GPR32:$v, addr:$a)>;
 
 class LLSC_Enc<bits<3> psel, bits<4>isel> : _Pool_P_LS_S9<psel> {
   bits<5> rt;

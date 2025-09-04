@@ -16,6 +16,8 @@ config.substitutions.append(('%{exec}',
     '%{executor} --execdir %T -- '
 ))
 
+config.available_features.add('no-threads')
+
 import os, site
 site.addsitedir(os.path.join('@LIBCXX_SOURCE_DIR@', 'utils'))
 import libcxx.test.params, libcxx.test.config

@@ -40,6 +40,7 @@ using namespace lld::elf;
 using SymbolMapTy = DenseMap<const SectionBase *,
                              SmallVector<std::pair<Defined *, uint64_t>, 0>>;
 
+static constexpr char indent9[] = "         ";          // 5 spaces
 static constexpr char indent8[] = "        ";          // 8 spaces
 static constexpr char indent16[] = "                "; // 16 spaces
 
@@ -50,6 +51,15 @@ static void writeHeader(Ctx &ctx, raw_ostream &os, uint64_t vma, uint64_t lma,
     os << format("%16llx %16llx %8llx %5lld ", vma, lma, size, align);
   else
     os << format("%8llx %8llx %8llx %5lld ", vma, lma, size, align);
+}
+
+// Print out the VMA followed by 3 columns of white space
+// to match the above Header
+static void writeVMA(Ctx &ctx, raw_ostream &os, uint64_t vma) {
+  if (ctx.arg.is64)
+    os << format("%16llx", vma) << indent16 << indent8 << indent9;
+  else
+    os << format("%8llx", vma) << indent8 << indent8 << indent9;
 }
 
 // Returns a list of all symbols that we want to print out.
@@ -164,9 +174,10 @@ static void writeMapFile(Ctx &ctx, raw_fd_ostream &os) {
     if (auto *assign = dyn_cast<SymbolAssignment>(cmd)) {
       if (assign->provide && !assign->sym)
         continue;
-      uint64_t lma = osec ? osec->getLMA() + assign->addr - osec->getVA(0) : 0;
-      writeHeader(ctx, os, assign->addr, lma, assign->size, 1);
-      os << assign->commandString << '\n';
+      // VMA for symbol assignment is the value of the symbol.
+      // This will only match assign->addr when the RHS is _dot_
+      writeVMA(ctx, os, (assign->sym ? assign->sym->value : assign->addr));
+      os << indent8 << indent8 << assign->commandString << '\n';
       continue;
     }
     if (isa<SectionClassDesc>(cmd))

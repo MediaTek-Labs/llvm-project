@@ -178,6 +178,7 @@ static void writeMapFile(Ctx &ctx, raw_fd_ostream &os) {
     os << osec->name << '\n';
 
     // Dump symbols for each input section.
+    unsigned prevLMA = 0;
     for (SectionCommand *subCmd : osec->commands) {
       if (auto *isd = dyn_cast<InputSectionDescription>(subCmd)) {
         for (InputSection *isec : isd->sections) {
@@ -185,6 +186,19 @@ static void writeMapFile(Ctx &ctx, raw_fd_ostream &os) {
             printEhFrame(ctx, os, ehSec);
             continue;
           }
+	  // Gap in LMA followed by a section with alignment
+	  // implies that padding was inserted.
+	  if (prevLMA != 0 &&
+	      osec->getLMA() + isec->outSecOff > prevLMA &&
+	      isec->addralign > 1) {
+	    unsigned fillSize = osec->getLMA() + isec->outSecOff - prevLMA;
+	    writeHeader(ctx, os, isec->getVA() - fillSize, prevLMA,
+			fillSize, 1);
+	    os << osec->name << indent8;
+	    os << ((osec->flags & ELF::SHF_EXECINSTR) ?
+		   "** fill\n" : "** zero fill\n");
+	  }
+	  prevLMA = osec->getLMA() + isec->outSecOff + isec->getSize();
 
           writeHeader(ctx, os, isec->getVA(), osec->getLMA() + isec->outSecOff,
                       isec->getSize(), isec->addralign);

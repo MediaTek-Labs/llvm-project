@@ -202,7 +202,7 @@ if config.host_os in ["AIX"]:
     exclude_unsupported_files_for_aix(config.test_source_root)
     exclude_unsupported_files_for_aix(config.test_source_root + "/Posix")
 
-if config.target_arch in ["armv7l"]:
+if config.target_arch in ["armv7l", 'nanomips']:
     config.unsupported = True
 
 if config.android:

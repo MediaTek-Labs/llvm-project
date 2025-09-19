@@ -1,0 +1,6 @@
+# REQUIRES: nanomips
+# RUN: llvm-mc -filetype=obj -triple=nanomips-elf /dev/null -mattr=+nmips-64bit-time_t -o %t64.o
+# RUN: llvm-mc -filetype=obj -triple=nanomips-elf /dev/null -mattr=-nmips-64bit-time_t -o %t32.o
+# RUN: not ld.lld %t32.o %t64.o -o /dev/null 2>&1 | FileCheck %s
+# CHECK: error: incompatible ABI version:
+# RUN: ld.lld %t32.o %t64.o -o /dev/null --allow-abi-mismatch

@@ -427,6 +427,11 @@ defm retain_symbols_file:
   Eq<"retain-symbols-file", "Retain only the symbols listed in the file">,
   MetaVarName<"<file>">;
 
+defm allow_abi_mismatch: BB<"allow-abi-mismatch",
+  "(nanoMIPS)Enable linking of objects with conflicting ABI versions",
+  "(nanoMIPS)Disable linking objects with conflicting ABI versions (default)">,
+  Flags<[HelpHidden]>;
+
 defm script: Eq<"script", "Read linker script">;
 
 defm section_start: Eq<"section-start", "Set address of section">,

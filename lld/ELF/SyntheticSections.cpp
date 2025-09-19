@@ -4645,6 +4645,16 @@ static uint8_t getAbiVersion(Ctx &ctx) {
     return ver;
   }
 
+  if (ctx.arg.emachine == EM_NANOMIPS && !ctx.objectFiles.empty()) {
+    uint8_t ver = ctx.objectFiles[0]->abiVersion;
+    for (InputFile *file : ArrayRef(ctx.objectFiles).slice(1))
+      if (file->abiVersion != ver && !ctx.arg.AllowAbiMismatch)
+        Err(ctx) << "incompatible ABI version: " << file;
+      else
+	ver = std::max<uint8_t>(ver, file->abiVersion);
+    return ver;
+  }
+
   return 0;
 }
 

@@ -492,6 +492,9 @@ struct Config {
 
   unsigned threadCount;
 
+  // Permit linking of objects with mixed ABI versions (nanoMIPS)
+  bool AllowAbiMismatch;
+
   // If an input file equals a key, remap it to the value.
   llvm::DenseMap<llvm::StringRef, llvm::StringRef> remapInputs;
   // If an input file matches a wildcard pattern, remap it to the value.

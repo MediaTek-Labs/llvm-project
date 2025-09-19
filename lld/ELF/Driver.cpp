@@ -1918,6 +1918,8 @@ static void setConfigs(Ctx &ctx, opt::InputArgList &args) {
       args.hasFlag(OPT_toc_optimize, OPT_no_toc_optimize, m == EM_PPC64);
   ctx.arg.pcRelOptimize =
       args.hasFlag(OPT_pcrel_optimize, OPT_no_pcrel_optimize, m == EM_PPC64);
+  ctx.arg.AllowAbiMismatch =
+      args.hasFlag(OPT_allow_abi_mismatch, OPT_no_allow_abi_mismatch, false);
 
   if (!args.hasArg(OPT_hash_style)) {
     if (ctx.arg.emachine == EM_MIPS)

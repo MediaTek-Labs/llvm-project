@@ -2669,7 +2669,7 @@ def : NMPat<(i32 (extloadi16 GPRNM32:$rs)), (LHU_NM GPRNM32:$rs, 0)>;
 def : NMPat<(i32 (zextloadi16 GPRNM32:$rs)), (LHU_NM GPRNM32:$rs, 0)>;
 def : NMPat<(i32 (sextloadi16 GPRNM32:$rs)), (LH_NM GPRNM32:$rs, 0)>;
 def : NMPat<(i32 (load GPRNM32:$rs)), (LW_NM GPRNM32:$rs, 0)>;
-// same for atomic
+// same for atomic load
 def : NMPat<(i32 (atomic_load_8 GPRNM32:$rs)), (LB_NM GPRNM32:$rs, 0)>;
 def : NMPat<(i32 (atomic_load_16 GPRNM32:$rs)), (LH_NM GPRNM32:$rs, 0)>;
 def : NMPat<(i32 (atomic_load_32 GPRNM32:$rs)), (LW_NM GPRNM32:$rs, 0)>;
@@ -2680,12 +2680,12 @@ def : NMPat<(truncstorei16 GPRNM32:$rt, GPRNM32:$rs),
             (SH_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
 def : NMPat<(store GPRNM32:$rt, GPRNM32:$rs),
             (SW_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
-// same for atomic, but swap operands
-def : NMPat<(atomic_store_8 GPRNM32:$rs, GPRNM32:$rt),
+// same for atomic store, but swap operands
+def : NMPat<(atomic_store_8 GPRNM32:$rt, GPRNM32:$rs),
             (SB_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
-def : NMPat<(atomic_store_16 GPRNM32:$rs, GPRNM32:$rt),
+def : NMPat<(atomic_store_16 GPRNM32:$rt, GPRNM32:$rs),
             (SH_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
-def : NMPat<(atomic_store_32 GPRNM32:$rs, GPRNM32:$rt),
+def : NMPat<(atomic_store_32 GPRNM32:$rt, GPRNM32:$rs),
             (SW_NM GPRNM32:$rt, GPRNM32:$rs, 0)>;
 
 // Any-extending loads

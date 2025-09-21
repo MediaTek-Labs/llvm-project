@@ -38,6 +38,10 @@ using namespace llvm;
 
 static cl::opt<bool> SingleTrapBB("bounds-checking-single-trap",
                                   cl::desc("Use one trap block per function"));
+static cl::opt<bool>
+ExplicitParam("explicit-param-bounds-checking-handler",
+              cl::init(false),
+              cl::desc("Pass explicit parameter to bounds checking handlers"));
 
 STATISTIC(ChecksAdded, "Bounds checks added");
 STATISTIC(ChecksSkipped, "Bounds checks skipped");
@@ -130,11 +134,20 @@ static CallInst *InsertCall(BuilderTy &IRB, bool MayReturn, StringRef Name) {
   B.addAttribute(llvm::Attribute::NoUnwind);
   if (!MayReturn)
     B.addAttribute(llvm::Attribute::NoReturn);
+  FunctionType *Ty;
+  Value *Data;
+  if (ExplicitParam) {
+    auto DebugLoc = IRB.getCurrentDebugLocation();
+    Data = emitDebugLocData(DebugLoc, *(Fn->getParent()), IRB);
+    Ty = FunctionType::get(Type::getVoidTy(Ctx),
+                           {Data->getType()}, false);
+  } else {
+    Ty =  FunctionType::get(Type::getVoidTy(Ctx), {}, false);
+  }
   FunctionCallee Callee = Fn->getParent()->getOrInsertFunction(
-      Name,
-      llvm::AttributeList::get(Ctx, llvm::AttributeList::FunctionIndex, B),
-      Type::getVoidTy(Ctx));
-  return IRB.CreateCall(Callee);
+        Name, Ty,
+        llvm::AttributeList::get(Ctx, llvm::AttributeList::FunctionIndex, B));
+  return ExplicitParam ? IRB.CreateCall(Callee, Data) : IRB.CreateCall(Callee);
 }
 
 /// Adds run-time bounds checks to memory accessing instructions.
@@ -181,6 +194,8 @@ getRuntimeCallName(const BoundsCheckingPass::Options::Runtime &Opts) {
     Name += "_minimal";
   if (!Opts.MayReturn)
     Name += "_abort";
+  if (ExplicitParam)
+    Name += "_explicit_param";
   return Name;
 }
 

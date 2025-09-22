@@ -80,7 +80,13 @@ void MCPseudoProbe::emit(MCObjectStreamer *MCOS,
     const MCExpr *AddrDelta =
         buildSymbolDiff(MCOS, Label, LastProbe->getLabel());
     int64_t Delta;
-    if (AddrDelta->evaluateAsAbsolute(Delta, MCOS->getAssemblerPtr())) {
+    if (MCOS->getContext().getTargetTriple().getArch() == Triple::nanomips) {
+      // Code expansion at link time changes code addresses on
+      // nanomips due to variable instruction sizes used, so the
+      // address delta must be stored in a way that allows it to be
+      // relocated at link time.
+      MCOS->emitValue(AddrDelta, 4);
+    } else if (AddrDelta->evaluateAsAbsolute(Delta, MCOS->getAssemblerPtr())) {
       MCOS->emitSLEB128IntValue(Delta);
     } else {
       MCOS->insert(MCOS->getContext().allocFragment<MCPseudoProbeAddrFragment>(
@@ -439,7 +445,8 @@ template <bool IsTopLevelFunc>
 bool MCPseudoProbeDecoder::buildAddress2ProbeMap(
     MCDecodedPseudoProbeInlineTree *Cur, uint64_t &LastAddr,
     const Uint64Set &GuidFilter, const Uint64Map &FuncStartAddrs,
-    const uint32_t CurChildIndex) {
+    const uint32_t CurChildIndex,
+    const Triple &TheTriple) {
   // The pseudo_probe section encodes an inline forest and each tree has a
   // format defined in MCPseudoProbe.h
 
@@ -490,7 +497,14 @@ bool MCPseudoProbeDecoder::buildAddress2ProbeMap(
     // Read address
     uint64_t Addr = 0;
     if (Value & 0x80) {
-      int64_t Offset = cantFail(errorOrToExpected(readSignedNumber<int64_t>()));
+      int64_t Offset;
+      if(TheTriple.getArch() == Triple::nanomips)
+        // The offset is stored unencoded on NanoMips to allow the
+        // linker to adjust its value to account for code expansion at
+        // link time.
+        Offset = cantFail(errorOrToExpected(readUnencodedNumber<int32_t>()));
+      else
+        Offset = cantFail(errorOrToExpected(readSignedNumber<int64_t>()));
       Addr = LastAddr + Offset;
     } else {
       Addr = cantFail(errorOrToExpected(readUnencodedNumber<int64_t>()));
@@ -530,7 +544,7 @@ bool MCPseudoProbeDecoder::buildAddress2ProbeMap(
         MutableArrayRef(InlineTreeVec).take_back(ChildrenToProcess);
   }
   for (uint32_t I = 0; I < ChildrenToProcess; I++) {
-    buildAddress2ProbeMap<false>(Cur, LastAddr, GuidFilter, FuncStartAddrs, I);
+    buildAddress2ProbeMap<false>(Cur, LastAddr, GuidFilter, FuncStartAddrs, I, TheTriple);
   }
   return Cur;
 }
@@ -616,7 +630,7 @@ bool MCPseudoProbeDecoder::countRecords(bool &Discard, uint32_t &ProbeCount,
 
 bool MCPseudoProbeDecoder::buildAddress2ProbeMap(
     const uint8_t *Start, std::size_t Size, const Uint64Set &GuidFilter,
-    const Uint64Map &FuncStartAddrs) {
+    const Uint64Map &FuncStartAddrs, const Triple &TheTriple) {
   // For function records in the order of their appearance in the encoded data
   // (DFS), count the number of contained probes and inlined function records.
   uint32_t ProbeCount = 0;
@@ -644,7 +658,7 @@ bool MCPseudoProbeDecoder::buildAddress2ProbeMap(
   uint32_t CurChildIndex = 0;
   while (Data < End)
     CurChildIndex += buildAddress2ProbeMap<true>(
-        &DummyInlineRoot, LastAddr, GuidFilter, FuncStartAddrs, CurChildIndex);
+        &DummyInlineRoot, LastAddr, GuidFilter, FuncStartAddrs, CurChildIndex, TheTriple);
   assert(Data == End && "Have unprocessed data in pseudo_probe section");
   assert(PseudoProbeVec.size() == ProbeCount &&
          "Mismatching probe count pre- and post-parsing");

@@ -63,6 +63,7 @@
 #include "llvm/IR/PseudoProbe.h"
 #include "llvm/Support/Allocator.h"
 #include "llvm/Support/ErrorOr.h"
+#include "llvm/TargetParser/Triple.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -446,7 +447,8 @@ public:
   // functions only.
   bool buildAddress2ProbeMap(const uint8_t *Start, std::size_t Size,
                              const Uint64Set &GuildFilter,
-                             const Uint64Map &FuncStartAddrs);
+                             const Uint64Map &FuncStartAddrs,
+                             const Triple &TheTriple);
 
   // Print pseudo_probe_desc section info
   void printGUID2FuncDescMap(raw_ostream &OS);
@@ -521,7 +523,9 @@ private:
   bool buildAddress2ProbeMap(MCDecodedPseudoProbeInlineTree *Cur,
                              uint64_t &LastAddr, const Uint64Set &GuildFilter,
                              const Uint64Map &FuncStartAddrs,
-                             const uint32_t CurChildIndex);
+                             const uint32_t CurChildIndex,
+                             const Triple &TheTriple);
+
 };
 
 } // end namespace llvm

@@ -446,7 +446,7 @@ void ProfiledBinary::decodePseudoProbe(const ELFObjectFileBase *Obj) {
       StringRef Contents = unwrapOrError(Section.getContents(), FileName);
       if (!ProbeDecoder.buildAddress2ProbeMap(
               reinterpret_cast<const uint8_t *>(Contents.data()),
-              Contents.size(), GuidFilter, FuncStartAddresses))
+              Contents.size(), GuidFilter, FuncStartAddresses, TheTriple))
         exitWithError("Pseudo Probe decoder fail in .pseudo_probe section");
     }
   }

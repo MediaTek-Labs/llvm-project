@@ -2335,6 +2335,7 @@ def : MnemonicAlias<"beqz", "beqzc">, Requires<[HasNanoMips]>;
 def : MnemonicAlias<"bnez", "bnezc">, Requires<[HasNanoMips]>;
 
 let hasNoSchedulingInfo = 1,
+    isNotDuplicable = 1,
     hasDelaySlot = 0, isBranch = 1, isIndirectBranch = 1,
     isBarrier = 1,
    isTerminator = 1,

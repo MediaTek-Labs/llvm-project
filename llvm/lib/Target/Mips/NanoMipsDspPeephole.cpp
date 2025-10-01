@@ -75,7 +75,8 @@ struct NMDspPeephole : public MachineFunctionPass {
   uint64_t BBFrequency(const MachineBasicBlock *);
   bool deadPHI(const MachineInstr &);
   void cloneForUse(MachineInstr &, MachineInstr *,
-                               MachineFunction *, MachineInstr *);
+                   MachineFunction *,
+                   SmallVector<MachineInstr *, 1> &);
   bool sinkExtract(MachineInstr &);
   bool sinkExtracts(MachineBasicBlock &);
   StringRef getPassName() const override { return PASS_NAME; }
@@ -570,8 +571,8 @@ bool NMDspPeephole::deadPHI(const MachineInstr &MI) {
 }
 
 void NMDspPeephole::cloneForUse(MachineInstr &MI, MachineInstr *U,
-                                            MachineFunction *MF,
-                                            MachineInstr *DbgU) {
+                                MachineFunction *MF,
+                                SmallVector<MachineInstr *, 1> &DbgU) {
   MachineInstr *CloneMI = MF->CloneMachineInstr(&MI);
   unsigned OldReg = MI.getOperand(0).getReg();
   unsigned NewReg = MRI->createVirtualRegister(MRI->getRegClass(OldReg));
@@ -587,8 +588,8 @@ void NMDspPeephole::cloneForUse(MachineInstr &MI, MachineInstr *U,
   for (MachineOperand &MO : U->operands())
     if (MO.isReg() && MO.getReg() == OldReg)
       MO.setReg(NewReg);
-  if (DbgU)
-    ReplaceRegsAndInsert(MF->CloneMachineInstr(DbgU));
+  for (auto *UI : DbgU)
+    ReplaceRegsAndInsert(MF->CloneMachineInstr(UI));
 }
 
 bool NMDspPeephole::sinkExtract(MachineInstr &MI) {
@@ -597,7 +598,7 @@ bool NMDspPeephole::sinkExtract(MachineInstr &MI) {
   uint64_t CostChange = 0;
   unsigned Reg = MI.getOperand(0).getReg();
   SmallVector<MachineInstr *, 4> U;
-  MachineInstr *DbgU = nullptr;
+  SmallVector<MachineInstr *, 1> DbgU;
   for (MachineInstr &UseMI : MRI->use_instructions(Reg)) {
     if (UseMI.getOpcode() == Mips::PHI) {
       if (!deadPHI(UseMI))
@@ -608,8 +609,7 @@ bool NMDspPeephole::sinkExtract(MachineInstr &MI) {
       CostChange += BBFrequency(UseMI.getParent());
       U.push_back(&UseMI);
     } else if (UseMI.isDebugValue()) {
-      assert(!DbgU);
-      DbgU = &UseMI;
+      DbgU.push_back(&UseMI);
     } else
       // other usages within the same block
       return false;
@@ -620,8 +620,8 @@ bool NMDspPeephole::sinkExtract(MachineInstr &MI) {
     for (auto *UI : U)
       cloneForUse(MI, UI, MF, DbgU);
     MI.eraseFromParent();
-    if (DbgU)
-      DbgU->eraseFromParent();
+    for (auto *UI : DbgU)
+      UI->eraseFromParent();
     return true;
   }
   return false;

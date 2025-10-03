@@ -95,11 +95,24 @@ PreservedAnalyses NanoMipsTrapOptPass::run(Function &F,
   std::vector<CallInst *> Traps;
   Module *M = F.getParent();
   auto storeTraps = [&](Intrinsic::ID IID) {
-    if (auto *Trap = M->getFunction(Intrinsic::getName(IID)))
-      for (auto &U : Trap->uses())
-        if (auto *CI = dyn_cast<CallInst>(U.getUser()))
-          if (CI->getParent()->getParent() == &F)
-            Traps.push_back(CI);
+    if (auto *Trap = M->getFunction(Intrinsic::getName(IID))) {
+      // search by the shorter option
+      // 6 is an estimate of an average block size
+      if (Trap->getNumUses() > 6 * F.size()) {
+        // walk instrs
+        for (auto &BB : F)
+          for (auto &I : BB)
+            if (auto *CI = llvm::dyn_cast<llvm::CallInst>(&I))
+              if (CI->getCalledFunction() == Trap)
+                Traps.push_back(CI);
+      } else {
+        // walk uses
+        for (auto &U : Trap->uses())
+          if (auto *CI = dyn_cast<CallInst>(U.getUser()))
+            if (CI->getParent()->getParent() == &F)
+              Traps.push_back(CI);
+      }
+    }
   };
   storeTraps(Intrinsic::debugtrap);
   storeTraps(Intrinsic::ubsantrap);

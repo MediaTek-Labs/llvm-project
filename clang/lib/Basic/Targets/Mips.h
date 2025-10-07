@@ -158,6 +158,7 @@ public:
     PtrDiffType = SignedInt;
     SizeType = UnsignedInt;
     SuitableAlign = 128;
+    WIntType = UnsignedInt;
   }
 
   void setN32N64ABITypes() {

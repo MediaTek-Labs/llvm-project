@@ -7481,10 +7481,7 @@ bool MipsAsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) {
   // stop here and output a less useful "invalid operand" error.
   // Keep it false for NanoMips.
   ParseStatus Res = ParseStatus::NoMatch;
-  if(hasNanoMips())
-    Res = MatchOperandParserImpl(Operands, Mnemonic, false);
-  else
-    Res = MatchOperandParserImpl(Operands, Mnemonic, true);
+  Res = MatchOperandParserImpl(Operands, Mnemonic, true);
 
   if (Res.isSuccess())
     return false;
@@ -7720,6 +7717,8 @@ MipsAsmParser::parseMemNMRX(OperandVector &Operands) {
   SMLoc S;
   ParseStatus Res = ParseStatus::NoMatch;
 
+  if (!hasNanoMips())
+    return ParseStatus::NoMatch;
   S = Parser.getTok().getLoc();
 
   if (getLexer().getKind() == AsmToken::LParen) {
@@ -8007,6 +8006,8 @@ ParseStatus MipsAsmParser::parseRegisterList(OperandVector &Operands) {
   bool RegRange = false;
   SmallVector<std::unique_ptr<MCParsedAsmOperand>, 8> TmpOperands;
 
+  if (hasNanoMips())
+    return ParseStatus::NoMatch;
   if (Parser.getTok().isNot(AsmToken::Dollar))
     return ParseStatus::Failure;
 
@@ -8087,6 +8088,8 @@ MipsAsmParser::parseNMRegisterList(OperandVector &Operands) {
 
   SMLoc S = Parser.getTok().getLoc();
 
+  if (!hasNanoMips())
+    return ParseStatus::NoMatch;
   while (parseAnyRegister(TmpOperands).isSuccess()) {
     SMLoc E = getLexer().getLoc();
     MipsOperand &Reg = static_cast<MipsOperand &>(*TmpOperands.back());
@@ -8189,6 +8192,8 @@ MipsAsmParser::parseHi20PCRelOp(OperandVector &Operands) {
 
   SMLoc S = Parser.getTok().getLoc();
   SMLoc E;
+  if (!hasNanoMips())
+    return ParseStatus::NoMatch;
   if (!Parser.getTok().is(AsmToken::PercentPcrel_Hi)) {
     // Literal value
     if (getParser().parseExpression(IdVal))
@@ -8231,6 +8236,8 @@ MipsAsmParser::parseHi20Op(OperandVector &Operands) {
 
   SMLoc S = Parser.getTok().getLoc();
   SMLoc E;
+  if (!hasNanoMips())
+    return ParseStatus::NoMatch;
   if (!Parser.getTok().is(AsmToken::PercentHi)) {
     // Literal value
     if (getParser().parseExpression(IdVal))
@@ -8908,6 +8915,7 @@ bool MipsAsmParser::parseSetAssignment() {
   if (MCParserUtils::parseAssignmentExpression(Name, /* allow_redef */ true,
                                                Parser, Sym, Value))
     return true;
+
   Sym->setVariableValue(Value);
 
   getTargetStreamer().emitAssignmentAsSet(Sym, Value);

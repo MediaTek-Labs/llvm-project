@@ -1,6 +1,6 @@
 ;; RUN: clang -Os %s  -S -o - | FileCheck %s
 source_filename = "2007-01-04-KNR-Args.c"
-target datalayout = "e-m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S128"
+target datalayout = "e-m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S128"
 target triple = "nanomips-unknown-unknown-elf"
 
 define i32 @p1(i32 %0, double %1, i32 %2, double %d1, i32 %i, double %3, i32 %l, double %d2) {

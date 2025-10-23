@@ -3,7 +3,7 @@
 
 ; ModuleID = 'signatures.bc'
 ;source_filename = "signatures.c"
-;target datalayout = "e-m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S128"
+;target datalayout = "e-m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S128"
 ;target triple = "nanomips-unknown-unknown-elf"
 
 ;; Signature is 16-bit instruction followed by 16-bit branch

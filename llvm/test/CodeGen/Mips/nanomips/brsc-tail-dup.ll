@@ -1,5 +1,5 @@
 ;; RUN: llc -O2 -o - -mcpu=nanomips %s | FileCheck %s
-target datalayout = "e-m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S128"
+target datalayout = "e-m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S128"
 target triple = "nanomips-unknown-unknown-elf"
 
 ;; Make sure we have one and only one BRSC

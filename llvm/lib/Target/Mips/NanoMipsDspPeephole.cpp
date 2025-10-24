@@ -93,9 +93,14 @@ struct NMDspPeephole : public MachineFunctionPass {
                            SmallVectorImpl<MIPair> &);
   bool LLVM_ATTRIBUTE_UNUSED recordedPair(MOPair &, SmallVectorImpl<MOPair> &);
   SmallVector<MIPair, 4> compareAndZipPHIVec(const VecMI &, const VecMI &);
-  bool removeRedundantMoveFromAcc(MachineBasicBlock &);
+  bool convertAdd64ToAcc(Register OpLo, Register OpHi,
+                             Register Acc,  MachineInstr &MI);
+  bool removeRedundantAccMove(Register OpLo, Register OpHi,
+                              Register Acc,  MachineInstr &MI);
+  bool ApplyDspPeepholes(MachineBasicBlock &);
   MachineInstr *getPHIUsage(MachineInstr &);
   MachineInstr *getMIDefiningReg(Register, unsigned);
+  MachineInstr *getMIDefiningOp(MachineInstr &, unsigned, unsigned);
   Register firstAccOperand(MachineInstr &MI);
   void replaceRegUsesWith(Register FromReg, Register ToReg);
   bool runOnMachineFunction(MachineFunction &Fn) override;
@@ -431,6 +436,12 @@ MachineInstr *NMDspPeephole::getMIDefiningReg(Register Reg, unsigned Opcode) {
   return nullptr;
 }
 
+MachineInstr *NMDspPeephole::getMIDefiningOp(MachineInstr &MI, unsigned Op,
+                                             unsigned Opcode) {
+  assert(Op < MI.getNumOperands() && "Operand index out of range");
+  return getMIDefiningReg(MI.getOperand(Op).getReg(), Opcode);
+}
+
 Register NMDspPeephole::getAccRegOrNone(MachineOperand &MO) {
   if (MO.isReg()) {
     Register Reg = MO.getReg();
@@ -642,8 +653,110 @@ bool NMDspPeephole::sinkExtracts(MachineBasicBlock &MBB) {
   return Modified;
 }
 
+//   ac1 = {addwc(hi(ac0), 0),
+//          addsc(lo(ac0), x)}
+//  ==>
+//   ac1 = madd(ac0, x, 1)
+bool NMDspPeephole::convertAdd64ToAcc(Register OpLo, Register OpHi,
+                                      Register Acc,  MachineInstr &MI) {
+
+  // check no other uses since we erase manually
+  if (!MRI->hasAtMostUserInstrs(OpLo, 2) ||
+      !MRI->hasAtMostUserInstrs(OpHi, 2))
+    return false;
+
+  // both parts are defined in a 64-bit addition in PGRs
+  MachineInstr *AddLo, *AddHi;
+  if ((AddLo = getMIDefiningReg(OpLo, Mips::ADDSC_NM)) &&
+      (AddHi = getMIDefiningReg(OpHi, Mips::ADDWC_NM))) {
+
+    Register AddLoReg1 = AddLo->getOperand(1).getReg();
+    Register AddHiReg1 = AddHi->getOperand(1).getReg();
+
+    // check no other uses since we erase manually
+    if (!MRI->hasAtMostUserInstrs(AddLoReg1, 2) ||
+        !MRI->hasAtMostUserInstrs(AddHiReg1, 2))
+      return false;
+
+    // first operand of both parts of 64-bit addition
+    // was extracted from a DSP accumulator
+    MachineInstr *AccLo, *AccHi;
+    if ((AccLo = getMIDefiningReg(AddLoReg1, acc::ExtractLo)) &&
+        (AccHi = getMIDefiningReg(AddHiReg1, acc::ExtractHi))) {
+
+       // AccLo and AccHi were extracted from the same accumulator
+      if (AccLo->getOperand(1).getReg() != AccHi->getOperand(1).getReg())
+        return false;
+
+      // Accumulator's high part has not been changed
+      MachineInstr *AddHiOp2 = getMIDefiningOp(*AddHi, 2, Mips::COPY);
+      if (!AddHiOp2 || AddHiOp2->getOperand(1).getReg() != Mips::ZERO_NM)
+        return false;
+
+      auto *MBB = MI.getParent();
+      const MipsInstrInfo *TII = STI->getInstrInfo();
+
+      // try to reuse "1"
+      Register One, LowPartReg = AddLo->getOperand(2).getReg();
+      MachineInstr *AddLoOp2 = getMIDefiningOp(*AddLo, 2, Mips::PseudoLI_NM);
+      if (AddLoOp2 && AddLoOp2->getOperand(1).getImm() == 1LL) {
+        //acc + 1  ==> madd acc 1, 1
+        One = LowPartReg;
+      } else {
+         //acc + x  ==> madd acc x, 1
+         One = MRI->createVirtualRegister(&Mips::GPRNM32RegClass);
+         BuildMI(*MBB, AddLo->getIterator(),
+                 AddLo->getDebugLoc(), TII->get(Mips::PseudoLI_NM), One)
+           .addImm(1);
+      }
+      Register AccNew = MRI->createVirtualRegister(acc::RC);
+      MachineInstr *MADD = BuildMI(*MBB, MI.getIterator(),
+                                   MI.getDebugLoc(),
+                                   TII->get(Mips::MADD_DSP_NM), AccNew)
+                             .addReg(LowPartReg)
+                             .addReg(One)
+                             .add(AccLo->getOperand(1));
+
+      LLVM_DEBUG(dbgs() << "Converting 64-bit add:\n");
+      LLVM_DEBUG(AddLo->dump());
+      LLVM_DEBUG(AddHi->dump());
+      LLVM_DEBUG(dbgs() << "To:\n");
+      LLVM_DEBUG(MADD->dump());
+
+      replaceRegUsesWith(Acc, AccNew);
+
+      // side effects we don't care about, clean manually
+      AddLo->eraseFromParent(); // side effect: carry bit
+      AddHi->eraseFromParent(); // side effect: overflow
+    }
+  }
+  return false;
+}
+
 // remove redundant copies in straight line code
-bool NMDspPeephole::removeRedundantMoveFromAcc(MachineBasicBlock &MBB) {
+bool NMDspPeephole::removeRedundantAccMove(Register OpLo, Register OpHi,
+                                           Register Acc,  MachineInstr &MI) {
+  MachineInstr *DefLo, *DefHi;
+  if ((DefLo = getMIDefiningReg(OpLo, acc::ExtractLo)) &&
+      (DefHi = getMIDefiningReg(OpHi, acc::ExtractHi))) {
+    if (DefLo->getOperand(1).getReg() == DefHi->getOperand(1).getReg()) {
+
+      LLVM_DEBUG(dbgs() << "Eliminating:\n");
+      LLVM_DEBUG(DefLo->dump());
+      LLVM_DEBUG(DefHi->dump());
+      LLVM_DEBUG(dbgs() << "By using '"
+                 << DefHi->getOperand(1)
+                 << "' directly in:\n");
+      LLVM_DEBUG(MI.dump());
+
+      MI.substituteRegister(Acc, DefHi->getOperand(1).getReg(), 0, *TRI);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool NMDspPeephole::ApplyDspPeepholes(MachineBasicBlock &MBB) {
   bool Modified = false;
   for (MachineBasicBlock::reverse_iterator I = MBB.rbegin(), E = MBB.rend();
        I != E; ++I) {
@@ -653,14 +766,10 @@ bool NMDspPeephole::removeRedundantMoveFromAcc(MachineBasicBlock &MBB) {
       if (auto *MTLOHI = getMIDefiningReg(Acc, acc::Compose)) {
         auto OpLo = MTLOHI->getOperand(1).getReg();
         auto OpHi = MTLOHI->getOperand(2).getReg();
-        MachineInstr *DefLo, *DefHi;
-        if ((DefLo = getMIDefiningReg(OpLo, acc::ExtractLo)) &&
-            (DefHi = getMIDefiningReg(OpHi, acc::ExtractHi))) {
-          if (DefLo->getOperand(1).getReg() == DefHi->getOperand(1).getReg()) {
-            MI.substituteRegister(Acc, DefHi->getOperand(1).getReg(), 0, *TRI);
-            Modified = true;
-          }
-        }
+        if (removeRedundantAccMove(OpLo, OpHi, Acc, MI))
+          Modified = true;
+        else if (convertAdd64ToAcc(OpLo, OpHi, Acc, *MTLOHI))
+          Modified = true;
       }
     }
   }
@@ -697,7 +806,7 @@ bool NMDspPeephole::runOnMachineFunction(MachineFunction &Fn) {
        ++MFI) {
     MachineBasicBlock &MBB = *MFI;
     Modified |= convertPHIsGPRToAcc(MBB);
-    Modified |= removeRedundantMoveFromAcc(MBB);
+    Modified |= ApplyDspPeepholes(MBB);
     if (!DisableDspSinkExtract)
       Modified |= sinkExtracts(MBB);
   }

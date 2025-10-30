@@ -93,6 +93,7 @@ struct NMDspPeephole : public MachineFunctionPass {
                            SmallVectorImpl<MIPair> &);
   bool LLVM_ATTRIBUTE_UNUSED recordedPair(MOPair &, SmallVectorImpl<MOPair> &);
   SmallVector<MIPair, 4> compareAndZipPHIVec(const VecMI &, const VecMI &);
+  bool convertMtlohiToMult(Register, Register, Register,  MachineInstr &);
   bool convertAdd64ToAcc(Register OpLo, Register OpHi,
                              Register Acc,  MachineInstr &MI);
   bool removeRedundantAccMove(Register OpLo, Register OpHi,
@@ -653,6 +654,25 @@ bool NMDspPeephole::sinkExtracts(MachineBasicBlock &MBB) {
   return Modified;
 }
 
+// replace two final instructions with  a single one:
+//  acc = PseudoMTLOHI_DSP_NM(zero, zero)
+// ==>
+//  acc = MULT_DSP_NM(zero, zero)
+
+bool NMDspPeephole::convertMtlohiToMult(Register OpLo, Register OpHi,
+                                      Register Acc,  MachineInstr &MI) {
+  if (OpLo == OpHi) {
+    MachineInstr *OpLoInstr = getMIDefiningReg(OpLo, Mips::COPY);
+    if (OpLoInstr && OpLoInstr->getOperand(1).getReg() == Mips::ZERO_NM) {
+      const MipsInstrInfo *TII = STI->getInstrInfo();
+      MI.setDesc(TII->get(Mips::MULT_DSP_NM));
+      LLVM_DEBUG(dbgs() << "Converting MTLOHI into:\n");
+      LLVM_DEBUG(MI.dump());
+      return true;
+    }
+  }
+  return false;
+}
 //   ac1 = {addwc(hi(ac0), 0),
 //          addsc(lo(ac0), x)}
 //  ==>
@@ -766,10 +786,11 @@ bool NMDspPeephole::ApplyDspPeepholes(MachineBasicBlock &MBB) {
       if (auto *MTLOHI = getMIDefiningReg(Acc, acc::Compose)) {
         auto OpLo = MTLOHI->getOperand(1).getReg();
         auto OpHi = MTLOHI->getOperand(2).getReg();
-        if (removeRedundantAccMove(OpLo, OpHi, Acc, MI))
+        if (removeRedundantAccMove(OpLo, OpHi, Acc, MI) ||
+            convertAdd64ToAcc(OpLo, OpHi, Acc, *MTLOHI) ||
+            convertMtlohiToMult(OpLo, OpHi, Acc, *MTLOHI)) {
           Modified = true;
-        else if (convertAdd64ToAcc(OpLo, OpHi, Acc, *MTLOHI))
-          Modified = true;
+        }
       }
     }
   }

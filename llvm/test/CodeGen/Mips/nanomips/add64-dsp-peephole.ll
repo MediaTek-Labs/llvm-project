@@ -54,6 +54,19 @@ entry:
   ret void
 }
 
+define dso_local i64 @init0(i64 noundef signext %a,
+                            i64 noundef signext %b) local_unnamed_addr {
+entry:
+  %conv.i = trunc i64 %a to i32
+  %0 = bitcast i32 %conv.i to <2 x i16>
+  %conv1.i = trunc i64 %b to i32
+  %1 = bitcast i32 %conv1.i to <2 x i16>
+; CHECK: init0
+; CHECK: mult $ac{{[0-3]}}, $zero, $zero
+  %2 = tail call i64 @llvm.mips.dpa.w.ph(i64 0, <2 x i16> %0, <2 x i16> %1)
+  ret i64 %2
+}
+
 declare i64 @llvm.mips.dpa.w.ph(i64, <2 x i16>, <2 x i16>) #1
 declare i32 @llvm.mips.extr.rs.w(i64, i32) #0
 attributes #0 = { nounwind  }

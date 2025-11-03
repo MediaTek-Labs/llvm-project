@@ -406,12 +406,16 @@ def CSR_O32_FPXX : CalleeSavedRegs<(add (sequence "D%u", 15, 10), RA, FP,
   let OtherPreserved = (add (decimate (sequence "F%u", 30, 20), 2));
 }
 
+def CSR_IPRA_O32 : CalleeSavedRegs<(add RA)>;
+
 def CSR_O32 : CalleeSavedRegs<(add (sequence "D%u", 15, 10), RA, FP,
                                    (sequence "S%u", 7, 0))>;
 
 def CSR_O32_FP64 :
   CalleeSavedRegs<(add (decimate (sequence "D%u_64", 30, 20), 2), RA, FP,
                        (sequence "S%u", 7, 0))>;
+
+def CSR_IPRA_N32 : CalleeSavedRegs<(add RA_64)>;
 
 def CSR_N32 : CalleeSavedRegs<(add D20_64, D22_64, D24_64, D26_64, D28_64,
                                    D30_64, RA_64, FP_64, GP_64,
@@ -451,3 +455,4 @@ def CSR_Interrupt_64 : CalleeSavedRegs<(add (sequence "A%u_64", 3, 0),
                                             LO0_64, HI0_64)>;
 
 def CSR_P32 : CalleeSavedRegs<(add RA_NM, FP_NM, GP_NM, (sequence "S%u_NM", 7, 0))>;
+def CSR_IPRA_P32 : CalleeSavedRegs<(add RA_NM)>;

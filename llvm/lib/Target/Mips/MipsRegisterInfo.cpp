@@ -93,6 +93,17 @@ MipsRegisterInfo::getRegPressureLimit(const TargetRegisterClass *RC,
 // Callee Saved Registers methods
 //===----------------------------------------------------------------------===//
 
+const MCPhysReg *MipsRegisterInfo::getIPRACSRegs(const MachineFunction *MF) const {
+  const MipsSubtarget &Subtarget = MF->getSubtarget<MipsSubtarget>();
+  if (Subtarget.isABI_P32())
+    return CSR_IPRA_P32_SaveList;
+  if (Subtarget.isABI_N32())
+    return CSR_IPRA_N32_SaveList;
+  if (Subtarget.isABI_O32())
+    return CSR_IPRA_O32_SaveList;
+}
+
+
 /// Mips Callee Saved Registers
 const MCPhysReg *
 MipsRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {

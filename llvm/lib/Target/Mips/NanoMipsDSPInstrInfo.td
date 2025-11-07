@@ -721,18 +721,27 @@ def : BitconvertPat<v4i8,  i32,   DSPRNM,  GPRNM32, HasDSPNanoMips>;
 def : BitconvertPat<v4i8, v2i16, DSPR, DSPR, HasDSPNanoMips>;
 def : BitconvertPat<v2i16, v4i8, DSPR, DSPR, HasDSPNanoMips>;
 
+def : DSPPat<(v2i16 (load addrsimm9:$a)),
+             (v2i16 (COPY_TO_REGCLASS (LWs9_NM addrsimm9:$a), DSPRNM)), HasDSPNanoMips>;
 def : DSPPat<(v2i16 (load addruimm12:$a)),
              (v2i16 (COPY_TO_REGCLASS (LW_NM addruimm12:$a), DSPRNM)), HasDSPNanoMips>;
 def : DSPPat<(v2i16 (load GPRNM32:$a)),
              (v2i16 (COPY_TO_REGCLASS (LW_NM GPRNM32:$a, 0), DSPRNM)), HasDSPNanoMips>;
+def : DSPPat<(v4i8 (load addrsimm9:$a)),
+             (v4i8 (COPY_TO_REGCLASS (LWs9_NM addrsimm9:$a), DSPRNM)), HasDSPNanoMips>;
 def : DSPPat<(v4i8 (load addruimm12:$a)),
 	     (v4i8 (COPY_TO_REGCLASS (LW_NM addruimm12:$a), DSPRNM)), HasDSPNanoMips>;
 def : DSPPat<(v4i8 (load GPRNM32:$a)),
 	     (v4i8 (COPY_TO_REGCLASS (LW_NM GPRNM32:$a, 0), DSPRNM)), HasDSPNanoMips>;
+
+def : DSPPat<(store (v2i16 DSPRNM:$val), addrsimm9:$a),
+	     (SWs9_NM (COPY_TO_REGCLASS DSPRNM:$val, GPRNM32), addrsimm9:$a), HasDSPNanoMips>;
 def : DSPPat<(store (v2i16 DSPRNM:$val), addruimm12:$a),
 	     (SW_NM (COPY_TO_REGCLASS DSPRNM:$val, GPRNM32), addruimm12:$a), HasDSPNanoMips>;
 def : DSPPat<(store (v2i16 DSPRNM:$val), GPRNM32:$a),
 	     (SW_NM (COPY_TO_REGCLASS DSPRNM:$val, GPRNM32), GPRNM32:$a, 0), HasDSPNanoMips>;
+def : DSPPat<(store (v4i8 DSPRNM:$val), addrsimm9:$a),
+	     (SWs9_NM (COPY_TO_REGCLASS DSPRNM:$val, GPRNM32), addrsimm9:$a), HasDSPNanoMips>;
 def : DSPPat<(store (v4i8 DSPRNM:$val), addruimm12:$a),
 	     (SW_NM (COPY_TO_REGCLASS DSPRNM:$val, GPRNM32), addruimm12:$a), HasDSPNanoMips>;
 def : DSPPat<(store (v4i8 DSPRNM:$val), GPRNM32:$a),

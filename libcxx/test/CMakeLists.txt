@@ -4,7 +4,11 @@ add_subdirectory(tools)
 # Install the library at a fake location so we can run the test suite against it.
 # This ensures that we run the test suite against a setup that matches what we ship
 # in production as closely as possible (in terms of file paths, rpaths, etc).
-set(LIBCXX_TESTING_INSTALL_PREFIX "${LIBCXX_BINARY_DIR}/test-suite-install")
+
+if(NOT DEFINED LIBCXX_TESTING_INSTALL_PREFIX)
+  set(LIBCXX_TESTING_INSTALL_PREFIX "${LIBCXX_BINARY_DIR}/test-suite-install")
+endif()
+
 if (LIBCXX_CXX_ABI STREQUAL "libcxxabi")
   add_custom_target(install-cxxabi-test-suite-prefix
                         DEPENDS cxxabi-headers

@@ -258,6 +258,9 @@ def x86_asm_syntax_att : Flag<["--"], "x86-asm-syntax=att">,
 def x86_asm_syntax_intel : Flag<["--"], "x86-asm-syntax=intel">,
   HelpText<"Emit Intel-style disassembly">;
 
+def nmips_little_endian_order : Flag<["--"], "nmips-little-endian-order">,
+  HelpText<"Emit nanoMIPS instructions in byte-wise little endian order. "
+           "The default is 16-bit chunks in nanoMIPS instruction byte-order.">;
 
 def grp_mach_o : OptionGroup<"kind">, HelpText<"llvm-objdump MachO Specific Options">;
 

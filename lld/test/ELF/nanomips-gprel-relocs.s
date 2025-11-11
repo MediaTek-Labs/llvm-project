@@ -15,15 +15,15 @@
 # and R_NANOMIPS_GPREL_16_S2
 
 _start:
-    # CHECK: 01 56 lw $a0, 0x4($gp)
+    # CHECK: 5601 lw $a0, 0x4($gp)
     lw $a0, %gp_rel(a)($gp)
-    # CHECK-NEXT: b0 44 04 00 lh $a1, 0x4($gp)
+    # CHECK-NEXT: 44b0 0004 lh $a1, 0x4($gp)
     lh $a1, %gp_rel(a)($gp)
-    # CHECK-NEXT: ac 44 04 00 addiu.b $a1, $gp, 0x4
+    # CHECK-NEXT: 44ac 0004 addiu.b $a1, $gp, 0x4
     addiu.b $a1, $gp, %gp_rel(a)
-    # CHECK-NEXT: c0 40 04 00 addiu.w $a2, $gp, 0x4
+    # CHECK-NEXT: 40c0 0004 addiu.w $a2, $gp, 0x4
     addiu.w $a2, $gp, %gp_rel(a)
-    # CHECK-NEXT: e2 60 04 00 00 00 addiu.b32 $a3, $gp, 0x4
+    # CHECK-NEXT: 60e2 0004 0000 addiu.b32 $a3, $gp, 0x4
     addiu.b32 $a3, $gp, %gp_rel(a)
 
 

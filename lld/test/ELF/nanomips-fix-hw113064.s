@@ -25,17 +25,17 @@ fix_neg:
     .ent _start
 
 _start:
-    # CHECK: 23 60 fe ff fd 01 lapc.b $at, 0x3fe0004
-    # CHECK-NEXT: 20 d8 jrc $at
+    # CHECK: 6023 fffe 01fd lapc.b $at, 0x3fe0004
+    # CHECK-NEXT: d820 jrc $at
     bc fix_pos
     # No expand
-    # CHECK-NEXT: fd 29 f8 ff bc 0x3fe0004
+    # CHECK-NEXT: 29fd fff8 bc 0x3fe0004
     bc fix_pos
     # No expand
-    # CHECK-NEXT: 02 2a 03 00 balc 0x20012
+    # CHECK-NEXT: 2a02 0003 balc 0x20012
     balc fix_neg
-    # CHECK-NEXT: 23 60 fc ff 01 fe lapc.b $at, 0x20012
-    # CHECK-NEXT: 30 d8 jalrc $ra, $at
+    # CHECK-NEXT: 6023 fffc fe01 lapc.b $at, 0x20012
+    # CHECK-NEXT: d830 jalrc $ra, $at
     balc fix_neg
 
     .ent _start

@@ -38,27 +38,27 @@
     .ent _start
 
 _start:
-    # CHECK: bf e0 {{.*}} aluipc $a1, %pcrel_hi(0x7{{.}}ff3
-    # CHECK-NEXT: a5 80 00 06 ori $a1, $a1, 0x600
-    # CHECK-NO-FIX: a3 60 {{.*}} lapc.b $a1, {{.*}} <addr_fix>
+    # CHECK: e0bf {{.*}} aluipc $a1, %pcrel_hi(0x7{{.}}ff3
+    # CHECK-NEXT: 80a5 0600 ori $a1, $a1, 0x600
+    # CHECK-NO-FIX: 60a3 {{.*}} lapc.b $a1, {{.*}} <addr_fix>
     lapc $a1, addr_fix
-    # CHECK-NEXT: df e0 {{.*}} aluipc $a2, %pcrel_hi(0x7{{.}}ff3
-    # CHECK-NEXT: a6 84 06 96 sw $a1, 0x606($a2)
-    # CHECK-NO-FIX-NEXT: af 60 {{.*}} swpc $a1, {{.*}} <addr_fix+0x6>
+    # CHECK-NEXT: e0df {{.*}} aluipc $a2, %pcrel_hi(0x7{{.}}ff3
+    # CHECK-NEXT: 84a6 9606 sw $a1, 0x606($a2)
+    # CHECK-NO-FIX-NEXT: 60af {{.*}} swpc $a1, {{.*}} <addr_fix+0x6>
     swpc $a1, addr_fix+6
-    # CHECK-NEXT: bf 04 fe ff lapc.h $a1, 0x201012
-    # CHECK-NO-FIX-NEXT: a3 60 00 00 20 00 lapc.b $a1, 0x201012
+    # CHECK-NEXT: 04bf fffe lapc.h $a1, 0x201012
+    # CHECK-NO-FIX-NEXT: 60a3 0000 0020 lapc.b $a1, 0x201012
     lapc $a1, positive
-    # CHECK-NEXT: c3 60 fc ff df ff lapc.b $a2, 0xffe01016
-    # CHECK-NO-FIX-NEXT: c0 04 01 00 lapc.h $a2, 0xffe01016
+    # CHECK-NEXT: 60c3 fffc ffdf lapc.b $a2, 0xffe01016
+    # CHECK-NO-FIX-NEXT: 04c0 0001 lapc.h $a2, 0xffe01016
     lapc $a2, negative
 
-    # CHECK-NEXT: a3 60 {{.*}} lapc.b $a1, 0x7{{.}}ff2600
-    # CHECK-NO-FIX-NEXT: a0 60 {{.*}} li $a1,
+    # CHECK-NEXT: 60a3 {{.*}} lapc.b $a1, 0x7{{.}}ff2600
+    # CHECK-NO-FIX-NEXT: 60a0 {{.*}} li $a1,
     li $a1, addr_fix_abs
-    # CHECK-NEXT: c3 60 {{.*}} lapc.b $a2, 0x7{{.}}ff2600
-    # CHECK-NEXT: c5 20 50 29 addu $a1, $a1, $a2
-    # CHECK-NO-FIX-NEXT: a1 60 {{.*}} addiu $a1, $a1,
+    # CHECK-NEXT: 60c3 {{.*}} lapc.b $a2, 0x7{{.}}ff2600
+    # CHECK-NEXT: 20c5 2950 addu $a1, $a1, $a2
+    # CHECK-NO-FIX-NEXT: 60a1 {{.*}} addiu $a1, $a1,
     addiu $a1, addr_fix_abs
 
     .end _start
@@ -83,8 +83,8 @@ addr_fix:
 fun:
     # Test for big obj files
     .skip 0x7e0000
-    # CHECK: e3 60 {{.*}} lapc.b $a3, 0x7{{.}}ff2600
-    # CHECK-NO-FIX: e0 60 {{.*}} li $a3,
+    # CHECK: 60e3 {{.*}} lapc.b $a3, 0x7{{.}}ff2600
+    # CHECK-NO-FIX: 60e0 {{.*}} li $a3,
     li $a3, addr_fix_abs
     .end fun
     .size fun, .-fun

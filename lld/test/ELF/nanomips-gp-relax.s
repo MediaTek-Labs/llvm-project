@@ -33,80 +33,80 @@
 
 
 _start:
-    # CHECK-NMF-STRICT: bf 40 fe ff lw $a1, 0x1ffffc($gp)
+    # CHECK-NMF-STRICT: 40bf fffe lw $a1, 0x1ffffc($gp)
     lw $a1, %gp_rel(no_expand_19_s2)($gp)
     
-    # CHECK-NMF-STRICT-NEXT: c2 60 fe ff 1f 00 addiu.b32 $a2, $gp, 0x1ffffe
-    # CHECK-NMF-STRICT-NEXT: a6 84 00 80 lw $a1, 0x0($a2)
-    # CHECK-NMF-NO-STRICT: ab 60 f4 1f 1b 00 lwpc $a1, 0x201ffe
+    # CHECK-NMF-STRICT-NEXT: 60c2 fffe 001f addiu.b32 $a2, $gp, 0x1ffffe
+    # CHECK-NMF-STRICT-NEXT: 84a6 8000 lw $a1, 0x0($a2)
+    # CHECK-NMF-NO-STRICT: 60ab 1ff4 001b lwpc $a1, 0x201ffe
     # Should be expanded as no_expand_19_s2 + 2 is not a multiple of 4 
     lw $a1, %gp_rel(no_expand_19_s2 + 2)($gp)
 
-    # CHECK-NMF-STRICT-NEXT: c2 60 00 00 20 00 addiu.b32 $a2, $gp, 0x200000
-    # CHECK-NMF-STRICT-NEXT: a6 84 00 80 lw $a1, 0x0($a2)
-    # CHECK-NMF-NO-STRICT-NEXT: ab 60 f0 1f 1b 00 lwpc $a1, 0x202000
+    # CHECK-NMF-STRICT-NEXT: 60c2 0000 0020 addiu.b32 $a2, $gp, 0x200000
+    # CHECK-NMF-STRICT-NEXT: 84a6 8000 lw $a1, 0x0($a2)
+    # CHECK-NMF-NO-STRICT-NEXT: 60ab 1ff0 001b lwpc $a1, 0x202000
     lw $a1, %gp_rel(a)($gp)
-    # CHECK-NMF-STRICT-NEXT: c2 60 00 10 20 00 addiu.b32 $a2, $gp, 0x201000
-    # CHECK-NMF-STRICT-NEXT: a6 84 00 90 sw $a1, 0x0($a2)
-    # CHECK-NMF-NO-STRICT-NEXT: af 60 ea 2f 1b 00 swpc $a1, 0x203000
+    # CHECK-NMF-STRICT-NEXT: 60c2 1000 0020 addiu.b32 $a2, $gp, 0x201000
+    # CHECK-NMF-STRICT-NEXT: 84a6 9000 sw $a1, 0x0($a2)
+    # CHECK-NMF-NO-STRICT-NEXT: 60af 2fea 001b swpc $a1, 0x203000
     sw $a1, %gp_rel(b)($gp)
-    # CHECK-NMF-STRICT-NEXT: a2 60 00 10 20 00 addiu.b32 $a1, $gp, 0x201000
+    # CHECK-NMF-STRICT-NEXT: 60a2 1000 0020 addiu.b32 $a1, $gp, 0x201000
     addiu.w $a1, $gp, %gp_rel(b)
 
-    # CHECK-NMF-STRICT-NEXT: a3 44 ff ff lb $a1, 0x3ffff($gp)
+    # CHECK-NMF-STRICT-NEXT: 44a3 ffff lb $a1, 0x3ffff($gp)
     lb $a1, %gp_rel(in_range_18)($gp)
-    # CHECK-NMF-STRICT-NEXT: c2 60 02 00 04 00 addiu.b32 $a2, $gp, 0x40002
-    # CHECK-NMF-STRICT-NEXT: a6 84 00 00 lb $a1, 0x0($a2)
+    # CHECK-NMF-STRICT-NEXT: 60c2 0002 0004 addiu.b32 $a2, $gp, 0x40002
+    # CHECK-NMF-STRICT-NEXT: 84a6 0000 lb $a1, 0x0($a2)
     lb $a1, %gp_rel(out_range_18)($gp)
-    # CHECK-NMF-STRICT-NEXT: c2 60 02 00 04 00 addiu.b32 $a2, $gp, 0x40002
-    # CHECK-NMF-STRICT-NEXT: a6 84 00 10 sb $a1, 0x0($a2)
+    # CHECK-NMF-STRICT-NEXT: 60c2 0002 0004 addiu.b32 $a2, $gp, 0x40002
+    # CHECK-NMF-STRICT-NEXT: 84a6 1000 sb $a1, 0x0($a2)
     sb $a1, %gp_rel(out_range_18)($gp)
-    # CHECK-NMF-STRICT-NEXT: c2 60 02 00 04 00 addiu.b32 $a2, $gp, 0x40002
-    # CHECK-NMF-STRICT-NEXT: a6 84 00 20 lbu $a1, 0x0($a2)
+    # CHECK-NMF-STRICT-NEXT: 60c2 0002 0004 addiu.b32 $a2, $gp, 0x40002
+    # CHECK-NMF-STRICT-NEXT: 84a6 2000 lbu $a1, 0x0($a2)
     lbu $a1, %gp_rel(out_range_18)($gp)
     # CHECK-NMF-STRICT-NEXT: addiu.w $a1, $gp, 0x40004
     addiu.b $a1, $gp, %gp_rel(out_range_18 + 2)
-    # CHECK-NMF-STRICT-NEXT: a2 60 02 00 04 00 addiu.b32 $a1, $gp, 0x40002
+    # CHECK-NMF-STRICT-NEXT: 60a2 0002 0004 addiu.b32 $a1, $gp, 0x40002
     addiu.b $a1, $gp, %gp_rel(out_range_18)
-    # CHECK-NMF-STRICT-NEXT: a2 60 00 10 20 00 addiu.b32 $a1, $gp, 0x201000
+    # CHECK-NMF-STRICT-NEXT: 60a2 1000 0020 addiu.b32 $a1, $gp, 0x201000
     addiu.b $a1, $gp, %gp_rel(b)
 
-    # CHECK-NMF-STRICT-NEXT: b3 44 fe ff lh $a1, 0x3fffe($gp)
+    # CHECK-NMF-STRICT-NEXT: 44b3 fffe lh $a1, 0x3fffe($gp)
     lh $a1, %gp_rel(in_range_18 - 1)($gp)
-    # CHECK-NMF-STRICT-NEXT: cf 44 ff ff addiu.b $a2, $gp, 0x3ffff
-    # CHECK-NMF-STRICT-NEXT: a6 84 00 40 lh $a1, 0x0($a2)
+    # CHECK-NMF-STRICT-NEXT: 44cf ffff addiu.b $a2, $gp, 0x3ffff
+    # CHECK-NMF-STRICT-NEXT: 84a6 4000 lh $a1, 0x0($a2)
     # Should expand this one as it is not aligned on 2
     lh $a1, %gp_rel(in_range_18)($gp)
-    # CHECK-NMF-STRICT-NEXT: c2 60 02 00 04 00 addiu.b32 $a2, $gp, 0x40002
-    # CHECK-NMF-STRICT-NEXT: a6 84 00 60 lhu $a1, 0x0($a2)
+    # CHECK-NMF-STRICT-NEXT: 60c2 0002 0004 addiu.b32 $a2, $gp, 0x40002
+    # CHECK-NMF-STRICT-NEXT: 84a6 6000 lhu $a1, 0x0($a2)
     lhu $a1, %gp_rel(out_range_18)($gp)
-    # CHECK-NMF-STRICT-NEXT: c2 60 02 00 04 00 addiu.b32 $a2, $gp, 0x40002
-    # CHECK-NMF-STRICT-NEXT: a6 84 00 50 sh $a1, 0x0($a2)
+    # CHECK-NMF-STRICT-NEXT: 60c2 0002 0004 addiu.b32 $a2, $gp, 0x40002
+    # CHECK-NMF-STRICT-NEXT: 84a6 5000 sh $a1, 0x0($a2)
     sh $a1, %gp_rel(out_range_18)($gp)
 
     # Relax (after expanding lw, sw)
 
-    # CHECK-NMF-STRICT-NEXT: ff 56 lw $a1, 0x1fc($gp)
+    # CHECK-NMF-STRICT-NEXT: 56ff lw $a1, 0x1fc($gp)
     lw $a1, %gp_rel(gprel9_relax)($gp)
-    # CHECK-NMF-STRICT-NEXT: ff d6 sw $a1, 0x1fc($gp)
+    # CHECK-NMF-STRICT-NEXT: d6ff sw $a1, 0x1fc($gp)
     sw $a1, %gp_rel(gprel9_relax)($gp)
-    # CHECK-NMF-STRICT-NEXT: 80 41 fe 01 lw $t0, 0x1fc($gp)
+    # CHECK-NMF-STRICT-NEXT: 4180 01fe lw $t0, 0x1fc($gp)
     # No relax, not valid reg
     lw $t0, %gp_rel(gprel9_relax)($gp)
 
-    # CHECK-NMF-STRICT-NEXT: af 44 fe ff addiu.b $a1, $gp, 0x3fffe
+    # CHECK-NMF-STRICT-NEXT: 44af fffe addiu.b $a1, $gp, 0x3fffe
     # Expand then relax
     addiu.b $a1, $gp, %gp_rel(gprel_i32_18_expand_relax_sym)
-    # CHECK-NMF-STRICT-NEXT: a2 60 01 00 04 00 addiu.b32 $a1, $gp, 0x40001
+    # CHECK-NMF-STRICT-NEXT: 60a2 0001 0004 addiu.b32 $a1, $gp, 0x40001
     # Expand no relax
     addiu.b $a1, $gp, %gp_rel(gprel_i32_18_expand_relax_sym + 3)
-    # CHECK-NMF-STRICT-NEXT: bf 40 fc ff addiu.w $a1, $gp, 0x1ffffc
+    # CHECK-NMF-STRICT-NEXT: 40bf fffc addiu.w $a1, $gp, 0x1ffffc
     # Expand then relax
     addiu.w $a1, $gp, %gp_rel(gprel_i32_21_expand_relax_sym)
-    # CHECK-NMF-STRICT-NEXT: a2 60 fa ff 1f 00 addiu.b32 $a1, $gp, 0x1ffffa
+    # CHECK-NMF-STRICT-NEXT: 60a2 fffa 001f addiu.b32 $a1, $gp, 0x1ffffa
     # Expand no relax
     addiu.w $a1, $gp, %gp_rel(gprel_i32_21_expand_relax_sym-2)
-    # CHECK-NMF-STRICT-NEXT: a2 60 00 00 20 00 addiu.b32 $a1, $gp, 0x200000
+    # CHECK-NMF-STRICT-NEXT: 60a2 0000 0020 addiu.b32 $a1, $gp, 0x200000
     # Expand no relax
     addiu.w $a1, $gp, %gp_rel(gprel_i32_21_expand_relax_sym+4)
 

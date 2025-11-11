@@ -32,7 +32,7 @@ d:
 	nop32
 	.end __start
 
-# CHECK: 2: a1 60 78 56 34 12    	addiu	$a1, $a1, 0x12345678
-# CHECK: c: a0 60 21 43 65 87    	li	$a1, 0x87654321
-# CHECK: 16: a3 60 48 61 bc 00    	lapc.b	$a1, 0xbc6164
-# CHECK: 22: 00 80 00 c0  	nop32
+# CHECK: 2: 60a1 5678 1234    	addiu	$a1, $a1, 0x12345678
+# CHECK: c: 60a0 4321 8765    	li	$a1, 0x87654321
+# CHECK: 16: 60a3 6148 00bc    	lapc.b	$a1, 0xbc6164
+# CHECK: 22: 8000 c000  	nop32

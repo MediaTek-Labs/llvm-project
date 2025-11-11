@@ -351,6 +351,7 @@ bool objdump::UnwindInfo;
 static bool Wide;
 std::string objdump::Prefix;
 uint32_t objdump::PrefixStrip;
+static bool NMipsLEByteOrder;
 
 DebugVarsFormat objdump::DbgVariables = DVDisabled;
 
@@ -950,6 +951,48 @@ public:
 };
 AArch64PrettyPrinter AArch64PrettyPrinterInst;
 
+
+class NanoMIPSPrettyPrinter : public PrettyPrinter {
+public:
+  void printInst(MCInstPrinter &IP, const MCInst *MI, ArrayRef<uint8_t> Bytes,
+                 object::SectionedAddress Address, formatted_raw_ostream &OS,
+                 StringRef Annot, MCSubtargetInfo const &STI, SourcePrinter *SP,
+                 StringRef ObjectFilename, std::vector<RelocationRef> *Rels,
+                 LiveVariablePrinter &LVP) override {
+    // Default output is byte-wise little-endian
+    if (NMipsLEByteOrder)
+      return PrettyPrinter::printInst(IP, MI, Bytes, Address, OS, Annot, STI, SP,
+                                      ObjectFilename, Rels, LVP);
+    if (SP && (PrintSource || PrintLines))
+      SP->printSourceLine(OS, Address, ObjectFilename, LVP);
+    LVP.printBetweenInsts(OS, false);
+    // Custom printer for nanoMIPS prints 16-bit chunks
+    size_t Start = OS.tell();
+    if (LeadingAddr)
+      OS << format("%4" PRIx32 ":", Address.Address);
+    if (ShowRawInsn) {
+        size_t Pos = 0, End = Bytes.size();
+        for (; Pos + 2 <= End; Pos += 2)
+          OS << ' '
+             << format_hex_no_prefix(llvm::support::endian::read<uint16_t>(
+                                       Bytes.data() + Pos, InstructionEndianness),
+                                     4);
+        if (Pos < End) {
+          OS << ' ';
+          dumpBytes(Bytes.slice(Pos), OS);
+        }
+    }
+    AlignToInstStartColumn(Start, STI, OS);
+    if (MI)
+      IP.printInst(MI, Address.Address, "", STI, OS);
+    else
+      OS << "\t<unknown>";
+  }
+private:
+  llvm::endianness InstructionEndianness = llvm::endianness::little;
+};
+NanoMIPSPrettyPrinter NanoMIPSPrettyPrinterInst;
+
 class RISCVPrettyPrinter : public PrettyPrinter {
 public:
   void printInst(MCInstPrinter &IP, const MCInst *MI, ArrayRef<uint8_t> Bytes,
@@ -1022,6 +1065,8 @@ PrettyPrinter &selectPrettyPrinter(Triple const &Triple) {
   case Triple::riscv32:
   case Triple::riscv64:
     return RISCVPrettyPrinterInst;
+  case Triple::nanomips:
+    return NanoMIPSPrettyPrinterInst;
   }
 }
 
@@ -3608,6 +3653,7 @@ static void parseObjdumpOptions(const llvm::opt::InputArgList &InputArgs) {
   UnwindInfo = InputArgs.hasArg(OBJDUMP_unwind_info);
   Wide = InputArgs.hasArg(OBJDUMP_wide);
   Prefix = InputArgs.getLastArgValue(OBJDUMP_prefix).str();
+  NMipsLEByteOrder = InputArgs.hasArg(OBJDUMP_nmips_little_endian_order);
   parseIntArg(InputArgs, OBJDUMP_prefix_strip, PrefixStrip);
   if (const opt::Arg *A = InputArgs.getLastArg(OBJDUMP_debug_vars_EQ)) {
     DbgVariables = StringSwitch<DebugVarsFormat>(A->getValue())

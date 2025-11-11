@@ -82,6 +82,10 @@ private:
   void emitPseudoIndirectBranch(MCStreamer &OutStreamer,
                                 const MachineInstr *MI);
 
+  // Emit PseudoReturnHBNM as JRC.HB for nanoMIPS.
+  void emitPseudoIndirectBranchHB(MCStreamer &OutStreamer,
+                                  const MachineInstr *MI);
+
   void emitJumpTableDest(MCStreamer &OutStreamer, const MachineInstr *MI);
 
   bool tryEmitHw110880Xform(MCStreamer &OutStreamer, const MachineInstr *MI);

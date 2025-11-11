@@ -79,6 +79,9 @@ public:
     else if (FD->hasAttr<NoMicroMipsAttr>())
       Fn->addFnAttr("nomicromips");
 
+    if (FD->hasAttr<NMipsHBReturnAttr>())
+      Fn->addFnAttr("use-hazard-barrier-return");
+
     const MipsInterruptAttr *Attr = FD->getAttr<MipsInterruptAttr>();
     if (!Attr)
       return;

@@ -458,6 +458,7 @@ def TargetBPF : TargetArch<["bpfel", "bpfeb"]>;
 def TargetLoongArch : TargetArch<["loongarch32", "loongarch64"]>;
 def TargetMips32 : TargetArch<["mips", "mipsel"]>;
 def TargetAnyMips : TargetArch<["mips", "mipsel", "mips64", "mips64el", "nanomips"]>;
+def TargetNanoMips : TargetArch<["nanomips"]>;
 def TargetMSP430 : TargetArch<["msp430"]>;
 def TargetM68k : TargetArch<["m68k"]>;
 def TargetRISCV : TargetArch<["riscv32", "riscv64"]>;
@@ -2041,6 +2042,13 @@ def MipsShortCall : InheritableAttr, TargetSpecificAttr<TargetAnyMips> {
   let SimpleHandler = 1;
 }
 def : MutualExclusions<[MipsLongCall, MipsShortCall]>;
+
+def NMipsHBReturn : InheritableAttr, TargetSpecificAttr<TargetNanoMips> {
+  let Spellings = [GCC<"use_hazard_barrier_return">];
+  let Subjects = SubjectList<[Function]>;
+  let Documentation = [NMipsHBReturnDocs];
+  let SimpleHandler = 1;
+}
 
 def M68kInterrupt : InheritableAttr, TargetSpecificAttr<TargetM68k> {
   // NOTE: If you add any additional spellings, ARMInterrupt's, MipsInterrupt's

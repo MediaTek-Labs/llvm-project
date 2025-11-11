@@ -122,7 +122,7 @@ def : InstRW<[I7200WriteALU], (instrs TEQ_NM, TNE_NM, RDHWR_NM)>;
 // Pseudo instructions.
 def : InstRW<[I7200WriteALU], (instrs COPY)>;
 def : InstRW<[I7200WriteBranch], (instrs
-  RetRA, PseudoReturn, PseudoReturnNM, PseudoIndirectBranchNM,
+  RetRA, PseudoReturn, PseudoReturnNM, PseudoReturn_HB_NM, PseudoIndirectBranchNM,
   TAILCALL_NM, TAILCALLREG_NM, MUSTTAILCALL_NM, MUSTTAILCALLREG_NM, JALRCPseudo, JALRHBPseudo, ERet
 )>;
 

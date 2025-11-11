@@ -8,8 +8,8 @@
 main:
 	# Instruction encodings to target 0x4ac from 0xffffff00 without
 	# generating relocations
-	.short 0x6083 		# CHECK: {{.*}}: 83 60 a6 05 00 00    lapc.b $a0, 0x4ac
+	.short 0x6083 		# CHECK: {{.*}}: 6083 05a6 0000    lapc.b $a0, 0x4ac
 	.short 0x05a6
 	.short 0x0000
-	.short 0x0480		# CHECK: {{.*}}: 80 04 a2 05    lapc.h $a0, 0x4ac
+	.short 0x0480		# CHECK: {{.*}}: 0480 05a2    lapc.h $a0, 0x4ac
 	.short 0x05a2

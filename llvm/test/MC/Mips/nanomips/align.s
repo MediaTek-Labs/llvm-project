@@ -59,7 +59,7 @@ test:
 # The behavior is the same as GNU assembler.
 	.p2align 3, 1
 # ALIGN-RELOC-NOT: {{0*}}28 {{.*}} R_NANOMIPS_ALIGN       00000003   .Ltmp{{.}} + 0
-# RELAX-INST:  01 01 01 01
+# RELAX-INST:  0101 0101
 	jr $ra
 # NOALIGN-RELOC-NOT: R_NANOMIPS_ALIGN
 # Code alignment of a byte size less than the size of a nop must be treated

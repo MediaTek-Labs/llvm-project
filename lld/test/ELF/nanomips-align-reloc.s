@@ -10,11 +10,11 @@
 # RUN: llvm-objdump -d %t | FileCheck %s
 
 # CHECK: lapc
-# CHECK-NEXT: 08 90 nop
-# CHECK-NEXT: 08 90 nop
+# CHECK-NEXT: 9008 nop
+# CHECK-NEXT: 9008 nop
 
 # CHECK: balc
-# CHECK-NEXT: 08 90 nop
+# CHECK-NEXT: 9008 nop
 
     .linkrelax
     .section .text, "ax", @progbits

@@ -24,13 +24,13 @@
 
 _start:
     # R_NANOMIPS_I32
-    # CHECK: 1000: e0 60 2a 10 00 02 li $a3, 0x200102a
+    # CHECK: 1000: 60e0 102a 0200 li $a3, 0x200102a
     li $a3, b
     # R_NANOMIPS_HI20
-    # CHECK-NEXT: 1006: c0 e0 40 10 lui $a2, %hi(0x2001000)
+    # CHECK-NEXT: 1006: e0c0 1040 lui $a2, %hi(0x2001000)
     lui $a2, %hi(b)
     # R_NANOMIPS_LO12
-    # CHECK-NEXT: 100a: c6 84 2a 80 lw $a2, 0x2a($a2)
+    # CHECK-NEXT: 100a: 84c6 802a lw $a2, 0x2a($a2)
     lw $a2, %lo(b)($a2)
     li $a4, -2
     .end _start

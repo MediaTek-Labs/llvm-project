@@ -15,31 +15,31 @@
 
 _start:
 
-    # CHECK: ef 16{{.*}} lw $a1,{{.*}}($a2)
+    # CHECK: 16ef{{.*}} lw $a1,{{.*}}($a2)
     lw $a1, %lo(relaxable_lo12)($a2)
-    # CHECK-NEXT: 6f 94{{.*}} sw $zero,{{.*}}($a2)
+    # CHECK-NEXT: 946f{{.*}} sw $zero,{{.*}}($a2)
     sw $zero, %lo(relaxable_lo12)($a2)
 
     # Non valid regs
-    # CHECK-NEXT: 86 85{{.*}} lw $t0,{{.*}}($a2)
+    # CHECK-NEXT: 8586{{.*}} lw $t0,{{.*}}($a2)
     lw $t0, %lo(relaxable_lo12)($a2)
-    # CHECK-NEXT: 06 86{{.*}} sw $s0,{{.*}}($a2)
+    # CHECK-NEXT: 8606{{.*}} sw $s0,{{.*}}($a2)
     sw $s0, %lo(relaxable_lo12)($a2)
 
     # Non aligned offset
-    # CHECK-NEXT: a6 84{{.*}} lw $a1,{{.*}}($a2)
+    # CHECK-NEXT: 84a6{{.*}} lw $a1,{{.*}}($a2)
     lw $a1, %lo(relaxable_lo12 + 2)($a2)
 
     # Too large offset
-    # CHECK-NEXT: a6 84{{.*}} lw $a1,{{.*}}($a2)
+    # CHECK-NEXT: 84a6{{.*}} lw $a1,{{.*}}($a2)
     lw $a1, %lo(relaxable_lo12 + 4)($a2)
-    # CHECK-NEXT: a6 84{{.*}} lw $a1,{{.*}}($a2)
+    # CHECK-NEXT: 84a6{{.*}} lw $a1,{{.*}}($a2)
     lw $a1, %lo(relaxable_lo12 - 0x40)($a2)
 
     # Relax then expand
-    # CHECK-NEXT: a6 84{{.*}} lw $a1,{{.*}}($a2)
+    # CHECK-NEXT: 84a6{{.*}} lw $a1,{{.*}}($a2)
     lw $a1, %lo(relax_expand_sym)($a2)
-    # CHECK-NEXT: a6 84{{.*}} sw $a1,{{.*}}($a2)
+    # CHECK-NEXT: 84a6{{.*}} sw $a1,{{.*}}($a2)
     sw $a1, %lo(relax_expand_sym)($a2)
 
     .end _start
@@ -63,7 +63,7 @@ relaxable_lo12:
     .ent relax_expand
 
 relax_expand:
-    # CHECK: a3 60{{.*}} lapc
+    # CHECK: 60a3{{.*}} lapc
     lapc $a1, lapc_far
 
 relax_expand_sym:

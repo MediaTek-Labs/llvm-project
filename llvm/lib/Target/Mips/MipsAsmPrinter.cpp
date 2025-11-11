@@ -248,6 +248,22 @@ void MipsAsmPrinter::emitPseudoIndirectBranch(MCStreamer &OutStreamer,
   EmitToStreamer(OutStreamer, TmpInst0);
 }
 
+void MipsAsmPrinter::emitPseudoIndirectBranchHB(MCStreamer &OutStreamer,
+                                                const MachineInstr *MI) {
+  MCInst TmpInst0;
+  MCOperand MCOp;
+
+  assert (Subtarget->hasNanoMips() &&
+          "Hazard barrier return not supported for target");
+  /* jrc.hb $ra <=> jalrc.hb $zero, $ra */
+  TmpInst0.setOpcode(Mips::JALRCHB_NM);
+  TmpInst0.addOperand(MCOperand::createReg(Mips::ZERO_NM));
+  lowerOperand(MI->getOperand(0), MCOp);
+  TmpInst0.addOperand(MCOp);
+
+  EmitToStreamer(OutStreamer, TmpInst0);
+}
+
 void MipsAsmPrinter::emitJumpTableDest(MCStreamer &OutStreamer,
                                        const MachineInstr *MI) {
   Register DestReg = MI->getOperand(0).getReg();
@@ -664,6 +680,11 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
     }
     if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoLA_NM) {
       emitLoadAddressNM(*OutStreamer, &*I);
+      continue;
+    }
+
+    if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::PseudoReturn_HB_NM ) {
+      emitPseudoIndirectBranchHB(*OutStreamer, &*I);
       continue;
     }
 

@@ -730,9 +730,15 @@ void MipsSEInstrInfo::expandRetRA(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator I) const {
 
   MachineInstrBuilder MIB;
-  if (Subtarget.hasNanoMips())
-    MIB = BuildMI(MBB, I, I->getDebugLoc(), get(Mips::PseudoReturnNM))
+  if (Subtarget.hasNanoMips()) {
+    const Function &Func = MBB.getParent()->getFunction();
+    if (Func.hasFnAttribute("use-hazard-barrier-return"))
+       MIB = BuildMI(MBB, I, I->getDebugLoc(), get(Mips::PseudoReturn_HB_NM))
               .addReg(Mips::RA_NM, RegState::Undef);
+    else
+       MIB = BuildMI(MBB, I, I->getDebugLoc(), get(Mips::PseudoReturnNM))
+              .addReg(Mips::RA_NM, RegState::Undef);
+  }
   else if (Subtarget.isGP64bit())
     MIB = BuildMI(MBB, I, I->getDebugLoc(), get(Mips::PseudoReturn64))
               .addReg(Mips::RA_64, RegState::Undef);

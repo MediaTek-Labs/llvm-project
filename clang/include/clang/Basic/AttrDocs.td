@@ -2809,6 +2809,16 @@ as ``-mlong-calls`` and ``-mno-long-calls``.
   }];
 }
 
+def NMipsHBReturnDocs : Documentation {
+  let Category = DocCatFunction;
+  let Content = [{
+Clang supports the GNU style ``__attribute__((use_hazard_barrier_return))``
+attribute on NanoMIPS targets. This attributes may be attached to a function
+definition and instructs the backend to generate an instruction hazard
+barrier at return from this function.
+  }];
+}
+
 def RISCVInterruptDocs : Documentation {
   let Category = DocCatFunction;
   let Heading = "interrupt (RISC-V)";

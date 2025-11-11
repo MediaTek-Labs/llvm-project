@@ -1970,6 +1970,16 @@ def PseudoReturnNM : PseudoInstNM<(outs), (ins GPRNM32Opnd:$rs), []> {
   bit isCTI = 1;
 }
 
+def PseudoReturn_HB_NM : PseudoInstNM<(outs), (ins GPRNM32Opnd:$rs), []> {
+  let isTerminator = 1;
+  let isBarrier = 1;
+  let isReturn = 1;
+  let isCodeGenOnly = 1;
+  let hasCtrlDep = 1;
+  let hasExtraSrcRegAllocReq = 1;
+  bit isCTI = 1;
+}
+
 let isCodeGenOnly = 1, hasNoSchedulingInfo = 1, hasDelaySlot = 0 in
 def LoadJumpTableOffset : PseudoInstNM<(outs GPRNM32Opnd:$rd), (ins GPRNM32Opnd:$table, GPRNM32Opnd:$entry, i32imm:$jti), []>;
 

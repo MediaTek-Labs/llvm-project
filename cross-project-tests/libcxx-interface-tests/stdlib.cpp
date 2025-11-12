@@ -119,7 +119,7 @@ int main(){
     size_t length = std::strlen(mb_string) + 1;
     wchar_t wideString[length];
     std::mbstowcs(wideString, mb_string, length);
-    std::cout << "Wide character string: " << wideString << std::endl;
+    std::wcout << "Wide character string: " << wideString << std::endl;
 
     const wchar_t* wideString1 = L"こんにちは";
     size_t length1 = std::wcslen(wideString1) + 1;

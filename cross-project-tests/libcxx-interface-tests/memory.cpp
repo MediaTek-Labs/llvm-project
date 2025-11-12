@@ -107,11 +107,11 @@ void test_memory_management_on_my_class(){
     // 7. Allocating memory using std::allocator
     std::allocator<MyClass> myClassAllocator;
     MyClass* allocatedObject = myClassAllocator.allocate(1);
-    myClassAllocator.construct(allocatedObject, 30);
+    std::allocator_traits<std::allocator<MyClass>>::construct(myClassAllocator, allocatedObject, 30);
 
     // 8. Cleaning up allocated memory
-    myClassAllocator.destroy(allocatedObject);  // Destructs an object in allocated storage
-    myClassAllocator.deallocate(allocatedObject, 1); // Deallocates storage 
+    std::allocator_traits<std::allocator<MyClass>>::destroy(myClassAllocator, allocatedObject);  // Destructs an object in allocated storage
+    myClassAllocator.deallocate(allocatedObject, 1); // Deallocates storage
 
     // 9. Using std::unique_ptr with custom deleter function
     std::unique_ptr<MyClass, decltype(&customDeleter)> uniquePtrWithCustomDeleter(

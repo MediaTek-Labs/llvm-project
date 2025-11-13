@@ -252,6 +252,7 @@ public:
   bool isPositionIndependent() const;
   /// This overrides the PostRAScheduler bit in the SchedModel for each CPU.
   bool enablePostRAScheduler() const override;
+  bool enableMachineSchedDefaultSched() const override;
   void getCriticalPathRCs(RegClassVector &CriticalPathRCs) const override;
   CodeGenOptLevel getOptLevelToEnablePostRAScheduler() const override;
 

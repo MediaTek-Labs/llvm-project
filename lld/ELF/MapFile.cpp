@@ -62,6 +62,17 @@ static void writeVMA(Ctx &ctx, raw_ostream &os, uint64_t vma) {
     os << format("%8llx", vma) << indent8 << indent8 << indent9;
 }
 
+// Print out VMA, size and alignment columns of a line.
+static void writeVMAHeader(Ctx &ctx, raw_ostream &os, uint64_t vma,
+                        uint64_t size, uint64_t align) {
+  if (ctx.arg.is64)
+    os << format("%16llx", vma) << indent16
+       << format("%8llx %5lld ", vma, size, align);
+  else
+    os << format("%8llx", vma) << indent8
+       << format("%8llx %5lld ", vma, size, align);
+}
+
 // Returns a list of all symbols that we want to print out.
 static std::vector<Defined *> getSymbols(Ctx &ctx) {
   std::vector<Defined *> v;
@@ -169,15 +180,25 @@ static void writeMapFile(Ctx &ctx, raw_fd_ostream &os) {
   os << right_justify("VMA", w) << ' ' << right_justify("LMA", w)
      << "     Size Align Out     In      Symbol\n";
 
-  OutputSection *osec = nullptr;
+  OutputSection* osec = nullptr;
+  unsigned prevLMA = 0;
   for (SectionCommand *cmd : ctx.script->sectionCommands) {
     if (auto *assign = dyn_cast<SymbolAssignment>(cmd)) {
+      int fillSize = 0;
       if (assign->provide && !assign->sym)
         continue;
+      // Assignment to _dot_ with padding
+      if (!assign->sym && assign->addr > prevLMA) {
+        fillSize = assign->addr - prevLMA;
+        writeVMAHeader(ctx, os, assign->addr, fillSize, 1);
+        os << indent8 << "** zero fill" << '\n';
+      }
       // VMA for symbol assignment is the value of the symbol.
-      // This will only match assign->addr when the RHS is _dot_
-      writeVMA(ctx, os, (assign->sym ? assign->sym->value : assign->addr));
-      os << indent8 << indent8 << assign->commandString << '\n';
+      // This will only match addr+fill when assigning to _dot_
+      writeVMA(ctx, os, (assign->sym ? assign->sym->value :
+                    assign->addr + fillSize));
+      os << indent8 << assign->commandString << '\n';
+      prevLMA = assign->addr + fillSize;
       continue;
     }
     if (isa<SectionClassDesc>(cmd))
@@ -189,7 +210,6 @@ static void writeMapFile(Ctx &ctx, raw_fd_ostream &os) {
     os << osec->name << '\n';
 
     // Dump symbols for each input section.
-    unsigned prevLMA = 0;
     for (SectionCommand *subCmd : osec->commands) {
       if (auto *isd = dyn_cast<InputSectionDescription>(subCmd)) {
         for (InputSection *isec : isd->sections) {
@@ -199,15 +219,14 @@ static void writeMapFile(Ctx &ctx, raw_fd_ostream &os) {
           }
 	  // Gap in LMA followed by a section with alignment
 	  // implies that padding was inserted.
-	  if (prevLMA != 0 &&
-	      osec->getLMA() + isec->outSecOff > prevLMA &&
+          if (osec->getLMA() + isec->outSecOff > prevLMA &&
 	      isec->addralign > 1) {
 	    unsigned fillSize = osec->getLMA() + isec->outSecOff - prevLMA;
 	    writeHeader(ctx, os, isec->getVA() - fillSize, prevLMA,
 			fillSize, 1);
-	    os << osec->name << indent8;
+            os << indent8;
 	    os << ((osec->flags & ELF::SHF_EXECINSTR) ?
-		   "** fill\n" : "** zero fill\n");
+               "** fill" : "** zero fill") << '\n';
 	  }
 	  prevLMA = osec->getLMA() + isec->outSecOff + isec->getSize();
 
@@ -224,16 +243,24 @@ static void writeMapFile(Ctx &ctx, raw_fd_ostream &os) {
         writeHeader(ctx, os, osec->addr + data->offset,
                     osec->getLMA() + data->offset, data->size, 1);
         os << indent8 << data->commandString << '\n';
+        prevLMA = osec->getLMA() + data->offset + data->size;
+
         continue;
       }
 
       if (auto *assign = dyn_cast<SymbolAssignment>(subCmd)) {
         if (assign->provide && !assign->sym)
           continue;
-        writeHeader(ctx, os, assign->addr,
+        // Assignment to _dot_ with padding within a section
+        if (assign->size > 1) {
+          writeHeader(ctx, os, assign->addr,
                     osec->getLMA() + assign->addr - osec->getVA(0),
                     assign->size, 1);
-        os << indent8 << assign->commandString << '\n';
+          os << indent8 << "** zero fill" << '\n';
+        }
+        writeVMA(ctx, os, assign->addr + assign->size);
+        os << indent8 << indent8 << assign->commandString << '\n';
+        prevLMA = assign->addr + assign->size;
         continue;
       }
     }

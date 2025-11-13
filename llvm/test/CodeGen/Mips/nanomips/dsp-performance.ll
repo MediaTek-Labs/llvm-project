@@ -202,7 +202,7 @@ define i32 @dont_optimize(i32 %0, i32 %1, i32 %2, i1 %3, ptr %g_388) {
   br i1 %3, label %7, label %5
 
 5:                                                ; preds = %4
-  %6 = tail call i64 @llvm.mips.mthlip(i64 0, i32 0)
+  %6 = tail call i64 @llvm.mips.mthlip(i64 1, i32 0)
   br label %7
 
 7:                                                ; preds = %5, %4

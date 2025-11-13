@@ -24,7 +24,7 @@ int op_only(int b, int c) {
 }
 
 // CHECK-LABEL: op_result
-// CHECK: mtlo $zero, [[ACC:\$ac[0-3]]]
+// CHECK: mtlo ${{.*}}, [[ACC:\$ac[0-3]]]
 // CHECK: mthi $zero, [[ACC]]
 // CHECK: #APP
 // CHECK: maddu   [[ACC]], $a0, $a1
@@ -33,7 +33,7 @@ int op_only(int b, int c) {
 // CHECK:extr.w  $a0, [[ACC]], 31
 int op_result(int b, int c) {
   int ret1, ret2;
-   a64 a64_a = 0LL;
+   a64 a64_a = 1LL;
   __asm__ __volatile__ ("maddu %[dst], %[op1], %[op2]; // read %[op3] \n\t"
       : [dst] "=A" (a64_a)
       : [op1] "r" (b), [op2] "r" (c), [op3] "A" (a64_a)

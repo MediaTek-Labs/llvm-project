@@ -125,7 +125,8 @@ PreservedAnalyses KCFIPass::run(Function &F, FunctionAnalysisManager &AM) {
       Type *OpType = PointerType::get(Type::getInt8Ty(Builder.getContext()), 0);
       Value *Data = emitDebugLocData(DebugLoc, M, Builder);
       HandlerFn = M.getOrInsertFunction(
-          "__ubsan_handle_kcfi", Builder.getVoidTy(), Data->getType(), OpType);
+          "__ubsan_handle_kcfi_explicit_param",
+          Builder.getVoidTy(), Data->getType(), OpType);
       CallInst *HandlerCall = Builder.CreateCall(
           HandlerFn,
           {Data, Builder.CreateBitCast(Call->getCalledOperand(), OpType)});

@@ -23,7 +23,7 @@
 // TRAP-NEXT: unreachable
 // RECOVER: [[FILENAME:@[0-9]+]] = private constant {{.*}}c"{{.*}}/recover_kcfi.c\00"
 // RECOVER: [[STRUCT:@[0-9]+]] = private constant { ptr, i32, i32 } { ptr [[FILENAME]], i32 100, i32 3 }
-// RECOVER: call void @__ubsan_handle_kcfi(ptr [[STRUCT]], ptr {{.*}}[[CALLEE:%[0-9]+]])
+// RECOVER: call void @__ubsan_handle_kcfi_explicit_param(ptr [[STRUCT]], ptr {{.*}}[[CALLEE:%[0-9]+]])
 // RECOVER-NEXT: br label
 // RECOVER: {{.*}}call i32 [[CALLEE]]
 typedef int (*callback1_t)(int);

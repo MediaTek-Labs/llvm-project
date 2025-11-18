@@ -113,7 +113,7 @@ getSymbolStrings(Ctx &ctx, ArrayRef<Defined *> syms) {
     os << indent16 << toStr(ctx, *syms[i]);
   });
 
-  DenseMap<Symbol *, std::string> ret;
+  DenseMap<Symbol *, std::string> ret(syms.size());
   for (size_t i = 0, e = syms.size(); i < e; ++i)
     ret[syms[i]] = std::move(strs[i]);
   return ret;

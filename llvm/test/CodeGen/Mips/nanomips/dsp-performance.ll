@@ -26,8 +26,7 @@ declare i64 @llvm.mips.msub(i64, i32, i32) nounwind readnone
 declare i64 @llvm.mips.msubu(i64, i32, i32) nounwind readnone
 
 ; CHECK-LABEL: madd_loop:
-; CHECK-DAG: mtlo $
-; CHECK-DAG: mthi $
+; CHECK: mult $ac{{[0-3]}}, $zero, $zero
 ; CHECK: This Inner Loop Header
 ; CHECK-DAG: madd $
 ; CHECK-NOT: mfhi $
@@ -62,8 +61,7 @@ for.body:                                         ; preds = %entry, %for.body
 ; similar to mad_loop but order of usages of madd result
 ; prevented optimization in older code
 ; CHECK-LABEL: madd_loop_variant:
-; CHECK-DAG: mtlo $
-; CHECK-DAG: mthi $
+; CHECK: mult $ac{{[0-3]}}, $zero, $zero
 ; CHECK: This Inner Loop Header
 ; CHECK-DAG: madd $
 ; CHECK-NOT: mfhi $

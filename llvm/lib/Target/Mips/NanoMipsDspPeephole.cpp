@@ -658,21 +658,29 @@ bool NMDspPeephole::sinkExtracts(MachineBasicBlock &MBB) {
 //  acc = PseudoMTLOHI_DSP_NM(zero, zero)
 // ==>
 //  acc = MULT_DSP_NM(zero, zero)
-
 bool NMDspPeephole::convertMtlohiToMult(Register OpLo, Register OpHi,
                                       Register Acc,  MachineInstr &MI) {
   if (OpLo == OpHi) {
-    MachineInstr *OpLoInstr = getMIDefiningReg(OpLo, Mips::COPY);
-    if (OpLoInstr && OpLoInstr->getOperand(1).getReg() == Mips::ZERO_NM) {
-      const MipsInstrInfo *TII = STI->getInstrInfo();
-      MI.setDesc(TII->get(Mips::MULT_DSP_NM));
-      LLVM_DEBUG(dbgs() << "Converting MTLOHI into:\n");
-      LLVM_DEBUG(MI.dump());
-      return true;
-    }
+    // search through a copy chain
+    do {
+      MachineInstr *OpLoInstr = getMIDefiningReg(OpLo, Mips::COPY);
+      if (OpLoInstr == nullptr)
+        break;
+      if (OpLoInstr->getOperand(1).getReg() == Mips::ZERO_NM) {
+        const MipsInstrInfo *TII = STI->getInstrInfo();
+        MI.setDesc(TII->get(Mips::MULT_DSP_NM));
+        LLVM_DEBUG(dbgs() << "Converting MTLOHI into:\n");
+        LLVM_DEBUG(MI.dump());
+        return true;
+      } else {
+        // previous node in copy chain
+        OpLo =  OpLoInstr->getOperand(1).getReg();
+      }
+    } while (true);
   }
   return false;
 }
+
 //   ac1 = {addwc(hi(ac0), 0),
 //          addsc(lo(ac0), x)}
 //  ==>

@@ -215,6 +215,20 @@ define i32 @dont_optimize(i32 %0, i32 %1, i32 %2, i1 %3, ptr %g_388) {
   ret i32 0
 }
 
+declare i64 @llvm.mips.dpa.w.ph(i64, <2 x i16>, <2 x i16>)
+define dso_local i64 @two_init0(i32 noundef signext %var1,
+                               i32 noundef signext %var2)  {
+entry:
+; CHECK-LABEL: two_init0:
+; CHECK-COUNT-2: mult $ac{{[0-3]}}, $zero, $zero
+  %0 = bitcast i32 %var1 to <2 x i16>
+  %1 = tail call i64 @llvm.mips.dpa.w.ph(i64 0, <2 x i16> %0, <2 x i16> %0)
+  %2 = bitcast i32 %var2 to <2 x i16>
+  %3 = tail call i64 @llvm.mips.dpa.w.ph(i64 0, <2 x i16> %0, <2 x i16> %2)
+  %add = add nsw i64 %3, %1
+  ret i64 %add
+}
+
 declare void @transparent_crc(i64)
 declare i32 @printf(ptr, ...)
 declare void @crc32_byte(i8)

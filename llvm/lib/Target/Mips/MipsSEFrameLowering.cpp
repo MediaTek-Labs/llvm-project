@@ -265,6 +265,17 @@ bool ExpandPseudo::expandCopyACC(MachineBasicBlock &MBB, Iter I,
   //  copy dst_hi, $vr1
 
   unsigned Dst = I->getOperand(0).getReg(), Src = I->getOperand(1).getReg();
+  auto PrevI = I;
+  --PrevI;
+  if (PrevI->getOpcode() == Mips::MULT_DSP_NM &&
+      PrevI->getOperand(0).getReg() == Src) {
+    unsigned Op1 = PrevI->getOperand(1).getReg();
+    unsigned Op2 = PrevI->getOperand(2).getReg();
+    DebugLoc DL = I->getDebugLoc();
+    BuildMI(MBB, I, DL, TII.get(Mips::MULT_DSP_NM), Dst)
+      .addReg(Op1).addReg(Op2);
+    return true;
+  }
   const TargetRegisterClass *DstRC = RegInfo.getMinimalPhysRegClass(Dst);
   unsigned VRegSize = RegInfo.getRegSizeInBits(*DstRC) / 16;
   const TargetRegisterClass *RC = RegInfo.intRegClass(VRegSize);

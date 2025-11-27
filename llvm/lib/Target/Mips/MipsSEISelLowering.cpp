@@ -1026,16 +1026,24 @@ static SDValue performBuildVectorCombine(SDNode *N, SelectionDAG &DAG,
   if (Ty != MVT::v2i16)
     return SDValue();
   SDValue BVOp1 = N->getOperand(0);
-  SDValue BVOp2 = N->getOperand(1);
-  if (BVOp1.getOpcode() != ISD::AssertZext ||
-      BVOp2.getOpcode() != ISD::Constant) {
-    return SDValue();
-  }
-  ConstantSDNode *ConstNode = cast<ConstantSDNode>(BVOp2);
+  auto *C2 = dyn_cast<ConstantSDNode>(N->getOperand(1));
   // we are looking for high part that is equal to zero
-  if (!ConstNode || !(ConstNode->isZero()))
-    return SDValue();
-  return DAG.getNode(ISD::BITCAST, SDLoc(N), Ty, BVOp1);
+  if (C2 && C2->isZero() && BVOp1.getOpcode() == ISD::AssertZext)
+    return DAG.getNode(ISD::BITCAST, SDLoc(N), Ty, BVOp1);
+
+  // combine low and high parts
+  auto *C1 = dyn_cast<ConstantSDNode>(N->getOperand(0));
+  if (C1 && C2 &&
+      C1->getValueType(0) == MVT::i16 &&
+      C2->getValueType(0) == MVT::i16) {
+    uint32_t Val1 = C1->getZExtValue();
+    uint32_t Val2 = C2->getZExtValue();
+    uint32_t Composed = (Val2 << 16) | Val1; // Val2 is high, Val1 is low
+    // Create a new 32-bit constant node
+    SDValue NewConst = DAG.getConstant(Composed, SDLoc(N), MVT::i32);
+    return DAG.getNode(ISD::BITCAST, SDLoc(N), Ty, NewConst);
+  }
+  return SDValue();
 }
 
 // Fold sign-extensions into MipsISD::VEXTRACT_[SZ]EXT_ELT for MSA and fold

@@ -33,4 +33,21 @@ define i32 @hang() {
   ret i32 0
 }
 
+define dso_local signext i16 @no_zext() local_unnamed_addr {
+entry:
+; CHECK-LABEL: no_zext
+; CHECK-DAG: li {{.*}}, 1
+; CHECK-DAG: li {{.*}}, 2
+; CHECK-NOT: lw
+; CHECK: addq_s.ph
+
+  %0 = tail call <2 x i16> @llvm.mips.addq.s.ph(<2 x i16> <i16 2, i16 0>,
+                                                <2 x i16> <i16 1, i16 0>)
+  %conv2.i = extractelement <2 x i16> %0, i64 0
+  ret i16 %conv2.i
+}
+
+; Function Attrs: nofree nosync nounwind memory(none)
+declare <2 x i16> @llvm.mips.addq.s.ph(<2 x i16>, <2 x i16>) #1
+
 attributes #1 = { nofree nosync nounwind memory(none) }

@@ -3,6 +3,7 @@
 
 ; -global-isel=1 is unsupported.
 ; XFAIL: target=loongarch{{.*}}
+; XFAIL: target=nanomips{{.*}}
 ; XFAIL: target=nvptx{{.*}}
 ; XFAIL: target=sparc{{.*}}
 ; XFAIL: target=hexagon-{{.*}}

@@ -1,4 +1,5 @@
 #include<cerrno>
+#include<__chrono/duration.h>
 #include<ctime>
 
 namespace std {
@@ -28,7 +29,7 @@ namespace std {
   int __libcpp_tls_create(long*, void(*)(void*)) { return ENOSYS; }
   int __libcpp_tls_get(long) { return ENOSYS; }
   void __libcpp_tls_set(long, void*) { return; }
-  int __libcpp_thread_sleep_for(void* __t) { return EINVAL; }
+  void __libcpp_thread_sleep_for(const chrono::nanoseconds& __ns) { return; }
 }
 
 struct __attribute__((__visibility__("hidden")))  __cxa_eh_globals {

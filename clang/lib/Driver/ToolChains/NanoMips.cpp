@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "NanoMips.h"
+#include "ToolChains/BareMetal.h"
 #include "Arch/Mips.h"
 #include "CommonArgs.h"
 #include "clang/Driver/Compilation.h"
@@ -25,55 +26,26 @@ using namespace llvm::opt;
 using namespace clang::driver::tools;
 
 NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
-           const llvm::opt::ArgList &Args) : Generic_ELF(D, Triple, Args) {
-  GCCInstallation.init(Triple, Args);
-  Multilibs = GCCInstallation.getMultilibs();
-  SelectedMultilibs.assign({GCCInstallation.getMultilib()});
+           const llvm::opt::ArgList &Args) : BareMetal(D, Triple, Args) {
+  Multilibs = getMultilibs();
+  SelectedMultilibs = getSelectedMultilibs();
 
-  // The selection of paths to try here is designed to match the patterns which
-  // the GCC driver itself uses, as this is part of the GCC-compatible driver.
-  // This was determined by running GCC in a fake filesystem, creating all
-  // possible permutations of these directories, and seeing which ones it added
-  // to the link paths.
   path_list &Paths = getFilePaths();
-  std::string SysRoot = computeSysRoot();
+  SmallString<128> SysRoot(computeSysRoot());
   const std::string OSLibDir = "lib";
   const std::string MultiarchTriple = Triple.getTriple();
-  const llvm::Triple &GCCTriple = GCCInstallation.getTriple();
-  const std::string &LibPath =
-    std::string(GCCInstallation.getParentLibPath());
 
-  if (GCCInstallation.isValid() &&
-      D.CCCIsCXX() &&
-      !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs) &&
-      Args.hasArg(options::OPT_fno_rtti) &&
-      Args.hasArg(options::OPT_fno_exceptions))
-      addPathIfExists(D,
-		      LibPath + "/../" + GCCTriple.str() + "/" + OSLibDir +
-		      SelectedMultilibs.back().gccSuffix() + "/noehrtti",
-		      Paths);
-
-  Generic_GCC::AddMultilibPaths(D, SysRoot, OSLibDir, MultiarchTriple, Paths);
-  if (!SysRoot.empty()) {
-    addPathIfExists(D, SysRoot + "/lib/" + MultiarchTriple, Paths);
-    addPathIfExists(D, SysRoot + "/lib/../" + OSLibDir, Paths);
-  }
-
-  // NanoMips multilibs installation has the objects nested under an extra 'lib' dir
-  if (GCCInstallation.isValid()) {
-    addPathIfExists(D,
-                    LibPath + "/../" + GCCTriple.str() + "/" + OSLibDir +
-                    SelectedMultilibs.back().osSuffix() + "/" + OSLibDir,
+  if (!SelectedMultilibs.empty())
+    llvm::sys::path::append(SysRoot, OSLibDir, SelectedMultilibs.back().gccSuffix());
+  // noehrtti path takes precedence if building with these options
+  if (D.CCCIsCXX() &&
+       !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs) &&
+       Args.hasArg(options::OPT_fno_rtti) &&
+       Args.hasArg(options::OPT_fno_exceptions))
+    addPathIfExists(D, SysRoot + llvm::sys::path::get_separator() + "noehrtti",
                     Paths);
-    ToolChain::path_list &PPaths = getProgramPaths();
-    // Multilib cross-compiler GCC installations put ld in a triple-prefixed
-    // directory off of the parent of the GCC installation.
-    PPaths.push_back(Twine(GCCInstallation.getParentLibPath() + "/../" +
-                           GCCInstallation.getTriple().str() + "/bin")
-                         .str());
-    PPaths.push_back((GCCInstallation.getParentLibPath() + "/../bin").str());
-  }
 
+  addPathIfExists(D, SysRoot, Paths);
 }
 
 
@@ -108,8 +80,6 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
   if (Args.hasArg(options::OPT_s))
     CmdArgs.push_back("-s");
 
-  ToolChain.addExtraOpts(CmdArgs);
-
   CmdArgs.push_back("--eh-frame-hdr");
 
   CmdArgs.push_back("-static");
@@ -118,8 +88,6 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
   CmdArgs.push_back(Output.getFilename());
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
-    CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crti.o")));
-
     if (HasCRTBeginEndFiles) {
       std::string P;
       if (ToolChain.GetRuntimeLibType(Args) == ToolChain::RLT_CompilerRT) {
@@ -288,7 +256,6 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
           P = ToolChain.GetFilePath("crtend.o");
         CmdArgs.push_back(Args.MakeArgString(P));
       }
-      CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crtn.o")));
     }
   }
 
@@ -300,40 +267,51 @@ void NanoMipsLinker::ConstructJob(Compilation &C, const JobAction &JA,
                                          Exec, CmdArgs, Inputs, Output));
 }
 
-void NanoMips::AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-                                         llvm::opt::ArgStringList &CC1Args) const
-{
-  if (DriverArgs.hasArg(options::OPT_nostdinc))
-    return;
-
-  // Add the obvious include dir from the GCC install.
-  if (GCCInstallation.isValid()) {
-    // Standard libs includes in, eg. <install>/nanomips-elf/include
-    llvm::Triple Triple = GCCInstallation.getTriple();
-    std::string LibDir = GCCInstallation.getParentLibPath().str();
-    std::string Install = GCCInstallation.getInstallPath().str();
-    if (GetRuntimeLibType(DriverArgs) == ToolChain::RLT_Libgcc) {
-      addSystemInclude(DriverArgs, CC1Args, Install + "/include");
-      addSystemInclude(DriverArgs, CC1Args, Install + "/include-fixed");
-    }
-    addSystemInclude(DriverArgs, CC1Args, LibDir + "/../" + Triple.str() + "/include");
-    CC1Args.push_back("-nostdsysteminc");
-  }
-
-  if (DriverArgs.hasArg(options::OPT_nostdincxx))
-    return;
-
-  if (GetCXXStdlibType(DriverArgs) == ToolChain::CST_Libcxx) {
-    SmallString<128> Dir(getDriver().SysRoot);
-    llvm::sys::path::append(Dir, "include", "c++", "v1");
-    if (!getDriver().SysRoot.empty())
-      addSystemInclude(DriverArgs, CC1Args, Dir.str());
-  }
-}
-
+// Map compiler-rt to a multilib directory
 std::string NanoMips::getCompilerRTPath() const {
   SmallString<128> Path(getDriver().ResourceDir);
-  if (!SelectedMultilibs.empty())
-    Path += SelectedMultilibs.back().gccSuffix();
+  if (!SelectedMultilibs.empty() &&
+      getDriver().getVFS().exists(Path + SelectedMultilibs.back().gccSuffix()))
+    llvm::sys::path::append(Path, SelectedMultilibs.back().gccSuffix());
+  else
+    llvm::sys::path::append(Path, "lib");
+
   return std::string(Path.str());
+}
+
+// Set sysroot to bin/../nanomips-elf
+std::string NanoMips::computeSysRoot() const {
+  if (!getDriver().SysRoot.empty() && !SelectedMultilibs.empty())
+    return getDriver().SysRoot + SelectedMultilibs.back().osSuffix();
+
+  SmallString<128> SysRootDir;
+  llvm::sys::path::append(SysRootDir, getDriver().Dir, "..",
+                          getDriver().getTargetTriple());
+  if (!SelectedMultilibs.empty())
+    SysRootDir += SelectedMultilibs.back().osSuffix();
+  return std::string(SysRootDir);
+}
+
+void NanoMips::AddClangCXXStdlibIncludeArgs(const ArgList &DriverArgs,
+                                            ArgStringList &CC1Args) const {
+  if (DriverArgs.hasArg(options::OPT_nostdinc, options::OPT_nostdlibinc,
+                        options::OPT_nostdincxx))
+    return;
+
+  std::string SysRoot(computeSysRoot());
+  if (SysRoot.empty())
+    return;
+
+  SmallString<128> Dir(SysRoot);
+  switch (GetCXXStdlibType(DriverArgs)) {
+  case ToolChain::CST_Libcxx:
+  default:
+    // Add generic path if nothing else succeeded so far.
+    llvm::sys::path::append(Dir, "include", "c++", "v1");
+    addSystemInclude(DriverArgs, CC1Args, Dir.str());
+    break;
+  case ToolChain::CST_Libstdcxx:
+    // We only support libc++ toolchain installation.
+    break;
+  }
 }

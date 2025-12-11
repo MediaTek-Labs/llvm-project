@@ -14,6 +14,7 @@
 
 #include "Arch/ARM.h"
 #include "Arch/RISCV.h"
+#include "Arch/Mips.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/DriverDiagnostic.h"
@@ -162,6 +163,67 @@ static bool isPPCBareMetal(const llvm::Triple &Triple) {
          Triple.getEnvironment() == llvm::Triple::EABI;
 }
 
+static bool isNanoMipsBareMetal(const llvm::Triple &Triple) {
+  if (!Triple.isNanoMips())
+    return false;
+
+  if (Triple.getVendor() != llvm::Triple::UnknownVendor)
+    return false;
+
+  if (Triple.getOS() != llvm::Triple::UnknownOS)
+    return false;
+
+  return Triple.getEnvironmentName() == "elf";
+}
+
+static bool isNanoMips64BitTime(const ArgList &Args, const llvm::Triple &TargetTriple) {
+  return (TargetTriple.isNanoMips()
+	  && Args.hasFlag(options::OPT_muse_64bit_time_t,
+			  options::OPT_mno_use_64bit_time_t, false));
+}
+
+static bool isShortWChar(const ArgList &Args) {
+  return Args.hasFlag(options::OPT_fshort_wchar,
+                      options::OPT_fshort_wchar, false);
+}
+
+static bool findNanoMipsMultilibs(const Driver &D, const llvm::Triple &TargetTriple,
+                                  const ArgList &Args,
+                                  DetectedMultilibs &Result) {
+  Multilib::flags_list Flags;
+  StringRef CPUName;
+  StringRef ABIName;
+  tools::mips::getMipsCPUAndABI(Args, TargetTriple, CPUName, ABIName);
+
+  addMultilibFlag(TargetTriple.isNanoMips(), "-march=i7200", Flags);
+  addMultilibFlag(isNanoMips64BitTime(Args, TargetTriple), "-muse-64bit-time_t", Flags);
+  addMultilibFlag(isShortWChar(Args), "-fshort-wchar", Flags);
+
+  // NanoMips multi-libs
+  auto ElNanoSoftTime32 = MultilibBuilder("/nanomips-r6-soft-wchar16-newlib/lib", "", "")
+                        .flag("-march=i7200")
+                        .flag("-muse-64bit-time_t", /*Disallow*/ true)
+                        .flag("-fshort-wchar");
+  auto ElNanoSoftTime64 = MultilibBuilder("/nanomips-r6-soft-time64-wchar16-newlib/lib", "", "")
+                        .flag("-march=i7200")
+                        .flag("-muse-64bit-time_t")
+                        .flag("-fshort-wchar");
+  auto ElNanoMipsSoftTime32WChar32 = MultilibBuilder("/nanomips-r6-soft-newlib/lib", "", "")
+                        .flag("-muse-64bit-time_t", /*Disallow*/ true)
+                        .flag("-fshort-wchar", /*Disallow*/ true);
+  auto ElNanoMipsSoftTime64WChar32 = MultilibBuilder("/nanomips-r6-soft-time64-newlib/lib", "", "")
+                        .flag("-muse-64bit-time_t")
+                        .flag("-fshort-wchar", /*Disallow*/ true);
+
+  Result.Multilibs =
+      MultilibSetBuilder()
+      .Either({ElNanoMipsSoftTime32WChar32, ElNanoMipsSoftTime64WChar32,
+            ElNanoSoftTime32, ElNanoSoftTime64,
+            })
+          .makeMultilibSet();
+  return Result.Multilibs.select(D, Flags, Result.SelectedMultilibs);
+}
+
 static void
 findMultilibsFromYAML(const ToolChain &TC, const Driver &D,
                       StringRef MultilibPath, const ArgList &Args,
@@ -249,12 +311,18 @@ void BareMetal::findMultilibs(const Driver &D, const llvm::Triple &Triple,
       SelectedMultilibs = Result.SelectedMultilibs;
       Multilibs = Result.Multilibs;
     }
+  } else if (isNanoMipsBareMetal(Triple)) {
+    if (findNanoMipsMultilibs(D, Triple, Args, Result)) {
+      SelectedMultilibs = Result.SelectedMultilibs;
+      Multilibs = Result.Multilibs;
+    }
   }
 }
 
 bool BareMetal::handlesTarget(const llvm::Triple &Triple) {
   return arm::isARMEABIBareMetal(Triple) || isAArch64BareMetal(Triple) ||
-         isRISCVBareMetal(Triple) || isPPCBareMetal(Triple);
+         isRISCVBareMetal(Triple) || isPPCBareMetal(Triple) ||
+         isNanoMipsBareMetal(Triple);
 }
 
 Tool *BareMetal::buildLinker() const {

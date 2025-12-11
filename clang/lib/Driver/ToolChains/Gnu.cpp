@@ -276,8 +276,6 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
     if (tools::mips::hasMipsAbiArg(Args, "n32") || T.isABIN32())
       return "elf32ltsmipn32";
     return "elf64ltsmip";
-  case llvm::Triple::nanomips:
-    return "elf32ltsmipn32";
   case llvm::Triple::systemz:
     return "elf64_s390";
   case llvm::Triple::x86_64:
@@ -855,31 +853,11 @@ void tools::gnutools::Assembler::ConstructJob(Compilation &C,
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
-  case llvm::Triple::mips64el:
-  case llvm::Triple::nanomips: {
+  case llvm::Triple::mips64el: {
     StringRef CPUName;
     StringRef ABIName;
     mips::getMipsCPUAndABI(Args, getToolChain().getTriple(), CPUName, ABIName);
     ABIName = mips::getGnuCompatibleMipsABIName(ABIName);
-
-    // Use call-stub optimisation in the NanoMips assembler if optimising for
-    // code size.
-    if (getToolChain().getArch() == llvm::Triple::nanomips) {
-      if (Arg *A = Args.getLastArg(options::OPT_O_Group)) {
-        if (A->getOption().matches(options::OPT_O)) {
-          char C = A->getValue()[0];
-          if (C == 's' || C == 'z') {
-            CmdArgs.push_back("-mbalc-stubs");
-          }
-        }
-      }
-      // Pass -G0 unless gpopt is enabled
-      Arg *GPOpt = Args.getLastArg(options::OPT_mgpopt, options::OPT_mno_gpopt);
-      bool WantGPOpt = GPOpt && GPOpt->getOption().matches(options::OPT_mgpopt);
-      if (!WantGPOpt) {
-        CmdArgs.push_back("-G0");
-      }
-    }
 
     CmdArgs.push_back("-march");
     CmdArgs.push_back(CPUName.data());
@@ -1033,9 +1011,6 @@ public:
 } // end anonymous namespace
 
 static bool isSoftFloatABI(const ArgList &Args, const llvm::Triple &TargetTriple) {
-  // NanoMips always uses soft float
-  if (TargetTriple.isNanoMips())
-    return true;
   Arg *A = Args.getLastArg(options::OPT_msoft_float, options::OPT_mhard_float,
                            options::OPT_mfloat_abi_EQ);
   if (!A)
@@ -1051,8 +1026,7 @@ static bool isArmOrThumbArch(llvm::Triple::ArchType Arch) {
 }
 
 static bool isMipsEL(llvm::Triple::ArchType Arch) {
-  return (Arch == llvm::Triple::mipsel || Arch == llvm::Triple::mips64el
-          || Arch == llvm::Triple::nanomips);
+  return (Arch == llvm::Triple::mipsel || Arch == llvm::Triple::mips64el);
 }
 
 static bool isMips16(const ArgList &Args) {
@@ -1063,16 +1037,6 @@ static bool isMips16(const ArgList &Args) {
 static bool isMicroMips(const ArgList &Args) {
   Arg *A = Args.getLastArg(options::OPT_mmicromips, options::OPT_mno_micromips);
   return A && A->getOption().matches(options::OPT_mmicromips);
-}
-
-static bool isNanoMips(llvm::Triple::ArchType Arch) {
-  return (Arch == llvm::Triple::nanomips);
-}
-
-static bool isNanoMips64BitTime(const ArgList &Args, llvm::Triple::ArchType Arch) {
-  return (isNanoMips(Arch)
-	  && Args.hasFlag(options::OPT_muse_64bit_time_t,
-			  options::OPT_mno_use_64bit_time_t, false));
 }
 
 static bool isMSP430(llvm::Triple::ArchType Arch) {
@@ -1515,49 +1479,11 @@ static bool findMipsImgMultilibs(const Driver &D,
   return false;
 }
 
-static bool findNanoMipsMultilibs(const Driver &D,
-                                 const Multilib::flags_list &Flags,
-                                 FilterNonExistent &NonExistent,
-                                 DetectedMultilibs &Result) {
-  // NanoMips multi-libs
-  MultilibSet NanoMipsMultilibs;
-  {
-    auto ElNanoSoftTime32 = MultilibBuilder("/nanomips-r6-soft-newlib/lib")//sva 4 enable=true
-                          .flag("-march=i7200")
-                          .flag("-mabi=p32")
-                          .flag("-EL")
-                          .flag("-msoft-float");
-    auto ElNanoSoftTime64 = MultilibBuilder("/nanomips-r6-soft-time64-newlib/lib")
-                          .flag("-march=i7200")
-                          .flag("-mabi=p32")
-                          .flag("-EL")
-                          .flag("-msoft-float")
-			                    .flag("-muse-64bit-time_t");
-    
-    NanoMipsMultilibs =
-      MultilibSetBuilder()
-          .Either({ElNanoSoftTime64, ElNanoSoftTime32})
-          .makeMultilibSet()
-          .setFilePathsCallback([](const Multilib &M) {
-            return std::vector<std::string>(
-                {"/../../../../nanomips-elf/lib" + M.gccSuffix()});
-          });
-  }
-
-  for (auto *Candidate : {&NanoMipsMultilibs}) {
-    if (Candidate->select(D, Flags, Result.SelectedMultilibs)) {
-      Result.Multilibs = *Candidate;
-      return true;
-    }
-  }
-  return false;
-}
-
 bool clang::driver::findMIPSMultilibs(const Driver &D,
                                       const llvm::Triple &TargetTriple,
                                       StringRef Path, const ArgList &Args,
                                       DetectedMultilibs &Result) {
-  FilterNonExistent NonExistent(Path, (TargetTriple.isNanoMips() ? "/crti.o" : "/crtbegin.o"),
+  FilterNonExistent NonExistent(Path, "/crtbegin.o",
 				D.getVFS());
 
   StringRef CPUName;
@@ -1592,8 +1518,6 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
   addMultilibFlag(!isSoftFloatABI(Args, TargetTriple), "-mhard-float", Flags);
   addMultilibFlag(isMipsEL(TargetArch), "-EL", Flags);
   addMultilibFlag(!isMipsEL(TargetArch), "-EB", Flags);
-  addMultilibFlag(isNanoMips(TargetArch), "-march=i7200", Flags);
-  addMultilibFlag(isNanoMips64BitTime(Args, TargetArch), "-muse-64bit-time_t", Flags);
 
   if (TargetTriple.getVendor() == llvm::Triple::MipsTechnologies &&
       TargetTriple.getOS() == llvm::Triple::Linux &&
@@ -1612,9 +1536,6 @@ bool clang::driver::findMIPSMultilibs(const Driver &D,
 
   if (findMipsCsMultilibs(D, Flags, NonExistent, Result))
     return true;
-
-  if (TargetTriple.isNanoMips())
-    return findNanoMipsMultilibs(D, Flags, NonExistent, Result);
 
   // Fallback to the regular toolchain-tree structure.
   Multilib Default;
@@ -2573,8 +2494,6 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
   static const char *const MIPSN32ELLibDirs[] = {"/lib32"};
   static const char *const MIPSN32ELTriples[] = {
       "mips64el-linux-gnuabin32", "mipsisa64r6el-linux-gnuabin32"};
-  static const char *const MIPSP32ELLibDirs[] = {"/lib"};
-  static const char *const MIPSP32ELTriples[] = { "nanomips-elf" };
 
   static const char *const MSP430LibDirs[] = {"/lib"};
   static const char *const MSP430Triples[] = {"msp430-elf"};
@@ -2832,10 +2751,6 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
     BiarchLibDirs.append(begin(MIPSN32ELLibDirs), end(MIPSN32ELLibDirs));
     BiarchTripleAliases.append(begin(MIPSN32ELTriples), end(MIPSN32ELTriples));
     BiarchTripleAliases.append(begin(MIPSTriples), end(MIPSTriples));
-    break;
-  case llvm::Triple::nanomips:
-    LibDirs.append(begin(MIPSP32ELLibDirs), end(MIPSP32ELLibDirs));
-    TripleAliases.append(begin(MIPSP32ELTriples), end(MIPSP32ELTriples));
     break;
   case llvm::Triple::msp430:
     LibDirs.append(begin(MSP430LibDirs), end(MSP430LibDirs));

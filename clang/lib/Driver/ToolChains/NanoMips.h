@@ -12,6 +12,7 @@
 #include "Gnu.h"
 #include "clang/Driver/ToolChain.h"
 #include "llvm/Support/Debug.h"
+#include "ToolChains/BareMetal.h"
 
 namespace clang {
 namespace driver {
@@ -28,14 +29,10 @@ public:
 
 };
 
-class LLVM_LIBRARY_VISIBILITY NanoMips : public Generic_ELF {
+class LLVM_LIBRARY_VISIBILITY NanoMips : public BareMetal {
  public:
   NanoMips(const Driver &D, const llvm::Triple &Triple,
            const llvm::opt::ArgList &Args);
-
-  void
-    AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-                              llvm::opt::ArgStringList &CC1Args) const override;
 
   Tool *buildLinker() const override {
     return new NanoMipsLinker(*this);
@@ -47,7 +44,7 @@ class LLVM_LIBRARY_VISIBILITY NanoMips : public Generic_ELF {
 	Args.hasArg(options::OPT_fno_exceptions))
       return ToolChain::UNW_None;
     else
-      return Generic_ELF::GetUnwindLibType(Args);
+      return ToolChain::GetUnwindLibType(Args);
   }
 
   bool HasNativeLLVMSupport() const override {
@@ -60,6 +57,10 @@ class LLVM_LIBRARY_VISIBILITY NanoMips : public Generic_ELF {
   unsigned GetDefaultDwarfVersion() const override { return 4; }
 
   std::string getCompilerRTPath() const override;
+  std::string computeSysRoot() const override;
+  void AddClangCXXStdlibIncludeArgs(
+      const llvm::opt::ArgList &DriverArgs,
+      llvm::opt::ArgStringList &CC1Args) const override;
 };
 
 } // toolchains

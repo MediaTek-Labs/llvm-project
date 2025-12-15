@@ -17,6 +17,7 @@
 #include "llvm/ADT/EquivalenceClasses.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/IR/Comdat.h"
 #include "llvm/IR/Constant.h"
@@ -31,10 +32,12 @@
 #include "llvm/IR/User.h"
 #include "llvm/IR/Value.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MD5.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/xxhash.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include <cassert>
@@ -47,6 +50,12 @@
 using namespace llvm;
 
 #define DEBUG_TYPE "split-module"
+
+cl::opt<bool>
+UniqueInternalNames("split-module-unique-internal-names",
+                    cl::desc("Ensure unique names for internal linkage symbols"
+                             " when splitting modules"),
+                    cl::init(false));
 
 namespace {
 
@@ -218,16 +227,18 @@ static void findPartitions(Module &M, ClusterIDMapType &ClusterIDMap,
   }
 }
 
-static void externalize(GlobalValue *GV) {
-  if (GV->hasLocalLinkage()) {
-    GV->setLinkage(GlobalValue::ExternalLinkage);
-    GV->setVisibility(GlobalValue::HiddenVisibility);
-  }
-
+static void externalize(GlobalValue *GV, std::string &Suffix) {
   // Unnamed entities must be named consistently between modules. setName will
   // give a distinct name to each such entity.
   if (!GV->hasName())
     GV->setName("__llvmsplit_unnamed");
+
+  if (GV->hasLocalLinkage()) {
+    GV->setLinkage(GlobalValue::ExternalLinkage);
+    GV->setVisibility(GlobalValue::HiddenVisibility);
+    if (UniqueInternalNames)
+      GV->setName(GV->getName() + ".__uniq." + Suffix);
+  }
 }
 
 // Returns whether GV should be in partition (0-based) I of N.
@@ -256,14 +267,15 @@ void llvm::SplitModule(
     function_ref<void(std::unique_ptr<Module> MPart)> ModuleCallback,
     bool PreserveLocals, bool RoundRobin) {
   if (!PreserveLocals) {
+    std::string Suffix = utohexstr(xxHash64(M.getModuleIdentifier()), true);
     for (Function &F : M)
-      externalize(&F);
+      externalize(&F, Suffix);
     for (GlobalVariable &GV : M.globals())
-      externalize(&GV);
+      externalize(&GV, Suffix);
     for (GlobalAlias &GA : M.aliases())
-      externalize(&GA);
+      externalize(&GA, Suffix);
     for (GlobalIFunc &GIF : M.ifuncs())
-      externalize(&GIF);
+      externalize(&GIF, Suffix);
   }
 
   // This performs splitting without a need for externalization, which might not

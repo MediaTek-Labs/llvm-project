@@ -21,6 +21,7 @@
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/CodeGen/BasicTTIImpl.h"
 #include "llvm/IR/Function.h"
+#include "llvm/Transforms/InstCombine/InstCombiner.h"
 
 namespace llvm {
 
@@ -64,6 +65,11 @@ public:
       ArrayRef<const Value *> Operands = ArrayRef<const Value *>()) const;
 
   bool hasDivRemOp(Type *DataType, bool IsSigned);
+
+  bool maybeLoweredToCall(Instruction &I) const;
+
+  std::optional<Instruction *> instCombineIntrinsic(InstCombiner &IC,
+                                                    IntrinsicInst &II) const;
 };
 
 } // end namespace llvm

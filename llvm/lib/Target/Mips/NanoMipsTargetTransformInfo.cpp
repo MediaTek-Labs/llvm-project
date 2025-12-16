@@ -10,8 +10,14 @@
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/CodeGen/BasicTTIImpl.h"
 #include "llvm/CodeGen/TargetLowering.h"
+#include "llvm/IR/PatternMatch.h"
+#include "llvm/IR/IntrinsicsMips.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Transforms/InstCombine/InstCombiner.h"
+#include <optional>
 
 using namespace llvm;
+using namespace llvm::PatternMatch;
 
 #define DEBUG_TYPE "nanomipstti"
 
@@ -141,4 +147,32 @@ InstructionCost NanoMipsTTIImpl::getCmpSelInstrCost(
 
   bool NanoMipsTTIImpl::hasDivRemOp(Type *DataType, bool IsSigned) {
   return F->hasOptSize() || (DataType->isIntegerTy(64) && !IsSigned);
+}
+
+std::optional<Instruction *>
+NanoMipsTTIImpl::instCombineIntrinsic(InstCombiner &IC,
+                                     IntrinsicInst &II) const {
+  Intrinsic::ID IID = II.getIntrinsicID();
+  switch (IID) {
+  case Intrinsic::mips_addq_s_w:
+  case Intrinsic::mips_subq_s_w: {
+    // Check if any operand is literal zero
+    Value *Op0 = II.getOperand(0);
+    Value *Op1 = II.getOperand(1);
+    // Use PatternMatch for zero
+    bool Op0IsZero = match(Op0, m_Zero());
+    bool Op1IsZero = match(Op1, m_Zero());
+    if (Op0IsZero || Op1IsZero) {
+      // Choose the non-zero operand to copy
+      Value *CopyFrom = Op0IsZero ? Op1 : Op0;
+      assert(CopyFrom->getType() == II.getType());
+      return IC.replaceInstUsesWith(II, CopyFrom);
+    }
+  }
+  [[fallthrough]];
+  default:
+    break;
+  }
+
+  return std::nullopt;
 }

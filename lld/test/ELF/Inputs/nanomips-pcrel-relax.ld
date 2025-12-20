@@ -37,5 +37,9 @@ SECTIONS
     pc11_s1_start = .;
     .pc11_s1 : { *(.pc11_s1) }
 
+    . = 0x8000;
+    expand_bnec = .;
+    .expand_bnec : { *(.expand_bnec) }
+
     pc11_s1_pc12_far =  pc11_s1_start + 0x800;
 }

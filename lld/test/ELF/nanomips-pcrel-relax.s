@@ -311,3 +311,18 @@ pc11_s1:
 
     .end pc11_s1
     .size pc11_s1, .-pc11_s1
+
+    .section .expand_bnec, "ax", @progbits
+    .align 1
+    .globl expand_bnec
+    .ent expand_bnec
+
+expand_bnec:
+    # CHECK-NMF-PCREL: a8a5 2ffd bnec $a1, $a1, 0x7000
+    # bnec[16] and beq[16] have the sense of ne/eq encoded as whether Rs >= Rt.
+    # This leaves a special case for bnec with Rs == Rt. This is a no-op and
+    # should be expanded to bnec, and not to beqc.
+    bnec $a1, $a1, pc11_s1
+
+    .end expand_bnec
+    .size expand_bnec, . - expand_bnec

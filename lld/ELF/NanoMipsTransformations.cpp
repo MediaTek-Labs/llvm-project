@@ -910,7 +910,7 @@ lld::elf::NanoMipsTransformExpand::getExpandTransformTemplate(
                                              reloc.type);
 
   case R_NANOMIPS_PC4_S1:
-    return insProperty->getSReg(insn) > insProperty->getTReg(insn)
+    return insProperty->getSReg(insn) >= insProperty->getTReg(insn)
                ? insProperty->getTransformTemplate(TT_NANOMIPS_BNEC32,
                                                    reloc.type)
                : insProperty->getTransformTemplate(TT_NANOMIPS_BEQC32,

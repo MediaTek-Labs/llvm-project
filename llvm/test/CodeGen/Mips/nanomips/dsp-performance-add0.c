@@ -15,11 +15,12 @@ short addq_zero1_test(short a) {
   return __builtin_mips_addq_s_w(0, a);
 }
 
+// TODO: optimize this case if __builtin_mips_subq_s_w is pure
 // ALL-LABEL: subq_zero1_test
 short subq_zero1_test(short a) {
 // ALL: subq_s.w
 // NOOPT: seh
-// OPT-NOT: seh
+// OPT: seh
   return __builtin_mips_subq_s_w(0, a);
 }
 

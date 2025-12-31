@@ -151,7 +151,7 @@ InstructionCost NanoMipsTTIImpl::getCmpSelInstrCost(
 
 std::optional<Instruction *>
 NanoMipsTTIImpl::instCombineIntrinsic(InstCombiner &IC,
-                                     IntrinsicInst &II) const {
+                                      IntrinsicInst &II) const {
   Intrinsic::ID IID = II.getIntrinsicID();
   switch (IID) {
   case Intrinsic::mips_addq_s_w:
@@ -162,12 +162,19 @@ NanoMipsTTIImpl::instCombineIntrinsic(InstCombiner &IC,
     // Use PatternMatch for zero
     bool Op0IsZero = match(Op0, m_Zero());
     bool Op1IsZero = match(Op1, m_Zero());
-    if (Op0IsZero || Op1IsZero) {
+    // intrinsic: 0 + x => x
+    // intrinsic: x + 0 => x
+    // intrinsic: x - 0 => x
+    if ((Op0IsZero && IID == Intrinsic::mips_addq_s_w) ||
+        Op1IsZero) {
       // Choose the non-zero operand to copy
       Value *CopyFrom = Op0IsZero ? Op1 : Op0;
       assert(CopyFrom->getType() == II.getType());
       return IC.replaceInstUsesWith(II, CopyFrom);
     }
+    // TODO: if Intrinsic::mips_subq_s_w if defined as pure,
+    // this would be beneficial as well
+    // intrinsic: 0 - x => native: 0 - x
   }
   [[fallthrough]];
   default:

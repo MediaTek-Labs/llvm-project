@@ -429,8 +429,7 @@ defm retain_symbols_file:
 
 defm allow_abi_mismatch: BB<"allow-abi-mismatch",
   "(nanoMIPS)Enable linking of objects with conflicting ABI versions",
-  "(nanoMIPS)Disable linking objects with conflicting ABI versions (default)">,
-  Flags<[HelpHidden]>;
+  "(nanoMIPS)Disable linking objects with conflicting ABI versions (default)">;
 
 defm script: Eq<"script", "Read linker script">;
 

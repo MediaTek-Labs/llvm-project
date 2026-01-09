@@ -84,4 +84,5 @@ MCAsmInfoDarwin::MCAsmInfoDarwin() {
 
   DwarfUsesRelocationsAcrossSections = false;
   SetDirectiveSuppressesReloc = true;
+  HasAggressiveSymbolFolding = false;
 }

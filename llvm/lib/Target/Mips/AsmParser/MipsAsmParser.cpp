@@ -7143,6 +7143,7 @@ bool MipsAsmParser::matchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
     return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
                  "expected 32-bit signed immediate");
   case Match_UImm32_Coerced:
+  case Match_UImm32:
     return Error(RefineErrorLoc(IDLoc, Operands, ErrorInfo),
                  "expected 32-bit immediate");
   case Match_MemSImm9:
@@ -7981,6 +7982,8 @@ ParseStatus MipsAsmParser::parseInvNum(OperandVector &Operands) {
   // register names are not reserved across all ABIs.
   // Peek past the dollar to see if it's a register name for this ABI.
   SMLoc S = Parser.getTok().getLoc();
+  if (hasNanoMips())
+    return ParseStatus::NoMatch;
   if (Parser.getTok().is(AsmToken::Dollar)) {
     return matchCPURegisterName(Parser.getLexer().peekTok().getString()) == -1
                ? ParseStatus::Failure

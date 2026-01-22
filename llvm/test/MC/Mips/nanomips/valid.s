@@ -1846,6 +1846,18 @@
 	dvp			# CHECK: dvp $zero	# encoding: [0x00,0x20,0x90,0x03]
                                 # CHECK-NEXT: <MCInst #{{.*}} DVP_NM
 				# DISAS: {{.*}}  00 20 90 03  	dvp $zero
+	subu	$k1,$k1,9	# CHECK: addiu	$k1, $k1, -9 # encoding: [0x7b,0x83,0x09,0x80]
+				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUNEG_NM
+				# DISAS: {{.*}}  7b 83 09 80  	addiu	$k1, $k1, -9
+	subu	$s3,$s3,4096	# CHECK: addiu	$s3, $s3, -4096 # encoding: [0x61,0x62,0x00,0xf0,0xff,0xff]
+				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU48_NM
+				# DISAS: {{.*}}  61 62 00 f0 ff ff    	addiu	$s3, $s3, 4294963200
+	subu	$t4,$s4,4097	# CHECK: li $t4, 0xffffefff	# encoding: [0x40,0x60,0xff,0xef,0xff,0xff]
+				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
+                                # CHECK: addu $t4, $s4, $t4	# encoding: [0x54,0x20,0x50,0x11]
+				# CHECK-NEXT: # <MCInst #{{.*}} ADDu_NM
+				# DISAS: {{.*}}  40 60 ff ef ff ff    	li	$t4, 0xffffefff
+                                # DISAS-NEXT: {{.*}}: 54 20 50 11  	addu	$t4, $s4, $t4
 
 	jrc $ra
 	.type   g_8,@object

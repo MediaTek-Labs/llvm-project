@@ -428,7 +428,8 @@ void CodeGenFunction::FinishFunction(SourceLocation EndLoc) {
   // Emit function epilog (to return).
   llvm::DebugLoc Loc = EmitReturnBlock();
 
-  if (ShouldInstrumentFunction()) {
+  if (ShouldInstrumentFunction() &&
+      CGM.isFunctionBlockedFromProfileInstr(CurFn, EndLoc) == ProfileList::Allow) {
     if (CGM.getCodeGenOpts().InstrumentFunctions)
       CurFn->addFnAttr("instrument-function-exit", "__cyg_profile_func_exit");
     if (CGM.getCodeGenOpts().InstrumentFunctionsAfterInlining)
@@ -1142,7 +1143,8 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
                           CurFuncIsThunk);
   }
 
-  if (ShouldInstrumentFunction()) {
+  if (ShouldInstrumentFunction() &&
+      CGM.isFunctionBlockedFromProfileInstr(CurFn, Loc) == ProfileList::Allow) {
     if (CGM.getCodeGenOpts().InstrumentFunctions)
       CurFn->addFnAttr("instrument-function-entry", "__cyg_profile_func_enter");
     if (CGM.getCodeGenOpts().InstrumentFunctionsAfterInlining)

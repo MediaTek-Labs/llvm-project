@@ -91,7 +91,7 @@ public:
   }
 
   bool isIEEE754_2008Default() const {
-    return CPU == "mips32r6" || CPU == "mips64r6";
+    return CPU == "mips32r6" || CPU == "mips64r6" || IsNanoMips;
   }
 
   enum FPModeEnum getDefaultFPMode() const {

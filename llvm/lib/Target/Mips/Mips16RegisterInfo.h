@@ -33,7 +33,9 @@ public:
                              const TargetRegisterClass *RC,
                              Register Reg) const override;
 
-  const TargetRegisterClass *intRegClass(unsigned Size) const override;
+  const TargetRegisterClass *intRegClass(unsigned Size,
+                                         MachineBasicBlock::iterator II)
+    const override;
 
 private:
   void eliminateFI(MachineBasicBlock::iterator II, unsigned OpNo,

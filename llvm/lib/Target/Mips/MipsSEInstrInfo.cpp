@@ -86,13 +86,24 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                   bool RenamableDest, bool RenamableSrc) const {
   unsigned Opc = 0, ZeroReg = 0;
   bool isMicroMips = Subtarget.inMicroMipsMode();
-
-  if (Mips::GPR32RegClass.contains(DestReg)) { // Copy to CPU Reg.
-    if (Mips::GPR32RegClass.contains(SrcReg)) {
-      if (isMicroMips)
-        Opc = Mips::MOVE16_MM;
-      else
-        Opc = Mips::OR, ZeroReg = Mips::ZERO;
+  bool hasNM = Subtarget.hasNanoMips();
+  TargetRegisterClass GPR32 =
+    hasNM ? Mips::GPRNM32RegClass : Mips::GPR32RegClass;
+  TargetRegisterClass LO32DSP =
+    hasNM ? Mips::LO32DSPNMRegClass : Mips::LO32DSPRegClass;
+  TargetRegisterClass HI32DSP =
+    hasNM ? Mips::HI32DSPNMRegClass : Mips::HI32DSPRegClass;
+  if (GPR32.contains(DestReg)) { // Copy to CPU Reg.
+    if (GPR32.contains(SrcReg)) {
+      if (hasNM) {
+        Opc = Mips::MOVE_NM;
+      } else {
+        if (isMicroMips)
+          Opc = Mips::MOVE16_MM;
+        else
+          Opc =Mips::OR,
+          ZeroReg = Mips::ZERO;
+      }
     } else if (Mips::CCRRegClass.contains(SrcReg))
       Opc = Mips::CFC1;
     else if (Mips::FGR32RegClass.contains(SrcReg))
@@ -103,23 +114,20 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
     } else if (Mips::LO32RegClass.contains(SrcReg)) {
       Opc = isMicroMips ? Mips::MFLO16_MM : Mips::MFLO;
       SrcReg = 0;
-    } else if (Mips::HI32DSPRegClass.contains(SrcReg))
-      Opc = Mips::MFHI_DSP;
-    else if (Mips::HI32DSPNMRegClass.contains(SrcReg))
-      Opc = Mips::MFHI_NM;
-    else if (Mips::LO32DSPRegClass.contains(SrcReg))
-      Opc = Mips::MFLO_DSP;
-    else if (Mips::LO32DSPNMRegClass.contains(SrcReg))
-      Opc = Mips::MFLO_NM;
+    } else if (HI32DSP.contains(SrcReg))
+      Opc = hasNM ? Mips::MFHI_NM : Mips::MFHI_DSP;
+    else if (LO32DSP.contains(SrcReg))
+      Opc = hasNM ? Mips::MFLO_NM : Mips::MFLO_DSP;
     else if (Mips::DSPCCRegClass.contains(SrcReg)) {
-      BuildMI(MBB, I, DL, get(Mips::RDDSP), DestReg).addImm(1 << 4)
+      BuildMI(MBB, I, DL, get(hasNM ? Mips::RDDSP_NM : Mips::RDDSP), DestReg)
+        .addImm(1 << 4)
         .addReg(SrcReg, RegState::Implicit | getKillRegState(KillSrc));
       return;
     }
     else if (Mips::MSACtrlRegClass.contains(SrcReg))
       Opc = Mips::CFCMSA;
   }
-  else if (Mips::GPR32RegClass.contains(SrcReg)) { // Copy from CPU Reg.
+  else if (GPR32.contains(SrcReg)) { // Copy from CPU Reg.
     if (Mips::CCRRegClass.contains(DestReg))
       Opc = Mips::CTC1;
     else if (Mips::FGR32RegClass.contains(DestReg))
@@ -128,14 +136,10 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       Opc = Mips::MTHI, DestReg = 0;
     else if (Mips::LO32RegClass.contains(DestReg))
       Opc = Mips::MTLO, DestReg = 0;
-    else if (Mips::HI32DSPRegClass.contains(DestReg))
-      Opc = Mips::MTHI_DSP;
-    else if (Mips::HI32DSPNMRegClass.contains(DestReg))
-      Opc = Mips::MTHI_NM;
-    else if (Mips::LO32DSPRegClass.contains(DestReg))
-      Opc = Mips::MTLO_DSP;
-    else if (Mips::LO32DSPNMRegClass.contains(DestReg))
-      Opc = Mips::MTLO_NM;
+    else if (HI32DSP.contains(DestReg))
+      Opc = hasNM ? Mips::MTHI_NM : Mips::MTHI_DSP;
+    else if (LO32DSP.contains(DestReg))
+      Opc =  hasNM ? Mips::MTLO_NM : Mips::MTLO_DSP;
     else if (Mips::DSPCCRegClass.contains(DestReg)) {
       BuildMI(MBB, I, DL, get(Mips::WRDSP))
         .addReg(SrcReg, getKillRegState(KillSrc)).addImm(1 << 4)
@@ -176,11 +180,6 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
     if (Mips::MSA128BRegClass.contains(SrcReg))
       Opc = Mips::MOVE_V;
   }
-  else if (Mips::GPRNM32RegClass.contains(SrcReg)) {
-    if (Mips::GPRNM32NZRegClass.contains(DestReg))
-      Opc = Mips::MOVE_NM;
-  }
-
   assert(Opc && "Cannot copy registers");
 
   MachineInstrBuilder MIB = BuildMI(MBB, I, DL, get(Opc));

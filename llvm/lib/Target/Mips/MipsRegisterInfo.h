@@ -71,7 +71,9 @@ public:
   Register getFrameRegister(const MachineFunction &MF) const override;
 
   /// Return GPR register class.
-  virtual const TargetRegisterClass *intRegClass(unsigned Size) const = 0;
+  virtual const TargetRegisterClass *intRegClass(unsigned Size,
+                                                 MachineBasicBlock::iterator II)
+    const = 0;
 
 private:
   virtual void eliminateFI(MachineBasicBlock::iterator II, unsigned OpNo,

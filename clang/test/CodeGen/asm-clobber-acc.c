@@ -43,14 +43,14 @@ FORCE(ac1, CLOBBER_EXCEPT_AC1)
 FORCE(ac2, CLOBBER_EXCEPT_AC2)
 
 // CHECK-DAG: force_spill
-// CHECK: mflo [[REG1:\$[0-9]]], $ac
+// CHECK: mflo [[REG1:\$a[0-9]]], $ac
 // CHECK: sw [[REG1]]{{.*}}sp
-// CHECK: mfhi [[REG2:\$[0-9]]], $ac
+// CHECK: mfhi [[REG2:\$a[0-9]]], $ac
 // CHECK: sw [[REG2]]{{.*}}sp
 // CHECK: # mark clobber
-// CHECK: lw [[REG3:\$[0-9]]]{{.*}}sp
+// CHECK: lw [[REG3:\$a[0-9]]]{{.*}}sp
 // CHECK: mtlo [[REG3]], $ac
-// CHECK: lw [[REG4:\$[0-9]]]{{.*}}sp
+// CHECK: lw [[REG4:\$a[0-9]]]{{.*}}sp
 // CHECK: mthi [[REG4]], $ac
 // CHECK-DAG: end force_spill
 FORCE(spill, CLOBBER_ALL)

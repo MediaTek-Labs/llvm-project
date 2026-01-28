@@ -119,7 +119,6 @@ size_t wcsrtombs(char* restrict dst, const wchar_t** restrict src, size_t len,
 #  ifndef _LIBCPP_WCHAR_H
 #    define _LIBCPP_WCHAR_H
 
-#    include <__mbstate_t.h> // provide mbstate_t
 #    include <stddef.h>      // provide size_t
 
 // Determine whether we have const-correct overloads for wcschr and friends.
@@ -193,6 +192,7 @@ inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_PREFERRED_OVERLOAD wchar_t* wmemchr(wchar_t
 }
 #      endif
 
+#      include <__mbstate_t.h> // provide mbstate_t
 #      if defined(__cplusplus) && (defined(_LIBCPP_MSVCRT_LIKE) || defined(__MVS__))
 extern "C" {
 size_t mbsnrtowcs(

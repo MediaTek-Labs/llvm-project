@@ -528,14 +528,21 @@ static bool supportsNanoMips(uint64_t Type) {
 
 static uint64_t resolveNanoMips(uint64_t Type, uint64_t Offset, uint64_t S,
                                uint64_t LocData, int64_t Addend) {
+  // Nanomips uses only RELA relocations which generally discard
+  // LocData and use only Addend, except in the case of compound
+  // relocations, which subsequently add or subtract symbols (with no
+  // Addend) from the existing LocData. Either LocData must be zero
+  // (first relocation for an offset) or the Addend must be zero
+  // (subsequent relocations).
+  assert(LocData == 0 || Addend == 0);
   if (Type == ELF::R_NANOMIPS_32)
-    return (S + LocData) & 0xFFFFFFFF;
+    return (S + LocData + Addend) & 0xFFFFFFFF;
   if (Type == ELF::R_NANOMIPS_SIGNED_16 || Type == ELF::R_NANOMIPS_UNSIGNED_16)
-    return (S + LocData) & 0xFFFF;
+    return (S + LocData + Addend) & 0xFFFF;
   if (Type == ELF::R_NANOMIPS_SIGNED_8 || Type == ELF::R_NANOMIPS_UNSIGNED_8)
-    return (S + LocData) & 0xFF;
+    return (S + LocData + Addend) & 0xFF;
   if (Type == ELF::R_NANOMIPS_NEG)
-    return (-S + LocData) & 0xFFFFFFFF;
+    return (-S + LocData + Addend) & 0xFFFFFFFF;
   llvm_unreachable("Invalid relocation type");
 }
 

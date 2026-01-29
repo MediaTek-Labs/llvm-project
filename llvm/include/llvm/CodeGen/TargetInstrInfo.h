@@ -2135,7 +2135,7 @@ protected:
 public:
   /// Returns how or if \p MIT should be outlined. \p Flags is the
   /// target-specific information returned by isMBBSafeToOutlineFrom.
-  virtual outliner::InstrType getOutliningType(const MachineModuleInfo &MMI,
+  outliner::InstrType getOutliningType(const MachineModuleInfo &MMI,
                                        MachineBasicBlock::iterator &MIT,
                                        unsigned Flags) const;
 

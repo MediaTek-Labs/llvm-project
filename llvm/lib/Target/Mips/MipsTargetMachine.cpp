@@ -182,12 +182,6 @@ MipsTargetMachine::MipsTargetMachine(const Target &T, const Triple &TT,
   Subtarget = &DefaultSubtarget;
   initAsmInfo();
 
-  // Mips supports the MachineOutliner.
-  setMachineOutliner(true);
-
-  // Mips supports default outlining behaviour.
-  setSupportsDefaultOutlining(true);
-
   // Mips supports the debug entry values.
   setSupportsDebugEntryValues(true);
 }
@@ -304,7 +298,6 @@ public:
   void addIRPasses() override;
   bool addInstSelector() override;
   void addPreEmitPass() override;
-  void addPreEmitPass2() override;
   void addPreRegAlloc() override;
   void addPostRegAlloc() override;
   bool addIRTranslator() override;
@@ -421,9 +414,6 @@ void MipsPassConfig::addPreEmitPass() {
   // The microMIPS size reduction pass performs instruction reselection for
   // instructions which can be remapped to a 16 bit instruction.
   addPass(createMicroMipsSizeReducePass());
-}
-
-void MipsPassConfig::addPreEmitPass2() {
 
   // This pass inserts a nop instruction between two back-to-back multiplication
   // instructions when the "mfix4300" flag is passed.

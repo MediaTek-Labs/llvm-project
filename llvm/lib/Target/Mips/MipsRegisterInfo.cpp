@@ -164,11 +164,6 @@ MipsRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
   return CSR_O32_RegMask;
 }
 
-bool MipsRegisterInfo::isReservedReg(const MachineFunction &MF,
-                                     MCRegister Reg) const {
-  return getReservedRegs(MF)[Reg];
-}
-
 const uint32_t *MipsRegisterInfo::getMips16RetHelperMask() {
   return CSR_Mips16RetHelper_RegMask;
 }

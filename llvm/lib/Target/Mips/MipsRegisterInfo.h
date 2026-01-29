@@ -45,7 +45,6 @@ public:
   /// Get PIC indirect call register
   static unsigned getPICCallReg();
 
-  bool isReservedReg(const MachineFunction &MF, MCRegister Reg) const;
   /// Code Generation virtual methods...
   const TargetRegisterClass *getPointerRegClass(const MachineFunction &MF,
                                                 unsigned Kind) const override;

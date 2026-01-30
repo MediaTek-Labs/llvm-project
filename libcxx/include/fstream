@@ -216,7 +216,8 @@ typedef basic_fstream<wchar_t> wfstream;
 _LIBCPP_PUSH_MACROS
 #  include <__undef_macros>
 
-#  if _LIBCPP_HAS_FILESYSTEM && _LIBCPP_HAS_LOCALIZATION
+// Downstream change, that enables fstream despite it being tied to _LIBCPP_HAS_FILESYSTEM
+//#  if _LIBCPP_HAS_FILESYSTEM && _LIBCPP_HAS_LOCALIZATION
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
@@ -1570,7 +1571,8 @@ extern template class _LIBCPP_EXTERN_TEMPLATE_TYPE_VIS basic_filebuf<char>;
 
 _LIBCPP_END_NAMESPACE_STD
 
-#  endif // _LIBCPP_HAS_FILESYSTEM && _LIBCPP_HAS_LOCALIZATION
+// Downstream change, that enables fstream despite it being tied to _LIBCPP_HAS_FILESYSTEM
+//#  endif // _LIBCPP_HAS_FILESYSTEM && _LIBCPP_HAS_LOCALIZATION
 
 _LIBCPP_POP_MACROS
 

@@ -1179,6 +1179,8 @@ template <class ELFT>
 inline bool lld::elf::NanoMipsTransformController<ELFT>::safeToModify(
     InputSection *sec) const {
   bool modifiable = false;
+  if (sec->kind() == SectionBase::Synthetic)
+    return false;
   if (auto *obj = sec->getFile<ELF32LE>()) {
     modifiable =
         (obj->getObj().getHeader().e_flags & EF_NANOMIPS_LINKRELAX) != 0;

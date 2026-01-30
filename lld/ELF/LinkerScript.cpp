@@ -2064,7 +2064,12 @@ void LinkerScript::checkFinalScriptConditions() const {
     if (const MemoryRegion *memoryRegion = sec->memRegion)
       checkMemoryRegion(ctx, memoryRegion, sec, sec->addr);
     if (const MemoryRegion *lmaRegion = sec->lmaRegion)
-      checkMemoryRegion(ctx, lmaRegion, sec, sec->getLMA());
+    {
+      if (sec->memRegion != sec->lmaRegion &&
+       (!ctx.arg.nanoMipsCustomLinkerScriptType ||
+        sec->type != SHT_NOBITS))
+         checkMemoryRegion(ctx, lmaRegion, sec, sec->getLMA());
+    }
   }
 }
 

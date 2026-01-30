@@ -2,6 +2,7 @@
 ; PR23524
 ; The test is to check redundency produced by loop unroll pass
 ; should be cleaned up by later pass.
+; REQUIRES: x86_64-linux
 ; RUN: opt < %s -O2 -S | FileCheck %s
 
 ; After loop unroll:

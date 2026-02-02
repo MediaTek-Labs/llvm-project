@@ -56,7 +56,8 @@ def main():
             env['TEMP'] = os.environ.get('TEMP')
 
     qemu = [args.path_to_qemu,
-            '-cpu', args.cpu, '-semihosting', '-nographic', '-m', '256']
+            '-cpu', args.cpu, '-semihosting', '-nographic', '-m', '256',
+            '-serial', 'none', '-monitor', 'none', '-D', '/dev/null']
     qemu += ['-kernel', commandLine[0]]
     if len(commandLine) > 1:
         qemu += ['-append', ' '.join(map(str, commandLine[1:]))]

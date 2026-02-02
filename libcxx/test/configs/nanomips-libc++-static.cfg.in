@@ -8,6 +8,8 @@ config.substitutions.append(('%{flags}',
 ))
 config.substitutions.append(('%{compile_flags}',
     '-nostdinc++ -I %{include-dir} -I %{target-include-dir} -I %{libcxx-dir}/test/support -DTEST_HAS_NO_THREADS'
+    # Various libc++ headers check for the definition of _NEWLIB_VERSION
+    ' -include newlib.h'
 ))
 config.substitutions.append(('%{link_flags}',
     '-nostdlib++ -L %{lib-dir} -lc++ -lc++abi -Wl,--whole-archive -lstubs -Wl,--no-whole-archive -lunwind -Tuhi32.ld -Wl,--defsym,__memory_size=256M'

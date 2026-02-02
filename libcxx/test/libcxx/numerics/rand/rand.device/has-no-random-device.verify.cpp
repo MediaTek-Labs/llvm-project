@@ -11,6 +11,10 @@
 
 // REQUIRES: no-random-device
 
+// NanoMips does not have a functional random-device but declares a
+// wrapper over rand(), so the type is indeed present in the namespace.
+// XFAIL: target=nanomips-elf
+
 #include <random>
 
 void f() {

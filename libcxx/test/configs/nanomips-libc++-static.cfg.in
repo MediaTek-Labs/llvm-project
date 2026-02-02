@@ -9,7 +9,10 @@ config.substitutions.append(('%{flags}',
 config.substitutions.append(('%{compile_flags}',
     '-nostdinc++ -I %{include-dir} -I %{target-include-dir} -I %{libcxx-dir}/test/support -DTEST_HAS_NO_THREADS'
     # Various libc++ headers check for the definition of _NEWLIB_VERSION
-    ' -include newlib.h'
+    ' -include newlib.h '
+    # nanoMIPS does not have a functional random_device
+    # It only declares a mock-up wrapper over rand() function
+    ' -DTEST_HAS_NO_RANDOM_DEVICE'
 ))
 config.substitutions.append(('%{link_flags}',
     '-nostdlib++ -L %{lib-dir} -lc++ -lc++abi -Wl,--whole-archive -lstubs -Wl,--no-whole-archive -lunwind -Tuhi32.ld -Wl,--defsym,__memory_size=256M'
@@ -19,6 +22,10 @@ config.substitutions.append(('%{exec}',
 ))
 
 config.available_features.add('no-threads')
+# Our random_device is just a wrapper for rand(). We can't
+# really open a specific random-number device, so tests depending
+# on this are bound to fail.
+config.available_features.add('no-random-device')
 
 import os, site
 site.addsitedir(os.path.join('@LIBCXX_SOURCE_DIR@', 'utils'))

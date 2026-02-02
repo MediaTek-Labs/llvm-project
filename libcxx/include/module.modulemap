@@ -2003,6 +2003,10 @@ module std [system] {
       textual header "__thread/support/pthread.h"
       textual header "__thread/support/windows.h"
     }
+    module __external_threading {
+      header "__external_threading"
+      export *
+    }
 
     header "thread"
     export *

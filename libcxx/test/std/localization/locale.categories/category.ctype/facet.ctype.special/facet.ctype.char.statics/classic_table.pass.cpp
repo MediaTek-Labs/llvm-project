@@ -46,7 +46,9 @@ int main(int, char**)
         // The _BLANK bit isn't set for '\t' on Windows
         bool expect_blank = (i == ' ');
 #else
+#ifndef _NEWLIB_VERSION
         bool expect_blank = (i == '\t' || i == ' ');
+#endif
 #endif
 
         bool expect_upper = ('A' <= i && i <= 'Z');
@@ -66,7 +68,12 @@ int main(int, char**)
         assert(bool(p[i] & F::cntrl) == expect_cntrl);
         assert(bool(p[i] & F::print) == expect_print);
         assert(bool(p[i] & F::space) == expect_space);
+        // newlib checks for the blank flag in isprint, which needs to
+        // be false for tab. So they removed the _B flag from the
+        // ctype data, which causes this test to fail.
+#ifndef _NEWLIB_VERSION
         assert(bool(p[i] & F::blank) == expect_blank);
+#endif
         assert(bool(p[i] & F::lower) == expect_lower);
         assert(bool(p[i] & F::upper) == expect_upper);
         assert(bool(p[i] & F::alpha) == expect_alpha);

@@ -8,9 +8,9 @@ namespace std {
   bool __libcpp_recursive_mutex_trylock(void** __m) { return false; }
   int __libcpp_recursive_mutex_unlock(void** __m) { return EINVAL; }
   int __libcpp_recursive_mutex_destroy(void** __m) { return EINVAL; }
-  int __libcpp_mutex_lock(void **) { return EINVAL; }
+  int __libcpp_mutex_lock(void **) { return 0; }
   bool __libcpp_mutex_trylock(void **) { return false; }
-  int __libcpp_mutex_unlock(void **) { return EINVAL; }
+  int __libcpp_mutex_unlock(void **) { return 0; }
   int __libcpp_mutex_destroy(void **) { return EINVAL; }
   int __libcpp_thread_get_current_id() { return ENOSYS; }
   int __libcpp_thread_get_id(void* __t) { return EINVAL; }

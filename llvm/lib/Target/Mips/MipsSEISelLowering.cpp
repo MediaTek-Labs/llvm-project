@@ -502,8 +502,11 @@ SDValue MipsSETargetLowering::lowerSELECT(SDValue Op, SelectionDAG &DAG) const {
 
 bool MipsSETargetLowering::allowsMisalignedMemoryAccesses(
     EVT VT, unsigned, Align, MachineMemOperand::Flags, unsigned *Fast) const {
-  MVT::SimpleValueType SVT = VT.getSimpleVT().SimpleTy;
+  // Depends what it gets converted into
+  if (!VT.isSimple())
+    return false;
 
+  MVT::SimpleValueType SVT = VT.getSimpleVT().SimpleTy;
   if (Subtarget.hasNanoMips()) {
     if (Subtarget.useUnalignedLoadStore())
       switch (SVT) {

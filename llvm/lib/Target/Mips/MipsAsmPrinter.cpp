@@ -1712,11 +1712,11 @@ void MipsAsmPrinter::PrintDebugValueComment(const MachineInstr *MI,
   // TODO: implement
 }
 
-
 void MipsAsmPrinter::emitKCFITypeId(const MachineFunction &MF) {
   const Function &F = MF.getFunction();
   if (const MDNode *MD = F.getMetadata(LLVMContext::MD_kcfi_type)) {
     if (Subtarget->hasNanoMips()) {
+      int64_t PrefixBytes = 4;
 
       if (NMipsGuardKCFIPrefetch) {
 	// TypeId is arbitrary data which might decode as invalid
@@ -1730,17 +1730,29 @@ void MipsAsmPrinter::emitKCFITypeId(const MachineFunction &MF) {
 	const MCExpr *LabelRef = MCSymbolRefExpr::create(Label, OutContext);
 	GuardBC.addOperand(MCOperand::createExpr(LabelRef));
 	EmitToStreamer(*OutStreamer, GuardBC);
+        PrefixBytes += 2;
       }
 
       // NanoMips function alignment requirements are only 16
-      // bits. Ensure alignment to avoid unaligned 32-bit loads.
-      emitAlignment(Align(4));
+      // bits. Ensure KCFI signature is at least 32-bit aligned to
+      // avoid unaligned 32-bit loads.
+      Align FuncAlign =
+          getGVAlignment(&F, F.getDataLayout(), MF.getAlignment());
+      if (FuncAlign < Align(4) || (FuncAlign == Align(4) && PrefixBytes != 4))
+        emitAlignment(Align(4));
+      else if (FuncAlign > Align(4)) {
+        // Aligned to some alignment greater than 4, the KCFI
+        // signature will disrupt the alignment, so we need to pad to
+        // 4 bytes before the next instance of that alignment.
+        for (int count = offsetToAlignment(PrefixBytes, FuncAlign) / 2; count;
+             count--)
+          EmitToStreamer(*OutStreamer, MCInstBuilder(Mips::NOP_NM));
+      }
     }
     emitGlobalConstant(F.getParent()->getDataLayout(),
                        mdconst::extract<ConstantInt>(MD->getOperand(0)));
   }
 }
-
 
 // Emit .dtprelword or .dtpreldword directive
 // and value for debug thread local expression.

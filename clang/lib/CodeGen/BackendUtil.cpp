@@ -104,6 +104,12 @@ static cl::opt<bool> ClSanitizeOnOptimizerEarlyEP(
     "sanitizer-early-opt-ep", cl::Optional,
     cl::desc("Insert sanitizers on OptimizerEarlyEP."));
 
+// Debugging aid, use the function size in instrs as the trap code for
+// bounds checking traps. This is the previous default behaviour.
+static cl::opt<bool> ClBoundsTrapCodeSize(
+    "sanitizer-bound-trap-code-size",
+    cl::desc("Use function size as memory bounds checking trap code"));
+
 // Experiment to mark cold functions as optsize/minsize/optnone.
 // TODO: remove once this is exposed as a proper driver flag.
 static cl::opt<PGOOptions::ColdFuncOpt> ClPGOColdFuncAttr(
@@ -1043,6 +1049,9 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
                         "Update type of llvm.allow.ubsan.check to represent "
                         "SanitizerKind::SO_LocalBounds.");
           Options.GuardKind = SanitizerKind::SO_LocalBounds;
+        } else {
+          if (!ClBoundsTrapCodeSize)
+            Options.TrapCode = SanitizerKind::SO_LocalBounds;
         }
         Options.Merge =
             CodeGenOpts.SanitizeMergeHandlers.has(SanitizerKind::LocalBounds);

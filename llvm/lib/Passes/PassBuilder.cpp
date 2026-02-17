@@ -1398,6 +1398,8 @@ parseBoundsCheckingOptions(StringRef Params) {
       int8_t Id;
       if (ParamEQ == "guard" && !Val.getAsInteger(0, Id)) {
         Options.GuardKind = Id;
+      } else if (ParamEQ == "trapcode" && !Val.getAsInteger(0, Id)) {
+        Options.TrapCode = Id;
       } else {
         return make_error<StringError>(
             formatv("invalid BoundsChecking pass parameter '{0}' ", ParamName)

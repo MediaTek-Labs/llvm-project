@@ -30,6 +30,8 @@ public:
     std::optional<Runtime> Rt; // Trap if empty.
     bool Merge = false;
     std::optional<int8_t> GuardKind; // `allow_ubsan_check` argument.
+    std::optional<int8_t>
+        TrapCode; // Trap code to use instead of function size.
   };
 
   BoundsCheckingPass(Options Opts) : Opts(Opts) {}

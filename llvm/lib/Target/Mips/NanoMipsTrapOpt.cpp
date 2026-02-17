@@ -27,8 +27,6 @@ static cl::opt<bool>
 
 extern cl::opt<int> NMDebugTrapCode;
 
-extern cl::opt<int> NMUBSanTrapCode;
-
 static cl::opt<bool> EnableAddtrap(
     "enable-nmips-addsubtrap", cl::Hidden, cl::init(false),
     cl::desc(
@@ -139,11 +137,11 @@ PreservedAnalyses NanoMipsTrapOptPass::run(Function &F,
           Cond, Type::getInt32Ty(Cond->getContext()), "", BI);
 
       Value *Args[2] = {
-          Cond, ConstantInt::get(Type::getInt8Ty(Cond->getContext()),
-                                 (TI->getIntrinsicID() == Intrinsic::debugtrap
-                                      ? NMDebugTrapCode
-                                      : NMUBSanTrapCode) &
-                                     maskTrailingOnes<uint32_t>(5))};
+          Cond, (TI->getIntrinsicID() == Intrinsic::debugtrap
+                     ? ConstantInt::get(
+                           Type::getInt8Ty(Cond->getContext()),
+                           (NMDebugTrapCode & maskTrailingOnes<uint32_t>(5)))
+                     : TI->getOperand(0))};
       CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::mips_condtrap),
                        Args, "", BI);
       BranchInst::Create(BI->getSuccessor(IsTrue), BI);

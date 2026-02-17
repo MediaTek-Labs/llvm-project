@@ -41,6 +41,14 @@ cl::opt<int> NMUBSanTrapCode(
     "nmips-ubsantrap-code", cl::Hidden, cl::init(30),
     cl::desc("Trap code for ubsantrap instruction"));
 
+cl::opt<bool> NMUBSanKindCodes(
+    "nmips-ubsantrap-sankind-codes", cl::Hidden, cl::init(false),
+    cl::desc("Use ubsan sanitizer kinds as trap codes"));
+
+cl::opt<int> NMUBSanTrapCodeBase(
+    "nmips-ubsantrap-code-base", cl::Hidden, cl::init(0),
+    cl::desc("Base trap id to use for sanitizer traps"));
+
 bool MipsSEDAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
   Subtarget = &MF.getSubtarget<MipsSubtarget>();
   if (Subtarget->inMips16Mode())
@@ -951,13 +959,17 @@ bool MipsSEDAGToDAGISel::trySelect(SDNode *Node) {
   case ISD::UBSANTRAP: {
     if (!Subtarget->hasNanoMips())
       return false;
+    int TrapCode;
+    if (Opcode == ISD::DEBUGTRAP)
+      TrapCode = NMDebugTrapCode & maskTrailingOnes<uint32_t>(5);
+    else {
+      TrapCode = (NMUBSanKindCodes
+                      ? (NMUBSanTrapCodeBase + Node->getConstantOperandVal(1))
+                      : (NMUBSanTrapCode & maskTrailingOnes<uint32_t>(5)));
+    }
     ReplaceNode(Node, CurDAG->getMachineNode(
                           Mips::BREAK_NM, DL, MVT::Other,
-                          CurDAG->getTargetConstant(
-                              (Opcode == ISD::DEBUGTRAP ? NMDebugTrapCode
-                                                        : NMUBSanTrapCode) &
-                                  maskTrailingOnes<uint32_t>(5),
-                              DL, MVT::i32),
+                          CurDAG->getTargetConstant(TrapCode, DL, MVT::i32),
                           Node->getOperand(0)));
     return true;
   }

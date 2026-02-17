@@ -114,15 +114,14 @@ static Value *getBoundsCheckCond(Value *Ptr, Value *InstVal,
   return Or;
 }
 
-static CallInst *InsertTrap(BuilderTy &IRB,
-                            std::optional<int8_t> GuardKind) {
+static CallInst *InsertTrap(BuilderTy &IRB, std::optional<int8_t> GuardKind,
+                            std::optional<int8_t> TrapCode) {
 
   return IRB.CreateIntrinsic(
       Intrinsic::ubsantrap, {},
       ConstantInt::get(IRB.getInt8Ty(),
-                       GuardKind.has_value()
-                           ? GuardKind.value()
-                           : IRB.GetInsertBlock()->getParent()->size()));
+                       GuardKind.value_or(TrapCode.value_or(
+                           IRB.GetInsertBlock()->getParent()->size()))));
 }
 
 static CallInst *InsertCall(BuilderTy &IRB, bool MayReturn, StringRef Name) {
@@ -268,8 +267,9 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
     IRB.SetInsertPoint(TrapBB);
 
     bool DebugTrapBB = !Opts.Merge;
-    CallInst *TrapCall = Opts.Rt ? InsertCall(IRB, Opts.Rt->MayReturn, Name)
-                                 : InsertTrap(IRB, Opts.GuardKind);
+    CallInst *TrapCall = Opts.Rt
+                             ? InsertCall(IRB, Opts.Rt->MayReturn, Name)
+                             : InsertTrap(IRB, Opts.GuardKind, Opts.TrapCode);
     if (DebugTrapBB)
       TrapCall->addFnAttr(llvm::Attribute::NoMerge);
 
@@ -327,5 +327,7 @@ void BoundsCheckingPass::printPipeline(
     OS << ";merge";
   if (Opts.GuardKind)
     OS << ";guard=" << static_cast<int>(*Opts.GuardKind);
+  if (Opts.TrapCode)
+    OS << ";trapcode=" << static_cast<int>(*Opts.TrapCode);
   OS << ">";
 }

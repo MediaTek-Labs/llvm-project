@@ -993,11 +993,17 @@ bool MipsAsmBackend::relaxDwarfCFA(const MCAssembler &Asm,
         Offset, MBE.getLHS(), static_cast<MCFixupKind>(std::get<1>(Fixup))));
   };
 
-  if (isUInt<8>(Value)) {
+  /* Add extra slop in the range for 8/16 bit offsets to account for
+     code expansions during link-time relaxation.  Estimate the impact
+     to be 1/8 of the range for no particular reason and hope that it
+     will be enough. 32 bit offsets are not expected to overflow.
+     FIXME: find a tighter bound or a better way to solve this issue. */
+  const unsigned Padded = Value + (Value / 8);
+  if (isUInt<8>(Padded)) {
     OS << uint8_t(dwarf::DW_CFA_advance_loc1);
     support::endian::write<uint8_t>(OS, 0, llvm::endianness::little);
     AddFixups(1, {Mips::fixup_NANOMIPS_NEG, Mips::fixup_NANOMIPS_UNSIGNED_8});
-  } else if (isUInt<16>(Value)) {
+  } else if (isUInt<16>(Padded)) {
     OS << uint8_t(dwarf::DW_CFA_advance_loc2);
     support::endian::write<uint16_t>(OS, 0, llvm::endianness::little);
     AddFixups(1, {Mips::fixup_NANOMIPS_NEG, Mips::fixup_NANOMIPS_UNSIGNED_16});

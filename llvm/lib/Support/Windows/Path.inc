@@ -760,14 +760,14 @@ static std::error_code getStatus(HANDLE FileHandle, file_status &Result) {
   return std::error_code();
 
 handle_status_error:
-  std::error_code Err = mapLastWindowsError();
-  if (Err == std::errc::no_such_file_or_directory)
+  DWORD LastError = ::GetLastError();
+  if (LastError == ERROR_FILE_NOT_FOUND || LastError == ERROR_PATH_NOT_FOUND)
     Result = file_status(file_type::file_not_found);
-  else if (Err == std::errc::permission_denied)
+  else if (LastError == ERROR_SHARING_VIOLATION)
     Result = file_status(file_type::type_unknown);
   else
     Result = file_status(file_type::status_error);
-  return Err;
+  return mapWindowsError(LastError);
 }
 
 std::error_code status(const Twine &path, file_status &result, bool Follow) {

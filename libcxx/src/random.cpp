@@ -42,6 +42,7 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 
 random_device::random_device(const string& __token)
 {
+  if (__token != "/dev/urandom")
     __throw_system_error(ENOENT, ("random device not supported " + __token).c_str());
 }
 

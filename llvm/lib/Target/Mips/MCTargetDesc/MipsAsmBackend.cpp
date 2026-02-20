@@ -998,7 +998,7 @@ bool MipsAsmBackend::relaxDwarfCFA(const MCAssembler &Asm,
      to be 1/8 of the range for no particular reason and hope that it
      will be enough. 32 bit offsets are not expected to overflow.
      FIXME: find a tighter bound or a better way to solve this issue. */
-  const unsigned Padded = Value + (Value / 8);
+  const unsigned Padded = Value + (isUInt<8>(Value) ? 32 : 2048);
   if (isUInt<8>(Padded)) {
     OS << uint8_t(dwarf::DW_CFA_advance_loc1);
     support::endian::write<uint8_t>(OS, 0, llvm::endianness::little);

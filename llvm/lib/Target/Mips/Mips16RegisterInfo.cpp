@@ -57,7 +57,7 @@ bool Mips16RegisterInfo::saveScavengerRegister(
 
 const TargetRegisterClass *
 Mips16RegisterInfo::intRegClass(unsigned Size,
-                                MachineBasicBlock::iterator II) const {
+                                const MipsSubtarget &STI) const {
   assert(Size == 4);
   return &Mips::CPU16RegsRegClass;
 }

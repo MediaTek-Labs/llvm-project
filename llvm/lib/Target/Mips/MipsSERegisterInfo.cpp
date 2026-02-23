@@ -48,12 +48,9 @@ requiresFrameIndexScavenging(const MachineFunction &MF) const {
 
 const TargetRegisterClass *
 MipsSERegisterInfo::intRegClass(unsigned Size,
-                                MachineBasicBlock::iterator II) const {
-  MachineInstr &MI = *II;
-  MachineFunction &MF = *MI.getParent()->getParent();
-  const MipsSubtarget &STI =
-      *static_cast<const MipsSubtarget *>(&MF.getSubtarget());
-
+                                const MipsSubtarget &STI) const {
+  // TODO: consider creating a Nanomips subclass of MipsSERegisterInfo
+  // if number of hasNanoMips checks amounts to a significant level
   if (Size == 4)
     return STI.hasNanoMips() ? &Mips::GPRNM32RegClass : &Mips::GPR32RegClass;
 

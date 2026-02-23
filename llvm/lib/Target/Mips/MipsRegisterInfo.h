@@ -72,7 +72,7 @@ public:
 
   /// Return GPR register class.
   virtual const TargetRegisterClass *intRegClass(unsigned Size,
-                                                 MachineBasicBlock::iterator II)
+                                                 const MipsSubtarget &STI)
     const = 0;
 
 private:

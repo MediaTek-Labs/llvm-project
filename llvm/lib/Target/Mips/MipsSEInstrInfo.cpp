@@ -100,9 +100,9 @@ void MipsSEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       } else {
         if (isMicroMips)
           Opc = Mips::MOVE16_MM;
-        else
-          Opc =Mips::OR,
-          ZeroReg = Mips::ZERO;
+        else {
+          Opc = Mips::OR, ZeroReg = Mips::ZERO;
+        }
       }
     } else if (Mips::CCRRegClass.contains(SrcReg))
       Opc = Mips::CFC1;

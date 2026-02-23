@@ -27,7 +27,7 @@ public:
   bool requiresFrameIndexScavenging(const MachineFunction &MF) const override;
 
   const TargetRegisterClass *intRegClass(unsigned Size,
-                                         MachineBasicBlock::iterator II)
+                                         const MipsSubtarget &STI)
     const override;
 
 private:

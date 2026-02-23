@@ -176,7 +176,7 @@ void ExpandPseudo::expandLoadCCond(MachineBasicBlock &MBB, Iter I) {
 
   assert(I->getOperand(0).isReg() && I->getOperand(1).isFI());
 
-  const TargetRegisterClass *RC = RegInfo.intRegClass(4, I);
+  const TargetRegisterClass *RC = RegInfo.intRegClass(4, Subtarget);
   Register VR = MRI.createVirtualRegister(RC);
   Register Dst = I->getOperand(0).getReg(), FI = I->getOperand(1).getIndex();
 
@@ -191,7 +191,7 @@ void ExpandPseudo::expandStoreCCond(MachineBasicBlock &MBB, Iter I) {
 
   assert(I->getOperand(0).isReg() && I->getOperand(1).isFI());
 
-  const TargetRegisterClass *RC = RegInfo.intRegClass(4, I);
+  const TargetRegisterClass *RC = RegInfo.intRegClass(4, Subtarget);
   Register VR = MRI.createVirtualRegister(RC);
   Register Src = I->getOperand(0).getReg(), FI = I->getOperand(1).getIndex();
 
@@ -209,7 +209,7 @@ void ExpandPseudo::expandLoadACC(MachineBasicBlock &MBB, Iter I,
 
   assert(I->getOperand(0).isReg() && I->getOperand(1).isFI());
 
-  const TargetRegisterClass *RC = RegInfo.intRegClass(RegSize, I);
+  const TargetRegisterClass *RC = RegInfo.intRegClass(RegSize, Subtarget);
   Register VR0 = MRI.createVirtualRegister(RC);
   Register VR1 = MRI.createVirtualRegister(RC);
   Register Dst = I->getOperand(0).getReg(), FI = I->getOperand(1).getIndex();
@@ -234,7 +234,7 @@ void ExpandPseudo::expandStoreACC(MachineBasicBlock &MBB, Iter I,
 
   assert(I->getOperand(0).isReg() && I->getOperand(1).isFI());
 
-  const TargetRegisterClass *RC = RegInfo.intRegClass(RegSize, I);
+  const TargetRegisterClass *RC = RegInfo.intRegClass(RegSize, Subtarget);
   Register VR0 = MRI.createVirtualRegister(RC);
   Register VR1 = MRI.createVirtualRegister(RC);
   Register Src = I->getOperand(0).getReg(), FI = I->getOperand(1).getIndex();
@@ -280,7 +280,7 @@ bool ExpandPseudo::expandCopyACC(MachineBasicBlock &MBB, Iter I,
   }
   const TargetRegisterClass *DstRC = RegInfo.getMinimalPhysRegClass(Dst);
   unsigned VRegSize = RegInfo.getRegSizeInBits(*DstRC) / 16;
-  const TargetRegisterClass *RC = RegInfo.intRegClass(VRegSize, I);
+  const TargetRegisterClass *RC = RegInfo.intRegClass(VRegSize, Subtarget);
   Register VR0 = MRI.createVirtualRegister(RC);
   Register VR1 = MRI.createVirtualRegister(RC);
   unsigned SrcKill = getKillRegState(I->getOperand(1).isKill());

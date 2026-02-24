@@ -1887,12 +1887,11 @@ static DecodeStatus DecodeMemNM4x4(MCInst &Inst,
 				   uint64_t Address,
 				   const MCDisassembler *Decoder) {
   int Offset = fieldFromInstruction(Insn, 0, 4);
-  unsigned Base;
+  unsigned Base = fieldFromInstruction(Insn, 4, 5);
 
-  Base = getReg(Decoder, Mips::GPRNM32RegClassID,
-		fieldFromInstruction(Insn, 4, 5) & ~0x8);
-
-  Inst.addOperand(MCOperand::createReg(Base));
+  if (DecodeGPRNM4RegisterClass(Inst, Base, Address, Decoder)
+      == MCDisassembler::Fail)
+    return MCDisassembler::Fail;
   Inst.addOperand(MCOperand::createImm(Offset));
 
   return MCDisassembler::Success;

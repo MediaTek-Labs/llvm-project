@@ -927,7 +927,7 @@
 				# DISAS: {{.*}}  77 74        	lw	$a7, 0($s7)
 	lw	$s3, 4($a5)	# CHECK: lw $s3, 4($a5) # encoding: [0x61,0x77]
 				# CHECK-NEXT: <MCInst  #{{.*}} LW4x4_NM
-				# DISAS: {{.*}}  61 77        	lw	$s3, 4($at)
+				# DISAS: {{.*}}  61 77        	lw	$s3, 4($a5)
 	lw	$s4, 8($a3)	# CHECK: lw $s4, 8($a3) # encoding: [0x8f,0x76]
 				# CHECK-NEXT: <MCInst  #{{.*}} LW4x4_NM
 				# DISAS: {{.*}}  8f 76        	lw	$s4, 8($a3)
@@ -998,7 +998,7 @@
 				# DISAS: {{.*}}  77 f4        	sw	$zero, 0($s7)
 	sw	$s3, 4($a5)	# CHECK: sw $s3, 4($a5) # encoding: [0x61,0xf7]
 				# CHECK-NEXT: <MCInst  #{{.*}} SW4x4_NM
-				# DISAS: {{.*}}  61 f7        	sw	$s3, 4($at)
+				# DISAS: {{.*}}  61 f7        	sw	$s3, 4($a5)
 	sw	$s4, 8($a3)	# CHECK: sw $s4, 8($a3) # encoding: [0x8f,0xf6]
 				# CHECK-NEXT: <MCInst  #{{.*}} SW4x4_NM
 				# DISAS: {{.*}}  8f f6        	sw	$s4, 8($a3)

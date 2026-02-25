@@ -37,13 +37,13 @@
 	# reg-reg logic, 16-bit
 	and[16]	$a1, $a3, $a1	# CHECK: and $a1, $a3, $a1	# encoding: [0xf8,0x52]
 				# CHECK-NEXT: # <MCInst #{{.*}} AND16_NM
-				# DISAS: {{.*}}  f8 52        	and	$a3, $a1, $a3
+				# DISAS: {{.*}}  f8 52        	and	$a1, $a3, $a1
 	or[16]	$s2, $a3, $s2	# CHECK: or $s2, $a3, $s2	# encoding: [0x7c,0x51]
 				# CHECK-NEXT: # <MCInst #{{.*}} OR16_NM
-				# DISAS: {{.*}}  7c 51        	or	$a3, $s2, $a3
+				# DISAS: {{.*}}  7c 51        	or	$s2, $a3, $s2
 	xor[16]	$a3, $s3, $a3	# CHECK: xor $a3, $s3, $a3	# encoding: [0xb4,0x53]
 				# CHECK-NEXT: # <MCInst #{{.*}} XOR16_NM
-				# DISAS: {{.*}}  b4 53        	xor	$s3, $a3, $s3
+				# DISAS: {{.*}}  b4 53        	xor	$a3, $s3, $a3
 	not[16]	$a3, $s3	# CHECK: not $a3, $s3		# encoding: [0xb0,0x53]
 				# CHECK-NEXT: # <MCInst #{{.*}} NOT16_NM
 				# DISAS: {{.*}}  b0 53        	not	$a3, $s3

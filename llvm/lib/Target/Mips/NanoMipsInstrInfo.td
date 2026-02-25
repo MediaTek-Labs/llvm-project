@@ -919,21 +919,21 @@ class ArithLogicR32_Enc<bits<6> psel>: _Pool_POOL32A0_0<psel> {
 // 16-bit arithmetic and logical instructions with 2 register operands, POOL16C_0
 class ArithLogicR16_Desc<string opstr, RegisterOperand RO,
 		    SDPatternOperator OpNode = null_frag>:
-    InstAsmNM<(outs RO:$dst), (ins RO:$rs, RO:$rt),
-	      !strconcat(opstr, "\t$dst, $rs, $rt"),
-	      [(set RO:$dst, (OpNode RO:$rs, RO:$rt))]>;
+    InstAsmNM<(outs RO:$rd), (ins RO:$rs, RO:$rt),
+	      !strconcat(opstr, "\t$rd, $rs, $rt"),
+	      [(set RO:$rd, (OpNode RO:$rs, RO:$rt))]>;
 
 class ArithLogicR16U_Desc<string opstr, RegisterOperand RO,
 				 SDPatternOperator OpNode = null_frag>:
-    InstNM<(outs RO:$rt), (ins RO:$rs),
-	      !strconcat(opstr, "\t$rt, $rs"),
-	      [(set RO:$rt, (OpNode RO:$rs))]> {
+    InstNM<(outs RO:$rd), (ins RO:$rs),
+	      !strconcat(opstr, "\t$rd, $rs"),
+	      [(set RO:$rd, (OpNode RO:$rs))]> {
 }
 
 class ArithLogicR16_Enc<bits<2> isel>: _Pool_POOL16C_00<isel> {
   bits<3> rs;
-  bits<3> rt;
-  let Inst{9...7} = rt;
+  bits<3> rd;
+  let Inst{9...7} = rd;
   let Inst{6...4} = rs;
 }
 
@@ -1552,7 +1552,7 @@ class LoadAddressAbsNM<string opstr, RegisterOperand RO, DAGOperand MO, ComplexP
 def NOT16_NM : ArithLogicR16U_Desc<"not", GPRNM16R3Opnd, not>,
 	       ArithLogicR16_Enc<0b00>,
 	       AltMnemonics<["not[16]"]>;
-let isCommutable=1, TwoOperandAliasConstraint = "$rt = $dst" in {
+let isCommutable=1, TwoOperandAliasConstraint = "$rt = $rd" in {
     def XOR16_NM : ArithLogicR16_Desc<"xor", GPRNM16R3Opnd, xor>,
 	           ArithLogicR16_Enc<0b01>,
 		   AltMnemonics<["xor[16]"]>;

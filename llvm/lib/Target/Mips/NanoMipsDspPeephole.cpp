@@ -825,6 +825,9 @@ void NMDspPeephole::replaceRegUsesWith(const Register FromReg, Register ToReg) {
 bool NMDspPeephole::runOnMachineFunction(MachineFunction &Fn) {
   if (DisableDspPeeps)
     return false;
+  ChangedPHIMap.clear();
+  ConvertedPHIs.clear();
+  VisitedPHIs.clear();
   STI = &static_cast<const MipsSubtarget &>(Fn.getSubtarget());
   TRI = STI->getRegisterInfo();
   MRI = &Fn.getRegInfo();

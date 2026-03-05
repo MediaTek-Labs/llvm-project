@@ -5435,10 +5435,9 @@ SDValue MipsTargetLowering::joinRegisterPartsIntoValue(
     MVT PartVT, EVT ValueVT, std::optional<CallingConv::ID> CC) const {
   if (ValueVT == MVT::i64 && PartVT == MVT::Untyped && NumParts == 1) {
     SDNode *Node = Parts[0].getNode();
-    SDValue DestReg = Node->getOperand(1);
     if (Node->getOpcode() == ISD::CopyFromReg) {
-      SDValue Lo = DAG.getNode(MipsISD::MFLO, DL, MVT::i32, DestReg);
-      SDValue Hi = DAG.getNode(MipsISD::MFHI, DL, MVT::i32, DestReg);
+      SDValue Lo = DAG.getNode(MipsISD::MFLO, DL, MVT::i32, SDValue(Node, 0));
+      SDValue Hi = DAG.getNode(MipsISD::MFHI, DL, MVT::i32, SDValue(Node, 0));
       return DAG.getNode(ISD::BUILD_PAIR, DL, MVT::i64, Lo, Hi);
     }
   }

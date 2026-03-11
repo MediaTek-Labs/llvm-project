@@ -596,14 +596,11 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
         tryEmitHw110880Xform(*OutStreamer, &*I)) {
       continue;
     }
-
-
     if (Subtarget->hasNanoMips() &&
         (I->getOpcode() == Mips::LoadJumpTableOffset)) {
       emitJumpTableDest(*OutStreamer, &*I);
       continue;
     }
-
     if (Subtarget->hasNanoMips() && I->getOpcode() == Mips::BRSC_NM) {
       emitBrsc(*OutStreamer, &*I);
       continue;

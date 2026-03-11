@@ -256,7 +256,7 @@ RelExpr NanoMips<ELFT>::getRelExpr(RelType type, const Symbol &s,
     return R_RELAX_HINT;
   default:
     Err(ctx) << getErrorLoc(ctx, loc) << "unknown relocation (" << type.v
-             << ") against symbol " << &s;  
+             << ") against symbol " << &s;
     return R_NONE;
   }
 }
@@ -428,7 +428,8 @@ void NanoMips<ELFT>::relocateAlloc(InputSectionBase &sec, uint8_t *buf) const {
 
     if (prevRelocOnlyCalculating)
       rel.addend = valFromBefore;
-    val = SignExtend64(sec.getRelocTargetVA(ctx, rel, secAddr + rel.offset), bits);
+    val = SignExtend64(sec.getRelocTargetVA(ctx, rel,
+                        secAddr + rel.offset), bits);
 
     // nanoMIPS has composite relocations, several relocations
     // in a row referring to the same location. Then the value is

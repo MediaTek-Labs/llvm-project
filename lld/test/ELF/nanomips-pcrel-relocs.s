@@ -34,7 +34,7 @@ label:
     beqzc $a3, label
     # CHECK-NEXT: 101a: ab 60 04 00 01 00 lwpc{{.*}} <label_long>
     lwpc $a1, label_long
-    # CHECK-NEXT: 1020: 01 2a 00 00 balc{{.*}} <label_long>    
+    # CHECK-NEXT: 1020: 01 2a 00 00 balc{{.*}} <label_long>
     balc label_long
 
     .skip 0x10000, 0

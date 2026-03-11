@@ -1,8 +1,8 @@
 # REQUIRES: nanomips
 
 # Note: This test may need some changing in the future, as not all flags are
-# available for llvm-mc. Other types than soft-float and mcu options are an 
-# example. 
+# available for llvm-mc. Other types than soft-float and mcu options are an
+# example.
 
 # RUN: llvm-mc -filetype=obj -triple nanomips-elf -mcpu i7200 \
 # RUN: -mattr=+soft-float,-tlb,+crc %s -o %t1.o

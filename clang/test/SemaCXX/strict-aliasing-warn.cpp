@@ -166,7 +166,7 @@ void Object() {
   // level1-warning@+1{{type-punned reference might break}}
   LValue(reinterpret_cast<BIG &>(Scalar));
   // level12-note@-1{{are not alias compatible}}
-  
+
   // GCC: 1, 2, 3
   // level23-warning@+2{{type-punned pointer breaks}}
   // level1-warning@+1{{type-punned pointer might break}}
@@ -358,16 +358,16 @@ C c;
 D d;
 
 void Frob(A *aptr, B *bptr, C *cptr) {
-  // GCC: 
+  // GCC:
   RValue(reinterpret_cast<B *>(aptr));
 
-  // GCC: 
+  // GCC:
   LValue(reinterpret_cast<B &>(*aptr));
 
-  // GCC: 
+  // GCC:
   RValue(reinterpret_cast<A *>(bptr));
 
-  // GCC: 
+  // GCC:
   LValue(reinterpret_cast<A &>(*bptr));
 
   // GCC: 1
@@ -380,16 +380,16 @@ void Frob(A *aptr, B *bptr, C *cptr) {
   RValue(*reinterpret_cast<B *>(cptr));
   // level1-note@-1{{are not alias compatible}}
 
-  // GCC: 
+  // GCC:
   RValue(*reinterpret_cast<B *>(aptr));
 
-  // GCC: 
+  // GCC:
   RValue(reinterpret_cast<B &>(*aptr));
 
-  // GCC: 
+  // GCC:
   RValue(*reinterpret_cast<A *>(bptr));
 
-  // GCC: 
+  // GCC:
   RValue(reinterpret_cast<A &>(*bptr));
 
   // GCC: 1
@@ -405,16 +405,16 @@ void Frob(A *aptr, B *bptr, C *cptr) {
 
 void Frob(Wrapper<A> *awptr, Wrapper<C> *cwptr)
 {
-  // GCC: 
+  // GCC:
   RValue(reinterpret_cast<B *>(&awptr->t));
 
-  // GCC: 
+  // GCC:
   LValue(reinterpret_cast<B &>(awptr->t));
 
-  // GCC: 
+  // GCC:
   RValue(*reinterpret_cast<B *>(&awptr->t));
 
-  // GCC: 
+  // GCC:
   RValue(reinterpret_cast<B &>(awptr->t));
 
   // GCC: 1, 2
@@ -473,29 +473,29 @@ void Frob() {
 }
 
 void Not(Wrapper<A> * a, Wrapper<NotA> *na, Wrapper<U> *u, Wrapper<NotU> *nu) {
-  // GCC: 
+  // GCC:
   RValue(reinterpret_cast<B *>(&a->t));
 
-  // GCC: 
+  // GCC:
   RValue(reinterpret_cast<B *>(&u->t));
 
   // The differences below are expected as GCC considers record types containing
   // at least one aliases-all field to be alias all.  Clang's heuristic requires
   // the first field of a union or the only field of a struct to be so.
-  
-  // GCC: 
+
+  // GCC:
   // level12-warning@+1{{type-punned pointer might break}}
   RValue(reinterpret_cast<B *>(&na->t));
   // level12-note@-1{{are not alias compatible}}
 
-  // GCC: 
+  // GCC:
   RValue(reinterpret_cast<B *>(&nu->t));
 }
 
 void Base(D d, Wrapper<D> *dw) {
-  // GCC: 
+  // GCC:
   RValue(*static_cast<B *>(&d));
-  // GCC: 
+  // GCC:
   RValue(*static_cast<B *>(&dw->t));
 
   RValue(reinterpret_cast<D *>(dw));
@@ -659,7 +659,7 @@ void Object() {
   // level1-warning@+1{{type-punned reference might break}}
   LValue((BIG &)(Scalar));
   // level12-note@-1{{are not alias compatible}}
-  
+
   // GCC: 1, 2, 3
   // level23-warning@+2{{type-punned pointer breaks}}
   // level1-warning@+1{{type-punned pointer might break}}
@@ -1099,7 +1099,7 @@ void Foo () {
   // level1-warning@+1{{type-punned pointer might break}}
   *reinterpret_cast<int *>(&d) -= 1;
   // level123-note@-1{{are not alias compatible}}
-  
+
   // level23-warning@+2{{type-punned reference breaks}}
   // level1-warning@+1{{type-punned reference might break}}
   ++reinterpret_cast<int &>(d);
@@ -1200,7 +1200,7 @@ void pr50066() {
       // level1-warning@+1{{type-punned pointer might break}}
       *(BIG *)&d;
       // level123-note@-1{{are not alias compatible}}
-  
+
   // GCC: 1, 2, 3
   // level23-warning@+2{{type-punned pointer breaks}}
   // level1-warning@+1{{type-punned pointer might break}}

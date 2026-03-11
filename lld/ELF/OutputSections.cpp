@@ -133,7 +133,7 @@ void OutputSection::commitSection(InputSection *isec) {
         // Some projects (e.g.
         // https://github.com/ClangBuiltLinux/linux/issues/1597) rely on the
         // behavior. Other types get an error.
-        if (type != SHT_NOBITS || !(isec->name == ".rel.dyn" && 
+        if (type != SHT_NOBITS && !(isec->name == ".rel.dyn" &&
           ctx.arg.nanoMipsCustomLinkerScriptType)) {
           Err(ctx) << "section type mismatch for " << isec->name << "\n>>> "
                    << isec << ": "

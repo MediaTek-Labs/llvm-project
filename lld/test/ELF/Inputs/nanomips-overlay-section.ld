@@ -7,12 +7,12 @@ MEMORY {
 SECTIONS {
     . += ORIGIN(SEG1);
     OVERLAY . : {
-        .overlay1_sec1 { 
+        .overlay1_sec1 {
             *(.overlay1_sec1)
             LONG(0);
         }
 
-        .overlay1_sec2 { 
+        .overlay1_sec2 {
             *(.overlay1_sec2)
             defined_in_overlay = .;
         }

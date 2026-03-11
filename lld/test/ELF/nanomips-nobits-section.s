@@ -49,7 +49,7 @@ a:
 
 second_fun:
     beqic $a1, 2, second_fun
-    
+
     .end second_fun
     .size second_fun, .-second_fun
 

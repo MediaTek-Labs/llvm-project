@@ -794,7 +794,9 @@ uint64_t InputSectionBase::getRelocTargetVA(Ctx &ctx, const Relocation &r,
   case R_NANOMIPS_NEG_COMPOSITE:
     return -r.sym->getVA(ctx, -a);
   case R_NANOMIPS_ASHIFTR:
-    return static_cast<int64_t>(SignExtend64(r.sym->getVA(ctx, a), ctx.arg.wordsize * 8)) >> 1;  
+    return static_cast<int64_t>(
+             SignExtend64(r.sym->getVA(ctx, a),
+                          ctx.arg.wordsize * 8)) >> 1;
   case RE_ARM_SBREL:
     return r.sym->getVA(ctx, a) - getARMStaticBase(*r.sym);
   case R_GOT:
@@ -888,7 +890,7 @@ uint64_t InputSectionBase::getRelocTargetVA(Ctx &ctx, const Relocation &r,
   case R_NANOMIPS_GPREL:
     return r.sym->getVA(ctx, a) - ctx.sym.nanoMipsGp->getVA(ctx, 0);
   case R_NANOMIPS_PAGE_PC:
-    return r.sym->getVA(ctx, a) - getNanoMipsPage(p + 4);         
+    return r.sym->getVA(ctx, a) - getNanoMipsPage(p + 4);
   case RE_AARCH64_PAGE_PC: {
     uint64_t val = r.sym->isUndefWeak() ? p + a : r.sym->getVA(ctx, a);
     return getAArch64Page(val) - getAArch64Page(p);
@@ -1050,7 +1052,6 @@ void InputSection::relocateNonAlloc(Ctx &ctx, uint8_t *buf,
     }
 
   const InputFile *f = this->file;
-  
   // Next two vars are used only for nanoMIPS
   uint64_t valFromBefore = 0;
   bool prevRelocOnlyCalculating = false;
@@ -1138,7 +1139,6 @@ void InputSection::relocateNonAlloc(Ctx &ctx, uint8_t *buf,
     // as REL, needs the implicit addend updated.
     if (ctx.arg.relocatable && (RelTy::HasAddend || sym.type != STT_SECTION))
       continue;
-    
     // We might have more than one relocation
     // consisting the final relocation
     if (ctx.arg.emachine == EM_NANOMIPS) {
@@ -1154,11 +1154,11 @@ void InputSection::relocateNonAlloc(Ctx &ctx, uint8_t *buf,
         const uint64_t addrLoc = secAddr + offset;
 
         if (prevRelocOnlyCalculating)
-          addend = valFromBefore; 
-        
-        val = SignExtend64<bits>(
-            this->getRelocTargetVA(ctx, Relocation{expr, type, offset, addend, &sym}, addrLoc));    
-        
+          addend = valFromBefore;
+
+        val = SignExtend64<bits>(getRelocTargetVA(
+            ctx, Relocation{expr, type, offset, addend, &sym}, addrLoc));
+
         auto nextIt = std::next(it);
         if (nextIt != end && nextIt->r_offset == rel.r_offset) {
           const RelTy &nextRel = *nextIt;
@@ -1464,9 +1464,12 @@ void EhInputSection::split(ArrayRef<RelTy> rels) {
           assert(expr != R_PC && expr != R_NANOMIPS_PAGE_PC &&
                  "PC relocs not expected for determining size of .eh_frame "
                  "entries");
-          
-          calculatedVal = SignExtend64<bits>(
-              getRelocTargetVA(s->ctx, Relocation{expr, type, rel.r_offset, static_cast<int64_t>(calculatedVal.value_or(0)), &sym}, 0));    
+
+          calculatedVal = SignExtend64<bits>(getRelocTargetVA(
+              s->ctx,
+              Relocation{expr, type, rel.r_offset,
+                         static_cast<int64_t>(calculatedVal.value_or(0)), &sym},
+              0));
         }
       }
       // If the relocation exists, use its calculated value

@@ -373,8 +373,10 @@ public:
   ~BinaryWriter() {}
   Error finalize() override;
   Error write() override;
-  BinaryWriter(Object &Obj, raw_ostream &Out, const CommonConfig &Config, const ELFConfig &ELFConfig)
-      : Writer(Obj, Out), GapFill(Config.GapFill), PadTo(Config.PadTo), MaxSectionOffset(ELFConfig.MaxSectionOffset) {}
+  BinaryWriter(Object &Obj, raw_ostream &Out, const CommonConfig &Config,
+               const ELFConfig &ELFConfig)
+      : Writer(Obj, Out), GapFill(Config.GapFill), PadTo(Config.PadTo),
+        MaxSectionOffset(ELFConfig.MaxSectionOffset) {}
 };
 
 // A base class for writing ascii hex formats such as srec and ihex.

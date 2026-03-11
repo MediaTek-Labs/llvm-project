@@ -173,7 +173,7 @@ void elf::addReservedSymbols(Ctx &ctx) {
     // to GOT. Default offset is 0x7ff0.
     // See "Global Data Symbols" in Chapter 6 in the following document:
     // ftp://www.linux-mips.org/pub/linux/mips/doc/ABI/mipsabi.pdf
-    if (ctx.arg.emachine == EM_NANOMIPS) 
+    if (ctx.arg.emachine == EM_NANOMIPS)
       ctx.sym.nanoMipsGp = addAbsolute("_gp");
     else {
       ctx.sym.mipsGp = addAbsolute("_gp");
@@ -2068,7 +2068,7 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
                           PF_R);
       if (ctx.arg.emachine == EM_NANOMIPS)
         addPhdrForSection(part, SHT_NANOMIPS_ABIFLAGS, PT_NANOMIPS_ABIFLAGS,
-                          PF_R);                  
+                          PF_R);
     }
     ctx.out.programHeaders->size =
         sizeof(Elf_Phdr) * ctx.mainPart->phdrs.size();
@@ -2240,19 +2240,19 @@ template <class ELFT> void Writer<ELFT>::addStartEndSymbols() {
   define("__init_array_start", "__init_array_end", ctx.out.initArray);
   define("__fini_array_start", "__fini_array_end", ctx.out.finiArray);
 
+  if (ctx.arg.emachine == EM_NANOMIPS) {
+    if (OutputSection *sec = findSection(ctx, ".eh_frame")) {
+      define("__eh_frame_start", "__eh_frame_end", sec);
+
+      if (OutputSection *sec = findSection(ctx, ".eh_frame_hdr"))
+        define("__eh_frame_hdr_start", "__eh_frame_hdr_end", sec);
+    }
+  }
+
   // As a special case, don't unnecessarily retain .ARM.exidx, which would
   // create an empty PT_ARM_EXIDX.
   if (OutputSection *sec = findSection(ctx, ".ARM.exidx"))
     define("__exidx_start", "__exidx_end", sec);
-  
-  if (ctx.arg.emachine == EM_NANOMIPS) {
-    if (OutputSection *sec = findSection(ctx, ".eh_frame")) {
-      define("__eh_frame_start", "__eh_frame_end", sec);
-  
-    if (OutputSection *sec = findSection(ctx, ".eh_frame_hdr"))
-      define("__eh_frame_hdr_start", "__eh_frame_hdr_end", sec);
-    }
-  }  
 }
 
 // If a section name is valid as a C identifier (which is rare because of
@@ -2769,7 +2769,7 @@ static void checkOverlap(Ctx &ctx, StringRef name,
 
     if (ctx.arg.nanoMipsCustomLinkerScriptType &&
         (a.sec->type == SHT_NOBITS || b.sec->type == SHT_NOBITS))
-      continue;  
+      continue;
 
     Err(ctx) << "section " << a.sec->name << " " << name
              << " range overlaps with " << b.sec->name << "\n>>> "

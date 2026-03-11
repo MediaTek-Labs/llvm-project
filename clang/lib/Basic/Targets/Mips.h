@@ -492,6 +492,12 @@ public:
   bool validateTarget(DiagnosticsEngine &Diags) const override;
   bool hasBitIntType() const override { return true; }
 
+  unsigned getMinGlobalAlign(uint64_t TypeSize, bool HasNonWeakDef) const override {
+    if (ABI != "p32" || TypeSize < 32)
+      return TargetInfo::getMinGlobalAlign(TypeSize, HasNonWeakDef);
+    return 32u;
+  }
+
   std::pair<unsigned, unsigned> hardwareInterferenceSizes() const override {
     return std::make_pair(32, 32);
   }
@@ -531,11 +537,6 @@ public:
 
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
-  unsigned getMinGlobalAlign(uint64_t TypeSize, bool HasNonWeakDef) const override {
-    if (ABI != "p32" || TypeSize < 32)
-      return TargetInfo::getMinGlobalAlign(TypeSize, HasNonWeakDef);
-    return 32u;
-  }
 };
 } // namespace targets
 } // namespace clang

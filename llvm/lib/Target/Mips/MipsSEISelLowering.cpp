@@ -258,14 +258,12 @@ MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
       // setOperationAction(ISD::LOAD, MVT::i16, Custom);
       // setOperationAction(ISD::STORE, MVT::i16, Custom);
     }
+  } else if (Subtarget.hasMips32r6()) {
+    setOperationAction(ISD::LOAD, MVT::i32, Legal);
+    setOperationAction(ISD::STORE, MVT::i32, Legal);
   } else {
-    if (Subtarget.hasMips32r6()) {
-      setOperationAction(ISD::LOAD, MVT::i32, Legal);
-      setOperationAction(ISD::STORE, MVT::i32, Legal);
-    } else {
-      setOperationAction(ISD::LOAD, MVT::i32, Custom);
-      setOperationAction(ISD::STORE, MVT::i32, Custom);
-    }
+    setOperationAction(ISD::LOAD, MVT::i32, Custom);
+    setOperationAction(ISD::STORE, MVT::i32, Custom);
   }
 
   setTargetDAGCombine(ISD::MUL);

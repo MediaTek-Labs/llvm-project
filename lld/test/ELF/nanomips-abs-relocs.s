@@ -11,7 +11,7 @@
 # RUN: llvm-objdump --triple nanomips-elf -td %t | FileCheck %s
 
 # RUN: llvm-objdump --triple nanomips-elf -s --section=.sdata %t | FileCheck \
-# RUN: %s --check-prefix CHECK-DATA-REL 
+# RUN: %s --check-prefix CHECK-DATA-REL
 
 
 # CHECK: 0200102a {{.*}} b

@@ -202,9 +202,10 @@ class MipsSubtarget : public MipsGenSubtargetInfo {
 
   // Assume 32-bit GOT.
   bool UseXGOT = false;
-  
+
   // Disable unaligned load store for r6.
   bool StrictAlign;
+
   bool UseAbsoluteJumpTables = false;
 
   // CPU supports NanoMips low-power subset (NMS)
@@ -387,7 +388,8 @@ public:
   bool xformNMipsHW110880() const { return XformNMipsHW110880; }
 
   bool enableLongBranchPass() const {
-    return !hasNanoMips() && (hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32());
+    return !hasNanoMips() &&
+           (hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32());
   }
 
   /// Features related to the presence of specific instructions.

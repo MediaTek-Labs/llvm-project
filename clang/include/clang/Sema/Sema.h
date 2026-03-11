@@ -7997,7 +7997,7 @@ public:
 
   ParsedType getDestructorTypeForDecltype(const DeclSpec &DS,
                                           ParsedType ObjectType);
-  
+
   // Check aliasing issues bit-converting Op to DestType.
   void CheckStrictAliasing(Expr const *Op, QualType DestType, bool IsLValue,
                            SourceRange Range);
@@ -8007,7 +8007,7 @@ public:
 
   // Check aliasing issues constructing a bitcast from Op to DestType.
   void CheckStrictAliasingCast(Expr const *Op, QualType DestType, bool IsLValue,
-                               SourceRange Range);                                       
+                               SourceRange Range);
 
   /// Build a C++ typeid expression with a type operand.
   ExprResult BuildCXXTypeId(QualType TypeInfoType, SourceLocation TypeidLoc,

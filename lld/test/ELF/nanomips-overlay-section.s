@@ -26,7 +26,7 @@
     .ent _start
 _start:
     addiu $a1, $a2, 1
-    
+
     .end _start
     .size _start, .-_start
 

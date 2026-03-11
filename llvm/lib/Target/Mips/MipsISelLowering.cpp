@@ -107,9 +107,10 @@ MVT MipsTargetLowering::getRegisterTypeForCallingConv(LLVMContext &Context,
     return getRegisterType(Context, VT);
 
   if (VT.isPow2VectorType() && VT.getVectorElementType().isRound())
-    return Subtarget.isABI_P32() || 
-           Subtarget.isABI_O32() || VT.getSizeInBits() == 32 ? MVT::i32
-                                                             : MVT::i64;
+    return Subtarget.isABI_P32() || Subtarget.isABI_O32() ||
+                   VT.getSizeInBits() == 32
+               ? MVT::i32
+               : MVT::i64;
   return getRegisterType(Context, VT.getVectorElementType());
 }
 
@@ -544,6 +545,7 @@ MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
   }
 
   setOperationAction(ISD::TRAP, MVT::Other, Legal);
+
   if (Subtarget.hasNanoMips()) {
     setOperationAction(ISD::DEBUGTRAP, MVT::Other, Legal);
     setOperationAction(ISD::UBSANTRAP, MVT::Other, Legal);
@@ -1196,6 +1198,9 @@ static SDValue performORCombineNM(SDNode *N, SelectionDAG &DAG,
 static SDValue performORCombine(SDNode *N, SelectionDAG &DAG,
                                 TargetLowering::DAGCombinerInfo &DCI,
                                 const MipsSubtarget &Subtarget) {
+  if (Subtarget.hasNanoMips())
+    return performORCombineNM(N, DAG, DCI, Subtarget);
+
   if (DCI.isBeforeLegalizeOps() || !Subtarget.hasExtractInsert())
     return SDValue();
 
@@ -1249,9 +1254,6 @@ static SDValue performORCombine(SDNode *N, SelectionDAG &DAG,
   // See if Op's first operand matches (and $src1 , mask0).
   if (FirstOperand.getOpcode() != ISD::AND)
     return SDValue();
-
-  if (Subtarget.hasNanoMips())
-    return performORCombineNM(N, DAG, DCI, Subtarget);
 
   // Pattern match INS.
   //  $dst = or (and $src1 , mask0), (and (shl $src, pos), mask1),

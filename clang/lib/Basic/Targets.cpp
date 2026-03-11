@@ -359,7 +359,6 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
       return std::make_unique<M68kTargetInfo>(Triple, Opts);
     }
 
-
   case llvm::Triple::nanomips:
     switch (os) {
     case llvm::Triple::Linux:

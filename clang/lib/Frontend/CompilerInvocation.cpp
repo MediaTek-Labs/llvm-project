@@ -2580,7 +2580,7 @@ void CompilerInvocationBase::GenerateDiagnosticArgs(
       continue;
     // This option is automatically generated from StrictAliasing.
     if (Warning == "strict-aliasing")
-      continue;  
+      continue;
     Consumer(StringRef("-W") + Warning);
   }
 

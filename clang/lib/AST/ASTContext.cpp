@@ -9970,7 +9970,7 @@ static TypedefDecl *CreateVaListDecl(const ASTContext *Context,
   case TargetInfo::XtensaABIBuiltinVaList:
     return CreateXtensaABIBuiltinVaListDecl(Context);
   case TargetInfo::NanoMipsBuiltinVaList:
-    return CreateNanoMipsBuiltinVaListdecl(Context);  
+    return CreateNanoMipsBuiltinVaListdecl(Context);
   }
 
   llvm_unreachable("Unhandled __builtin_va_list type kind");

@@ -510,11 +510,11 @@ private:
 class GVNHoistLegacyPass : public FunctionPass {
 public:
   static char ID;
-  
+
   GVNHoistLegacyPass() : FunctionPass(ID) {
     initializeGVNHoistLegacyPassPass(*PassRegistry::getPassRegistry());
   }
-  
+
   bool runOnFunction(Function &F) override {
     if (skipFunction(F))
       return false;
@@ -523,11 +523,11 @@ public:
     auto &AA = getAnalysis<AAResultsWrapperPass>().getAAResults();
     auto &MD = getAnalysis<MemoryDependenceWrapperPass>().getMemDep();
     auto &MSSA = getAnalysis<MemorySSAWrapperPass>().getMSSA();
-  
+
     GVNHoist G(&DT, &PDT, &AA, &MD, &MSSA);
     return G.run(F);
   }
-  
+
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<DominatorTreeWrapperPass>();
     AU.addRequired<PostDominatorTreeWrapperPass>();

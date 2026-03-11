@@ -245,7 +245,8 @@ bool LinkerDriver::tryAddFatLTOFile(MemoryBufferRef mb, StringRef archiveName,
 }
 
 // Adds a file to the end or beginning of the file vector
-inline static void addFileToVec(llvm::SmallVector<std::unique_ptr<InputFile>, 0> &files,
+inline static void addFileToVec(
+  llvm::SmallVector<std::unique_ptr<InputFile>, 0> &files,
   std::unique_ptr<InputFile> file, bool toBeginning) {
   if (LLVM_UNLIKELY(toBeginning)) {
     files.insert(files.begin(), std::move(file));
@@ -339,7 +340,9 @@ void LinkerDriver::addFile(StringRef path, bool withLOption, bool toBeginning) {
     return;
   }
   case file_magic::bitcode:
-    addFileToVec(files, std::make_unique<BitcodeFile>(ctx, mbref, "", 0, inLib), toBeginning);
+    addFileToVec(files,
+                std::make_unique<BitcodeFile>(ctx, mbref, "", 0, inLib),
+                toBeginning);
     break;
   case file_magic::elf_relocatable:
     if (!tryAddFatLTOFile(mbref, "", 0, inLib))
@@ -2097,7 +2100,7 @@ void LinkerDriver::createFiles(opt::InputArgList &args) {
       ctx.arg.emachine = EM_NANOMIPS;
     break;
   }
-}  
+}
 }
 
 // If -m <machine_type> was not given, infer it from object files.

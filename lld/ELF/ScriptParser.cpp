@@ -360,7 +360,8 @@ void ScriptParser::addFile(StringRef s, bool toBeginning) {
     } else {
       // Finally, search in the list of library paths.
       if (std::optional<std::string> path = findFromSearchPaths(ctx, s))
-        ctx.driver.addFile(ctx.saver.save(*path), /*withLOption=*/true, toBeginning);
+        ctx.driver.addFile(ctx.saver.save(*path),
+                           /*withLOption=*/true, toBeginning);
       else
         setError("unable to find " + s);
     }
@@ -587,7 +588,7 @@ SmallVector<SectionCommand *, 0> ScriptParser::readOverlay() {
   }
   // When AT is omitted, LMA should equal VMA. script->getDot() when evaluating
   // lmaExpr will ensure this, even if the start address is specified.
-  Expr lmaExpr = (!ctx.arg.nanoMipsCustomLinkerScriptType || consume("AT")) 
+  Expr lmaExpr = (!ctx.arg.nanoMipsCustomLinkerScriptType || consume("AT"))
                                ? readParenExpr()
                                : [s = ctx.script] { return s->getDot(); };
   expect("{");
@@ -1048,7 +1049,7 @@ OutputDesc *ScriptParser::readOverlaySectionDescription() {
 
     if (ctx.arg.nanoMipsCustomLinkerScriptType) {
       if (tok == ";") continue;
-      
+
       if (SymbolAssignment *assign = readAssignment(tok)) {
         osd->osec.commands.push_back(assign);
         continue;

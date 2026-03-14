@@ -118,7 +118,7 @@ public:
                         std::optional<CodeModel::Model> CM, CodeGenOptLevel OL,
                         bool JIT);
 
-  bool useIPRA() const override {
+  bool useIPRA() const {
     return true;
   }
   void registerPassBuilderCallbacks(PassBuilder &PB) override;

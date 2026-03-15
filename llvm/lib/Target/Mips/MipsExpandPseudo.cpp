@@ -586,7 +586,7 @@ bool MipsExpandPseudo::expandAtomicBinOpSubword(
       //      movz BinOpRes, Incr, Scratch4, BinOpRes
       BuildMI(loopMBB, DL, TII->get(OR), BinOpRes)
           .addReg(StoreVal)
-          .addReg(Mips::ZERO);
+          .addReg(ZERO);
       BuildMI(loopMBB, DL, TII->get(MOVIncr), BinOpRes)
           .addReg(Incr)
           .addReg(Scratch4)
@@ -634,12 +634,12 @@ bool MipsExpandPseudo::expandAtomicBinOpSubword(
 
   if (!DestOK) {
     sinkMBB->addSuccessor(exitMBB, BranchProbability::getOne());
-    BuildMI(sinkMBB, DL, TII->get(Mips::AND), Dest).addReg(OldVal).addReg(Mask);
-    BuildMI(sinkMBB, DL, TII->get(Mips::SRLV), Dest)
+    BuildMI(sinkMBB, DL, TII->get(AND), Dest).addReg(OldVal).addReg(Mask);
+    BuildMI(sinkMBB, DL, TII->get(SRLV), Dest)
         .addReg(Dest)
         .addReg(ShiftAmnt);
 
-    if (STI->hasMips32r2()) {
+    if (STI->hasMips32r2() || IsNanoMips) {
       BuildMI(sinkMBB, DL, TII->get(SEOp), Dest).addReg(Dest);
     } else {
       const unsigned ShiftImm = SEOp == Mips::SEH ? 16 : 24;

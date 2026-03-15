@@ -265,8 +265,7 @@ public:
   /// This constructor initializes the data members to match that
   /// of the specified triple.
   MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS, bool little,
-                const MipsTargetMachine &TM, MaybeAlign StackAlignOverride,
-                bool UnalignedLS=false);
+                const MipsTargetMachine &TM, MaybeAlign StackAlignOverride);
 
   ~MipsSubtarget() override;
 
@@ -388,8 +387,8 @@ public:
   bool xformNMipsHW110880() const { return XformNMipsHW110880; }
 
   bool enableLongBranchPass() const {
-    return !hasNanoMips() &&
-           (hasStandardEncoding() || inMicroMipsMode() || allowMixed16_32());
+    return !hasNanoMips() && (hasStandardEncoding() || inMicroMipsMode() || 
+            allowMixed16_32());
   }
 
   /// Features related to the presence of specific instructions.

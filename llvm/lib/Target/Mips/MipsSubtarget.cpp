@@ -74,7 +74,7 @@ void MipsSubtarget::anchor() {}
 
 MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
                              bool little, const MipsTargetMachine &TM,
-                             MaybeAlign StackAlignOverride, bool UnalignedLS)
+                             MaybeAlign StackAlignOverride)
     : MipsGenSubtargetInfo(TT, CPU, /*TuneCPU*/ CPU, FS),
       MipsArchVersion(MipsDefault), IsLittle(little), IsSoftFloat(false),
       IsSingleFloat(false), IsFPXX(false), NoABICalls(false), Abs2008(false),

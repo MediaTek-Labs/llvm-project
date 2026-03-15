@@ -1109,11 +1109,12 @@ void MipsTargetELFStreamer::emitDirectiveEnd(StringRef Name) {
     OS.emitIntValue(FrameInfoSet ? FrameReg : 0, 4);    // frame_reg
     OS.emitIntValue(FrameInfoSet ? ReturnReg : 0, 4);   // return_reg
 
-    // The .end directive marks the end of a procedure. Invalidate
-    // the information gathered up until this point.
-    GPRInfoSet = FPRInfoSet = FrameInfoSet = false;
-
+    OS.popSection();
   }
+
+  // The .end directive marks the end of a procedure. Invalidate
+  // the information gathered up until this point.
+  GPRInfoSet = FPRInfoSet = FrameInfoSet = false;
 
   // .end also implicitly sets the size.
   MCSymbol *CurPCSym = Context.createTempSymbol();

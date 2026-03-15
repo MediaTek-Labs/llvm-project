@@ -23,4 +23,6 @@
 // CHECK-SAME: {{^}}, octeon
 // CHECK-SAME: {{^}}, octeon+
 // CHECK-SAME: {{^}}, p5600
+// CHECK-SAME: {{^}}, i7200
+// CHECK-SAME: {{^}}, nms1
 // CHECK-SAME: {{$}}

@@ -30,9 +30,6 @@ NanoMips::NanoMips(const Driver &D, const llvm::Triple &Triple,
   Multilibs = GCCInstallation.getMultilibs();
   SelectedMultilibs.assign({GCCInstallation.getMultilib()});
 
-  // TODO: This needs to be addressed.
-  // SelectedMultilib = GCCInstallation.getMultilib();
-
   // The selection of paths to try here is designed to match the patterns which
   // the GCC driver itself uses, as this is part of the GCC-compatible driver.
   // This was determined by running GCC in a fake filesystem, creating all

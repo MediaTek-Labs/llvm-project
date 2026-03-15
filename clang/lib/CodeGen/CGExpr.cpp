@@ -3980,6 +3980,7 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
       TrapCall->setDoesNotReturn();
       Builder.CreateUnreachable();
     }
+    // clear value for next time
     UBSanTrapExpr = nullptr;
   }
 

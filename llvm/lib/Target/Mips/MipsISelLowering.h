@@ -694,9 +694,6 @@ class TargetRegisterClass;
     parseRegForInlineAsmConstraint(StringRef C, MVT VT) const;
 
     std::pair<unsigned, const TargetRegisterClass *>
-    parseRegForInlineAsmConstraintNM(StringRef C, MVT VT) const;
-
-    std::pair<unsigned, const TargetRegisterClass *>
     getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
                                  StringRef Constraint, MVT VT) const override;
 

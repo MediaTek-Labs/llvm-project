@@ -107,10 +107,9 @@ MVT MipsTargetLowering::getRegisterTypeForCallingConv(LLVMContext &Context,
     return getRegisterType(Context, VT);
 
   if (VT.isPow2VectorType() && VT.getVectorElementType().isRound())
-    return Subtarget.isABI_P32() || Subtarget.isABI_O32() ||
-                   VT.getSizeInBits() == 32
-               ? MVT::i32
-               : MVT::i64;
+    return Subtarget.isABI_P32() ||
+           Subtarget.isABI_O32() || VT.getSizeInBits() == 32 ? MVT::i32
+                                                             : MVT::i64;
   return getRegisterType(Context, VT.getVectorElementType());
 }
 

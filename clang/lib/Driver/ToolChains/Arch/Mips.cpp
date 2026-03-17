@@ -419,6 +419,8 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
                    "ginv");
   AddTargetFeature(Args, Features, options::OPT_mtlb, options::OPT_mno_tlb,
                    "tlb");
+  AddTargetFeature(Args, Features, options::OPT_meva, options::OPT_mno_eva,
+                   "eva");
 
   if (Arg *A = Args.getLastArg(options::OPT_mindirect_jump_EQ)) {
     StringRef Val = StringRef(A->getValue());

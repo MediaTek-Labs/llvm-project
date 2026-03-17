@@ -426,6 +426,7 @@ class MipsAsmParser : public MCTargetAsmParser {
   bool parseSetNoCRCDirective();
   bool parseSetNoVirtDirective();
   bool parseSetNoGINVDirective();
+  bool parseSetNoEVADirective();
   bool parseSetNoLinkRelax();
 
   bool parseSetAssignment();
@@ -791,6 +792,10 @@ public:
 
   bool hasTLB() const {
     return getSTI().getFeatureBits()[Mips::FeatureTLB];
+  }
+
+  bool hasEVA() const {
+    return getSTI().getFeatureBits()[Mips::FeatureEVA];
   }
 
   void onEndOfFile() override;
@@ -8790,6 +8795,22 @@ bool MipsAsmParser::parseSetNoGINVDirective() {
   return false;
 }
 
+bool MipsAsmParser::parseSetNoEVADirective() {
+  MCAsmParser &Parser = getParser();
+  Parser.Lex(); // Eat "noeva".
+
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
+    reportParseError("unexpected token, expected end of statement");
+    return false;
+  }
+
+  clearFeatureBits(Mips::FeatureEVA, "eva");
+
+  getTargetStreamer().emitDirectiveSetNoEVA();
+  Parser.Lex(); // Consume the EndOfStatement.
+  return false;
+}
+
 bool MipsAsmParser::parseSetNoLinkRelax() {
   MCAsmParser &Parser = getParser();
   Parser.Lex(); // Eat "nolinkrelax".
@@ -9061,6 +9082,10 @@ bool MipsAsmParser::parseSetFeature(uint64_t Feature) {
   case Mips::FeatureRelax:
     setFeatureBits(Mips::FeatureRelax, "relax");
     getTargetStreamer().emitDirectiveLinkRelax();
+    break;
+  case Mips::FeatureEVA:
+    setFeatureBits(Mips::FeatureEVA, "eva");
+    getTargetStreamer().emitDirectiveSetEVA();
     break;
   }
   return false;
@@ -9520,6 +9545,10 @@ bool MipsAsmParser::parseDirectiveSet() {
       return parseSetFeature(Mips::FeatureRelax);
     if (IdVal == "nolinkrelax")
       return parseSetNoLinkRelax();
+    if (IdVal == "eva")
+      return parseSetFeature(Mips::FeatureEVA);
+    if (IdVal == "noeva")
+      return parseSetNoEVADirective();
   }
 
   // It is just an identifier, look for an assignment.
@@ -9745,6 +9774,8 @@ bool MipsAsmParser::parseSSectionDirective(StringRef Section, unsigned Type) {
 ///  ::= .module ginv
 ///  ::= .module noginv
 ///  ::= .module pcrel
+///  ::= .module eva
+///  ::= .module noeva
 bool MipsAsmParser::parseDirectiveModule() {
   MCAsmParser &Parser = getParser();
   MCAsmLexer &Lexer = getLexer();
@@ -9989,6 +10020,24 @@ bool MipsAsmParser::parseDirectiveModule() {
     }
 
     return false; // parseDirectiveModule has finished successfully.
+  } else if (Option == "eva") {
+    setModuleFeatureBits(Mips::FeatureEVA, "eva");
+    getTargetStreamer().updateABIInfo(*this);
+    getTargetStreamer().emitDirectiveModuleEVA();
+
+    if (getLexer().isNot(AsmToken::EndOfStatement))
+      reportParseError("unexpected token, expected end of statement");
+
+    return false;
+  } else if (Option == "noeva") {
+    clearModuleFeatureBits(Mips::FeatureEVA, "eva");
+    getTargetStreamer().updateABIInfo(*this);
+    getTargetStreamer().emitDirectiveModuleNoEVA();
+
+    if (getLexer().isNot(AsmToken::EndOfStatement))
+      reportParseError("unexpected token, expected end of statement");
+
+    return false;
   } else {
     return Error(L, "'" + Twine(Option) + "' is not a valid .module option.");
   }

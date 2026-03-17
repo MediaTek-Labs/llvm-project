@@ -68,6 +68,8 @@ void MipsTargetStreamer::emitDirectiveSetVirt() {}
 void MipsTargetStreamer::emitDirectiveSetNoVirt() {}
 void MipsTargetStreamer::emitDirectiveSetGINV() {}
 void MipsTargetStreamer::emitDirectiveSetNoGINV() {}
+void MipsTargetStreamer::emitDirectiveSetEVA() {}
+void MipsTargetStreamer::emitDirectiveSetNoEVA() {}
 void MipsTargetStreamer::emitDirectiveSetAt() { forbidModuleDirective(); }
 void MipsTargetStreamer::emitDirectiveSetAtWithArg(unsigned RegNo) {
   forbidModuleDirective();
@@ -170,6 +172,8 @@ void MipsTargetStreamer::emitDirectiveModuleVirt() {}
 void MipsTargetStreamer::emitDirectiveModuleNoVirt() {}
 void MipsTargetStreamer::emitDirectiveModuleGINV() {}
 void MipsTargetStreamer::emitDirectiveModuleNoGINV() {}
+void MipsTargetStreamer::emitDirectiveModuleEVA() {}
+void MipsTargetStreamer::emitDirectiveModuleNoEVA() {}
 void MipsTargetStreamer::emitDirectiveSetFp(
     MipsABIFlagsSection::FpABIKind Value) {
   forbidModuleDirective();
@@ -506,6 +510,16 @@ void MipsTargetAsmStreamer::emitDirectiveSetNoGINV() {
   MipsTargetStreamer::emitDirectiveSetNoGINV();
 }
 
+void MipsTargetAsmStreamer::emitDirectiveSetEVA() {
+  OS << "\t.set\teva\n";
+  MipsTargetStreamer::emitDirectiveSetEVA();
+}
+
+void MipsTargetAsmStreamer::emitDirectiveSetNoEVA() {
+  OS << "\t.set\tnoeva\n";
+  MipsTargetStreamer::emitDirectiveSetNoEVA();
+}
+
 void MipsTargetAsmStreamer::emitDirectiveSetAt() {
   OS << "\t.set\tat\n";
   MipsTargetStreamer::emitDirectiveSetAt();
@@ -832,6 +846,14 @@ void MipsTargetAsmStreamer::emitDirectiveModuleGINV() {
 
 void MipsTargetAsmStreamer::emitDirectiveModuleNoGINV() {
   OS << "\t.module\tnoginv\n";
+}
+
+void MipsTargetAsmStreamer::emitDirectiveModuleEVA() {
+  OS << "\t.module\teva\n";
+}
+
+void MipsTargetAsmStreamer::emitDirectiveModuleNoEVA() {
+  OS << "\t.module\tnoeva\n";
 }
 
 // This part is for ELF object output.

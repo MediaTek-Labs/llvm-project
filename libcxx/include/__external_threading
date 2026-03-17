@@ -4,6 +4,7 @@
 #define _LIBCPP___EXTERNAL_THREADING
 
 #include <time.h>
+#include <__chrono/duration.h>
 
 #ifndef _LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER
 #  pragma GCC system_header

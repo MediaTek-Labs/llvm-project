@@ -1286,6 +1286,7 @@ const EnumEntry<unsigned> ElfMachineType[] = {
   ENUM_ENT(EM_RISCV,         "RISC-V"),
   ENUM_ENT(EM_LANAI,         "EM_LANAI"),
   ENUM_ENT(EM_BPF,           "EM_BPF"),
+  ENUM_ENT(EM_NANOMIPS,      "nanoMIPS"),
   ENUM_ENT(EM_VE,            "NEC SX-Aurora Vector Engine"),
   ENUM_ENT(EM_LOONGARCH,     "LoongArch"),
 };
@@ -1577,6 +1578,21 @@ const EnumEntry<unsigned> ElfHeaderMipsFlags[] = {
   ENUM_ENT(EF_MIPS_ARCH_64R2, "mips64r2"),
   ENUM_ENT(EF_MIPS_ARCH_32R6, "mips32r6"),
   ENUM_ENT(EF_MIPS_ARCH_64R6, "mips64r6")
+};
+
+const EnumEntry<unsigned> ElfHeaderNanoMipsFlags[] = {
+  ENUM_ENT(EF_NANOMIPS_LINKRELAX, "relaxable"),
+  ENUM_ENT(EF_NANOMIPS_PIC, "pic"),
+  ENUM_ENT(EF_NANOMIPS_32BITMODE, "32bitmode"),
+  ENUM_ENT(EF_NANOMIPS_PID, "pid"),
+  ENUM_ENT(EF_NANOMIPS_PCREL, "PC-relative"),
+  // Unspecified CPU is designated by 0; flip the bits to get a match
+  ENUM_ENT(EF_NANOMIPS_MACH, "unknown CPU"),
+  ENUM_ENT(EF_NANOMIPS_ABI_P32, "p32"),
+  ENUM_ENT(EF_NANOMIPS_ABI_P64, "p64"),
+  // 32r6 is designated by 0; flip the bits to get a match
+  ENUM_ENT(EF_NANOMIPS_ARCH_32R6 ^ EF_NANOMIPS_ARCH, "nanomips32r6"),
+  ENUM_ENT(EF_NANOMIPS_ARCH_64R6 ^ EF_NANOMIPS_ARCH, "nanomips64r6"),
 };
 
 // clang-format off
@@ -3721,6 +3737,16 @@ template <class ELFT> void GNUELFDumper<ELFT>::printFileHeaders() {
     } break;
     }
   }
+  else if (e.e_machine == EM_NANOMIPS)
+    // nanoMIPS E_FLAGS uses 0 as a value for arch/mach fields which
+    // breaks ArrayRef mapping. Flip those bits to get a unique match.
+    ElfFlags =
+      printFlags(e.e_flags ^ (ELF::EF_NANOMIPS_MACH | ELF::EF_NANOMIPS_ARCH),
+                 ArrayRef(ElfHeaderNanoMipsFlags),
+                 unsigned(ELF::EF_NANOMIPS_ARCH),
+                 unsigned(ELF::EF_NANOMIPS_ABI),
+                 unsigned(ELF::EF_NANOMIPS_MACH));
+
   Str = "0x" + utohexstr(e.e_flags);
   if (!ElfFlags.empty())
     Str = Str + ", " + ElfFlags;

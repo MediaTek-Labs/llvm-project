@@ -730,7 +730,9 @@ bool MipsELFObjectWriter::needsRelocateWithSymbol(const MCValue &Val,
 
 std::unique_ptr<MCObjectTargetWriter>
 llvm::createMipsELFObjectWriter(const Triple &TT, bool IsN32, uint8_t ABIVersion) {
-  uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
+  uint8_t OSABI = ((TT.getArch() == llvm::Triple::nanomips)?
+                   ELF::ELFOSABI_STANDALONE:  // nanomips => bare-metal
+                   MCELFObjectTargetWriter::getOSABI(TT.getOS()));
   bool IsN64 = TT.isArch64Bit() && !IsN32;
   bool HasRelocationAddend = (TT.isArch64Bit() || TT.getArch() == llvm::Triple::nanomips);
   uint16_t EMachine = ((TT.getArch() == llvm::Triple::nanomips)?

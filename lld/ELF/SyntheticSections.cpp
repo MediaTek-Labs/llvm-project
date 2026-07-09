@@ -223,11 +223,11 @@ void NanoMipsAbiFlagsSection<ELFT>::getAbiFlagsISAFromEflags(
     const ObjFile<ELFT> *objFile, Elf_NanoMips_ABIFlags *inferredFlags) {
   uint32_t eflags = objFile->getObj().getHeader().e_flags;
   switch (eflags & EF_NANOMIPS_ARCH) {
-  case E_NANOMIPS_ARCH_32R6:
+  case EF_NANOMIPS_ARCH_32R6:
     inferredFlags->isa_level = 32;
     inferredFlags->isa_rev = 6;
     break;
-  case E_NANOMIPS_ARCH_64R6:
+  case EF_NANOMIPS_ARCH_64R6:
     inferredFlags->isa_level = 64;
     inferredFlags->isa_rev = 6;
     break;
@@ -249,7 +249,7 @@ void NanoMipsAbiFlagsSection<ELFT>::inferAbiFlags(
   inferredFlags->cpr2_size = llvm::NanoMips::AFL_REG_NONE;
   inferredFlags->gpr_size =
       (((eflags & EF_NANOMIPS_32BITMODE) != 0 ||
-        (eflags & EF_NANOMIPS_ARCH) == E_NANOMIPS_ARCH_32R6)
+        (eflags & EF_NANOMIPS_ARCH) == EF_NANOMIPS_ARCH_32R6)
            ? llvm::NanoMips::AFL_REG_32
            : llvm::NanoMips::AFL_REG_64);
 

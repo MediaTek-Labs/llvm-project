@@ -49,7 +49,7 @@ template <endianness E> void writeImmOf48bitIns(Ctx &ctx, uint8_t *loc, uint64_t
 
 inline bool areNanoMips32BitFlagsSet(uint32_t eflags) {
   return ((eflags & EF_NANOMIPS_32BITMODE) != 0 ||
-          ((eflags & EF_NANOMIPS_ARCH) == E_NANOMIPS_ARCH_32R6));
+          ((eflags & EF_NANOMIPS_ARCH) == EF_NANOMIPS_ARCH_32R6));
 }
 
 enum NanoMipsMach : uint32_t { NanoMipsIsa32R6 = 32, NanoMipsIsa64R6 = 64 };
@@ -71,9 +71,9 @@ inline bool doesNanoMipsMachExtend(uint32_t base, uint32_t extension) {
 uint32_t getNanoMipsMach(uint32_t eflags) {
   switch (eflags & EF_NANOMIPS_ARCH) {
   default:
-  case E_NANOMIPS_ARCH_32R6:
+  case EF_NANOMIPS_ARCH_32R6:
     return NanoMipsMach::NanoMipsIsa32R6;
-  case E_NANOMIPS_ARCH_64R6:
+  case EF_NANOMIPS_ARCH_64R6:
     return NanoMipsMach::NanoMipsIsa64R6;
   }
 }

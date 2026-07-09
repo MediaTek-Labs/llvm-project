@@ -632,15 +632,15 @@ enum : unsigned {
   // Four bit nanoMIPS architecture field.
   EF_NANOMIPS_ARCH = 0xf0000000,
   // -march=32r6 code.
-  E_NANOMIPS_ARCH_32R6 = 0x00000000,
+  EF_NANOMIPS_ARCH_32R6 = 0x00000000,
   // -march=64r6 code.
-  E_NANOMIPS_ARCH_64R6 = 0x10000000,
+  EF_NANOMIPS_ARCH_64R6 = 0x10000000,
   // The ABI of the file.
   EF_NANOMIPS_ABI = 0x0000f000,
   // nanoMIPS ABI in 32 bit mode.
-  E_NANOMIPS_ABI_P32 = 0x00001000,
+  EF_NANOMIPS_ABI_P32 = 0x00001000,
   // nanoMIPS ABI in 64 bit mode.
-  E_NANOMIPS_ABI_P64 = 0x00002000,
+  EF_NANOMIPS_ABI_P64 = 0x00002000,
 
   // Machine variant if we know it.
   EF_NANOMIPS_MACH = 0x00ff0000

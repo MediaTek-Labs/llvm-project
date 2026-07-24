@@ -11,6 +11,7 @@
 
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MipsABIFlags.h"
+#include "llvm/Support/NanoMipsABIFlags.h"
 #include <cstdint>
 
 namespace llvm {
@@ -153,16 +154,29 @@ public:
   template <class PredicateLibrary>
   void setASESetFromPredicates(const PredicateLibrary &P) {
     ASESet = 0;
-    if (P.hasDSP() && !P.hasNanoMips())
-      ASESet |= Mips::AFL_ASE_DSP;
-    if (P.hasDSPR2())
-      ASESet |= Mips::AFL_ASE_DSPR2;
-    if (P.hasMSA())
-      ASESet |= Mips::AFL_ASE_MSA;
-    if (P.inMicroMipsMode())
-      ASESet |= Mips::AFL_ASE_MICROMIPS;
-    if (P.inMips16Mode())
-      ASESet |= Mips::AFL_ASE_MIPS16;
+    if (P.hasNanoMips()) {
+      if (P.hasDSPR3() || P.hasDSP())
+        ASESet |= NanoMips::AFL_ASE_DSPR3;
+      ASESet |= NanoMips::AFL_ASE_xNMS; // always enabled, NMS unsupported!
+      if (P.hasTLB())
+        ASESet |= NanoMips::AFL_ASE_TLB;
+    } else {
+      if (P.hasDSP())
+        ASESet |= Mips::AFL_ASE_DSP;
+      if (P.hasDSPR2())
+        ASESet |= Mips::AFL_ASE_DSPR2;
+      if (P.hasMSA())
+        ASESet |= Mips::AFL_ASE_MSA;
+      if (P.inMicroMipsMode())
+        ASESet |= Mips::AFL_ASE_MICROMIPS;
+      if (P.inMips16Mode())
+        ASESet |= Mips::AFL_ASE_MIPS16;
+    }
+
+    // Following ASE flag bits are common between MIPS & nanoMIPS
+    // Refer to MipsABIFlags.h / NanoMipsABIFlags.h
+    if (P.hasEVA())
+      ASESet |= Mips::AFL_ASE_EVA;
     if (P.hasMT())
       ASESet |= Mips::AFL_ASE_MT;
     if (P.hasCRC())
@@ -171,13 +185,6 @@ public:
       ASESet |= Mips::AFL_ASE_VIRT;
     if (P.hasGINV())
       ASESet |= Mips::AFL_ASE_GINV;
-    if (P.hasNanoMips()) {
-      ASESet |= Mips::AFL_ASE_xNMS; // always enabled, NMS unsupported!
-      if (P.hasTLB())
-        ASESet |= Mips::AFL_ASE_TLB;
-      if (P.hasEVA())
-	ASESet |= Mips::AFL_ASE_EVA;
-    }
   }
 
   template <class PredicateLibrary>

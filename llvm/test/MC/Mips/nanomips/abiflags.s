@@ -2,6 +2,8 @@
 # RUN:   llvm-readelf -A - | FileCheck --check-prefixes=CHECK,CHECK-NOEXT   %s
 # RUN: llvm-mc -triple=nanomips-elf -filetype=obj %s -o - | \
 # RUN:   llvm-readelf -gnu -A - | FileCheck --check-prefixes=CHECK,CHECK-NOEXT   %s
+# RUN: llvm-mc --mattr=+dsp --triple=nanomips-elf -filetype=obj %s -o - | \
+# RUN:   llvm-readelf -A - | FileCheck --check-prefixes=CHECK-DSP   %s
 
 // Check for missing ABIFlags
 # RUN: llvm-mc -triple=nanomips-elf -filetype=obj %s -o - | \
@@ -33,9 +35,11 @@ test:
 # CHECK: CPR2 size: 0
 # CHECK: FP ABI: Hard or soft float
 # CHECK-NOEXT: ISA Extension: None
-# CHECK: ASEs: DSP, Enhanced VA Scheme, MT
+# CHECK: ASEs: TLB, Enhanced VA Scheme, MT
 # CHECK: FLAGS 1: 00000001
 # CHECK: FLAGS 2: 00000000
+
+# CHECK-DSP: ASEs: TLB, Enhanced VA Scheme, MT, DSPR3
 
 # CHECK-MISSING: There is no .nanoMIPS.abiflags section in the file.
 # CHECK-BADSIZE: warning: {{.*}}: unable to read the .nanoMIPS.abiflags section: it has a wrong size

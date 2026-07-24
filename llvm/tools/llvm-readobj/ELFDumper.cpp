@@ -55,6 +55,7 @@
 #include "llvm/Support/MSP430Attributes.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/MipsABIFlags.h"
+#include "llvm/Support/NanoMipsABIFlags.h"
 #include "llvm/Support/RISCVAttributeParser.h"
 #include "llvm/Support/RISCVAttributes.h"
 #include "llvm/Support/ScopedPrinter.h"
@@ -3297,6 +3298,29 @@ const EnumEntry<unsigned> ElfMipsASEFlags[] = {
   {"XPA",                Mips::AFL_ASE_XPA},
   {"CRC",                Mips::AFL_ASE_CRC},
   {"GINV",               Mips::AFL_ASE_GINV},
+};
+
+// Most MIPS ASE flags are applicable to nanoMIPS
+// Use place-holders (UNUSED/RESERVED) for the ones that don't apply
+const EnumEntry<unsigned> ElfNanoMipsASEFlags[] = {
+  {"TLB",                NanoMips::AFL_ASE_TLB},
+  {"UNUSED1",            NanoMips::AFL_ASE_UNUSED1},
+  {"Enhanced VA Scheme", NanoMips::AFL_ASE_EVA},
+  {"MCU",                NanoMips::AFL_ASE_MCU},
+  {"UNUSED2",            NanoMips::AFL_ASE_UNUSED2},
+  {"UNUSED3",            NanoMips::AFL_ASE_UNUSED3},
+  {"MT",                 NanoMips::AFL_ASE_MT},
+  {"UNUSED4",            NanoMips::AFL_ASE_UNUSED4},
+  {"VZ",                 NanoMips::AFL_ASE_VIRT},
+  {"MSA",                NanoMips::AFL_ASE_MSA},
+  {"RESERVED1",          NanoMips::AFL_ASE_RESERVED1},
+  {"RESERVED2",          NanoMips::AFL_ASE_RESERVED2},
+  {"UNUSED6",            NanoMips::AFL_ASE_UNUSED6},
+  {"DSPR3",              NanoMips::AFL_ASE_DSPR3},
+  {"UNUSED5",            NanoMips::AFL_ASE_UNUSED5},
+  {"CRC",                NanoMips::AFL_ASE_CRC},
+  {"GINV",               NanoMips::AFL_ASE_GINV},
+  {"xNMS",               NanoMips::AFL_ASE_xNMS},
 };
 
 const EnumEntry<unsigned> ElfMipsFpABIType[] = {
@@ -7095,7 +7119,7 @@ template <class ELFT> void GNUELFDumper<ELFT>::printNanoMipsABIFlags() {
     OS << "ASEs: None\n";
   else
     // FIXME: Print each flag on a separate line.
-    OS << "ASEs: " << printFlags(Flags->ases, ArrayRef(ElfMipsASEFlags))
+    OS << "ASEs: " << printFlags(Flags->ases, ArrayRef(ElfNanoMipsASEFlags))
        << "\n";
   OS << "FLAGS 1: " << format_hex_no_prefix(Flags->flags1, 8, false) << "\n";
   OS << "FLAGS 2: " << format_hex_no_prefix(Flags->flags2, 8, false) << "\n";

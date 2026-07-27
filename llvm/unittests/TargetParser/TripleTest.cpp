@@ -1070,6 +1070,22 @@ TEST(TripleTest, ParsedIDs) {
   EXPECT_EQ(Triple::Musl, T.getEnvironment());
   EXPECT_EQ(Triple::MipsSubArch_r6, T.getSubArch());
 
+  T = Triple("nanomips");
+  EXPECT_EQ(Triple::nanomips, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
+  EXPECT_EQ(Triple::UnknownOS, T.getOS());
+  T = Triple("nanomips-unknown-unknown");
+  EXPECT_EQ(Triple::nanomips, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
+  EXPECT_EQ(Triple::UnknownOS, T.getOS());
+  T = Triple("nanomips-unknown-linux");
+  EXPECT_EQ(Triple::nanomips, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+
   T = Triple("arm-oe-linux-gnueabi");
   EXPECT_EQ(Triple::arm, T.getArch());
   EXPECT_EQ(Triple::OpenEmbedded, T.getVendor());
@@ -1870,6 +1886,12 @@ TEST(TripleTest, BitWidthChecks) {
   EXPECT_FALSE(T.isArch16Bit());
   EXPECT_TRUE(T.isArch32Bit());
   EXPECT_FALSE(T.isArch64Bit());
+
+  T.setArch(Triple::nanomips);
+  EXPECT_FALSE(T.isArch16Bit());
+  EXPECT_TRUE(T.isArch32Bit());
+  EXPECT_FALSE(T.isArch64Bit());
+  EXPECT_TRUE(T.isMIPS());
 }
 
 TEST(TripleTest, BitWidthArchVariants) {
@@ -2072,6 +2094,10 @@ TEST(TripleTest, BitWidthArchVariants) {
   T.setArch(Triple::xtensa);
   EXPECT_EQ(Triple::xtensa, T.get32BitArchVariant().getArch());
   EXPECT_EQ(Triple::UnknownArch, T.get64BitArchVariant().getArch());
+
+  T.setArch(Triple::nanomips);
+  EXPECT_EQ(Triple::nanomips, T.get32BitArchVariant().getArch());
+  EXPECT_EQ(Triple::UnknownArch, T.get64BitArchVariant().getArch());
 }
 
 TEST(TripleTest, EndianArchVariants) {
@@ -2166,6 +2192,10 @@ TEST(TripleTest, EndianArchVariants) {
   EXPECT_EQ(Triple::mipsel, T.getLittleEndianArchVariant().getArch());
   EXPECT_EQ(Triple::MipsSubArch_r6,
             T.getLittleEndianArchVariant().getSubArch());
+
+  T.setArch(Triple::nanomips);
+  EXPECT_EQ(Triple::UnknownArch, T.getBigEndianArchVariant().getArch());
+  EXPECT_EQ(Triple::nanomips, T.getLittleEndianArchVariant().getArch());
 
   T.setArch(Triple::ppc);
   EXPECT_EQ(Triple::ppc, T.getBigEndianArchVariant().getArch());

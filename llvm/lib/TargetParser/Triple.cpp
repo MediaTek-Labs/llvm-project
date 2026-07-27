@@ -51,6 +51,7 @@ StringRef Triple::getArchTypeName(ArchType Kind) {
   case mips64el:       return "mips64el";
   case mips:           return "mips";
   case mipsel:         return "mipsel";
+  case nanomips:       return "nanomips";
   case msp430:         return "msp430";
   case nvptx64:        return "nvptx64";
   case nvptx:          return "nvptx";
@@ -189,6 +190,7 @@ StringRef Triple::getArchTypePrefix(ArchType Kind) {
 
   case m68k:        return "m68k";
 
+  case nanomips:
   case mips:
   case mipsel:
   case mips64:
@@ -437,6 +439,7 @@ Triple::ArchType Triple::getArchTypeForLLVMName(StringRef Name) {
     .Case("mipsel", mipsel)
     .Case("mips64", mips64)
     .Case("mips64el", mips64el)
+    .Case("nanomips", nanomips)
     .Case("msp430", msp430)
     .Case("ppc64", ppc64)
     .Case("ppc32", ppc)
@@ -590,6 +593,7 @@ static Triple::ArchType parseArch(StringRef ArchName) {
                  "mipsn32r6", Triple::mips64)
           .Cases("mips64el", "mipsn32el", "mipsisa64r6el", "mips64r6el",
                  "mipsn32r6el", Triple::mips64el)
+          .Case("nanomips", Triple::nanomips)
           .Case("r600", Triple::r600)
           .Case("amdgcn", Triple::amdgcn)
           .Case("riscv32", Triple::riscv32)
@@ -951,6 +955,7 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   case Triple::mips64:
   case Triple::mips64el:
   case Triple::mips:
+  case Triple::nanomips:
   case Triple::msp430:
   case Triple::nvptx64:
   case Triple::nvptx:
@@ -1662,6 +1667,7 @@ unsigned Triple::getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
   case llvm::Triple::m68k:
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
+  case llvm::Triple::nanomips:
   case llvm::Triple::nvptx:
   case llvm::Triple::ppc:
   case llvm::Triple::ppcle:
@@ -1772,6 +1778,7 @@ Triple Triple::get32BitArchVariant() const {
   case Triple::m68k:
   case Triple::mips:
   case Triple::mipsel:
+  case Triple::nanomips:
   case Triple::nvptx:
   case Triple::ppc:
   case Triple::ppcle:
@@ -1842,6 +1849,7 @@ Triple Triple::get64BitArchVariant() const {
   case Triple::tcele:
   case Triple::xcore:
   case Triple::xtensa:
+  case Triple::nanomips:
     T.setArch(UnknownArch);
     break;
 
@@ -1920,6 +1928,7 @@ Triple Triple::getBigEndianArchVariant() const {
   case Triple::loongarch32:
   case Triple::loongarch64:
   case Triple::msp430:
+  case Triple::nanomips:
   case Triple::nvptx64:
   case Triple::nvptx:
   case Triple::r600:
@@ -2025,6 +2034,7 @@ bool Triple::isLittleEndian() const {
   case Triple::mips64el:
   case Triple::mipsel:
   case Triple::msp430:
+  case Triple::nanomips:
   case Triple::nvptx64:
   case Triple::nvptx:
   case Triple::ppcle:

@@ -51,7 +51,10 @@ MipsRegisterInfo::getPointerRegClass(const MachineFunction &MF,
 
   switch (PtrClassKind) {
   case MipsPtrClass::Default:
-    return ABI.ArePtrs64bit() ? &Mips::GPR64RegClass : &Mips::GPR32RegClass;
+    return ABI.ArePtrs64bit() ? &Mips::GPR64RegClass
+           : ABI.IsP32()      ? &Mips::GPRNM32RegClass
+                              : &Mips::GPR32RegClass;
+
   case MipsPtrClass::GPR16MM:
     return &Mips::GPRMM16RegClass;
   case MipsPtrClass::StackPointer:
@@ -105,6 +108,9 @@ MipsRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   if (Subtarget.isSingleFloat())
     return CSR_SingleFloatOnly_SaveList;
 
+  if (Subtarget.isABI_P32())
+    return CSR_P32_SaveList;
+
   if (Subtarget.isABI_N64())
     return CSR_N64_SaveList;
 
@@ -133,6 +139,9 @@ MipsRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
   if (Subtarget.isABI_N32())
     return CSR_N32_RegMask;
 
+  if (Subtarget.isABI_P32())
+    return CSR_P32_RegMask;
+
   if (Subtarget.isFP64bit())
     return CSR_O32_FP64_RegMask;
 
@@ -156,6 +165,10 @@ getReservedRegs(const MachineFunction &MF) const {
     Mips::ZERO_64, Mips::K0_64, Mips::K1_64, Mips::SP_64
   };
 
+  static const MCPhysReg ReservedGPRNM32[] = {
+    Mips::ZERO_NM, Mips::K0_NM, Mips::K1_NM, Mips::SP_NM, Mips::AT_NM
+  };
+
   BitVector Reserved(getNumRegs());
   const MipsSubtarget &Subtarget = MF.getSubtarget<MipsSubtarget>();
 
@@ -172,10 +185,14 @@ getReservedRegs(const MachineFunction &MF) const {
   for (MCPhysReg R : ReservedGPR64)
     Reserved.set(R);
 
+  for (MCPhysReg R : ReservedGPRNM32)
+    Reserved.set(R);
+
   // For mno-abicalls, GP is a program invariant!
   if (!Subtarget.isABICalls()) {
     Reserved.set(Mips::GP);
     Reserved.set(Mips::GP_64);
+    Reserved.set(Mips::GP_NM);
   }
 
   if (Subtarget.isFP64bit()) {
@@ -194,6 +211,7 @@ getReservedRegs(const MachineFunction &MF) const {
     else {
       Reserved.set(Mips::FP);
       Reserved.set(Mips::FP_64);
+      Reserved.set(Mips::FP_NM);
 
       // Reserve the base register if we need to both realign the stack and
       // allocate variable-sized objects at runtime. This should test the
@@ -234,6 +252,7 @@ getReservedRegs(const MachineFunction &MF) const {
   if (Subtarget.useSmallSection()) {
     Reserved.set(Mips::GP);
     Reserved.set(Mips::GP_64);
+    Reserved.set(Mips::GP_NM);
   }
 
   return Reserved;
@@ -273,12 +292,15 @@ getFrameRegister(const MachineFunction &MF) const {
   const TargetFrameLowering *TFI = Subtarget.getFrameLowering();
   bool IsN64 =
       static_cast<const MipsTargetMachine &>(MF.getTarget()).getABI().IsN64();
+  bool IsP32 =
+      static_cast<const MipsTargetMachine &>(MF.getTarget()).getABI().IsP32();
 
   if (Subtarget.inMips16Mode())
     return TFI->hasFP(MF) ? Mips::S0 : Mips::SP;
   else
-    return TFI->hasFP(MF) ? (IsN64 ? Mips::FP_64 : Mips::FP) :
-                            (IsN64 ? Mips::SP_64 : Mips::SP);
+    return TFI->hasFP(MF)
+               ? (IsN64 ? Mips::FP_64 : (IsP32 ? Mips::FP_NM : Mips::FP))
+               : (IsN64 ? Mips::SP_64 : (IsP32 ? Mips::SP_NM : Mips::SP));
 }
 
 bool MipsRegisterInfo::canRealignStack(const MachineFunction &MF) const {

@@ -106,6 +106,8 @@ static std::string computeDataLayout(const Triple &TT, StringRef CPU,
   // 128 bit aligned.
   if (ABI.IsN64() || ABI.IsN32())
     Ret += "-i128:128-n32:64-S128";
+  else if (ABI.IsP32())
+    Ret += "-n32-S128";
   else
     Ret += "-n32-S64";
 

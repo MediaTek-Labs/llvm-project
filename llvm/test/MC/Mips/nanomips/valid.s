@@ -151,153 +151,153 @@
 	# reg-imm logic, 16-bit
 	sll	$a1, $s2, 1	# CHECK: sll $a1, $s2, 1	# encoding: [0xa1,0x32]
 				# CHECK-NEXT: # <MCInst #{{.*}} SLL16_NM
-				# DISAS: {{.*}}  a1 32        	sll	$a1, $s2, 1
+				# DISAS: {{.*}}  a1 32        	sll	$a1, $s2, 1{{$}}
 	srl	$s1, $a3, 8	# CHECK: srl $s1, $a3, 8	# encoding: [0xf8,0x30]
 				# CHECK-NEXT: # <MCInst #{{.*}} SRL16_NM
-				# DISAS: {{.*}}  f8 30        	srl	$s1, $a3, 8
+				# DISAS: {{.*}}  f8 30        	srl	$s1, $a3, 8{{$}}
 	andi	$a0, $a1, 0	# CHECK: andi $a0, $a1, 0x0	# encoding: [0x50,0xf2]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-				# DISAS: {{.*}}  50 f2        	andi	$a0, $a1, 0x0
+				# DISAS: {{.*}}  50 f2        	andi	$a0, $a1, 0x0{{$}}
 	andi	$a1, $a2, 1	# CHECK: andi $a1, $a2, 0x1	# encoding: [0xe1,0xf2]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-				# DISAS: {{.*}}  e1 f2        	andi	$a1, $a2, 0x1
+				# DISAS: {{.*}}  e1 f2        	andi	$a1, $a2, 0x1{{$}}
 	andi	$a2, $a3, 6	# CHECK: andi $a2, $a3, 0x6	# encoding: [0x76,0xf3]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-				# DISAS: {{.*}}  76 f3        	andi	$a2, $a3, 0x6
+				# DISAS: {{.*}}  76 f3        	andi	$a2, $a3, 0x6{{$}}
 	andi	$a3, $s0, 0xff	# CHECK: andi $a3, $s0, 0xff	# encoding: [0x8c,0xf3]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-				# DISAS: {{.*}}  8c f3        	andi	$a3, $s0, 0xff
+				# DISAS: {{.*}}  8c f3        	andi	$a3, $s0, 0xff{{$}}
 	andi	$s1, $s3, 0xffff	# CHECK: andi $s1, $s3, 0xffff	# encoding: [0xbd,0xf0]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-				# DISAS: {{.*}}  bd f0        	andi	$s1, $s3, 0xffff
+				# DISAS: {{.*}}  bd f0        	andi	$s1, $s3, 0xffff{{$}}
 	andi	$s3, $a3, 0xe	# CHECK: andi $s3, $a3, 0xe	# encoding: [0xfe,0xf1]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-				# DISAS: {{.*}}  fe f1        	andi	$s3, $a3, 0xe
+				# DISAS: {{.*}}  fe f1        	andi	$s3, $a3, 0xe{{$}}
 	andi[16] $s0, $a0, 0xb	# CHECK: andi $s0, $a0, 0xb	# encoding: [0x4b,0xf0]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-				# DISAS: {{.*}}  4b f0        	andi	$s0, $a0, 0xb
+				# DISAS: {{.*}}  4b f0        	andi	$s0, $a0, 0xb{{$}}
 	andi[16] $s2, $a1, 0xf	# CHECK: andi $s2, $a1, 0xf	# encoding: [0x5f,0xf1]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI16_NM
-				# DISAS: {{.*}}  5f f1        	andi	$s2, $a1, 0xf
+				# DISAS: {{.*}}  5f f1        	andi	$s2, $a1, 0xf{{$}}
 	
 	# reg-imm logic, 32-bit
 	andi	$a4, $a1, 0	# CHECK: andi $a4, $a1, 0x0	# encoding: [0x05,0x81,0x00,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  05 81 00 20  	andi	$a4, $a1, 0x0
+				# DISAS: {{.*}}  05 81 00 20  	andi	$a4, $a1, 0x0{{$}}
 	andi	$a1, $t2, 1	# CHECK: andi $a1, $t2, 0x1	# encoding: [0xae,0x80,0x01,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  ae 80 01 20  	andi	$a1, $t2, 0x1
+				# DISAS: {{.*}}  ae 80 01 20  	andi	$a1, $t2, 0x1{{$}}
 	andi	$a2, $t3, 6	# CHECK: andi $a2, $t3, 0x6	# encoding: [0xcf,0x80,0x06,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  cf 80 06 20  	andi	$a2, $t3, 0x6
+				# DISAS: {{.*}}  cf 80 06 20  	andi	$a2, $t3, 0x6{{$}}
 	andi	$a6, $s0, 0xff	# CHECK: andi $a6, $s0, 0xff	# encoding: [0x50,0x81,0xff,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  50 81 ff 20  	andi	$a6, $s0, 0xff
+				# DISAS: {{.*}}  50 81 ff 20  	andi	$a6, $s0, 0xff{{$}}
 	andi[32] $s1, $s4, 0xfff	# CHECK: andi $s1, $s4, 0xfff	# encoding: [0x34,0x82,0xff,0x2f]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  34 82 ff 2f  	andi	$s1, $s4, 0xfff
+				# DISAS: {{.*}}  34 82 ff 2f  	andi	$s1, $s4, 0xfff{{$}}
 	andi	$s3, $a4, 0xe	# CHECK: andi $s3, $a4, 0xe	# encoding: [0x68,0x82,0x0e,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  68 82 0e 20  	andi	$s3, $a4, 0xe
+				# DISAS: {{.*}}  68 82 0e 20  	andi	$s3, $a4, 0xe{{$}}
 	andi	$s2, $t0, 0xf	# CHECK: andi $s2, $t0, 0xf	# encoding: [0x4c,0x82,0x0f,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  4c 82 0f 20  	andi	$s2, $t0, 0xf
+				# DISAS: {{.*}}  4c 82 0f 20  	andi	$s2, $t0, 0xf{{$}}
 	andi	$a3, $s3, 12	# CHECK: andi $a3, $s3, 0xc	# encoding: [0xf3,0x80,0x0c,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  f3 80 0c 20  	andi	$a3, $s3, 0xc
+				# DISAS: {{.*}}  f3 80 0c 20  	andi	$a3, $s3, 0xc{{$}}
 	andi	$a1, $s2, 13	# CHECK: andi $a1, $s2, 0xd	# encoding: [0xb2,0x80,0x0d,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  b2 80 0d 20  	andi	$a1, $s2, 0xd
+				# DISAS: {{.*}}  b2 80 0d 20  	andi	$a1, $s2, 0xd{{$}}
 	andi	$a2, $s1, 16	# CHECK: andi $a2, $s1, 0x10	# encoding: [0xd1,0x80,0x10,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} ANDI_NM
-				# DISAS: {{.*}}  d1 80 10 20  	andi	$a2, $s1, 0x10
+				# DISAS: {{.*}}  d1 80 10 20  	andi	$a2, $s1, 0x10{{$}}
 	ori	$a1, $s5, 0x1	# CHECK: ori $a1, $s5, 0x1	# encoding: [0xb5,0x80,0x01,0x00]
 				# CHECK-NEXT: # <MCInst #{{.*}} ORI_NM
-				# DISAS: {{.*}}  b5 80 01 00  	ori	$a1, $s5, 0x1
+				# DISAS: {{.*}}  b5 80 01 00  	ori	$a1, $s5, 0x1{{$}}
 	xori	$t1, $s2, 0xfff # CHECK: xori $t1, $s2, 0xfff	# encoding: [0xb2,0x81,0xff,0x1f]
 				# CHECK-NEXT: # <MCInst #{{.*}} XORI_NM
-				# DISAS: {{.*}}  b2 81 ff 1f  	xori	$t1, $s2, 0xfff
+				# DISAS: {{.*}}  b2 81 ff 1f  	xori	$t1, $s2, 0xfff{{$}}
 	
 	# reg-imm bit-wise, 32-bit
 	slti	$a1, $s2, 0xff	# CHECK: slti $a1, $s2, 255	# encoding: [0xb2,0x80,0xff,0x40]
 				# CHECK-NEXT: # <MCInst #{{.*}} SLTI_NM
-				# DISAS: {{.*}}  b2 80 ff 40  	slti	$a1, $s2, 255
+				# DISAS: {{.*}}  b2 80 ff 40  	slti	$a1, $s2, 255{{$}}
 	sltiu	$a1, $s2, 0xfff	# CHECK: sltiu $a1, $s2, 4095	# encoding: [0xb2,0x80,0xff,0x5f]
 				# CHECK-NEXT: # <MCInst #{{.*}} SLTIU_NM
-				# DISAS: {{.*}}  b2 80 ff 5f  	sltiu	$a1, $s2, 4095
+				# DISAS: {{.*}}  b2 80 ff 5f  	sltiu	$a1, $s2, 4095{{$}}
 	seqi	$a1, $s2, 0xfff	# CHECK: seqi $a1, $s2, 4095	# encoding: [0xb2,0x80,0xff,0x6f]
 				# CHECK-NEXT: # <MCInst #{{.*}} SEQI_NM
-				# DISAS: {{.*}}  b2 80 ff 6f  	seqi	$a1, $s2, 4095
+				# DISAS: {{.*}}  b2 80 ff 6f  	seqi	$a1, $s2, 4095{{$}}
 	sll	$a1, $s2, 9	# CHECK: sll $a1, $s2, 9	# encoding: [0xb2,0x80,0x09,0xc0]
 				# CHECK-NEXT: # <MCInst #{{.*}} SLL_NM
-				# DISAS: {{.*}}  b2 80 09 c0  	sll	$a1, $s2, 9
+				# DISAS: {{.*}}  b2 80 09 c0  	sll	$a1, $s2, 9{{$}}
 	sll	$a1, $t2, 1	# CHECK: sll $a1, $t2, 1	# encoding: [0xae,0x80,0x01,0xc0]
 				# CHECK-NEXT: # <MCInst #{{.*}} SLL_NM
-				# DISAS: {{.*}}  ae 80 01 c0  	sll	$a1, $t2, 1
+				# DISAS: {{.*}}  ae 80 01 c0  	sll	$a1, $t2, 1{{$}}
 	srl	$a1, $a2, 31	# CHECK: srl $a1, $a2, 31	# encoding: [0xa6,0x80,0x5f,0xc0]
 				# CHECK-NEXT: # <MCInst #{{.*}} SRL_NM
-				# DISAS: {{.*}}  a6 80 5f c0  	srl	$a1, $a2, 31
+				# DISAS: {{.*}}  a6 80 5f c0  	srl	$a1, $a2, 31{{$}}
 	srl	$a1, $a7, 8	# CHECK: srl $a1, $a7, 8	# encoding: [0xab,0x80,0x48,0xc0]
 				# CHECK-NEXT: # <MCInst #{{.*}} SRL_NM
-				# DISAS: {{.*}}  ab 80 48 c0  	srl	$a1, $a7, 8
+				# DISAS: {{.*}}  ab 80 48 c0  	srl	$a1, $a7, 8{{$}}
 	sra	$a1, $a7, 15	# CHECK: sra $a1, $a7, 15	# encoding: [0xab,0x80,0x8f,0xc0]
 				# CHECK-NEXT: # <MCInst #{{.*}} SRA_NM
-				# DISAS: {{.*}}  ab 80 8f c0  	sra	$a1, $a7, 15
+				# DISAS: {{.*}}  ab 80 8f c0  	sra	$a1, $a7, 15{{$}}
 	rotr	$a1, $s2, 31	# CHECK: rotr $a1, $s2, 31	# encoding: [0xb2,0x80,0xdf,0xc0]
 				# CHECK-NEXT: # <MCInst #{{.*}} ROTR_NM
-				# DISAS: {{.*}}  b2 80 df c0  	rotr	$a1, $s2, 31
+				# DISAS: {{.*}}  b2 80 df c0  	rotr	$a1, $s2, 31{{$}}
 	ext	$a1, $s2, 0, 1	# CHECK: ext $a1, $s2, 0, 1	# encoding: [0xb2,0x80,0x00,0xf0]
 				# CHECK-NEXT: # <MCInst #{{.*}} EXT_NM
-				# DISAS: {{.*}}  b2 80 00 f0  	ext	$a1, $s2, 0, 1
+				# DISAS: {{.*}}  b2 80 00 f0  	ext	$a1, $s2, 0, 1{{$}}
 	ext	$a1, $s2, 16, 15	# CHECK: ext $a1, $s2, 16, 15	# encoding: [0xb2,0x80,0x90,0xf3]
 				# CHECK-NEXT: # <MCInst #{{.*}} EXT_NM
-				# DISAS: {{.*}}  b2 80 90 f3  	ext	$a1, $s2, 16, 15
+				# DISAS: {{.*}}  b2 80 90 f3  	ext	$a1, $s2, 16, 15{{$}}
 	ext	$a1, $s2, 0, 32	# CHECK: ext $a1, $s2, 0, 32	# encoding: [0xb2,0x80,0xc0,0xf7]
 				# CHECK-NEXT: # <MCInst #{{.*}} EXT_NM
-				# DISAS: {{.*}}  b2 80 c0 f7  	ext	$a1, $s2, 0, 32
+				# DISAS: {{.*}}  b2 80 c0 f7  	ext	$a1, $s2, 0, 32{{$}}
 	ext	$a1, $s2, 18, 17 # CHECK: ext $a1, $s2, 18, 17	# encoding: [0xb2,0x80,0x12,0xf4]
 				# CHECK-NEXT: # <MCInst #{{.*}} EXT_NM
-				# DISAS: {{.*}}  b2 80 12 f4  	ext	$a1, $s2, 18, 17
+				# DISAS: {{.*}}  b2 80 12 f4  	ext	$a1, $s2, 18, 17{{$}}
 	ins	$a1, $s2, 31, 1	# CHECK: ins $a1, $s2, 31, 1	# encoding: [0xb2,0x80,0xdf,0xe7]
 				# CHECK-NEXT: # <MCInst #{{.*}} INS_NM
-				# DISAS: {{.*}}  b2 80 df e7  	ins 	$a1, $s2, 31, 1
+				# DISAS: {{.*}}  b2 80 df e7  	ins 	$a1, $s2, 31, 1{{$}}
 	ins	$a1, $s2, 15, 16	# CHECK: ins $a1, $s2, 15, 16	# encoding: [0xb2,0x80,0x8f,0xe7]
 				# CHECK-NEXT: # <MCInst #{{.*}} INS_NM
-				# DISAS: {{.*}}  b2 80 8f e7  	ins 	$a1, $s2, 15, 16
+				# DISAS: {{.*}}  b2 80 8f e7  	ins 	$a1, $s2, 15, 16{{$}}
 	ins	$a1, $s2, 2, 30	# CHECK: ins $a1, $s2, 2, 30	# encoding: [0xb2,0x80,0xc2,0xe7]
 				# CHECK-NEXT: # <MCInst #{{.*}} INS_NM
-				# DISAS: {{.*}}  b2 80 c2 e7  	ins 	$a1, $s2, 2, 30
+				# DISAS: {{.*}}  b2 80 c2 e7  	ins 	$a1, $s2, 2, 30{{$}}
 	
 	extw	$a0, $a1, $a2, 2	# CHECK: extw $a0, $a1, $a2, 2 # encoding: [0xc5,0x20,0x9f,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} EXTW_NM
-				# DISAS: {{.*}}  c5 20 9f 20  	extw	$a0, $a1, $a2, 2
+				# DISAS: {{.*}}  c5 20 9f 20  	extw	$a0, $a1, $a2, 2{{$}}
 	extw	$a0, $s1, $t5, 0	# CHECK: extw $a0, $s1, $t5, 0	# encoding: [0x71,0x20,0x1f,0x20]
 				# CHECK-NEXT: # <MCInst #{{.*}} EXTW_NM
-				# DISAS: {{.*}}  71 20 1f 20  	extw	$a0, $s1, $t5, 0
+				# DISAS: {{.*}}  71 20 1f 20  	extw	$a0, $s1, $t5, 0{{$}}
 	extw	$s1, $k1, $gp, 16	# CHECK: extw $s1, $k1, $gp, 16	# encoding: [0x9b,0x23,0x1f,0x8c]
 				# CHECK-NEXT: # <MCInst #{{.*}} EXTW_NM
-				# DISAS: {{.*}}  9b 23 1f 8c  	extw	$s1, $k1, $gp, 16
+				# DISAS: {{.*}}  9b 23 1f 8c  	extw	$s1, $k1, $gp, 16{{$}}
 	extw	$a7, $s7, $t4, 31	# CHECK: extw $a7, $s7, $t4, 31	# encoding: [0x57,0x20,0xdf,0x5f]
 				# CHECK-NEXT: # <MCInst #{{.*}} EXTW_NM
-				# DISAS: {{.*}}  57 20 df 5f  	extw	$a7, $s7, $t4, 31
+				# DISAS: {{.*}}  57 20 df 5f  	extw	$a7, $s7, $t4, 31{{$}}
 	rotx	$a1, $s3, 0, 0, 0	# CHECK: rotx $a1, $s3, 0, 0, 0	# encoding: [0xb3,0x80,0x00,0xd0]
 				# CHECK-NEXT: # <MCInst #{{.*}} ROTX_NM
-				# DISAS: {{.*}}  b3 80 00 d0  	rotx	$a1, $s3, 0, 0, 0
+				# DISAS: {{.*}}  b3 80 00 d0  	rotx	$a1, $s3, 0, 0, 0{{$}}
 	rotx	$a7, $s4, 1, 2, 1	# CHECK: rotx $a7, $s4, 1, 2, 1	# encoding: [0x74,0x81,0xc1,0xd0]
 				# CHECK-NEXT: # <MCInst #{{.*}} ROTX_NM
-				# DISAS: {{.*}}  74 81 c1 d0  	rotx	$a7, $s4, 1, 2, 1
+				# DISAS: {{.*}}  74 81 c1 d0  	rotx	$a7, $s4, 1, 2, 1{{$}}
 	rotx	$t8, $t0, 31, 6, 1	# CHECK: rotx $t8, $t0, 31, 6, 1 # encoding: [0x0c,0x83,0xdf,0xd1]
 				# CHECK-NEXT: # <MCInst #{{.*}} ROTX_NM
-				# DISAS: {{.*}}  0c 83 df d1  	rotx	$t8, $t0, 31, 6, 1
+				# DISAS: {{.*}}  0c 83 df d1  	rotx	$t8, $t0, 31, 6, 1{{$}}
 	rotx	$a1, $s3, 3, 16, 0	# CHECK: rotx $a1, $s3, 3, 16, 0 # encoding: [0xb3,0x80,0x03,0xd4]
 				# CHECK-NEXT: # <MCInst #{{.*}} ROTX_NM
-				# DISAS: {{.*}}  b3 80 03 d4  	rotx	$a1, $s3, 3, 16, 0
+				# DISAS: {{.*}}  b3 80 03 d4  	rotx	$a1, $s3, 3, 16, 0{{$}}
 	rotx	$a7, $s4, 16, 8, 0	# CHECK: rotx $a7, $s4, 16, 8, 0 # encoding: [0x74,0x81,0x10,0xd2]
 				# CHECK-NEXT: # <MCInst #{{.*}} ROTX_NM
-				# DISAS: {{.*}}  74 81 10 d2  	rotx	$a7, $s4, 16, 8, 0
+				# DISAS: {{.*}}  74 81 10 d2  	rotx	$a7, $s4, 16, 8, 0{{$}}
 	rotx	$t8, $t0, 25, 30, 1	# CHECK: rotx $t8, $t0, 25, 30, 1 # encoding: [0x0c,0x83,0xd9,0xd7]
 				# CHECK-NEXT: # <MCInst #{{.*}} ROTX_NM
-				# DISAS: {{.*}}  0c 83 d9 d7  	rotx	$t8, $t0, 25, 30, 1
+				# DISAS: {{.*}}  0c 83 d9 d7  	rotx	$t8, $t0, 25, 30, 1{{$}}
 	bitrevb $a0, $s0	# CHECK: bitrevb $a0, $s0 # encoding: [0x90,0x80,0x47,0xd2]
 				# CHECK-NEXT: # <MCInst #{{.*}} ROTX_NM
 				# DISAS: {{.*}}  90 80 47 d2  	bitrevb	$a0, $s0
@@ -323,16 +323,16 @@
 	# compare and trap, 32-bit
 	teq	$s2, $a3, 0	# CHECK: teq $s2, $a3, 0	# encoding: [0xf2,0x20,0x00,0x00]
 				# CHECK-NEXT: # <MCInst #{{.*}} TEQ_NM
-				# DISAS: {{.*}}  f2 20 00 00  	teq	$s2, $a3, 0
+				# DISAS: {{.*}}  f2 20 00 00  	teq	$s2, $a3, 0{{$}}
 	teq	$s2, $a3, 31	# CHECK: teq $s2, $a3, 31	# encoding: [0xf2,0x20,0x00,0xf8]
 				# CHECK-NEXT: # <MCInst #{{.*}} TEQ_NM
-				# DISAS: {{.*}}  f2 20 00 f8  	teq	$s2, $a3, 31
+				# DISAS: {{.*}}  f2 20 00 f8  	teq	$s2, $a3, 31{{$}}
 	tne	$s2, $a3, 15	# CHECK: tne $s2, $a3, 15	# encoding: [0xf2,0x20,0x00,0x7c]
 				# CHECK-NEXT: # <MCInst #{{.*}} TNE_NM
-				# DISAS: {{.*}}  f2 20 00 7c  	tne	$s2, $a3, 15
+				# DISAS: {{.*}}  f2 20 00 7c  	tne	$s2, $a3, 15{{$}}
 	tne	$s2, $a3, 1	# CHECK: tne $s2, $a3, 1	# encoding: [0xf2,0x20,0x00,0x0c]
 				# CHECK-NEXT: # <MCInst #{{.*}} TNE_NM
-				# DISAS: {{.*}}  f2 20 00 0c  	tne	$s2, $a3, 1
+				# DISAS: {{.*}}  f2 20 00 0c  	tne	$s2, $a3, 1{{$}}
 	
 	# single and paired moves
 	move	$a4, $a7	# CHECK: move $a4, $a7	# encoding: [0x0b,0x11]
@@ -378,47 +378,47 @@
 
 	li	$a0, 1		# CHECK: li $a0, 1	# encoding: [0x01,0xd2]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI16_NM
-				# DISAS: {{.*}}  01 d2        	li	$a0, 1
+				# DISAS: {{.*}}  01 d2        	li	$a0, 1{{$}}
 	li	$a1, 64		# CHECK: li $a1, 64	# encoding: [0xc0,0xd2]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI16_NM
-				# DISAS: {{.*}}  c0 d2        	li	$a1, 64
+				# DISAS: {{.*}}  c0 d2        	li	$a1, 64{{$}}
 	li	$a3, 0		# CHECK: li $a3, 0	# encoding: [0x80,0xd3]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI16_NM
-				# DISAS: {{.*}}  80 d3        	li	$a3, 0
+				# DISAS: {{.*}}  80 d3        	li	$a3, 0{{$}}
 	li	$s0, 126	# CHECK: li $s0, 126	# encoding: [0x7e,0xd0]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI16_NM
-				# DISAS: {{.*}}  7e d0        	li	$s0, 126
+				# DISAS: {{.*}}  7e d0        	li	$s0, 126{{$}}
 	li	$s1, -1		# CHECK: li $s1, -1	# encoding: [0xff,0xd0]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI16_NM
-				# DISAS: {{.*}}  ff d0        	li	$s1, -1
+				# DISAS: {{.*}}  ff d0        	li	$s1, -1{{$}}
 	li	$a2, 127	# CHECK: li $a2, 127	# encoding: [0xc0,0x00,0x7f,0x00]
 				# CHECK-NEXT: # <MCInst #{{.*}} ADDIU_NM
-				# DISAS: {{.*}}  c0 00 7f 00  	li	$a2, 127
+				# DISAS: {{.*}}  c0 00 7f 00  	li	$a2, 127{{$}}
 	li	$a5, 65535	# CHECK: li $a5, 65535	# encoding: [0x20,0x01,0xff,0xff]
 				# CHECK-NEXT: # <MCInst #{{.*}} ADDIU_NM
-				# DISAS: {{.*}}  20 01 ff ff  	li	$a5, 65535
+				# DISAS: {{.*}}  20 01 ff ff  	li	$a5, 65535{{$}}
 	li	$s2, -2		# CHECK: li $s2, -2	# encoding: [0x40,0x82,0x02,0x80]
 				# CHECK-NEXT: # <MCInst #{{.*}} ADDIUNEG_NM
-				# DISAS: {{.*}}  40 82 02 80  	li	$s2, -2
+				# DISAS: {{.*}}  40 82 02 80  	li	$s2, -2{{$}}
 	li	$s7, -4095	# CHECK: li $s7, -4095	# encoding: [0xe0,0x82,0xff,0x8f]
 				# CHECK-NEXT: # <MCInst #{{.*}} ADDIUNEG_NM
-				# DISAS: {{.*}}  e0 82 ff 8f  	li	$s7, -4095
+				# DISAS: {{.*}}  e0 82 ff 8f  	li	$s7, -4095{{$}}
 	li	$t0, 65537	# CHECK: li $t0, 0x10001	# encoding: [0x80,0x61,0x01,0x00,0x01,0x00]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
-				# DISAS: {{.*}}  80 61 01 00 01 00    	li	$t0, 0x10001
+				# DISAS: {{.*}}  80 61 01 00 01 00    	li	$t0, 0x10001{{$}}
 	li	$t1, 2147483647	# CHECK: li $t1,  0x7fffffff	# encoding: [0xa0,0x61,0xff,0xff,0xff,0x7f]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
-				# DISAS: {{.*}}  a0 61 ff ff ff 7f    	li	$t1, 0x7fffffff
+				# DISAS: {{.*}}  a0 61 ff ff ff 7f    	li	$t1, 0x7fffffff{{$}}
 	li	$t4, -4097	# CHECK: li $t4, 0xffffefff	# encoding: [0x40,0x60,0xff,0xef,0xff,0xff]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
-				# DISAS: {{.*}}  40 60 ff ef ff ff    	li	$t4, 0xffffefff
+				# DISAS: {{.*}}  40 60 ff ef ff ff    	li	$t4, 0xffffefff{{$}}
 	li[48]	$t5, -2147483647 # CHECK: li $t5, 0x80000001	# encoding: [0x60,0x60,0x01,0x00,0x00,0x80]
 				 # CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
-				 # DISAS: {{.*}}  60 60 01 00 00 80    	li	$t5, 0x80000001
+				 # DISAS: {{.*}}  60 60 01 00 00 80    	li	$t5, 0x80000001{{$}}
 	li	$a0, foo	# CHECK: li $a0, foo	# encoding: [0x80,0x60,A,A,A,A]
 				# CHECK-NEXT: fixup A - offset: 2, value: foo, kind: fixup_NANOMIPS_I32
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
-				# DISAS: {{.*}}  80 60 00 00 00 00    	li	$a0, 0
+				# DISAS: {{.*}}  80 60 00 00 00 00    	li	$a0, 0x0{{$}}
 	
 	movn	$a1, $s2, $t4	# CHECK: movn $a1, $s2, $t4	# encoding: [0x52,0x20,0x10,0x2e]
 				# CHECK-NEXT: # <MCInst #{{.*}} MOVN_NM
@@ -467,16 +467,16 @@
 	
 	lsa $a0, $a1, $a4, 1	# CHECK: lsa $a0, $a1, $a4, 1	# encoding: [0x05,0x21,0x0f,0x22]
 				# CHECK-NEXT: # <MCInst #{{.*}} LSA_NM
-				# DISAS: {{.*}}  05 21 0f 22  	lsa	$a0, $a1, $a4, 1
+				# DISAS: {{.*}}  05 21 0f 22  	lsa	$a0, $a1, $a4, 1{{$}}
 	lsa $s0, $s1, $s4, 2	# CHECK: lsa $s0, $s1, $s4, 2	# encoding: [0x91,0x22,0x0f,0x84] 
 				# CHECK-NEXT: # <MCInst #{{.*}} LSA_NM
-				# DISAS: {{.*}}  91 22 0f 84  	lsa	$s0, $s1, $s4, 2
+				# DISAS: {{.*}}  91 22 0f 84  	lsa	$s0, $s1, $s4, 2{{$}}
 	lsa $s3, $a7, $a4, 3	# CHECK: lsa $s3, $a7, $a4, 3	# encoding: [0x0b,0x21,0x0f,0x9e]
 				# CHECK-NEXT: # <MCInst #{{.*}} LSA_NM
-				# DISAS: {{.*}}  0b 21 0f 9e  	lsa	$s3, $a7, $a4, 3
+				# DISAS: {{.*}}  0b 21 0f 9e  	lsa	$s3, $a7, $a4, 3{{$}}
 	lsa $t4, $a3, $s4, 0	# CHECK: lsa $t4, $a3, $s4, 0	# encoding: [0x87,0x22,0x0f,0x10]
 				# CHECK-NEXT: # <MCInst #{{.*}} LSA_NM
-				# DISAS: {{.*}}  87 22 0f 10  	lsa	$t4, $a3, $s4, 0
+				# DISAS: {{.*}}  87 22 0f 10  	lsa	$t4, $a3, $s4, 0{{$}}
 	
 	di		# CHECK: di # encoding: [0x00,0x20,0x7f,0x47]
 			# CHECK-NEXT: # <MCInst #{{.*}} DI_NM
@@ -517,58 +517,58 @@
 	
 	sigrie 0	# CHECK: sigrie	0x0 # encoding: [0x00,0x00,0x00,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} SIGRIE_NM
-			# DISAS: {{.*}}  00 00 00 00  	sigrie	0x0
+			# DISAS: {{.*}}  00 00 00 00  	sigrie	0x0{{$}}
 	sigrie 0xffff	# CHECK: sigrie	0xffff # encoding: [0x00,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SIGRIE_NM
-			# DISAS: {{.*}}  00 00 ff ff  	sigrie	0xffff
+			# DISAS: {{.*}}  00 00 ff ff  	sigrie	0xffff{{$}}
 	sigrie 0x7ffff	# CHECK: sigrie	0x7ffff # encoding: [0x07,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SIGRIE_NM
-			# DISAS: {{.*}}  07 00 ff ff  	sigrie	0x7ffff
+			# DISAS: {{.*}}  07 00 ff ff  	sigrie	0x7ffff{{$}}
 	sdbbp		# CHECK: sdbbp	0x0 # encoding: [0x18,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP16_NM
-			# DISAS: {{.*}}  18 10        	sdbbp 0x0
+			# DISAS: {{.*}}  18 10        	sdbbp 0x0{{$}}
 	sdbbp 0		# CHECK: sdbbp	0x0 # encoding: [0x18,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP16_NM
-			# DISAS: {{.*}}  18 10        	sdbbp 0x0
+			# DISAS: {{.*}}  18 10        	sdbbp 0x0{{$}}
 	sdbbp 7		# CHECK: sdbbp	0x7 # encoding: [0x1f,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP16_NM
-			# DISAS: {{.*}}  1f 10        	sdbbp	0x7
+			# DISAS: {{.*}}  1f 10        	sdbbp	0x7{{$}}
 	sdbbp 8		# CHECK: sdbbp	0x8 # encoding: [0x18,0x00,0x08,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP_NM
-			# DISAS: {{.*}}  18 00 08 00  	sdbbp	0x8
+			# DISAS: {{.*}}  18 00 08 00  	sdbbp	0x8{{$}}
 	sdbbp 0x7ffff	# CHECK: sdbbp	0x7ffff # encoding: [0x1f,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SDBBP_NM
-			# DISAS: {{.*}}  1f 00 ff ff  	sdbbp	0x7ffff
+			# DISAS: {{.*}}  1f 00 ff ff  	sdbbp	0x7ffff{{$}}
 	break		# CHECK: break	0x0 # encoding: [0x10,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK16_NM
-			# DISAS: {{.*}}  10 10        	break	0x0
+			# DISAS: {{.*}}  10 10        	break	0x0{{$}}
 	break 0		# CHECK: break	0x0 # encoding: [0x10,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK16_NM
-			# DISAS: {{.*}}  10 10        	break	0x0
+			# DISAS: {{.*}}  10 10        	break	0x0{{$}}
 	break 7		# CHECK: break	0x7 # encoding: [0x17,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK16_NM
-			# DISAS: {{.*}}  17 10        	break	0x7
+			# DISAS: {{.*}}  17 10        	break	0x7{{$}}
 	break 8		# CHECK: break	0x8 # encoding: [0x10,0x00,0x08,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK_NM
-			# DISAS: {{.*}}  10 00 08 00  	break	0x8
+			# DISAS: {{.*}}  10 00 08 00  	break	0x8{{$}}
 	break 0x7ffff	# CHECK: break	0x7ffff # encoding: [0x17,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} BREAK_NM
-			# DISAS: {{.*}}  17 00 ff ff  	break	0x7ffff
+			# DISAS: {{.*}}  17 00 ff ff  	break	0x7ffff{{$}}
 	syscall 	# CHECK: syscall 0x0 # encoding: [0x08,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL16_NM
-			# DISAS: {{.*}}  08 10        	syscall	0x0
+			# DISAS: {{.*}}  08 10        	syscall	0x0{{$}}
 	syscall	0	# CHECK: syscall 0x0 # encoding: [0x08,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL16_NM
-			# DISAS: {{.*}}  08 10        	syscall	0x0
+			# DISAS: {{.*}}  08 10        	syscall	0x0{{$}}
 	syscall 3	# CHECK: syscall 0x3 # encoding: [0x0b,0x10]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL16_NM
-			# DISAS: {{.*}}  0b 10        	syscall	0x3
+			# DISAS: {{.*}}  0b 10        	syscall	0x3{{$}}
 	syscall 4	# CHECK: syscall 0x4 # encoding: [0x08,0x00,0x04,0x00]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL_NM
-			# DISAS: {{.*}}  08 00 04 00  	syscall	0x4
+			# DISAS: {{.*}}  08 00 04 00  	syscall	0x4{{$}}
 	syscall 0x3ffff	# CHECK: syscall 0x3ffff # encoding: [0x0b,0x00,0xff,0xff]
 			# CHECK-NEXT: # <MCInst #{{.*}} SYSCALL_NM
-			# DISAS: {{.*}}  0b 00 ff ff  	syscall	0x3ffff
+			# DISAS: {{.*}}  0b 00 ff ff  	syscall	0x3ffff{{$}}
 	
 	rdpgpr $a3, $s7	# CHECK: rdpgpr $a3, $s7 # encoding: [0xf7,0x20,0x7f,0xe1]
 			# CHECK-NEXT: # <MCInst #{{.*}} RDPGPR_NM
@@ -585,58 +585,58 @@
 	
 	rdhwr	$a0, $0, 31	# CHECK: rdhwr $a0, $0, 31 # encoding: [0x80,0x20,0xc0,0xf9]
 				# CHECK-NEXT: # <MCInst #{{.*}} RDHWR_NM
-				# DISAS: {{.*}}  80 20 c0 f9  	rdhwr	$a0, $0, 31
+				# DISAS: {{.*}}  80 20 c0 f9  	rdhwr	$a0, $0, 31{{$}}
 	rdhwr	$s0, $16, 16	# CHECK: rdhwr $s0, $16, 16 # encoding: [0x10,0x22,0xc0,0x81]
 				# CHECK-NEXT: # <MCInst #{{.*}} RDHWR_NM
-				# DISAS: {{.*}}  10 22 c0 81  	rdhwr	$s0, $16, 16
+				# DISAS: {{.*}}  10 22 c0 81  	rdhwr	$s0, $16, 16{{$}}
 	rdhwr	$a4, $31, 0	# CHECK: rdhwr $a4, $31, 0 # encoding: [0x1f,0x21,0xc0,0x01]
 				# CHECK-NEXT: # <MCInst #{{.*}} RDHWR_NM
-				# DISAS: {{.*}}  1f 21 c0 01  	rdhwr	$a4, $31, 0
+				# DISAS: {{.*}}  1f 21 c0 01  	rdhwr	$a4, $31, 0{{$}}
 	
 	lwm	$a1, 0($a3), 1	# CHECK: lwm $a1, 0($a3), 1 # encoding: [0xa7,0xa4,0x00,0x14]
 				# CHECK-NEXT: # <MCInst #{{.*}} LWM_NM
-				# DISAS: {{.*}}  a7 a4 00 14  	lwm	$a1, 0($a3), 1
+				# DISAS: {{.*}}  a7 a4 00 14  	lwm	$a1, 0($a3), 1{{$}}
 	lwm	$a7, 252($s7), 8	# CHECK: lwm $a7, 252($s7), 8 # encoding: [0x77,0xa5,0xfc,0x04]
 					# CHECK-NEXT: # <MCInst #{{.*}} LWM_NM
-					# DISAS: {{.*}}  77 a5 fc 04  	lwm	$a7, 252($s7), 8
+					# DISAS: {{.*}}  77 a5 fc 04  	lwm	$a7, 252($s7), 8{{$}}
 	lwm	$t0, -256($gp), 8	# CHECK: lwm $t0, -256($gp), 8 # encoding: [0x9c,0xa5,0x00,0x84]
 					# CHECK-NEXT: # <MCInst #{{.*}} LWM_NM
-					# DISAS: {{.*}}  9c a5 00 84  	lwm	$t0, -256($gp), 8
+					# DISAS: {{.*}}  9c a5 00 84  	lwm	$t0, -256($gp), 8{{$}}
 	lwm	$a2, 128($a4), 4	# CHECK: lwm $a2, 128($a4), 4 # encoding: [0xc8,0xa4,0x80,0x44]
 					# CHECK-NEXT: # <MCInst #{{.*}} LWM_NM
-					# DISAS: {{.*}}  c8 a4 80 44  	lwm	$a2, 128($a4), 4
+					# DISAS: {{.*}}  c8 a4 80 44  	lwm	$a2, 128($a4), 4{{$}}
 	lwm	$a6, -128($s6), 3	# CHECK: lwm $a6, -128($s6), 3 # encoding: [0x56,0xa5,0x80,0xb4]
 					# CHECK-NEXT: # <MCInst #{{.*}} LWM_NM
-					# DISAS: {{.*}}  56 a5 80 b4  	lwm	$a6, -128($s6), 3
+					# DISAS: {{.*}}  56 a5 80 b4  	lwm	$a6, -128($s6), 3{{$}}
 	
 	swm	$a7, 252($s7), 8	# CHECK: swm $a7, 252($s7), 8 # encoding: [0x77,0xa5,0xfc,0x0c]
 					# CHECK-NEXT: # <MCInst #{{.*}} SWM_NM
-					# DISAS: {{.*}}  77 a5 fc 0c  	swm	$a7, 252($s7), 8
+					# DISAS: {{.*}}  77 a5 fc 0c  	swm	$a7, 252($s7), 8{{$}}
 	swm	$t0, -256($gp), 7	# CHECK: swm $t0, -256($gp), 7 # encoding: [0x9c,0xa5,0x00,0xfc]
 					# CHECK-NEXT: # <MCInst #{{.*}} SWM_NM
-					# DISAS: {{.*}}  9c a5 00 fc  	swm	$t0, -256($gp), 7
+					# DISAS: {{.*}}  9c a5 00 fc  	swm	$t0, -256($gp), 7{{$}}
 	swm	$a2, 128($a4), 4	# CHECK: swm $a2, 128($a4), 4 # encoding: [0xc8,0xa4,0x80,0x4c]
 					# CHECK-NEXT: # <MCInst #{{.*}} SWM_NM
-					# DISAS: {{.*}}  c8 a4 80 4c  	swm	$a2, 128($a4), 4
+					# DISAS: {{.*}}  c8 a4 80 4c  	swm	$a2, 128($a4), 4{{$}}
 	swm	$a6, -128($s6), 3	# CHECK: swm $a6, -128($s6), 3 # encoding: [0x56,0xa5,0x80,0xbc]
 					# CHECK-NEXT: # <MCInst #{{.*}} SWM_NM
-					# DISAS: {{.*}}  56 a5 80 bc  	swm	$a6, -128($s6), 3
+					# DISAS: {{.*}}  56 a5 80 bc  	swm	$a6, -128($s6), 3{{$}}
 	
 	ualwm	$a1, 0($a3), 1		# CHECK: ualwm $a1, 0($a3), 1 # encoding: [0xa7,0xa4,0x00,0x15]
 					# CHECK-NEXT: # <MCInst #{{.*}} UALWM_NM
 					# DISAS: {{.*}}  a7 a4 00 15  	ualw	$7, 5376($5)
 	ualwm	$a7, 252($s7), 8	# CHECK: ualwm $a7, 252($s7), 8 # encoding: [0x77,0xa5,0xfc,0x05]
 					# CHECK-NEXT: # <MCInst #{{.*}} UALWM_NM
-					# DISAS: {{.*}}  77 a5 fc 05  	ualwm	$a7, 252($s7), 8
+					# DISAS: {{.*}}  77 a5 fc 05  	ualwm	$a7, 252($s7), 8{{$}}
 	ualwm	$t0, -256($gp), 8	# CHECK: ualwm $t0, -256($gp), 8 # encoding: [0x9c,0xa5,0x00,0x85]
 					# CHECK-NEXT: # <MCInst #{{.*}} UALWM_NM
-					# DISAS: {{.*}}  9c a5 00 85  	ualwm	$t0, -256($gp), 8
+					# DISAS: {{.*}}  9c a5 00 85  	ualwm	$t0, -256($gp), 8{{$}}
 	uaswm	$a2, 128($a4), 4	# CHECK: uaswm $a2, 128($a4), 4 # encoding: [0xc8,0xa4,0x80,0x4d]
 					# CHECK-NEXT: # <MCInst #{{.*}} UASWM_NM
-					# DISAS: {{.*}}  c8 a4 80 4d  	uaswm	$a2, 128($a4), 4
+					# DISAS: {{.*}}  c8 a4 80 4d  	uaswm	$a2, 128($a4), 4{{$}}
 	uaswm	$a6, -128($s6), 3	# CHECK: uaswm $a6, -128($s6), 3 # encoding: [0x56,0xa5,0x80,0xbd]
 					# CHECK-NEXT: # <MCInst #{{.*}} UASWM_NM
-					# DISAS: {{.*}}  56 a5 80 bd  	uaswm	$a6, -128($s6), 3
+					# DISAS: {{.*}}  56 a5 80 bd  	uaswm	$a6, -128($s6), 3{{$}}
 	
 	ualw	$a1,0($a3)	# CHECK: ualw $a1, 0($a3) # encoding: [0xa7,0xa4,0x00,0x15]
 				# CHECK-NEXT: # <MCInst #{{.*}} UALW_NM
@@ -797,91 +797,91 @@
 
 	addiu	$a1,$a1,8	# CHECK: addiu	$a1, $a1, 8 # encoding: [0xd2,0x92]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUR2_NM
-				# DISAS: {{.*}}  d2 92        	addiu	$a1, $a1, 8
+				# DISAS: {{.*}}  d2 92        	addiu	$a1, $a1, 8{{$}}
 	addiu	$a1,$a3,0	# CHECK: addiu	$a1, $a3, 0 # encoding: [0xf0,0x92]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUR2_NM
-				# DISAS: {{.*}}  f0 92        	addiu	$a1, $a3, 0
+				# DISAS: {{.*}}  f0 92        	addiu	$a1, $a3, 0{{$}}
 	addiu	$s1,$a1,28	# CHECK: addiu	$s1, $a1, 28 # encoding: [0xd7,0x90]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUR2_NM
-				# DISAS: {{.*}}  d7 90        	addiu	$s1, $a1, 28
+				# DISAS: {{.*}}  d7 90        	addiu	$s1, $a1, 28{{$}}
 	addiu[32] $s1,$a1,32	# CHECK: addiu	$s1, $a1, 32 # encoding: [0x25,0x02,0x20,0x00]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU_NM
-				# DISAS: {{.*}}  25 02 20 00  	addiu	$s1, $a1, 32
+				# DISAS: {{.*}}  25 02 20 00  	addiu	$s1, $a1, 32{{$}}
 	addiu	$a1,$a1,65535	# CHECK: addiu	$a1, $a1, 65535 # encoding: [0xa5,0x00,0xff,0xff]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU_NM
-				# DISAS: {{.*}}  a5 00 ff ff  	addiu	$a1, $a1, 65535
+				# DISAS: {{.*}}  a5 00 ff ff  	addiu	$a1, $a1, 65535{{$}}
 	addiu	$s2,$s2,65536	# CHECK: addiu	$s2, $s2, 65536 # encoding: [0x41,0x62,0x00,0x00,0x01,0x00]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU48_NM
-				# DISAS: {{.*}}  41 62 00 00 01 00    	addiu	$s2, $s2, 65536
+				# DISAS: {{.*}}  41 62 00 00 01 00    	addiu	$s2, $s2, 65536{{$}}
 	addiu	$t4,$t4,0x7fffffff	# CHECK: addiu	$t4, $t4, 2147483647 # encoding: [0x41,0x60,0xff,0xff,0xff,0x7f]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU48_NM
-				# DISAS: {{.*}}  41 60 ff ff ff 7f    	addiu	$t4, $t4, 2147483647
+				# DISAS: {{.*}}  41 60 ff ff ff 7f    	addiu	$t4, $t4, 2147483647{{$}}
 	addiu	$a4,$a4,0	# CHECK: addiu	$a4, $a4, 0 # encoding: [0x08,0x91]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIURS5_NM
-				# DISAS: {{.*}}  08 91        	addiu	$a4, $a4, 0
+				# DISAS: {{.*}}  08 91        	addiu	$a4, $a4, 0{{$}}
 	addiu	$t8,$t8,7	# CHECK: addiu	$t8, $t8, 7 # encoding: [0x0f,0x93]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIURS5_NM
-				# DISAS: {{.*}}  0f 93        	addiu	$t8, $t8, 7
+				# DISAS: {{.*}}  0f 93        	addiu	$t8, $t8, 7{{$}}
 	addiu	$sp,$sp,-8	# CHECK: addiu	$sp, $sp, -8 # encoding: [0xb8,0x93]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIURS5_NM
-				# DISAS: {{.*}}  b8 93        	addiu	$sp, $sp, -8
+				# DISAS: {{.*}}  b8 93        	addiu	$sp, $sp, -8{{$}}
 	addiu	$k1,$k1,8	# CHECK: addiu	$k1, $k1, 8 # encoding: [0x7b,0x03,0x08,0x00]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU_NM
-				# DISAS: {{.*}}  7b 03 08 00  	addiu	$k1, $k1, 8
+				# DISAS: {{.*}}  7b 03 08 00  	addiu	$k1, $k1, 8{{$}}
 	addiu	$k1,$k1,-9	# CHECK: addiu	$k1, $k1, -9 # encoding: [0x7b,0x83,0x09,0x80]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUNEG_NM
-				# DISAS: {{.*}}  7b 83 09 80  	addiu	$k1, $k1, -9
+				# DISAS: {{.*}}  7b 83 09 80  	addiu	$k1, $k1, -9{{$}}
 	addiu	$a1,$sp,0	# CHECK: addiu	$a1, $sp, 0 # encoding: [0xc0,0x72]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUR1SP_NM
-				# DISAS: {{.*}}  c0 72        	addiu	$a1, $sp, 0
+				# DISAS: {{.*}}  c0 72        	addiu	$a1, $sp, 0{{$}}
 	addiu	$s0,$sp,128	# CHECK: addiu	$s0, $sp, 128 # encoding: [0x60,0x70]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUR1SP_NM
-				# DISAS: {{.*}}  60 70        	addiu	$s0, $sp, 128
+				# DISAS: {{.*}}  60 70        	addiu	$s0, $sp, 128{{$}}
 	addiu	$s3,$sp,252	# CHECK: addiu	$s3, $sp, 252 # encoding: [0xff,0x71]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUR1SP_NM
-				# DISAS: {{.*}}  ff 71        	addiu	$s3, $sp, 252
+				# DISAS: {{.*}}  ff 71        	addiu	$s3, $sp, 252{{$}}
 	addiu	$s3,$sp,256	# CHECK: addiu	$s3, $sp, 256 # encoding: [0x7d,0x02,0x00,0x01]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU_NM
-				# DISAS: {{.*}}  7d 02 00 01  	addiu	$s3, $sp, 256
+				# DISAS: {{.*}}  7d 02 00 01  	addiu	$s3, $sp, 256{{$}}
 	addiu	$a1,$a2,-1	# CHECK: addiu	$a1, $a2, -1 # encoding: [0xa6,0x80,0x01,0x80]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUNEG_NM
-				# DISAS: {{.*}}  a6 80 01 80  	addiu	$a1, $a2, -1
+				# DISAS: {{.*}}  a6 80 01 80  	addiu	$a1, $a2, -1{{$}}
 	addiu	$a1,$a2,-4095	# CHECK: addiu	$a1, $a2, -4095 # encoding: [0xa6,0x80,0xff,0x8f]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUNEG_NM
-				# DISAS: {{.*}}  a6 80 ff 8f  	addiu	$a1, $a2, -4095
+				# DISAS: {{.*}}  a6 80 ff 8f  	addiu	$a1, $a2, -4095{{$}}
 	addiu	$s3,$s3,-4096	# CHECK: addiu	$s3, $s3, -4096 # encoding: [0x61,0x62,0x00,0xf0,0xff,0xff]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU48_NM
-				# DISAS: {{.*}}  61 62 00 f0 ff ff    	addiu	$s3, $s3, 4294963200
+				# DISAS: {{.*}}  61 62 00 f0 ff ff    	addiu	$s3, $s3, 4294963200{{$}}
 	addiu[48] $a3,$a3,-2147483648	# CHECK: addiu	$a3, $a3, -2147483648 # encoding: [0xe1,0x60,0x00,0x00,0x00,0x80]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU48_NM
-				# DISAS: {{.*}}  e1 60 00 00 00 80    	addiu	$a3, $a3, 2147483648
+				# DISAS: {{.*}}  e1 60 00 00 00 80    	addiu	$a3, $a3, 2147483648{{$}}
 	addiu	$a1, $gp, 0	# CHECK: addiu.b $a1, $gp, 0 # encoding: [0xac,0x44,0x00,0x00]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGPB_NM
-				# DISAS: {{.*}}  ac 44 00 00  	addiu.b	$a1, $gp, 0
+				# DISAS: {{.*}}  ac 44 00 00  	addiu.b	$a1, $gp, 0{{$}}
 	addiu	$s0,$gp,131701	# CHECK: addiu.b $s0, $gp, 131701 # encoding: [0x0e,0x46,0x75,0x02]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGPB_NM
-				# DISAS: {{.*}}  0e 46 75 02  	addiu.b	$s0, $gp, 131701
+				# DISAS: {{.*}}  0e 46 75 02  	addiu.b	$s0, $gp, 131701{{$}}
 	addiu	$s3,$gp,262143	# CHECK: addiu.b $s3, $gp, 262143 # encoding: [0x6f,0x46,0xff,0xff]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGPB_NM
-				# DISAS: {{.*}}  6f 46 ff ff  	addiu.b	$s3, $gp, 262143
+				# DISAS: {{.*}}  6f 46 ff ff  	addiu.b	$s3, $gp, 262143{{$}}
 	addiu	$k0,$gp,262144	# CHECK: addiu.w $k0, $gp, 262144 # encoding: [0x44,0x43,0x00,0x00]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGPW_NM
-				# DISAS: {{.*}}  44 43 00 00  	addiu.w	$k0, $gp, 262144
+				# DISAS: {{.*}}  44 43 00 00  	addiu.w	$k0, $gp, 262144{{$}}
 	addiu	$s7,$gp,2097148	# CHECK: addiu.w $s7, $gp, 2097148 # encoding: [0xff,0x42,0xfc,0xff]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGPW_NM
-				# DISAS: {{.*}}  ff 42 fc ff  	addiu.w	$s7, $gp, 2097148
+				# DISAS: {{.*}}  ff 42 fc ff  	addiu.w	$s7, $gp, 2097148{{$}}
 	addiu	$a4,$gp,2097152	# CHECK: addiu.b32 $a4, $gp, 2097152 # encoding: [0x02,0x61,0x00,0x00,0x20,0x00]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGP48_NM
-				# DISAS: {{.*}}  02 61 00 00 20 00    	addiu.b32	$a4, $gp, 2097152
+				# DISAS: {{.*}}  02 61 00 00 20 00    	addiu.b32	$a4, $gp, 2097152{{$}}
 	addiu	$s4,$gp,262146	# CHECK: addiu.b32 $s4, $gp, 262146 # encoding: [0x82,0x62,0x02,0x00,0x04,0x00]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGP48_NM
-				# DISAS: {{.*}}  82 62 02 00 04 00    	addiu.b32	$s4, $gp, 262146
+				# DISAS: {{.*}}  82 62 02 00 04 00    	addiu.b32	$s4, $gp, 262146{{$}}
 	addiu.b32 $a4,$gp,-2097152	# CHECK: addiu.b32 $a4, $gp, -2097152 # encoding: [0x02,0x61,0x00,0x00,0xe0,0xff]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGP48_NM
-				# DISAS: {{.*}}  02 61 00 00 e0 ff    	addiu.b32	$a4, $gp, -2097152
+				# DISAS: {{.*}}  02 61 00 00 e0 ff    	addiu.b32	$a4, $gp, -2097152{{$}}
 	addiu.b32 $a4,$gp,-1	# CHECK: addiu.b32 $a4, $gp, -1 # encoding: [0x02,0x61,0xff,0xff,0xff,0xff]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUGP48_NM
-				# DISAS: {{.*}}  02 61 ff ff ff ff    	addiu.b32	$a4, $gp, -1
+				# DISAS: {{.*}}  02 61 ff ff ff ff    	addiu.b32	$a4, $gp, -1{{$}}
 
 	move.balc $a0, $a3, test	# CHECK: move.balc $a0, $a3, test # encoding: [0b111AAAAA,0x08,A,A]
 					# CHECK-NEXT: fixup A - offset: 0, value: test+0, kind: fixup_NANOMIPS_PC21_S1
@@ -1352,19 +1352,19 @@
 	addiu	$t0, $gp, %gp_rel(test)	# CHECK: addiu.b	$t0, $gp, %gp_rel(test) # encoding: [0b100011AA,0x45,A,A]
                                         # CHECK-NEXT: fixup A - offset: 0, value: %gp_rel(test), kind: fixup_NANOMIPS_GPREL18
                                         # CHECK-NEXT: <MCInst #{{.*}} ADDIUGPB_NM
-					# DISAS: {{.*}}  8c 45 00 00  	addiu.b	$t0, $gp, 0
+					# DISAS: {{.*}}  8c 45 00 00  	addiu.b	$t0, $gp, 0{{$}}
 	addiu.b	$t1, $gp, %gp_rel(test)	# CHECK: addiu.b	$t1, $gp, %gp_rel(test) # encoding: [0b101011AA,0x45,A,A]
                                         # CHECK-NEXT: fixup A - offset: 0, value: %gp_rel(test), kind: fixup_NANOMIPS_GPREL18
                                         # CHECK-NEXT: <MCInst #{{.*}} ADDIUGPB_NM
-					# DISAS: {{.*}}  ac 45 00 00  	addiu.b	$t1, $gp, 0
+					# DISAS: {{.*}}  ac 45 00 00  	addiu.b	$t1, $gp, 0{{$}}
 	addiu.w	$t2, $gp, %gp_rel(test)	# CHECK: addiu.w	$t2, $gp, %gp_rel(test) # encoding: [0b11000AAA,0x41,A,A]
                                         # CHECK-NEXT: fixup A - offset: 0, value: %gp_rel(test), kind: fixup_NANOMIPS_GPREL19_S2
                                         # CHECK-NEXT: <MCInst #{{.*}} ADDIUGPW_NM
-					# DISAS: {{.*}}  c0 41 00 00  	addiu.w	$t2, $gp, 0
+					# DISAS: {{.*}}  c0 41 00 00  	addiu.w	$t2, $gp, 0{{$}}
 	addiu.b32 $t3, $gp, %gp_rel(test)	# CHECK: addiu.b32	$t3, $gp, %gp_rel(test) # encoding: [0xe2,0x61,A,A,A,A]
                                         # CHECK-NEXT: fixup A - offset: 2, value: %gp_rel(test), kind: fixup_NANOMIPS_GPREL_I32
                                         # CHECK-NEXT: <MCInst #{{.*}} ADDIUGP48_NM
-					# DISAS: {{.*}}  e2 61 00 00 00 00    	addiu.b32	$t3, $gp, 0
+					# DISAS: {{.*}}  e2 61 00 00 00 00    	addiu.b32	$t3, $gp, 0{{$}}
 
 	lw	$a0, %gp_rel(test)($gp)	# CHECK: lw	$a0, %gp_rel(test)($gp) # encoding: [0b0AAAAAAA,0x56]
                                         # CHECK-NEXT: fixup A - offset: 0, value: %gp_rel(test), kind: fixup_NANOMIPS_GPREL7_S2
@@ -1474,12 +1474,12 @@
 	addiu $a0, $a0, %pcrel_lo(test)	# CHECK: addiu $a0, $a0, %lo(test) # encoding: [0x84,0x00,A,0b0000AAAA]
 				# CHECK-NEXT: fixup A - offset: 0, value: %lo(test), kind: fixup_NANOMIPS_LO12
 				# CHECK-NEXT: <MCInst #{{.*}} ADDIU_NM
-				# DISAS: {{.*}}  84 00 00 00  	addiu	$a0, $a0, 0
+				# DISAS: {{.*}}  84 00 00 00  	addiu	$a0, $a0, 0{{$}}
 				# DISAS-NEXT: {{.*}}  R_NANOMIPS_LO12	test
 	addiu $s0, $s0, %lo(test)	# CHECK: addiu $s0, $s0, %lo(test) # encoding: [0x10,0x02,A,0b0000AAAA]
 				# CHECK-NEXT: fixup A - offset: 0, value: %lo(test), kind: fixup_NANOMIPS_LO12
 				# CHECK-NEXT: <MCInst #{{.*}} ADDIU_NM
-				# DISAS: {{.*}}  10 02 00 00  	addiu	$s0, $s0, 0
+				# DISAS: {{.*}}  10 02 00 00  	addiu	$s0, $s0, 0{{$}}
 				# DISAS-NEXT: {{.*}}  R_NANOMIPS_LO12	test
 
 1:
@@ -1795,10 +1795,10 @@
 			# DISAS: {{.*}}  00 20 7f c3  	wait
 	wait 1		# CHECK: wait 1	# encoding: [0x01,0x20,0x7f,0xc3]
 			# CHECK-NEXT: # <MCInst #{{.*}} WAIT_NM
-			# DISAS: {{.*}}  01 20 7f c3  	wait	1
+			# DISAS: {{.*}}  01 20 7f c3  	wait	1{{$}}
 	wait 1023	# CHECK: wait 1023	# encoding: [0xff,0x23,0x7f,0xc3]
 			# CHECK-NEXT: # <MCInst #{{.*}} WAIT_NM
-			# DISAS: {{.*}}  ff 23 7f c3  	wait	1023
+			# DISAS: {{.*}}  ff 23 7f c3  	wait	1023{{$}}
 
 	li	$t3, 65536	# CHECK: lui $t3, %hi(0x10000) # encoding: [0xe1,0xe1,0x00,0x00]
 				# CHECK-NEXT: <MCInst #{{.*}} LUI_NM
@@ -1848,15 +1848,15 @@
 				# DISAS: {{.*}}  00 20 90 03  	dvp $zero
 	subu	$k1,$k1,9	# CHECK: addiu	$k1, $k1, -9 # encoding: [0x7b,0x83,0x09,0x80]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIUNEG_NM
-				# DISAS: {{.*}}  7b 83 09 80  	addiu	$k1, $k1, -9
+				# DISAS: {{.*}}  7b 83 09 80  	addiu	$k1, $k1, -9{{$}}
 	subu	$s3,$s3,4096	# CHECK: addiu	$s3, $s3, -4096 # encoding: [0x61,0x62,0x00,0xf0,0xff,0xff]
 				# CHECK-NEXT: <MCInst  #{{.*}} ADDIU48_NM
-				# DISAS: {{.*}}  61 62 00 f0 ff ff    	addiu	$s3, $s3, 4294963200
+				# DISAS: {{.*}}  61 62 00 f0 ff ff    	addiu	$s3, $s3, 4294963200{{$}}
 	subu	$t4,$s4,4097	# CHECK: li $t4, 0xffffefff	# encoding: [0x40,0x60,0xff,0xef,0xff,0xff]
 				# CHECK-NEXT: # <MCInst #{{.*}} LI48_NM
                                 # CHECK: addu $t4, $s4, $t4	# encoding: [0x54,0x20,0x50,0x11]
 				# CHECK-NEXT: # <MCInst #{{.*}} ADDu_NM
-				# DISAS: {{.*}}  40 60 ff ef ff ff    	li	$t4, 0xffffefff
+				# DISAS: {{.*}}  40 60 ff ef ff ff    	li	$t4, 0xffffefff{{$}}
                                 # DISAS-NEXT: {{.*}}: 54 20 50 11  	addu	$t4, $s4, $t4
 
 	jrc $ra

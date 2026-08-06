@@ -1,4 +1,4 @@
-; RUN: llc -mcpu=nanomips < %s
+; RUN: llc --filetype=obj --nmips-obj-gen-inline-assembly=false -mcpu=nanomips < %s
 define void @__atomic_load_c() {
 entry:
   %0 = load atomic i64, ptr null monotonic, align 2147483648

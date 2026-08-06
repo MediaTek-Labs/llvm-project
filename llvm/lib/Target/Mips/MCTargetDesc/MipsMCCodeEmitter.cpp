@@ -1115,7 +1115,7 @@ getMemEncodingNMImm(const MCInst &MI, unsigned OpNo,
   assert(MI.getOperand(OpNo).isReg());
   unsigned RegBits = getMachineOpValue(MI, MI.getOperand(OpNo), Fixups,
                                        STI) << Bits;
-  unsigned OffBits = getMachineOpValue(MI, MI.getOperand(OpNo+1), Fixups, STI);
+  unsigned OffBits = (Bits > 0 ? getMachineOpValue(MI, MI.getOperand(OpNo+1), Fixups, STI) : 0);
   unsigned Mask = ((1 << Bits) - 1) & ~((1 << ShiftAmount) - 1);
 
   return (OffBits & Mask) | RegBits;

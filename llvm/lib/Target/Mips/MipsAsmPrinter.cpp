@@ -108,6 +108,12 @@ cl::opt<unsigned int> ScatterNopsDensity("scatter-nops-density",
     cl::value_desc("percentage"),
     cl::init(0));
 
+cl::opt<bool> NMipsObjEmitInlineAssembly(
+    "nmips-obj-gen-inline-assembly",
+    cl::desc("On NanoMips, generate object code through inline assembly "
+             "fragments as a means of achieving instruction compression"),
+    cl::init(true));
+
 void MipsAsmPrinter::emitJumpTableInfo() {
   if (!Subtarget->hasNanoMips() || Subtarget->useAbsoluteJumpTables() ) {
     AsmPrinter::emitJumpTableInfo();
@@ -311,7 +317,10 @@ void MipsAsmPrinter::emitJumpTableDest(MCStreamer &OutStreamer,
   // (base and index).  These instructions are not subject to compression
   // but need to be printed as assembly, nevertheless to get the correct
   // translation.
-  emitMCInst(OutStreamer, LoadI);
+  if (NMipsObjEmitInlineAssembly)
+    emitMCInst(OutStreamer, LoadI);
+  else
+    EmitToStreamer(OutStreamer, LoadI);
 }
 
 bool MipsAsmPrinter::tryEmitHw110880Xform(MCStreamer &OutStreamer,
@@ -706,7 +715,8 @@ void MipsAsmPrinter::emitInstruction(const MachineInstr *MI) {
     // This condition preserves the original code-path for nanoMIPS to be used
     // in case of -via-file-asm or -save-temps. It can be removed eventually,
     // but nanoMIPS codegen unit tests will need to be re-worked first.
-    if (Subtarget->hasNanoMips() && !OutStreamer->hasRawTextSupport())
+    if (Subtarget->hasNanoMips() && !OutStreamer->hasRawTextSupport()
+        && NMipsObjEmitInlineAssembly)
       emitMCInst(*OutStreamer, TmpInst0);
     else
       EmitToStreamer(*OutStreamer, TmpInst0);

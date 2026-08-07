@@ -1,10 +1,13 @@
-; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | FileCheck %s
+; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | \
+; RUN:     FileCheck %s  -check-prefixes=CHECK,COMMON
+; RUN: llc -mtriple=nanomips --filetype=obj --nmips-obj-gen-inline-assembly=false -o - < %s | \
+; RUN:     llvm-objdump --no-print-imm-hex -d - | FileCheck %s -check-prefixes=COMMON
 
 ; Make sure that SAVE/RESTORE instructions are used for saving and restoring callee-saved registers.
 define void @test() {
-; CHECK: save 32, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
+; COMMON: save 32, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
   call void asm sideeffect "", "~{$16},~{$17},~{$18},~{$19},~{$20},~{$21},~{$23},~{$22},~{$1}"() ret void
-; CHECK: restore.jrc 32, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
+; COMMON: restore.jrc 32, $s0, $s1, $s2, $s3, $s4, $s5, $s6, $s7
 }
 
 ; Make sure that SAVE/SAVE combination is used when incoming arguments need to

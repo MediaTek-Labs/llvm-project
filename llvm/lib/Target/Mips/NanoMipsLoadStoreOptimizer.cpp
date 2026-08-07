@@ -424,7 +424,7 @@ bool NMLoadStoreOpt::generateSaveOrRestore(MachineBasicBlock &MBB,
     // because it needs to be the last instruction in the basic block. If
     // possible, it will be generated with NewStackOffset.
     unsigned Opcode = IsRestore
-                          ? ((Return && !NewStackOffset) ? Mips::RESTOREJRC16_NM
+                          ? ((Return && !NewStackOffset) ? Mips::RESTOREJRC_NM
                                                          : Mips::RESTORE_NM)
                           : Mips::SAVE_NM;
     auto InsertBefore =

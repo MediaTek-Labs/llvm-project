@@ -1473,7 +1473,8 @@ MipsMCCodeEmitter::getNMRegListEncoding(const MCInst &MI, unsigned OpNo,
 					const MCSubtargetInfo &STI) const {
   unsigned res = 0;
   unsigned gp = 0;
-  if (!MI.getOperand(OpNo).isImm() || MI.getOperand(OpNo).getImm() != 0)
+  if (OpNo < MI.getNumOperands() &&
+      (!MI.getOperand(OpNo).isImm() || MI.getOperand(OpNo).getImm() != 0))
     for (unsigned I = OpNo; I < MI.getNumOperands(); I++) {
       unsigned Reg = MI.getOperand(I).getReg();
       unsigned RegNo = Ctx.getRegisterInfo()->getEncodingValue(Reg);

@@ -1178,13 +1178,16 @@ unsigned MipsMCCodeEmitter::
 getMemEncodingNMRX(const MCInst &MI, unsigned OpNo,
 		   SmallVectorImpl<MCFixup> &Fixups,
 		   const MCSubtargetInfo &STI) const {
-  // Register is encoded in bits 9-5, offset is encoded in bits 4-0.
+  // Register is encoded in bits 9-5, index register is encoded in bits 4-0.
   assert(MI.getOperand(OpNo).isReg());
   unsigned RegBits = getMachineOpValue(MI, MI.getOperand(OpNo), Fixups,
 				       STI) << 5;
-  unsigned Reg = getMachineOpValue(MI, MI.getOperand(OpNo+1),
-                                       Fixups, STI);
-  unsigned OffBits = Ctx.getRegisterInfo()->getEncodingValue(Reg);
+  const MCOperand &IndexOp = MI.getOperand(OpNo + 1);
+  unsigned OffBits = getMachineOpValue(MI, IndexOp, Fixups, STI);
+  // AsmParser encodes the index register number as an immediate in these
+  // bits to match struct MemOp
+  if (!IndexOp.isReg())
+    OffBits = Ctx.getRegisterInfo()->getEncodingValue(OffBits);
 
   return RegBits | OffBits;
 }

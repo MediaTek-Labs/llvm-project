@@ -1,4 +1,8 @@
-; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | FileCheck %s
+; RUN: llc -mtriple=nanomips -asm-show-inst -verify-machineinstrs < %s | \
+; RUN:     FileCheck %s -check-prefixes=CHECK,COMMON
+; RUN: llc -mtriple=nanomips --filetype=obj --nmips-obj-gen-inline-assembly=false -o - < %s | \
+; RUN:     llvm-objdump -d - | FileCheck %s -check-prefixes=COMMON
+
 
 ; ----- Tests for byte loads -----
 
@@ -89,7 +93,7 @@ define zeroext i8 @lbu_8(i8* %p) {
 ; ----- Indexed byte loads -----
 
 define signext i8 @lbx(i8* %p, i32 %n) {
-; CHECK: lbx $a0, $a1($a0)
+; COMMON: lbx $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %i = getelementptr inbounds i8, i8* %p, i64 %nn
   %v = load i8, i8* %i, align 1
@@ -97,7 +101,7 @@ define signext i8 @lbx(i8* %p, i32 %n) {
 }
 
 define zeroext i8 @lbux_1(i8* %p, i32 %n) {
-; CHECK: lbux $a0, $a1($a0)
+; COMMON: lbux $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %i = getelementptr inbounds i8, i8* %p, i64 %nn
   %v = load i8, i8* %i, align 1
@@ -105,7 +109,7 @@ define zeroext i8 @lbux_1(i8* %p, i32 %n) {
 }
 
 define i8 @lbux_2(i8* %p, i32 %n) {
-; CHECK: lbux $a0, $a1($a0)
+; COMMON: lbux $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %i = getelementptr inbounds i8, i8* %p, i64 %nn
   %v = load i8, i8* %i, align 1
@@ -201,7 +205,7 @@ define zeroext i16 @lhu_8(i16* %p) {
 ; ----- Indexed and scaled short loads -----
 
 define signext i16 @lhxs(i16* %p, i32 %n) {
-; CHECK: lhxs $a0, $a1($a0)
+; COMMON: lhxs $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %i = getelementptr inbounds i16, i16* %p, i64 %nn
   %v = load i16, i16* %i, align 2
@@ -209,7 +213,7 @@ define signext i16 @lhxs(i16* %p, i32 %n) {
 }
 
 define zeroext i16 @lhuxs_1(i16* %p, i32 %n) {
-; CHECK: lhuxs $a0, $a1($a0)
+; COMMON: lhuxs $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %i = getelementptr inbounds i16, i16* %p, i64 %nn
   %v = load i16, i16* %i, align 2
@@ -217,7 +221,7 @@ define zeroext i16 @lhuxs_1(i16* %p, i32 %n) {
 }
 
 define i16 @lhuxs_2(i16* %p, i32 %n) {
-; CHECK: lhuxs $a0, $a1($a0)
+; COMMON: lhuxs $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %i = getelementptr inbounds i16, i16* %p, i64 %nn
   %v = load i16, i16* %i, align 2
@@ -227,7 +231,7 @@ define i16 @lhuxs_2(i16* %p, i32 %n) {
 ; ----- Indexed short loads -----
 
 define signext i16 @lhx(i16* %p, i32 %n) {
-; CHECK: lhx $a0, $a1($a0)
+; COMMON: lhx $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %pp = bitcast i16* %p to i8*
   %i = getelementptr inbounds i8, i8* %pp, i64 %nn
@@ -237,7 +241,7 @@ define signext i16 @lhx(i16* %p, i32 %n) {
 }
 
 define zeroext i16 @lhux_1(i16* %p, i32 %n) {
-; CHECK: lhux $a0, $a1($a0)
+; COMMON: lhux $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %pp = bitcast i16* %p to i8*
   %i = getelementptr inbounds i8, i8* %pp, i64 %nn
@@ -247,7 +251,7 @@ define zeroext i16 @lhux_1(i16* %p, i32 %n) {
 }
 
 define i16 @lhux_2(i16* %p, i32 %n) {
-; CHECK: lhux $a0, $a1($a0)
+; COMMON: lhux $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %pp = bitcast i16* %p to i8*
   %i = getelementptr inbounds i8, i8* %pp, i64 %nn
@@ -289,7 +293,7 @@ define i32 @lw_4(i32* %p) {
 ; ----- Indexed and scaled int load -----
 
 define i32 @lwxs(i32* %p, i32 %n) {
-; CHECK: lwxs $a0, $a1($a0)
+; COMMON: lwxs $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %i = getelementptr inbounds i32, i32* %p, i64 %nn
   %v = load i32, i32* %i, align 4
@@ -299,7 +303,7 @@ define i32 @lwxs(i32* %p, i32 %n) {
 ; ----- Indexed int load -----
 
 define i32 @lwx(i32* %p, i32 %n) {
-; CHECK: lwx $a0, $a1($a0)
+; COMMON: lwx $a0, $a1($a0)
   %nn = sext i32 %n to i64
   %pp = bitcast i32* %p to i8*
   %i = getelementptr inbounds i8, i8* %pp, i64 %nn

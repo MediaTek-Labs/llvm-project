@@ -163,30 +163,7 @@ void MipsInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
   }
 
   if (Op.isImm()) {
-    switch (MI->getOpcode()) {
-    case Mips::LI48_NM:
-    case Mips::ANDI16_NM:
-    case Mips::ANDI_NM:
-    case Mips::ORI_NM:
-    case Mips::XORI_NM:
-    case Mips::TEQ_NM:
-    case Mips::TNE_NM:
-    case Mips::SIGRIE_NM:
-    case Mips::SDBBP_NM:
-    case Mips::SDBBP16_NM:
-    case Mips::BREAK_NM:
-    case Mips::BREAK16_NM:
-    case Mips::SYSCALL_NM:
-    case Mips::SYSCALL16_NM:
-    case Mips::WAIT_NM:
-    case Mips::LAPC32_NM:
-    case Mips::LAPC48_NM:
-    case Mips::ADDIUPC_NM:
-    case Mips::ADDIUPC48_NM:
-      printUImm<32,0,16>(MI, OpNo, STI, O); break;
-    default:
-    markup(O, Markup::Immediate) << formatImm(Op.getImm()); break;
-    }
+    markup(O, Markup::Immediate) << formatImm(Op.getImm());
     return;
   }
 
@@ -380,6 +357,17 @@ bool MipsInstPrinter::printAliasHex(const char *Str, const MCInst &MI,uint64_t A
   return true;
 }
 
+bool MipsInstPrinter::printAliasHex(const char *Str, const MCInst &MI,uint64_t Address,
+                                    unsigned OpNo0, unsigned OpNo1, unsigned OpNo2,
+                                    const MCSubtargetInfo &STI ,raw_ostream &OS) {
+  printAlias(Str, MI, Address, OpNo0, STI, OS);
+  OS << ", ";
+  printOperand(&MI, OpNo1, STI, OS);
+  OS << ", ";
+  printUImm<32, 0, 16>(&MI, OpNo2, STI, OS);
+  return true;
+}
+
 bool MipsInstPrinter::printAlias(const char *Str, const MCInst &MI,uint64_t Address,
                                  unsigned OpNo0, unsigned OpNo1,
                                  unsigned OpNo2,const MCSubtargetInfo &STI ,raw_ostream &OS) {
@@ -458,8 +446,10 @@ bool MipsInstPrinter::printAlias(const MCInst &MI, uint64_t Address,
     return isReg<Mips::ZERO>(MI, 2) &&
            printAlias("move", MI, Address, 0, 1, STI, OS);
   case Mips::LI48_NM:
+    // li[16] $r0, imm => li $r0, imm
+    return printAliasHex("li", MI, Address, 0, 1, STI, OS);
   case Mips::LI16_NM:
-    // li[16/48] $r0, imm => li $r0, imm
+    // li[16] $r0, imm => li $r0, imm
     return printAlias("li", MI, Address, 0, 1, STI, OS);
   case Mips::ADDIU_NM:
   case Mips::ADDIUNEG_NM:
@@ -477,7 +467,7 @@ bool MipsInstPrinter::printAlias(const MCInst &MI, uint64_t Address,
   case Mips::ANDI16_NM:
   case Mips::ANDI_NM:
     // andi[16/32] $r0, $r1, imm => andi $r0, $r1, imm
-    return printAlias("andi", MI, Address, 0, 1, 2, STI, OS);
+    return printAliasHex("andi", MI, Address, 0, 1, 2, STI, OS);
   default:
     return false;
   }

@@ -123,6 +123,10 @@ private:
   bool printAliasHex(const char *Str, const MCInst &MI, uint64_t Address,
                   unsigned OpNo0, unsigned OpNo1, const MCSubtargetInfo &STI,
                   raw_ostream &OS);
+  bool printAliasHex(const char *Str, const MCInst &MI, uint64_t Address,
+                     unsigned OpNo0, unsigned OpNo1, unsigned OpNo2,
+                     const MCSubtargetInfo &STI,
+                     raw_ostream &OS);
   bool printAlias(const MCInst &MI, uint64_t Address,
                   const MCSubtargetInfo &STI, raw_ostream &OS);
   bool printAlias(const char *Str, const MCInst &MI,uint64_t Address, unsigned OpNo0,

@@ -263,14 +263,17 @@ def UImm3AsmOperand : NMUImmAsmOperandClass<3, [UImm19AsmOperand]>;
 def UImm2AsmOperand : NMUImmAsmOperandClass<2, [UImm18AsmOperand]>;
 
 def uimm19_nm : Operand<i32> {
+  let PrintMethod = "printUImm<19, 0, 16>";
   let ParserMatchClass = UImm19AsmOperand;
 }
 
 def uimm18_nm : Operand<i32> {
+  let PrintMethod = "printUImm<18, 0, 16>";
   let ParserMatchClass = UImm18AsmOperand;
 }
 
 def uimm3_nm : Operand<i32> {
+  let PrintMethod = "printUImm<3, 0, 16>";
   let ParserMatchClass = UImm3AsmOperand;
 }
 
@@ -278,7 +281,17 @@ def uimm2_nm : Operand<i32> {
   let ParserMatchClass = UImm2AsmOperand;
 }
 
+def uimm2code_nm : Operand<i32> {
+  let PrintMethod = "printUImm<2, 0, 16>";
+  let ParserMatchClass = UImm2AsmOperand;
+}
+
 def uimm12_nm : Operand<i32> {
+  let ParserMatchClass = NMUImmAsmOperandClass<12>;
+}
+
+def uimm12mask_nm : Operand<i32> {
+  let PrintMethod = "printUImm<12, 0, 16>";
   let ParserMatchClass = NMUImmAsmOperandClass<12>;
 }
 
@@ -310,6 +323,7 @@ def uimm5s1_nm : Operand<i32> {
 def simm22s1_nm : Operand<i32> {
   let EncoderMethod = "getSImmWithOffsetEncoding<22,4>";
   let ParserMatchClass = NMSImmScaledAsmOperandClass<21, 1, 4>;
+  let PrintMethod = "printUImm<32, 0, 16>";
 }
 def uimm5s2_nm : Operand<i32> {
   let PrintMethod = "printUImm<5>";
@@ -323,11 +337,11 @@ def uimm8s2_nm : Operand<i32> {
 def nimm7_nm : Operand<i32> {
   let ParserMatchClass = !cast<AsmOperandClass>("Imm7AsmOperand");
   let DecoderMethod = "DecodeImmM1To126";
-  let PrintMethod = "printUImm<7,0,16>";
+  let PrintMethod = "printUImm<7, 0, 16>";
 }
 def uimm4mask_nm : Operand<i32> {
   let EncoderMethod = "getUImm4MaskEncoding";
-  let PrintMethod = "printUImm<16>";
+  let PrintMethod = "printUImm<4, 0, 16>";
   let ParserMatchClass = !cast<AsmOperandClass>("UImm4AsmOperand");
   let DecoderMethod = "DecodeUImm4Mask";
 }
@@ -529,6 +543,7 @@ def jmptarget_nm   : Operand<OtherVT> {
 def simm32_nm : Operand<i32> {
   let ParserMatchClass = NMSImmScaledAsmOperandClass<32, 0, 6>;
   let EncoderMethod = "getSImmWithOffsetEncoding<32, 6>";
+  let PrintMethod = "printUImm<32, 0, 16>";
 }
 
 def uimm32_nm : Operand<i32> {
@@ -1688,15 +1703,15 @@ def : CommuteBinOpAlias<"mul[4x4]", MUL4x4_NM, GPRNM4Opnd>;
 
 // P.U12 pool of instructions
 let TwoOperandAliasConstraint = "$rs = $rt" in {
-def ORI_NM   : CondLogicI32_Desc<"ori", uimm12_nm, GPRNM32Opnd, imm32ZExt12, or>,
+def ORI_NM   : CondLogicI32_Desc<"ori", uimm12mask_nm, GPRNM32Opnd, imm32ZExt12, or>,
 	       CondLogicI32_Enc<0b0000>;
 }
 def : NanoMipsInstAlias<"or $rt, $imm",
-			(ORI_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rt, uimm12_nm:$imm), 0>;
+			(ORI_NM GPRNM32Opnd:$rt, GPRNM32Opnd:$rt, uimm12mask_nm:$imm), 0>;
 
-def XORI_NM  : CondLogicI32_Desc<"xori", uimm12_nm, GPRNM32Opnd, imm32ZExt12, xor>,
+def XORI_NM  : CondLogicI32_Desc<"xori", uimm12mask_nm, GPRNM32Opnd, imm32ZExt12, xor>,
 	       CondLogicI32_Enc<0b0001>;
-def ANDI_NM  : CondLogicI32_Desc<"andi[32]", uimm12_nm, GPRNM32Opnd, imm32ZExt12ANDI, and>,
+def ANDI_NM  : CondLogicI32_Desc<"andi[32]", uimm12mask_nm, GPRNM32Opnd, imm32ZExt12ANDI, and>,
 	       CondLogicI32_Enc<0b0010>;
 def SLTI_NM  : CondLogicI32_Desc<"slti", uimm12_nm, GPRNM32Opnd, imm32ZExt12, setlt>,
 	       CondLogicI32_Enc<0b0100>;
@@ -3012,7 +3027,7 @@ def SDBBP16_NM : InstNM<(outs), (ins uimm3_nm:$imm),
 		 AltMnemonics<["sdbbp[16]"]>;
 def : NanoMipsInstAlias<"sdbbp", (SDBBP16_NM 0), 0>;
 
-def SYSCALL16_NM : InstNM<(outs), (ins uimm2_nm:$imm),
+def SYSCALL16_NM : InstNM<(outs), (ins uimm2code_nm:$imm),
                        "syscall\t$imm", []>, IntExcpFlow16_Enc<0b01>,
 		   AltMnemonics<["syscall[16]"]> {
   let Inst{2} = 0b0;

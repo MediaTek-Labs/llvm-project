@@ -1475,7 +1475,6 @@ class UnalignedLoad<string opstr, SDNode OpNode,
            !strconcat(opstr, "\t$rt, $addr"),
            [(set RO:$rt, (OpNode addrsimm9:$addr, RO:$src))]>,
 	   RegConstraint<"$src = $rt"> {
-  let DecoderMethod = "DecodeMem";
   let mayLoad = 1;
   let canFoldAsLoad = 1;
 }
@@ -1485,7 +1484,6 @@ class UnalignedStore<string opstr, SDNode OpNode,
     InstNM<(outs), (ins RO:$rt, mem_nms9:$addr),
            !strconcat(opstr, "\t$rt, $addr"),
            [(OpNode RO:$rt, addrsimm9:$addr)]> {
-  let DecoderMethod = "DecodeMem";
   let mayStore = 1;
 }
 

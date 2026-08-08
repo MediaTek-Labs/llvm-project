@@ -624,7 +624,7 @@
 	
 	ualwm	$a1, 0($a3), 1		# CHECK: ualwm $a1, 0($a3), 1 # encoding: [0xa7,0xa4,0x00,0x15]
 					# CHECK-NEXT: # <MCInst #{{.*}} UALWM_NM
-					# DISAS: {{.*}}  a7 a4 00 15  	ualw	$7, 5376($5)
+					# DISAS: {{.*}}  a7 a4 00 15  	ualw	$a1, 0($a3)
 	ualwm	$a7, 252($s7), 8	# CHECK: ualwm $a7, 252($s7), 8 # encoding: [0x77,0xa5,0xfc,0x05]
 					# CHECK-NEXT: # <MCInst #{{.*}} UALWM_NM
 					# DISAS: {{.*}}  77 a5 fc 05  	ualwm	$a7, 252($s7), 8{{$}}
@@ -640,16 +640,16 @@
 	
 	ualw	$a1,0($a3)	# CHECK: ualw $a1, 0($a3) # encoding: [0xa7,0xa4,0x00,0x15]
 				# CHECK-NEXT: # <MCInst #{{.*}} UALW_NM
-				# DISAS: {{.*}}  a7 a4 00 15  	ualw	$7, 5376($5)
+				# DISAS: {{.*}}  a7 a4 00 15  	ualw	$a1, 0($a3)
 	uasw	$a7,252($s7)	# CHECK: uasw $a7, 252($s7) # encoding: [0x77,0xa5,0xfc,0x1d]
 				# CHECK-NEXT: # <MCInst #{{.*}} UASW_NM
-				# DISAS: {{.*}}  77 a5 fc 1d  	uasw	$23, 7676($11)
+				# DISAS: {{.*}}  77 a5 fc 1d  	uasw	$a7, 252($s7)
 	ualw	$t0,-256($gp)	# CHECK: ualw $t0, -256($gp) # encoding: [0x9c,0xa5,0x00,0x95]
 				# CHECK-NEXT: # <MCInst #{{.*}} UALW_NM
-				# DISAS: {{.*}}  9c a5 00 95  	ualw	$gp, -27392($12)
+				# DISAS: {{.*}}  9c a5 00 95  	ualw	$t0, -256($gp)
 	ualw	$a2,128($a4)	# CHECK: ualw $a2, 128($a4) # encoding: [0xc8,0xa4,0x80,0x15]
 				# CHECK-NEXT: # <MCInst #{{.*}} UALW_NM
-				# DISAS: {{.*}}  c8 a4 80 15  	ualw	$8, 5504($6)
+				# DISAS: {{.*}}  c8 a4 80 15  	ualw	$a2, 128($a4)
 
 	# 16-bit SAVE/RESTORE[.JRC]
 	save	16		# CHECK: save 16, 0 # encoding: [0x10,0x1c]

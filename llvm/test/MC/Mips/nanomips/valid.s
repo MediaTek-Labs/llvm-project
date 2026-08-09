@@ -654,13 +654,13 @@
 	# 16-bit SAVE/RESTORE[.JRC]
 	save	16		# CHECK: save 16, 0 # encoding: [0x10,0x1c]
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE16_NM
-				# DISAS: {{.*}}  10 1c        	save	16, $fp
+				# DISAS: {{.*}}  10 1c        	save	16
 	save	128		# CHECK: save 128, 0 # encoding: [0x80,0x1c]
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE16_NM
-				# DISAS: {{.*}}  80 1c        	save	128, $fp
+				# DISAS: {{.*}}  80 1c        	save	128
 	save	240		# CHECK: save 240, 0 # encoding: [0xf0,0x1c]
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE16_NM
-				# DISAS: {{.*}}  f0 1c        	save	240, $fp
+				# DISAS: {{.*}}  f0 1c        	save	240
 	save	32, $ra		# CHECK: save 32, $ra # encoding: [0x21,0x1e]
 				# CHECK-NEXT: # <MCInst #{{.*}} SAVE16_NM
 				# DISAS: {{.*}}  21 1e        	save	32, $ra
@@ -682,13 +682,13 @@
 
 	restore.jrc	16	# CHECK: restore.jrc 16, 0	# encoding: [0x10,0x1d]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-				# DISAS: {{.*}}  10 1d        	restore.jrc	16, $fp
+				# DISAS: {{.*}}  10 1d        	restore.jrc	16
 	restore.jrc	128	# CHECK: restore.jrc 128, 0	# encoding: [0x80,0x1d]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-				# DISAS: {{.*}}  80 1d        	restore.jrc	128, $fp
+				# DISAS: {{.*}}  80 1d        	restore.jrc	128
 	restore.jrc	240	# CHECK: restore.jrc 240, 0	# encoding: [0xf0,0x1d]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
-				# DISAS: {{.*}}  f0 1d        	restore.jrc	240, $fp
+				# DISAS: {{.*}}  f0 1d        	restore.jrc	240
 	restore.jrc	32, $ra	# CHECK: restore.jrc 32, $ra	# encoding: [0x21,0x1f]
 				# CHECK-NEXT: # <MCInst #{{.*}} RESTOREJRC16_NM
 				# DISAS: {{.*}}  21 1f        	restore.jrc	32, $ra

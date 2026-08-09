@@ -3075,10 +3075,7 @@ static DecodeStatus DecodeNMRegListOperand(MCInst &Inst,
   unsigned i;
   unsigned RegNo;
 
-  Inst.addOperand(MCOperand::createReg(getReg(Decoder,
-					      Mips::GPRNM32RegClassID,
-					      RegStart)));
-  for (i = RegStart + 1; i < RegStart + RegCount; i++) {
+  for (i = RegStart; i < RegStart + RegCount; i++) {
     if (i == RegStart + RegCount - 1 && GP_bit)
       RegNo = 28;
     else if (i > 31)
